@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Leaflet + OpenRouteService Directions dengan Geocoding</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  
+  <style>
+    body { margin:0; padding:0; }
+    #map { height: 80vh; width: 100%; }
+    #controls {
+      padding: 10px;
+      font-family: Arial, sans-serif;
+    }
+    input, button {
+      padding: 8px;
+      margin: 5px 10px 5px 0;
+      width: 300px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="controls">
+  <input type="text" id="start" placeholder="Titik awal (alamat lengkap)" />
+  <input type="text" id="end" placeholder="Titik tujuan (alamat lengkap)" />
+  <button id="routeBtn">Tampilkan Rute</button>
+</div>
+
+<div id="map"></div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+  const apiKey = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6Ijk4Yjg4N2QwMjFmMjQ4OWRiZDA5NWQ1Zjk4MWMwNTBkIiwiaCI6Im11cm11cjY0In0='; // Ganti dengan API key OpenRouteService kamu
+
+  const map = L.map('map').setView([-6.200000, 106.816666], 10);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  let routeLayer;
+
+  async function geocode(address) {
+    const url = `https://api.openrouteservice.org/geocode/search?api_key=${apiKey}&text=${encodeURIComponent(address)}&size=1`;
+    const response = await fetch(url);
+    const data = await response.json();
+    if (data.features && data.features.length > 0) {
+      const [lon, lat] = data.features[0].geometry.coordinates;
+      return { lat, lon };
+    } else {
+      throw new Error('Alamat tidak ditemukan: ' + address);
+    }
+  }
+
+  async function calculateRoute(startAddr, endAddr) {
+    try {
+      const startCoord = await geocode(startAddr);
+      const endCoord = await geocode(endAddr);
+
+      if (routeLayer) {
+        map.removeLayer(routeLayer);
+      }
+
+      const body = {
+        coordinates: [
+          [startCoord.lon, startCoord.lat],
+          [endCoord.lon, endCoord.lat]
+        ]
+      };
+
+      const response = await fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson', {
+        method: 'POST',
+        headers: {
+          'Authorization': apiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+
+      const data = await response.json();
+
+      routeLayer = L.geoJSON(data, {
+        style: { color: 'blue', weight: 5 }
+      }).addTo(map);
+
+      map.fitBounds(routeLayer.getBounds());
+
+    } catch (error) {
+      alert(error.message);
+    }
+  }
+
+  document.getElementById('routeBtn').addEventListener('click', () => {
+    const start = document.getElementById('start').value.trim();
+    const end = document.getElementById('end').value.trim();
+
+    if (!start || !end) {
+      alert('Mohon isi titik awal dan tujuan.');
+      return;
+    }
+
+    calculateRoute(start, end);
+  });
+
+</script>
+
+</body>
+</html>
