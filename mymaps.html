@@ -26,6 +26,9 @@
     attribution: '© OpenStreetMap contributors'
   }).addTo(map);
 
+  // Masukkan API key OpenRouteService di sini
+  var orsApiKey = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6Ijk4Yjg4N2QwMjFmMjQ4OWRiZDA5NWQ1Zjk4MWMwNTBkIiwiaCI6Im11cm11cjY0In0="; // ganti dengan API key kamu
+
   // Data tujuan (dari Excel)
   var destinations = [
     { name: "D.I. Alue Peudeung", lat: 4.905598, lon: 97.077673 },
@@ -47,7 +50,25 @@
   function setManualLocation(lat, lon) {
     if (userMarker) map.removeLayer(userMarker);
     userMarker = L.marker([lat, lon], {color: 'blue'}).addTo(map)
-      .bindPopup("Lokasi awal (manual)").openPopup();
+      .bindPopup("Lokasi awal").openPopup();
+    map.setView([lat, lon], 8);
+    drawRoutes(lat, lon);
+  }
+
+  // Fungsi gambar rute ke semua tujuan
+  function drawRoutes(startLat, startLon) {
+    destinations.forEach(function(dest) {
+      var url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${orsApiKey}&start=${startLon},${startLat}&end=${dest.lon},${dest.lat}`;
+      
+      fetch(url)
+        .then(response => response.json())
+        .then(data => {
+          var coords = data.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
+          L.polyline(coords, {color: 'red'}).addTo(map)
+            .bindPopup(`Rute ke ${dest.name}`);
+        })
+        .catch(err => console.error(err));
+    });
   }
 
   // Coba ambil lokasi otomatis
@@ -55,7 +76,6 @@
     navigator.geolocation.getCurrentPosition(function(pos) {
       var lat = pos.coords.latitude;
       var lon = pos.coords.longitude;
-      map.setView([lat, lon], 8);
       setManualLocation(lat, lon);
     }, function(err) {
       alert("Tidak bisa ambil lokasi otomatis: " + err.message + "\nKlik peta untuk set lokasi manual.");
@@ -64,7 +84,7 @@
     alert("Geolocation tidak didukung browser Anda.");
   }
 
-  // Event klik di peta untuk set lokasi awal
+  // Event klik di peta untuk set lokasi awal manual
   map.on('click', function(e) {
     setManualLocation(e.latlng.lat, e.latlng.lng);
   });
