@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>My Maps with Multiple Destinations</title>
+  <title>My Maps with Route and Destinations</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -26,10 +26,7 @@
     attribution: '© OpenStreetMap contributors'
   }).addTo(map);
 
-  // Masukkan API key OpenRouteService di sini
-  var orsApiKey = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6Ijk4Yjg4N2QwMjFmMjQ4OWRiZDA5NWQ1Zjk4MWMwNTBkIiwiaCI6Im11cm11cjY0In0="; // ganti dengan API key kamu
-
-  // Data tujuan (dari Excel)
+  // Data tujuan
   var destinations = [
     { name: "D.I. Alue Peudeung", lat: 4.905598, lon: 97.077673 },
     { name: "D.I.R. Tanjung Sejaro", lat: -2.968142, lon: 104.730910 },
@@ -38,56 +35,77 @@
     { name: "D.I. Paluh Manan", lat: 3.751160, lon: 98.577830 }
   ];
 
-  // Tambah marker untuk semua tujuan
+  // Tampilkan marker tujuan
   destinations.forEach(function(dest) {
     L.marker([dest.lat, dest.lon]).addTo(map)
       .bindPopup("<b>" + dest.name + "</b>");
   });
 
   var userMarker;
+  var startLat, startLon;
 
   // Fungsi set lokasi manual
   function setManualLocation(lat, lon) {
+    startLat = lat;
+    startLon = lon;
     if (userMarker) map.removeLayer(userMarker);
     userMarker = L.marker([lat, lon], {color: 'blue'}).addTo(map)
       .bindPopup("Lokasi awal").openPopup();
-    map.setView([lat, lon], 8);
-    drawRoutes(lat, lon);
+    drawRoute();
   }
 
-  // Fungsi gambar rute ke semua tujuan
-  function drawRoutes(startLat, startLon) {
-    destinations.forEach(function(dest) {
-      var url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${orsApiKey}&start=${startLon},${startLat}&end=${dest.lon},${dest.lat}`;
-      
-      fetch(url)
-        .then(response => response.json())
-        .then(data => {
-          var coords = data.features[0].geometry.coordinates.map(c => [c[1], c[0]]);
-          L.polyline(coords, {color: 'red'}).addTo(map)
-            .bindPopup(`Rute ke ${dest.name}`);
-        })
-        .catch(err => console.error(err));
-    });
-  }
-
-  // Coba ambil lokasi otomatis
+  // Ambil lokasi otomatis
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(function(pos) {
-      var lat = pos.coords.latitude;
-      var lon = pos.coords.longitude;
-      setManualLocation(lat, lon);
+      setManualLocation(pos.coords.latitude, pos.coords.longitude);
+      map.setView([pos.coords.latitude, pos.coords.longitude], 8);
     }, function(err) {
-      alert("Tidak bisa ambil lokasi otomatis: " + err.message + "\nKlik peta untuk set lokasi manual.");
+      console.warn("Lokasi otomatis gagal: " + err.message);
+      alert("Lokasi otomatis tidak diizinkan. Klik peta untuk set lokasi awal.");
     });
   } else {
     alert("Geolocation tidak didukung browser Anda.");
   }
 
-  // Event klik di peta untuk set lokasi awal manual
+  // Klik peta untuk lokasi manual
   map.on('click', function(e) {
     setManualLocation(e.latlng.lat, e.latlng.lng);
   });
+
+  // Fungsi gambar rute
+  function drawRoute() {
+    if (!startLat || !startLon) return;
+
+    // Siapkan koordinat (lokasi awal + tujuan)
+    var coords = [[startLon, startLat]];
+    destinations.forEach(function(dest) {
+      coords.push([dest.lon, dest.lat]);
+    });
+
+    var apiKey = "YOUR_ORS_API_KEY"; // Ganti dengan API key kamu
+
+    fetch("https://api.openrouteservice.org/v2/directions/driving-car/geojson", {
+      method: 'POST',
+      headers: {
+        'Authorization': apiKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        coordinates: coords
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data && data.features) {
+        L.geoJSON(data, {
+          style: { color: 'red', weight: 4 }
+        }).addTo(map);
+      } else {
+        console.error("Gagal mendapatkan rute:", data);
+      }
+    })
+    .catch(err => console.error(err));
+  }
 </script>
 
 </body>
