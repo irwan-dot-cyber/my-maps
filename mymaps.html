@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>My Maps with Multiple Destinations</title>
+  <title>My Maps with Routes</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -9,6 +9,18 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
     #map { height: 100vh; }
+    .route-btn {
+      background-color: #4CAF50;
+      color: white;
+      padding: 5px 10px;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .route-btn:hover {
+      background-color: #45a049;
+    }
   </style>
 </head>
 <body>
@@ -19,61 +31,16 @@
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
-  var map = L.map('map').setView([-2.5, 118], 5); // Pusat awal Indonesia
+  // Ganti dengan API key OpenRouteService kamu
+  var orsApiKey = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6Ijk4Yjg4N2QwMjFmMjQ4OWRiZDA5NWQ1Zjk4MWMwNTBkIiwiaCI6Im11cm11cjY0In0=";
+
+  var map = L.map('map').setView([-2.5, 118], 5);
 
   // Tile layer OSM
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors'
   }).addTo(map);
 
-  // Data tujuan (dari Excel)
+  // Data tujuan
   var destinations = [
-    { name: "D.I. Alue Peudeung", lat: 4.905598, lon: 97.077673 },
-    { name: "D.I.R. Tanjung Sejaro", lat: -2.968142, lon: 104.730910 },
-    { name: "D.I.R. Parebok", lat: -2.957959, lon: 112.927809 },
-    { name: "D.I.R. Kuala Jelai", lat: -2.954167, lon: 110.761667 },
-    { name: "D.I. Paluh Manan", lat: 3.751160, lon: 98.577830 }
-  ];
-
-  var userMarker;
-
-  // Fungsi set lokasi manual/otomatis
-  function setUserLocation(lat, lon, label = "Lokasi awal") {
-    if (userMarker) map.removeLayer(userMarker);
-    userMarker = L.marker([lat, lon], {color: 'blue'}).addTo(map)
-      .bindPopup(label).openPopup();
-  }
-
-  // Tampilkan marker tujuan + tombol rute Google Maps
-  destinations.forEach(function(dest) {
-    var gmapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${dest.lat},${dest.lon}`;
-    L.marker([dest.lat, dest.lon]).addTo(map)
-      .bindPopup(`<b>${dest.name}</b><br><a href="${gmapsUrl}" target="_blank">Rute ke sini</a>`);
-  });
-
-  // Coba ambil lokasi otomatis
-  if (location.protocol === "https:") { // Hanya aktif jika HTTPS
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(function(pos) {
-        var lat = pos.coords.latitude;
-        var lon = pos.coords.longitude;
-        map.setView([lat, lon], 8);
-        setUserLocation(lat, lon, "Lokasi saya (otomatis)");
-      }, function(err) {
-        alert("Tidak bisa ambil lokasi otomatis: " + err.message + "\nKlik peta untuk set lokasi manual.");
-      });
-    } else {
-      alert("Geolocation tidak didukung browser Anda.");
-    }
-  } else {
-    alert("Geolocation butuh HTTPS. Klik peta untuk set lokasi manual.");
-  }
-
-  // Event klik peta untuk set lokasi manual
-  map.on('click', function(e) {
-    setUserLocation(e.latlng.lat, e.latlng.lng, "Lokasi saya (manual)");
-  });
-</script>
-
-</body>
-</html>
+    { name: "D.I. Alue
