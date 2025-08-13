@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>My Maps with Routes & Labels</title>
+  <title>My Maps with Routes, Labels & Show Location</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -28,6 +28,18 @@
       border-radius: 3px;
       font-size: 12px;
     }
+    .leaflet-control-locate {
+      background: white;
+      border: 2px solid #ccc;
+      padding: 4px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .leaflet-control-locate:hover {
+      background: #f0f0f0;
+    }
   </style>
 </head>
 <body>
@@ -48,66 +60,4 @@
 
   var destinations = [
     { name: "D.I. Alue Peudeung", lat: 4.905598, lon: 97.077673 },
-    { name: "D.I.R. Tanjung Sejaro", lat: -2.968142, lon: 104.730910 },
-    { name: "D.I.R. Parebok", lat: -2.957959, lon: 112.927809 },
-    { name: "D.I.R. Kuala Jelai", lat: -2.954167, lon: 110.761667 },
-    { name: "D.I. Paluh Manan", lat: 3.751160, lon: 98.577830 }
-  ];
-
-  var userMarker, routeLayer;
-
-  function setUserLocation(lat, lon) {
-    if (userMarker) map.removeLayer(userMarker);
-    userMarker = L.marker([lat, lon], {color: 'blue'}).addTo(map)
-      .bindPopup("Lokasi Anda").openPopup()
-      .bindTooltip("Lokasi Anda", {permanent: true, direction: "top"});
-  }
-
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(function(pos) {
-      var lat = pos.coords.latitude;
-      var lon = pos.coords.longitude;
-      map.setView([lat, lon], 8);
-      setUserLocation(lat, lon);
-    }, function(err) {
-      alert("Tidak bisa ambil lokasi otomatis: " + err.message);
-    });
-  }
-
-  map.on('click', function(e) {
-    setUserLocation(e.latlng.lat, e.latlng.lng);
-  });
-
-  // Marker tujuan + label
-  destinations.forEach(function(dest) {
-    var popupContent = "<b>" + dest.name + "</b><br>" +
-      "<button class='route-btn' onclick='getRoute(" + dest.lat + "," + dest.lon + ")'>Rute ke sini</button>";
-    L.marker([dest.lat, dest.lon]).addTo(map)
-      .bindPopup(popupContent)
-      .bindTooltip(dest.name, {permanent: true, direction: "top"});
-  });
-
-  function getRoute(destLat, destLon) {
-    if (!userMarker) {
-      alert("Tentukan lokasi Anda terlebih dahulu (otomatis atau klik peta).");
-      return;
-    }
-
-    var start = userMarker.getLatLng();
-    var url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${orsApiKey}&start=${start.lng},${start.lat}&end=${destLon},${destLat}`;
-
-    fetch(url)
-      .then(response => response.json())
-      .then(data => {
-        if (routeLayer) map.removeLayer(routeLayer);
-        var coords = data.features[0].geometry.coordinates;
-        var latlngs = coords.map(c => [c[1], c[0]]);
-        routeLayer = L.polyline(latlngs, {color: 'blue'}).addTo(map);
-        map.fitBounds(routeLayer.getBounds());
-      })
-      .catch(err => console.error(err));
-  }
-</script>
-
-</body>
-</html>
+    { name: "D.I.R. Tanjung Sejaro", lat: -2.968142,
