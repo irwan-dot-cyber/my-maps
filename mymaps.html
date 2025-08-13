@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>My Maps dengan Rute Otomatis</title>
+  <title>My Maps with Multiple Destinations</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -17,66 +17,57 @@
 
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<!-- Routing Machine -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
-<script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 
 <script>
-  // Data tujuan dari file Excel
-  var locations = [
-    {name: "D.I. Alue Peudeung", lat: 4.905598, lon: 97.077673},
-    {name: "D.I.R. Tanjung Sejaro", lat: -2.968142, lon: 104.730910},
-    {name: "D.I.R. Parebok", lat: -2.957959, lon: 112.927809},
-    {name: "D.I.R. Kuala Jelai", lat: -2.954167, lon: 110.761667},
-    {name: "D.I. Paluh Manan", lat: 3.751160, lon: 98.577830}
-  ];
+  var map = L.map('map').setView([-2.5, 118], 5); // Pusat awal Indonesia
 
-  var map = L.map('map').setView([-2, 118], 5); // posisi awal di Indonesia
-
+  // Tile layer OSM
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors'
   }).addTo(map);
 
-  var userMarker;
-  var routingControl;
+  // Data tujuan (dari Excel)
+  var destinations = [
+    { name: "D.I. Alue Peudeung", lat: 4.905598, lon: 97.077673 },
+    { name: "D.I.R. Tanjung Sejaro", lat: -2.968142, lon: 104.730910 },
+    { name: "D.I.R. Parebok", lat: -2.957959, lon: 112.927809 },
+    { name: "D.I.R. Kuala Jelai", lat: -2.954167, lon: 110.761667 },
+    { name: "D.I. Paluh Manan", lat: 3.751160, lon: 98.577830 }
+  ];
 
-  // Deteksi lokasi pengguna
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(function(position) {
-      var lat = position.coords.latitude;
-      var lon = position.coords.longitude;
-      userMarker = L.marker([lat, lon]).addTo(map)
-        .bindPopup("📍 Lokasi Anda").openPopup();
-      map.setView([lat, lon], 6);
-    }, function(err) {
-      alert("Gagal mendapatkan lokasi: " + err.message);
-    });
-  }
-
-  // Tambahkan semua marker tujuan
-  locations.forEach(function(loc) {
-    var marker = L.marker([loc.lat, loc.lon]).addTo(map);
-    marker.bindPopup("<b>" + loc.name + "</b><br><button onclick='routeTo(" + loc.lat + "," + loc.lon + ")'>Rute ke sini</button>");
+  // Tambah marker untuk semua tujuan
+  destinations.forEach(function(dest) {
+    L.marker([dest.lat, dest.lon]).addTo(map)
+      .bindPopup("<b>" + dest.name + "</b>");
   });
 
-  // Fungsi hitung rute
-  function routeTo(lat, lon) {
-    if (!userMarker) {
-      alert("Lokasi Anda belum terdeteksi.");
-      return;
-    }
-    var userLatLng = userMarker.getLatLng();
-    if (routingControl) {
-      map.removeControl(routingControl);
-    }
-    routingControl = L.Routing.control({
-      waypoints: [
-        L.latLng(userLatLng.lat, userLatLng.lng),
-        L.latLng(lat, lon)
-      ],
-      routeWhileDragging: true
-    }).addTo(map);
+  var userMarker;
+
+  // Fungsi set lokasi manual
+  function setManualLocation(lat, lon) {
+    if (userMarker) map.removeLayer(userMarker);
+    userMarker = L.marker([lat, lon], {color: 'blue'}).addTo(map)
+      .bindPopup("Lokasi awal (manual)").openPopup();
   }
+
+  // Coba ambil lokasi otomatis
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function(pos) {
+      var lat = pos.coords.latitude;
+      var lon = pos.coords.longitude;
+      map.setView([lat, lon], 8);
+      setManualLocation(lat, lon);
+    }, function(err) {
+      alert("Tidak bisa ambil lokasi otomatis: " + err.message + "\nKlik peta untuk set lokasi manual.");
+    });
+  } else {
+    alert("Geolocation tidak didukung browser Anda.");
+  }
+
+  // Event klik di peta untuk set lokasi awal
+  map.on('click', function(e) {
+    setManualLocation(e.latlng.lat, e.latlng.lng);
+  });
 </script>
 
 </body>
