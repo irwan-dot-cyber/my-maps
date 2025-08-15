@@ -1,340 +1,617 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-  <title>Peta Lokasi Irigasi</title>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
+  <title>Peta DI/DIR – Kementerian PUPR</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
-  
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <!-- MarkerCluster CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+  />
+  <!-- Leaflet Routing Machine CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css"
+  />
+  <!-- Leaflet Control Search CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet-control-search@2.9.8/dist/leaflet-search.min.css"
+  />
+
   <style>
-    body { margin: 0; padding: 0; }
-    #header {
-      background-color: #FFD700;
-      display: flex;
+    :root{
+      --pu-yellow:#F4C542; /* kuning khas PU (approx) */
+      --pu-blue:#003B6A;
+    }
+    html, body { height: 100%; margin: 0; }
+    .app {
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      height: 100%;
+      background: #fafafa;
+    }
+    /* HEADER */
+    header {
+      background: var(--pu-yellow);
+      color: #111;
+      border-bottom: 3px solid var(--pu-blue);
+    }
+    .header-wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 16px;
       align-items: center;
-      padding: 10px;
-      font-family: Arial, sans-serif;
-      font-weight: bold;
+      padding: 10px 16px;
     }
-    #header img {
-      height: 50px;
-      margin-right: 15px;
+    .header-wrap img {
+      height: 56px;
+      width: auto;
+      display: block;
     }
-    #map { height: calc(100vh - 70px); }
+    .title-block{
+      line-height: 1.2;
+      font-weight: 700;
+      color: #111;
+    }
+    .title-block .kemen {
+      font-size: 18px;
+      letter-spacing: .2px;
+    }
+    .title-block .dirjen,
+    .title-block .direktorat {
+      font-size: 14px;
+      opacity: .95;
+    }
+
+    /* TOOLBAR */
+    .toolbar {
+      box-shadow: 0 1px 0 rgba(0,0,0,.06);
+      background: #fff;
+      border-bottom: 1px solid #eee;
+    }
+    .toolbar-wrap{
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 8px 16px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .toolbar .chip{
+      font-size: 12px;
+      padding: 6px 10px;
+      border: 1px solid #e5e5e5;
+      border-radius: 999px;
+      background: #fff;
+    }
+    .toolbar button{
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid #e5e5e5;
+      background: #fff;
+      cursor: pointer;
+    }
+    .toolbar button:hover{ background:#f6f6f6; }
+
+    /* MAP */
+    #map { height: 100%; width: 100%; }
+
+    /* SEARCH override (biar rapi di atas map) */
+    .leaflet-control-search{
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .leaflet-control-search .search-input{
+      min-width: 220px;
+    }
+
+    /* Routing box */
+    .route-box{
+      font-size: 13px;
+      line-height: 1.4;
+      padding: 6px 8px;
+    }
+    .route-box strong{ color: var(--pu-blue); }
+
+    /* Popup button */
+    .btn-route {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 6px 10px;
+      border: 1px solid var(--pu-blue);
+      color: #fff;
+      background: var(--pu-blue);
+      border-radius: 8px;
+      cursor: pointer;
+      text-decoration: none;
+      font-size: 12px;
+    }
+    .btn-route:hover{ filter: brightness(1.05); }
   </style>
 </head>
 <body>
+<div class="app">
+  <header>
+    <div class="header-wrap">
+      <!-- Ganti URL logo jika perlu; pakai gambar dari internet -->
+      <img alt="Logo Kementerian PUPR"
+           src="https://upload.wikimedia.org/wikipedia/commons/3/36/Logo_PUPR.png"
+           onerror="this.src='https://raw.githubusercontent.com/hudoro-solusi/examples-assets/main/pupr-logo.png'">
+      <div class="title-block">
+        <div class="kemen">KEMENTERIAN PEKERJAAN UMUM</div>
+        <div class="dirjen">DIREKTORAT JENDERAL SUMBER DAYA AIR</div>
+        <div class="direktorat">DIREKTORAT IRIGASI DAN RAWA</div>
+      </div>
+    </div>
+  </header>
 
-<div id="header">
-  <img src="https://upload.wikimedia.org/wikipedia/commons/3/3f/Logo_Kementerian_Pekerjaan_Umum_dan_Perumahan_Rakyat_Republik_Indonesia.svg" alt="Logo PU">
-  <div>KEMENTERIAN PEKERJAAN UMUM<br>DIREKTORAT JENDERAL SUMBER DAYA AIR<br>DIREKTORAT IRIGASI DAN RAWA</div>
+  <div class="toolbar">
+    <div class="toolbar-wrap">
+      <span class="chip">Pencarian hanya berdasarkan <b>nama marker</b></span>
+      <button id="btnLocate">Lokasi Saya</button>
+      <button id="btnClearRoute">Hapus Rute</button>
+      <button id="btnFitAll">Zoom ke Semua Titik</button>
+    </div>
+  </div>
+
+  <div id="map"></div>
 </div>
 
-<div id="map"></div>
-
 <!-- Leaflet JS -->
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin=""
+></script>
+<!-- MarkerCluster -->
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<!-- Leaflet Routing Machine -->
+<script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
+<!-- Leaflet Control Search -->
+<script src="https://unpkg.com/leaflet-control-search@2.9.8/dist/leaflet-search.src.js"></script>
 
 <script>
-  // Inisialisasi peta
-  var map = L.map('map').setView([-2.5, 118], 5);
+/** =======================
+ *  1) DATA MARKER (array)
+ *  ======================= */
+const markersData = [
+  {name:"D.I. Alue Peudeung",lon:97.07767342,lat:4.905597755},
+  {name:"D.I.R. Tanjung Sejaro",lon:104.7309104,lat:-2.9681421},
+  {name:"D.I.R. Parebok",lon:112.9278095,lat:-2.957959107},
+  {name:"D.I.R. Kuala Jelai",lon:110.761667,lat:-2.954167},
+  {name:"D.I. Paluh Manan",lon:98.57783,lat:3.75116},
+  {name:"D.I. Kolam",lon:98.78792,lat:3.62731},
+  {name:"D.I. Bukit Setia",lon:98.459,lat:3.94227},
+  {name:"D.I. Kerpei",lon:98.38525,lat:3.61064},
+  {name:"D.I. Pardomuan Nauli",lon:98.39548,lat:3.67036},
+  {name:"D.I. Tanjung Keriahan",lon:98.34432,lat:3.577778},
+  {name:"D.I.R. Gebang",lon:98.3569,lat:3.9792},
+  {name:"D.I. Paya Tampak",lon:98.482,lat:3.8679},
+  {name:"D.I. Modo",lon:97.4627,lat:1.447},
+  {name:"D.I. Zumuzu",lon:97.8693,lat:0.94552},
+  {name:"D.I. Sorkam Kanan",lon:98.572403,lat:1.89583},
+  {name:"D.I. Sogawu",lon:97.468518,lat:1.44805},
+  {name:"D.I. Aran Dalu",lon:98.584492,lat:3.711865},
+  {name:"D.I.R. Sisir Gunting",lon:98.615082,lat:3.801718},
+  {name:"D.I. Kota Datar",lon:98.54839,lat:3.746665},
+  {name:"D.I. Amplas",lon:98.757803,lat:3.556636},
+  {name:"D.I. Kota Rantang",lon:98.565113,lat:3.727766},
+  {name:"D.I.R. Pudak",lon:103.671944,lat:-1.550833},
+  {name:"D.I. Cubo/Trienggadeng",lon:96.07510222,lat:5.196371934},
+  {name:"D.I.R. Sei Duren",lon:103.5480243,lat:-1.6021812},
+  {name:"D.I. Beuracan",lon:96.22157012,lat:5.214147677},
+  {name:"D.I. Tanah Merah",lon:117.2204237,lat:-0.424566771},
+  {name:"D.I.R. Betara",lon:103.364414,lat:1.092778},
+  {name:"D.I. Drien Bungong",lon:96.32177919,lat:5.212655544},
+  {name:"D.I.R. Lagan Hulu",lon:103.740833,lat:-1.272778},
+  {name:"D.I. Kiran",lon:96.33882577,lat:5.217401579},
+  {name:"D.I. Kerpei",lon:98.380253,lat:3.609122},
+  {name:"D.I.R. Bram Itam",lon:103.415083,lat:-0.856389},
+  {name:"D.I. Alue Punti",lon:95.90682598,lat:4.584097061},
+  {name:"D.I. Kuta Krueng",lon:96.33455112,lat:5.198919148},
+  {name:"D.I.R. Marga Mulya",lon:104.031667,lat:-1.212778},
+  {name:"D.I. Meugit",lon:96.33150224,lat:5.196770595},
+  {name:"D.I.R. Kayu Aro Kanan",lon:103.136203,lat:-0.783611},
+  {name:"D.I. Blang Jempeuk",lon:95.62898797,lat:4.619574667},
+  {name:"D.I. Ule Glee",lon:96.3176029,lat:5.163732721},
+  {name:"D.I.R. Rantau Rasau",lon:104.085833,lat:-1.210556},
+  {name:"D.I. Ulim",lon:96.30227326,lat:5.209098386},
+  {name:"D.I. Kareung Ateuh",lon:95.38882731,lat:5.015147676},
+  {name:"D.I.R. Rantau Rasau Desa",lon:104.135556,lat:-1.199722},
+  {name:"D.I. Krueng Nalan",lon:96.49945838,lat:5.170347828},
+  {name:"D.I. Paya Gulungku",lon:96.42902786,lat:5.190829522},
+  {name:"D.I. Pante Kuyun",lon:95.5747921,lat:4.773486644},
+  {name:"D.I. Rayeuk Mamplam",lon:96.41436348,lat:5.183997718},
+  {name:"D.I. Panga Pucok",lon:95.75326781,lat:4.553488369},
+  {name:"D.I. Lapang Timu",lon:96.90046219,lat:5.238154593},
+  {name:"D.I. Sogawu",lon:97.468518,lat:1.44805},
+  {name:"D.I. Namu Mbelin",lon:98.338531,lat:3.535592},
+  {name:"D.I. Cot Mane",lon:96.86851489,lat:5.226845337},
+  {name:"D.I. Samalanga",lon:96.35866925,lat:5.183021148},
+  {name:"D.I. Suak Lango",lon:96.3015609,lat:4.422719031},
+  {name:"D.I. Krueng Peudada",lon:96.62472864,lat:5.183688988},
+  {name:"D.I. Alue Peudeung",lon:96.21655194,lat:4.306529412},
+  {name:"D.I. Panton",lon:96.9831571,lat:5.153550167},
+  {name:"D.I. Tumpok Ladang",lon:96.16477981,lat:4.203274677},
+  {name:"D.I.R. Simpang Datuk",lon:104.301847,lat:-1.130849366},
+  {name:"D.I. Alue Grong-Grong",lon:97.71159792,lat:4.983461787},
+  {name:"D.I.R. Kayu Aro Kiri",lon:103.1265,lat:-0.798611},
+  {name:"D.I. Drien Caleu",lon:96.22636758,lat:4.308055709},
+  {name:"D.I. Simulbas",lon:98.53152,lat:1.977157},
+  {name:"D.I.R. Simpang Puding",lon:104.084167,lat:-1.229444},
+  {name:"D.I.R. Penganyut",lon:104.096111,lat:-1.280556},
+  {name:"D.I. Rogas",lon:98.516755,lat:1.979174},
+  {name:"D.I.R. Kempas Jaya",lon:103.115472,lat:-0.795833},
+  {name:"D.I. Sipodang",lon:98.525405,lat:1.980033},
+  {name:"D.I. Sihapas",lon:98.536728,lat:1.966825},
+  {name:"D.I. Sipaubat",lon:98.38672,lat:2.02445},
+  {name:"D.I.R. Margo Rukun",lon:103.069792,lat:-0.825278},
+  {name:"D.I.R. Nipah Panjang",lon:104.188333,lat:-1.157222},
+  {name:"D.I.R. Mekar Jati",lon:103.164622,lat:-0.809722},
+  {name:"D.I.R. Dendang I - II",lon:103.994167,lat:-1.199167},
+  {name:"D.I.R. Pasar Senin",lon:103.185283,lat:-0.828056},
+  {name:"D.I. Meunasah Ara",lon:96.16767915,lat:4.218513609},
+  {name:"D.I. Meunasah Rayek I",lon:96.17372794,lat:4.22044346},
+  {name:"D.I.R. Koto Kandis",lon:104.026944,lat:-1.185833},
+  {name:"D.I.R. Senyerang",lon:103.142383,lat:-0.820556},
+  {name:"D.I. Pasie Teungoh",lon:96.16526,lat:4.187348295},
+  {name:"D.I. Paya Lumpat",lon:96.07888864,lat:4.238445493},
+  {name:"D.I. Pinem",lon:96.05721348,lat:4.247935326},
+  {name:"D.I. Meurandeh",lon:96.94054771,lat:3.612904686},
+  {name:"D.I. Tangan-Tangan",lon:96.9020694,lat:3.646753662},
+  {name:"D.I. Abah Kala",lon:95.82297345,lat:5.528155297},
+  {name:"D.I. Binieb",lon:95.87757176,lat:5.43088784},
+  {name:"D.I. Blang Kubu",lon:95.82562946,lat:5.505511015},
+  {name:"D.I. Blang Laweung",lon:95.84054712,lat:5.502446444},
+  {name:"D.I. Gintong",lon:95.89205818,lat:5.373943557},
+  {name:"D.I.R. Secanggang",lon:98.5319,lat:3.8674},
+  {name:"D.I. Belimau",lon:117.177691,lat:-0.416919332},
+  {name:"D.I. Rantau Pakam",lon:98.20846073,lat:4.402304361},
+  {name:"D.I. Seunebok Bacee",lon:98.13425588,lat:4.421285787},
+  {name:"D.I.R. Lambur I - II",lon:103.973056,lat:-1.106389},
+  {name:"D.I. Meureudu",lon:96.24410001,lat:5.25304667},
+  {name:"D.I.R. Pamusiran Luar",lon:104.127222,lat:-1.084167},
+  {name:"D.I. Ie Rhob Timur",lon:96.39780834,lat:5.181546995},
+  {name:"D.I.R. Py. Lubuk Jawi",lon:103.179444,lat:-1.704167},
+  {name:"D.I. Sungai Pulai",lon:103.064444,lat:-1.693889},
+  {name:"D.I.R. Py. Rengas Condong",lon:103.270556,lat:-1.7125},
+  {name:"D.I.R. Py. Senaning",lon:103.359444,lat:-1.570556},
+  {name:"D.I.R. Py. Pematang Pacat",lon:103.113611,lat:-1.688611},
+  {name:"D.I.R. Py. Pasar Terusan",lon:103.158333,lat:-1.706389},
+  {name:"D.I.R. Py. Sei Duo",lon:103.42,lat:-1.505556},
+  {name:"D.I.R. Py. Tanjung Marwo",lon:103.105833,lat:-1.738889},
+  {name:"D.I.R. Py. Sei Bayur",lon:102.920556,lat:-1.671389},
+  {name:"D.I.R. Py. Sei Dimpang",lon:103.029722,lat:-1.673056},
+  {name:"D.I.R. Py. Belakang Dusun",lon:102.943333,lat:-1.674167},
+  {name:"D.I.R. Py. Lebar Sei Lais",lon:103.185556,lat:-1.6825},
+  {name:"D.I.R. Py. Lebung Rimbo",lon:102.991944,lat:-1.675278},
+  {name:"D.I.R. Py. Lubuk Ruso",lon:103.37,lat:-1.548056},
+  {name:"D.I.R. Py. Napal Sisik",lon:103.213056,lat:-1.686389},
+  {name:"D.I.R. Py. Paku Aji",lon:103.115,lat:-1.707778},
+  {name:"D.I.R. Py. Pematang Temiang",lon:102.9752207,lat:-1.893094398},
+  {name:"D.I.R. Py. Lubang",lon:103.083889,lat:-1.688611},
+  {name:"D.I.R. Py. Sei Payung",lon:102.872778,lat:-1.670278},
+  {name:"D.I.R. Py. Pelumpung",lon:103.007222,lat:-1.658333},
+  {name:"D.I.R. Py. Saken Seberang",lon:102.851389,lat:-1.655278},
+  {name:"D.I. Sei. Keluru",lon:101.505556,lat:-2.176944},
+  {name:"D.I. Sei. Air Lingkat",lon:101.546111,lat:-2.229167},
+  {name:"D.I. Sei. Talang Aro",lon:101.541,lat:-2.2587},
+  {name:"D.I. Batu Lumut",lon:101.4075,lat:-2.074167},
+  {name:"D.I. Jembatan Serong",lon:101.425,lat:-2.083889},
+  {name:"D.I. Sei Bungkal",lon:101.3895453,lat:-2.043936771},
+  {name:"D.I. Simpang III",lon:101.411667,lat:-2.045833},
+  {name:"D.I.R. Pasir Putih",lon:103.802778,lat:-1.266944},
+  {name:"D.I. Makroman",lon:117.2506058,lat:-0.511603915},
+  {name:"D.I. Kutai Lama",lon:117.3339,lat:-0.575060006},
+  {name:"D.I.R. Sungai Rambut",lon:104.153889,lat:-1.230278},
+  {name:"D.I.R. Simbur Naik",lon:103.9725,lat:-1.071667},
+  {name:"D.I.R. Sungai Raya",lon:103.284081,lat:-0.833611},
+  {name:"D.I. Kutai Lama",lon:117.3324832,lat:-0.576162515},
+  {name:"D.I.R. Teluk Nilau",lon:103.244117,lat:-0.856389},
+  {name:"D.I. Sidomulyo A",lon:117.268257,lat:-0.54979},
+  {name:"D.I. Semangkok",lon:117.435674,lat:-0.121249},
+  {name:"D.I.R. Sungai Tuak",lon:116.211427,lat:-1.91526},
+  {name:"D.I.R. Suliliran",lon:116.255467,lat:-1.925452},
+  {name:"D.I.R. Jone Rantau Panjang",lon:116.254996,lat:-1.840767},
+  {name:"D.I. Sepaso Barat",lon:117.54005,lat:0.755795},
+  {name:"D.I.R. Telago Limo",lon:104.133333,lat:-1.263056},
+  {name:"D.I.R. Sungai Palas",lon:104.197778,lat:-1.167778},
+  {name:"D.I. Selangkau",lon:117.855731,lat:0.839025},
+  {name:"D.I.R. Py. Danau Embat",lon:103.175556,lat:-1.651111},
+  {name:"D.I.R. Py. Bencah",lon:102.802778,lat:-1.653056},
+  {name:"D.I.R. Py. Sei Aur",lon:103.170556,lat:-1.669444},
+  {name:"D.I. Karmeo",lon:103.045833,lat:-1.796389},
+  {name:"D.I.R. Py. Kacung",lon:103.303611,lat:-1.687778},
+  {name:"D.I.R. Py. Lebar",lon:102.869444,lat:-1.654444},
+  {name:"D.I.R. Py. Lebar Belakang Dusun",lon:102.778889,lat:-1.664167},
+  {name:"D.I.R. Py. Lubuk Jeramun",lon:102.876667,lat:-1.695556},
+  {name:"D.I.R. Py. Sei Lais II",lon:103.041667,lat:-1.691111},
+  {name:"D.I.R. Py. Sei Lantang",lon:103.058333,lat:-1.704722},
+  {name:"D.I.R. Py. Sei Napal",lon:103.003889,lat:-1.686944},
+  {name:"D.I.R. Py. Sei Payung",lon:102.873056,lat:-1.670833},
+  {name:"D.I.R. Py. Penghujan",lon:103.4225,lat:-1.491944},
+  {name:"D.I.R. Py. Sei Pedak",lon:103.04,lat:-1.675556},
+  {name:"D.I.R. Py. Sei Rumbai",lon:103.044444,lat:-1.691944},
+  {name:"D.I.R. Py. Tunggul Buto",lon:103.016111,lat:-1.847222},
+  {name:"D.I.R. Kumpeh",lon:103.9498675,lat:-1.410099133},
+  {name:"D.I.R. Niaso",lon:103.6191273,lat:-1.539994817},
+  {name:"D.I.R. Senaung",lon:103.560556,lat:-1.551944},
+  {name:"D.I.R. Sungai Rambai",lon:103.049722,lat:-0.852222},
+  {name:"D.I.R. Teluk Ketapang",lon:103.107778,lat:-0.809722},
+  {name:"D.I. Pagar Puding",lon:102.360833,lat:-1.368056},
+  {name:"D.I.R. Rawa Jone",lon:116.249843,lat:-1.90933},
+  {name:"D.I. Temiang Mali I",lon:110.078133,lat:0.118042},
+  {name:"D.I.R. Sungai Pinyuh Komplek",lon:109.112629,lat:0.230857},
+  {name:"D.I.R. Tebas sungai",lon:109.159984,lat:1.202027},
+  {name:"D.I. Sebandang",lon:110.111473,lat:-0.122557},
+  {name:"D.I. Madong",lon:111.540924,lat:-0.843565},
+  {name:"D.I.R. Tekarang Komplek",lon:109.122352,lat:1.260324},
+  {name:"D.I. Tambak Rawang",lon:109.933711,lat:-1.217111},
+  {name:"D.I. Tolang",lon:98.5149,lat:1.9837},
+  {name:"D.I.R. Selakau Komplek",lon:109.025503,lat:1.071978},
+  {name:"D.I.R. Meranti Paham",lon:100.18815,lat:2.384317},
+  {name:"D.I.R. Sei Siarti",lon:100.23083,lat:2.26688},
+  {name:"D.I. Nalawo",lon:97.898,lat:0.9073},
+  {name:"D.I. Laehuwa",lon:97.457767,lat:1.456803},
+  {name:"D.I.R. Dungun Laut",lon:109.038884,lat:1.296721},
+  {name:"D.I. Tanjung",lon:110.121144,lat:0.089736},
+  {name:"D.I.R. Penepat Komplek",lon:109.241036,lat:0.192737},
+  {name:"D.I.R. Purun Hulu",lon:109.153931,lat:0.22656},
+  {name:"D.I.R. Segedong",lon:109.173066,lat:0.176003},
+  {name:"D.I. Empirang Pokok I",lon:110.125556,lat:0.152287},
+  {name:"D.I.R. Siduk",lon:110.0779,lat:-1.348694},
+  {name:"D.I.R. Sepinggan",lon:109.0814,lat:1.1315},
+  {name:"D.I. Kaubun",lon:117.848371,lat:1.033041},
+  {name:"D.I.R. Tebas Komplek",lon:109.145455,lat:1.194254},
+  {name:"D.I. Empu Engkiyang",lon:110.090432,lat:0.17147},
+  {name:"D.I.R. Purun Hulu",lon:109.152196,lat:0.225427},
+  {name:"D.I. Sebandang",lon:110.111594,lat:-0.122974},
+  {name:"D.I.R. Sungai Paduan",lon:109.792826,lat:-1.011899},
+  {name:"D.I.R. Samustida",lon:109.23924,lat:1.567322},
+  {name:"D.I. Tekang",lon:111.639442,lat:0.091904},
+  {name:"D.I. Dusun Petai",lon:109.636667,lat:0.282105},
+  {name:"D.I. Mungguk Pelancar",lon:110.954369,lat:-0.023653},
+  {name:"D.I.R. Jawai Komplek",lon:109.049136,lat:1.240266},
+  {name:"D.I. Kenukut",lon:111.633352,lat:0.065209},
+  {name:"D.I. Mentubang",lon:109.94285,lat:-1.18064},
+  {name:"D.I. Dusun Petai",lon:109.637069,lat:0.282906},
+  {name:"D.I. Sei Sualang",lon:102.271111,lat:-2.423889},
+  {name:"D.I. Rawang Ujo",lon:102.737222,lat:-2.290556},
+  {name:"D.I.R. Jawai Komplek",lon:109.035771,lat:1.273286},
+  {name:"D.I. Serang",lon:111.173579,lat:-0.067077},
+  {name:"D.I. Dusun Petai",lon:109.636809,lat:0.276896},
+  {name:"D.I. Lirang",lon:109.399721,lat:0.61771},
+  {name:"D.I. Mawang",lon:111.582725,lat:-0.790934},
+  {name:"D.I. Dano",lon:109.327302,lat:0.550684},
+  {name:"D.I. Duri",lon:111.601165,lat:-0.799049},
+  {name:"D.I. Lancak",lon:110.071295,lat:0.057296},
+  {name:"D.I.R. Jungkat Komplek",lon:109.193083,lat:0.081014},
+  {name:"D.I. Suka Maju Luansara",lon:113.121646,lat:0.809548},
+  {name:"D.I.R. Semelagi Komplek",lon:109.001617,lat:1.049922},
+  {name:"D.I.R. Melapi Komplek",lon:112.971602,lat:0.827202},
+  {name:"D.I. Selalong I",lon:110.889953,lat:0.01443},
+  {name:"D.I. Sangku I",lon:109.999708,lat:0.20771},
+  {name:"D.I.R. Sungai Paduan",lon:109.799439,lat:-1.016014},
+  {name:"D.I.R. Tanjung Baik Budi",lon:110.059861,lat:-1.48265},
+  {name:"D.I.R. Kuala Satong",lon:110.081515,lat:-1.396038},
+  {name:"D.I. Bagam",lon:110.909444,lat:0.058056},
+  {name:"D.I. Setor Karya Sp.5",lon:110.956367,lat:0.21805},
+  {name:"D.I. Landau Kodah I",lon:110.915618,lat:0.120006},
+  {name:"D.I. Semabi",lon:110.8674,lat:0.1042},
+  {name:"D.I. Nanga Pemubuh",lon:111.056775,lat:-0.109567},
+  {name:"D.I. Setawar",lon:110.999246,lat:-0.13115},
+  {name:"D.I.R. Sungai Puteri",lon:110.041155,lat:-1.620096},
+  {name:"D.I.R. Kuala Tolak",lon:110.06894,lat:-1.442556},
+  {name:"D.I. Mawan",lon:112.362723,lat:0.486455},
+  {name:"D.I. Nanga Nyabau",lon:112.704878,lat:1.014193},
+  {name:"D.I. Lumut",lon:110.073059,lat:-0.180008},
+  {name:"D.I. Lanso",lon:109.642993,lat:0.355879},
+  {name:"D.I. Empirang Ujung",lon:110.135668,lat:0.18231},
+  {name:"d.i. Manjang",lon:110.879511,lat:-0.204268},
+  {name:"D.I. Senyabang",lon:110.171071,lat:0.18903},
+  {name:"D.I. Angkaras",lon:109.60604,lat:0.592765},
+  {name:"D.I. Sum Sum",lon:109.470557,lat:0.319617},
+  {name:"D.I. Napal",lon:109.38561,lat:0.602179},
+  {name:"D.I. Pak Liung",lon:109.585671,lat:0.134481},
+  {name:"D.I. Mamek Mandor",lon:109.449549,lat:0.313083},
+  {name:"D.I. Kayu Ara Jelimpo",lon:110.086921,lat:0.292847},
+  {name:"D.I. Bagak",lon:109.695197,lat:0.552098},
+  {name:"D.I. Simpang Pana",lon:109.469232,lat:0.331571},
+  {name:"D.I. Jelayan Semade Hilir",lon:109.48117,lat:0.72819},
+  {name:"D.I. Ringo Hilir",lon:109.552503,lat:0.61613},
+  {name:"D.I. Emparu",lon:111.824516,lat:0.078888},
+  {name:"D.I. Kebong",lon:111.648,lat:0.057606},
+  {name:"D.I. Manter",lon:111.489584,lat:-0.073628},
+  {name:"D.I. Bukit Kelam",lon:111.670843,lat:0.092149}
+];
 
-  // Tile Layer
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors'
-  }).addTo(map);
+/** =======================
+ *  2) INISIALISASI PETA
+ *  ======================= */
+const map = L.map('map', {
+  center: [-1.5, 113], // tengah Indonesia kira-kira
+  zoom: 5,
+  worldCopyJump: true
+});
 
-  // Data koordinat langsung di array
-  var destinations = [
-    {name:"D.I. Alue Peudeung",lon:97.07767342,lat:4.905597755},
-      {name:"D.I.R. Tanjung Sejaro",lon:104.7309104,lat:-2.9681421},
-      {name:"D.I.R. Parebok",lon:112.9278095,lat:-2.957959107},
-      {name:"D.I.R. Kuala Jelai",lon:110.761667,lat:-2.954167},
-      {name:"D.I. Paluh Manan",lon:98.57783,lat:3.75116},
-      {name:"D.I. Kolam",lon:98.78792,lat:3.62731},
-      {name:"D.I. Bukit Setia",lon:98.459,lat:3.94227},
-      {name:"D.I. Kerpei",lon:98.38525,lat:3.61064},
-      {name:"D.I. Pardomuan Nauli",lon:98.39548,lat:3.67036},
-      {name:"D.I. Tanjung Keriahan",lon:98.34432,lat:3.577778},
-      {name:"D.I.R. Gebang",lon:98.3569,lat:3.9792},
-      {name:"D.I. Paya Tampak",lon:98.482,lat:3.8679},
-      {name:"D.I. Modo",lon:97.4627,lat:1.447},
-      {name:"D.I. Zumuzu",lon:97.8693,lat:0.94552},
-      {name:"D.I. Sorkam Kanan",lon:98.572403,lat:1.89583},
-      {name:"D.I. Sogawu",lon:97.468518,lat:1.44805},
-      {name:"D.I. Aran Dalu",lon:98.584492,lat:3.711865},
-      {name:"D.I.R. Sisir Gunting",lon:98.615082,lat:3.801718},
-      {name:"D.I. Kota Datar",lon:98.54839,lat:3.746665},
-      {name:"D.I. Amplas",lon:98.757803,lat:3.556636},
-      {name:"D.I. Kota Rantang",lon:98.565113,lat:3.727766},
-      {name:"D.I.R. Pudak",lon:103.671944,lat:-1.550833},
-      {name:"D.I. Cubo/Trienggadeng",lon:96.07510222,lat:5.196371934},
-      {name:"D.I.R. Sei Duren",lon:103.5480243,lat:-1.6021812},
-      {name:"D.I. Beuracan",lon:96.22157012,lat:5.214147677},
-      {name:"D.I. Tanah Merah",lon:117.2204237,lat:-0.424566771},
-      {name:"D.I.R. Betara",lon:103.364414,lat:1.092778},
-      {name:"D.I. Drien Bungong",lon:96.32177919,lat:5.212655544},
-      {name:"D.I.R. Lagan Hulu",lon:103.740833,lat:-1.272778},
-      {name:"D.I. Kiran",lon:96.33882577,lat:5.217401579},
-      {name:"D.I. Kerpei",lon:98.380253,lat:3.609122},
-      {name:"D.I.R. Bram Itam",lon:103.415083,lat:-0.856389},
-      {name:"D.I. Alue Punti",lon:95.90682598,lat:4.584097061},
-      {name:"D.I. Kuta Krueng",lon:96.33455112,lat:5.198919148},
-      {name:"D.I.R. Marga Mulya",lon:104.031667,lat:-1.212778},
-      {name:"D.I. Meugit",lon:96.33150224,lat:5.196770595},
-      {name:"D.I.R. Kayu Aro Kanan",lon:103.136203,lat:-0.783611},
-      {name:"D.I. Blang Jempeuk",lon:95.62898797,lat:4.619574667},
-      {name:"D.I. Ule Glee",lon:96.3176029,lat:5.163732721},
-      {name:"D.I.R. Rantau Rasau",lon:104.085833,lat:-1.210556},
-      {name:"D.I. Ulim",lon:96.30227326,lat:5.209098386},
-      {name:"D.I. Kareung Ateuh",lon:95.38882731,lat:5.015147676},
-      {name:"D.I.R. Rantau Rasau Desa",lon:104.135556,lat:-1.199722},
-      {name:"D.I. Krueng Nalan",lon:96.49945838,lat:5.170347828},
-      {name:"D.I. Paya Gulungku",lon:96.42902786,lat:5.190829522},
-      {name:"D.I. Pante Kuyun",lon:95.5747921,lat:4.773486644},
-      {name:"D.I. Rayeuk Mamplam",lon:96.41436348,lat:5.183997718},
-      {name:"D.I. Panga Pucok",lon:95.75326781,lat:4.553488369},
-      {name:"D.I. Lapang Timu",lon:96.90046219,lat:5.238154593},
-      {name:"D.I. Sogawu",lon:97.468518,lat:1.44805},
-      {name:"D.I. Namu Mbelin",lon:98.338531,lat:3.535592},
-      {name:"D.I. Cot Mane",lon:96.86851489,lat:5.226845337},
-      {name:"D.I. Samalanga",lon:96.35866925,lat:5.183021148},
-      {name:"D.I. Suak Lango",lon:96.3015609,lat:4.422719031},
-      {name:"D.I. Krueng Peudada",lon:96.62472864,lat:5.183688988},
-      {name:"D.I. Alue Peudeung",lon:96.21655194,lat:4.306529412},
-      {name:"D.I. Panton",lon:96.9831571,lat:5.153550167},
-      {name:"D.I. Tumpok Ladang",lon:96.16477981,lat:4.203274677},
-      {name:"D.I.R. Simpang Datuk",lon:104.301847,lat:-1.130849366},
-      {name:"D.I. Alue Grong-Grong",lon:97.71159792,lat:4.983461787},
-      {name:"D.I.R. Kayu Aro Kiri",lon:103.1265,lat:-0.798611},
-      {name:"D.I. Drien Caleu",lon:96.22636758,lat:4.308055709},
-      {name:"D.I. Simulbas",lon:98.53152,lat:1.977157},
-      {name:"D.I.R. Simpang Puding",lon:104.084167,lat:-1.229444},
-      {name:"D.I.R. Penganyut",lon:104.096111,lat:-1.280556},
-      {name:"D.I. Rogas",lon:98.516755,lat:1.979174},
-      {name:"D.I.R. Kempas Jaya",lon:103.115472,lat:-0.795833},
-      {name:"D.I. Sipodang",lon:98.525405,lat:1.980033},
-      {name:"D.I. Sihapas",lon:98.536728,lat:1.966825},
-      {name:"D.I. Sipaubat",lon:98.38672,lat:2.02445},
-      {name:"D.I.R. Margo Rukun",lon:103.069792,lat:-0.825278},
-      {name:"D.I.R. Nipah Panjang",lon:104.188333,lat:-1.157222},
-      {name:"D.I.R. Mekar Jati",lon:103.164622,lat:-0.809722},
-      {name:"D.I.R. Dendang I - II",lon:103.994167,lat:-1.199167},
-      {name:"D.I.R. Pasar Senin",lon:103.185283,lat:-0.828056},
-      {name:"D.I. Meunasah Ara",lon:96.16767915,lat:4.218513609},
-      {name:"D.I. Meunasah Rayek I",lon:96.17372794,lat:4.22044346},
-      {name:"D.I.R. Koto Kandis",lon:104.026944,lat:-1.185833},
-      {name:"D.I.R. Senyerang",lon:103.142383,lat:-0.820556},
-      {name:"D.I. Pasie Teungoh",lon:96.16526,lat:4.187348295},
-      {name:"D.I. Paya Lumpat",lon:96.07888864,lat:4.238445493},
-      {name:"D.I. Pinem",lon:96.05721348,lat:4.247935326},
-      {name:"D.I. Meurandeh",lon:96.94054771,lat:3.612904686},
-      {name:"D.I. Tangan-Tangan",lon:96.9020694,lat:3.646753662},
-      {name:"D.I. Abah Kala",lon:95.82297345,lat:5.528155297},
-      {name:"D.I. Binieb",lon:95.87757176,lat:5.43088784},
-      {name:"D.I. Blang Kubu",lon:95.82562946,lat:5.505511015},
-      {name:"D.I. Blang Laweung",lon:95.84054712,lat:5.502446444},
-      {name:"D.I. Gintong",lon:95.89205818,lat:5.373943557},
-      {name:"D.I.R. Secanggang",lon:98.5319,lat:3.8674},
-      {name:"D.I. Belimau",lon:117.177691,lat:-0.416919332},
-      {name:"D.I. Rantau Pakam",lon:98.20846073,lat:4.402304361},
-      {name:"D.I. Seunebok Bacee",lon:98.13425588,lat:4.421285787},
-      {name:"D.I.R. Lambur I - II",lon:103.973056,lat:-1.106389},
-      {name:"D.I. Meureudu",lon:96.24410001,lat:5.25304667},
-      {name:"D.I.R. Pamusiran Luar",lon:104.127222,lat:-1.084167},
-      {name:"D.I. Ie Rhob Timur",lon:96.39780834,lat:5.181546995},
-      {name:"D.I.R. Py. Lubuk Jawi",lon:103.179444,lat:-1.704167},
-      {name:"D.I. Sungai Pulai",lon:103.064444,lat:-1.693889},
-      {name:"D.I.R. Py. Rengas Condong",lon:103.270556,lat:-1.7125},
-      {name:"D.I.R. Py. Senaning",lon:103.359444,lat:-1.570556},
-      {name:"D.I.R. Py. Pematang Pacat",lon:103.113611,lat:-1.688611},
-      {name:"D.I.R. Py. Pasar Terusan",lon:103.158333,lat:-1.706389},
-      {name:"D.I.R. Py. Sei Duo",lon:103.42,lat:-1.505556},
-      {name:"D.I.R. Py. Tanjung Marwo",lon:103.105833,lat:-1.738889},
-      {name:"D.I.R. Py. Sei Bayur",lon:102.920556,lat:-1.671389},
-      {name:"D.I.R. Py. Sei Dimpang",lon:103.029722,lat:-1.673056},
-      {name:"D.I.R. Py. Belakang Dusun",lon:102.943333,lat:-1.674167},
-      {name:"D.I.R. Py. Lebar Sei Lais",lon:103.185556,lat:-1.6825},
-      {name:"D.I.R. Py. Lebung Rimbo",lon:102.991944,lat:-1.675278},
-      {name:"D.I.R. Py. Lubuk Ruso",lon:103.37,lat:-1.548056},
-      {name:"D.I.R. Py. Napal Sisik",lon:103.213056,lat:-1.686389},
-      {name:"D.I.R. Py. Paku Aji",lon:103.115,lat:-1.707778},
-      {name:"D.I.R. Py. Pematang Temiang",lon:102.9752207,lat:-1.893094398},
-      {name:"D.I.R. Py. Lubang",lon:103.083889,lat:-1.688611},
-      {name:"D.I.R. Py. Sei Payung",lon:102.872778,lat:-1.670278},
-      {name:"D.I.R. Py. Pelumpung",lon:103.007222,lat:-1.658333},
-      {name:"D.I.R. Py. Saken Seberang",lon:102.851389,lat:-1.655278},
-      {name:"D.I. Sei. Keluru",lon:101.505556,lat:-2.176944},
-      {name:"D.I. Sei. Air Lingkat",lon:101.546111,lat:-2.229167},
-      {name:"D.I. Sei. Talang Aro",lon:101.541,lat:-2.2587},
-      {name:"D.I. Batu Lumut",lon:101.4075,lat:-2.074167},
-      {name:"D.I. Jembatan Serong",lon:101.425,lat:-2.083889},
-      {name:"D.I. Sei Bungkal",lon:101.3895453,lat:-2.043936771},
-      {name:"D.I. Simpang III",lon:101.411667,lat:-2.045833},
-      {name:"D.I.R. Pasir Putih",lon:103.802778,lat:-1.266944},
-      {name:"D.I. Makroman",lon:117.2506058,lat:-0.511603915},
-      {name:"D.I. Kutai Lama",lon:117.3339,lat:-0.575060006},
-      {name:"D.I.R. Sungai Rambut",lon:104.153889,lat:-1.230278},
-      {name:"D.I.R. Simbur Naik",lon:103.9725,lat:-1.071667},
-      {name:"D.I.R. Sungai Raya",lon:103.284081,lat:-0.833611},
-      {name:"D.I. Kutai Lama",lon:117.3324832,lat:-0.576162515},
-      {name:"D.I.R. Teluk Nilau",lon:103.244117,lat:-0.856389},
-      {name:"D.I. Sidomulyo A",lon:117.268257,lat:-0.54979},
-      {name:"D.I. Semangkok",lon:117.435674,lat:-0.121249},
-      {name:"D.I.R. Sungai Tuak",lon:116.211427,lat:-1.91526},
-      {name:"D.I.R. Suliliran",lon:116.255467,lat:-1.925452},
-      {name:"D.I.R. Jone Rantau Panjang",lon:116.254996,lat:-1.840767},
-      {name:"D.I. Sepaso Barat",lon:117.54005,lat:0.755795},
-      {name:"D.I.R. Telago Limo",lon:104.133333,lat:-1.263056},
-      {name:"D.I.R. Sungai Palas",lon:104.197778,lat:-1.167778},
-      {name:"D.I. Selangkau",lon:117.855731,lat:0.839025},
-      {name:"D.I.R. Py. Danau Embat",lon:103.175556,lat:-1.651111},
-      {name:"D.I.R. Py. Bencah",lon:102.802778,lat:-1.653056},
-      {name:"D.I.R. Py. Sei Aur",lon:103.170556,lat:-1.669444},
-      {name:"D.I. Karmeo",lon:103.045833,lat:-1.796389},
-      {name:"D.I.R. Py. Kacung",lon:103.303611,lat:-1.687778},
-      {name:"D.I.R. Py. Lebar",lon:102.869444,lat:-1.654444},
-      {name:"D.I.R. Py. Lebar Belakang Dusun",lon:102.778889,lat:-1.664167},
-      {name:"D.I.R. Py. Lubuk Jeramun",lon:102.876667,lat:-1.695556},
-      {name:"D.I.R. Py. Sei Lais II",lon:103.041667,lat:-1.691111},
-      {name:"D.I.R. Py. Sei Lantang",lon:103.058333,lat:-1.704722},
-      {name:"D.I.R. Py. Sei Napal",lon:103.003889,lat:-1.686944},
-      {name:"D.I.R. Py. Sei Payung",lon:102.873056,lat:-1.670833},
-      {name:"D.I.R. Py. Penghujan",lon:103.4225,lat:-1.491944},
-      {name:"D.I.R. Py. Sei Pedak",lon:103.04,lat:-1.675556},
-      {name:"D.I.R. Py. Sei Rumbai",lon:103.044444,lat:-1.691944},
-      {name:"D.I.R. Py. Tunggul Buto",lon:103.016111,lat:-1.847222},
-      {name:"D.I.R. Kumpeh",lon:103.9498675,lat:-1.410099133},
-      {name:"D.I.R. Niaso",lon:103.6191273,lat:-1.539994817},
-      {name:"D.I.R. Senaung",lon:103.560556,lat:-1.551944},
-      {name:"D.I.R. Sungai Rambai",lon:103.049722,lat:-0.852222},
-      {name:"D.I.R. Teluk Ketapang",lon:103.107778,lat:-0.809722},
-      {name:"D.I. Pagar Puding",lon:102.360833,lat:-1.368056},
-      {name:"D.I.R. Rawa Jone",lon:116.249843,lat:-1.90933},
-      {name:"D.I. Temiang Mali I",lon:110.078133,lat:0.118042},
-      {name:"D.I.R. Sungai Pinyuh Komplek",lon:109.112629,lat:0.230857},
-      {name:"D.I.R. Tebas sungai",lon:109.159984,lat:1.202027},
-      {name:"D.I. Sebandang",lon:110.111473,lat:-0.122557},
-      {name:"D.I. Madong",lon:111.540924,lat:-0.843565},
-      {name:"D.I.R. Tekarang Komplek",lon:109.122352,lat:1.260324},
-      {name:"D.I. Tambak Rawang",lon:109.933711,lat:-1.217111},
-      {name:"D.I. Tolang",lon:98.5149,lat:1.9837},
-      {name:"D.I.R. Selakau Komplek",lon:109.025503,lat:1.071978},
-      {name:"D.I.R. Meranti Paham",lon:100.18815,lat:2.384317},
-      {name:"D.I.R. Sei Siarti",lon:100.23083,lat:2.26688},
-      {name:"D.I. Nalawo",lon:97.898,lat:0.9073},
-      {name:"D.I. Laehuwa",lon:97.457767,lat:1.456803},
-      {name:"D.I.R. Dungun Laut",lon:109.038884,lat:1.296721},
-      {name:"D.I. Tanjung",lon:110.121144,lat:0.089736},
-      {name:"D.I.R. Penepat Komplek",lon:109.241036,lat:0.192737},
-      {name:"D.I.R. Purun Hulu",lon:109.153931,lat:0.22656},
-      {name:"D.I.R. Segedong",lon:109.173066,lat:0.176003},
-      {name:"D.I. Empirang Pokok I",lon:110.125556,lat:0.152287},
-      {name:"D.I.R. Siduk",lon:110.0779,lat:-1.348694},
-      {name:"D.I.R. Sepinggan",lon:109.0814,lat:1.1315},
-      {name:"D.I. Kaubun",lon:117.848371,lat:1.033041},
-      {name:"D.I.R. Tebas Komplek",lon:109.145455,lat:1.194254},
-      {name:"D.I. Empu Engkiyang",lon:110.090432,lat:0.17147},
-      {name:"D.I.R. Purun Hulu",lon:109.152196,lat:0.225427},
-      {name:"D.I. Sebandang",lon:110.111594,lat:-0.122974},
-      {name:"D.I.R. Sungai Paduan",lon:109.792826,lat:-1.011899},
-      {name:"D.I.R. Samustida",lon:109.23924,lat:1.567322},
-      {name:"D.I. Tekang",lon:111.639442,lat:0.091904},
-      {name:"D.I. Dusun Petai",lon:109.636667,lat:0.282105},
-      {name:"D.I. Mungguk Pelancar",lon:110.954369,lat:-0.023653},
-      {name:"D.I.R. Jawai Komplek",lon:109.049136,lat:1.240266},
-      {name:"D.I. Kenukut",lon:111.633352,lat:0.065209},
-      {name:"D.I. Mentubang",lon:109.94285,lat:-1.18064},
-      {name:"D.I. Dusun Petai",lon:109.637069,lat:0.282906},
-      {name:"D.I. Sei Sualang",lon:102.271111,lat:-2.423889},
-      {name:"D.I. Rawang Ujo",lon:102.737222,lat:-2.290556},
-      {name:"D.I.R. Jawai Komplek",lon:109.035771,lat:1.273286},
-      {name:"D.I. Serang",lon:111.173579,lat:-0.067077},
-      {name:"D.I. Dusun Petai",lon:109.636809,lat:0.276896},
-      {name:"D.I. Lirang",lon:109.399721,lat:0.61771},
-      {name:"D.I. Mawang",lon:111.582725,lat:-0.790934},
-      {name:"D.I. Dano",lon:109.327302,lat:0.550684},
-      {name:"D.I. Duri",lon:111.601165,lat:-0.799049},
-      {name:"D.I. Lancak",lon:110.071295,lat:0.057296},
-      {name:"D.I.R. Jungkat Komplek",lon:109.193083,lat:0.081014},
-      {name:"D.I. Suka Maju Luansara",lon:113.121646,lat:0.809548},
-      {name:"D.I.R. Semelagi Komplek",lon:109.001617,lat:1.049922},
-      {name:"D.I.R. Melapi Komplek",lon:112.971602,lat:0.827202},
-      {name:"D.I. Selalong I",lon:110.889953,lat:0.01443},
-      {name:"D.I. Sangku I",lon:109.999708,lat:0.20771},
-      {name:"D.I.R. Sungai Paduan",lon:109.799439,lat:-1.016014},
-      {name:"D.I.R. Tanjung Baik Budi",lon:110.059861,lat:-1.48265},
-      {name:"D.I.R. Kuala Satong",lon:110.081515,lat:-1.396038},
-      {name:"D.I. Bagam",lon:110.909444,lat:0.058056},
-      {name:"D.I. Setor Karya Sp.5",lon:110.956367,lat:0.21805},
-      {name:"D.I. Landau Kodah I",lon:110.915618,lat:0.120006},
-      {name:"D.I. Semabi",lon:110.8674,lat:0.1042},
-      {name:"D.I. Nanga Pemubuh",lon:111.056775,lat:-0.109567},
-      {name:"D.I. Setawar",lon:110.999246,lat:-0.13115},
-      {name:"D.I.R. Sungai Puteri",lon:110.041155,lat:-1.620096},
-      {name:"D.I.R. Kuala Tolak",lon:110.06894,lat:-1.442556},
-      {name:"D.I. Mawan",lon:112.362723,lat:0.486455},
-      {name:"D.I. Nanga Nyabau",lon:112.704878,lat:1.014193},
-      {name:"D.I. Lumut",lon:110.073059,lat:-0.180008},
-      {name:"D.I. Lanso",lon:109.642993,lat:0.355879},
-      {name:"D.I. Empirang Ujung",lon:110.135668,lat:0.18231},
-      {name:"d.i. Manjang",lon:110.879511,lat:-0.204268},
-      {name:"D.I. Senyabang",lon:110.171071,lat:0.18903},
-      {name:"D.I. Angkaras",lon:109.60604,lat:0.592765},
-      {name:"D.I. Sum Sum",lon:109.470557,lat:0.319617},
-      {name:"D.I. Napal",lon:109.38561,lat:0.602179},
-      {name:"D.I. Pak Liung",lon:109.585671,lat:0.134481},
-      {name:"D.I. Mamek Mandor",lon:109.449549,lat:0.313083},
-      {name:"D.I. Kayu Ara Jelimpo",lon:110.086921,lat:0.292847},
-      {name:"D.I. Bagak",lon:109.695197,lat:0.552098},
-      {name:"D.I. Simpang Pana",lon:109.469232,lat:0.331571},
-      {name:"D.I. Jelayan Semade Hilir",lon:109.48117,lat:0.72819},
-      {name:"D.I. Ringo Hilir",lon:109.552503,lat:0.61613},
-      {name:"D.I. Emparu",lon:111.824516,lat:0.078888},
-      {name:"D.I. Kebong",lon:111.648,lat:0.057606},
-      {name:"D.I. Manter",lon:111.489584,lat:-0.073628},
-      {name:"D.I. Bukit Kelam",lon:111.670843,lat:0.092149}
-  ];
+// Basemap
+const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+  attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
 
-  // Tambahkan marker
-  var markers = L.layerGroup().addTo(map);
-  destinations.forEach(function(dest) {
-    L.marker([dest.lat, dest.lon]).addTo(markers)
-      .bindPopup("<b>" + dest.name + "</b>");
-  });
+// Cluster group untuk manajemen label/marker
+const clusterGroup = L.markerClusterGroup({
+  showCoverageOnHover: false,
+  disableClusteringAtZoom: 12
+});
 
-  // Geocoder (pencarian)
-  L.Control.geocoder({
-    defaultMarkGeocode: true
-  }).addTo(map);
+// Simpan ref marker per nama untuk search
+const markersLayer = L.layerGroup();
 
-  // Tombol Show My Location
-  var locateControl = L.control({position: 'topleft'});
-  locateControl.onAdd = function(map) {
-    var btn = L.DomUtil.create('button', '');
-    btn.innerHTML = "📍 Lokasi Saya";
-    btn.style.background = "white";
-    btn.style.padding = "5px";
-    btn.style.cursor = "pointer";
-    btn.onclick = function(){
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(function(pos){
-          var lat = pos.coords.latitude;
-          var lon = pos.coords.longitude;
-          L.marker([lat, lon], {color:'blue'}).addTo(map)
-            .bindPopup("Lokasi Anda").openPopup();
-          map.setView([lat, lon], 10);
-        });
-      }
-    };
-    return btn;
-  };
-  locateControl.addTo(map);
+// Buat marker dari data
+markersData.forEach((d,i) => {
+  const latlng = [d.lat, d.lon];
+  const m = L.marker(latlng, { title: d.name }); // title dipakai plugin search
+  m.bindTooltip(d.name, {direction:'top', offset:[0,-6]}); // tooltip biar tak numpuk (hover)
+  const popupHtml = `
+    <div>
+      <strong>${d.name}</strong><br/>
+      Koordinat: ${d.lat.toFixed(6)}, ${d.lon.toFixed(6)}<br/>
+      <a class="btn-route" href="#" data-lat="${d.lat}" data-lon="${d.lon}">Tunjukkan Rute</a>
+    </div>`;
+  m.bindPopup(popupHtml);
+  clusterGroup.addLayer(m);
+  markersLayer.addLayer(m);
+});
+clusterGroup.addTo(map);
 
+// Fit ke semua titik
+const allBounds = clusterGroup.getBounds();
+if (allBounds.isValid()) map.fitBounds(allBounds.pad(0.15));
+
+/** =======================
+ *  3) PENCARIAN (by marker)
+ *  ======================= */
+const searchControl = new L.Control.Search({
+  layer: markersLayer,
+  propertyName: 'title', // ambil dari marker.options.title
+  initial: false,
+  marker: false,
+  moveToLocation: function(latlng, title, map) {
+    map.setView(latlng, 12);
+  }
+});
+searchControl.on('search:locationfound', function(e){
+  // buka popup marker yang ditemukan
+  e.layer.openPopup();
+});
+map.addControl(searchControl);
+
+/** =======================
+ *  4) GEOLOCATION tombol
+ *  ======================= */
+let userMarker = null;
+let userLatLng = null;
+
+document.getElementById('btnLocate').addEventListener('click', () => {
+  map.locate({setView: true, maxZoom: 12, enableHighAccuracy: true});
+});
+
+map.on('locationfound', (e) => {
+  userLatLng = e.latlng;
+  if (!userMarker) {
+    userMarker = L.marker(e.latlng, {icon: L.icon({
+      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+      iconAnchor: [12,41], popupAnchor: [1,-34]
+    })}).addTo(map).bindPopup('Lokasi saya');
+  } else {
+    userMarker.setLatLng(e.latlng);
+  }
+  userMarker.openPopup();
+});
+
+map.on('locationerror', () => {
+  alert('Tidak bisa mendapatkan lokasi. Pastikan izin lokasi diaktifkan.');
+});
+
+/** =======================
+ *  5) ROUTING + jarak & waktu
+ *  ======================= */
+let routingControl = L.Routing.control({
+  waypoints: [],
+  routeWhileDragging: true,
+  collapsible: true,
+  show: true,
+  addWaypoints: true,
+  draggableWaypoints: true,
+  fitSelectedRoutes: true,
+  router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1' }),
+  createMarker: function(i, wp, nWps){
+    const label = i === 0 ? 'Awal' : (i === nWps-1 ? 'Tujuan' : `WP ${i+1}`);
+    return L.marker(wp.latLng, { draggable: true }).bindTooltip(label, {permanent:false});
+  }
+}).addTo(map);
+
+// Tambah panel ringkas jarak & durasi
+const routeBox = L.control({position:'bottomleft'});
+routeBox.onAdd = function(){
+  const div = L.DomUtil.create('div','route-box leaflet-bar');
+  div.style.background = '#fff';
+  div.style.borderRadius = '8px';
+  div.style.border = '1px solid #e5e5e5';
+  div.style.padding = '8px 10px';
+  div.innerHTML = 'Rute: <em>belum dipilih</em>';
+  return div;
+};
+routeBox.addTo(map);
+
+// Update jarak & waktu ketika rute siap
+routingControl.on('routesfound', function(e){
+  const route = e.routes[0];
+  if (!route) return;
+  const meters = route.summary.totalDistance; // meter
+  const secs = route.summary.totalTime; // detik
+  const km = (meters/1000).toFixed(2);
+  const mins = Math.round(secs/60);
+  routeBox.getContainer().innerHTML = `
+    <div>Jarak: <strong>${km} km</strong><br>
+    Waktu tempuh: <strong>${mins} menit</strong></div>`;
+});
+
+routingControl.on('routingerror', function(){
+  routeBox.getContainer().innerHTML = 'Rute: <em>gagal dihitung</em>';
+});
+
+// Action pada tombol di popup marker: set tujuan rute
+map.on('popupopen', function(e){
+  const node = e.popup.getElement();
+  const btn = node.querySelector('.btn-route');
+  if (!btn) return;
+  btn.addEventListener('click', (ev) => {
+    ev.preventDefault();
+    const lat = parseFloat(btn.getAttribute('data-lat'));
+    const lon = parseFloat(btn.getAttribute('data-lon'));
+    const dest = L.latLng(lat, lon);
+
+    if (!userLatLng) {
+      alert('Menetapkan tujuan. Disarankan klik "Lokasi Saya" dulu untuk titik awal otomatis.\nAnda masih bisa menyeret titik awal pada garis rute.');
+      // Set rute dengan hanya tujuan (user bisa drag titik awal)
+      routingControl.setWaypoints([dest]);
+      map.setView(dest, 12);
+    } else {
+      routingControl.setWaypoints([userLatLng, dest]);
+    }
+  }, { once: true });
+});
+
+// Tombol hapus rute
+document.getElementById('btnClearRoute').addEventListener('click', () => {
+  routingControl.setWaypoints([]);
+  routeBox.getContainer().innerHTML = 'Rute: <em>belum dipilih</em>';
+});
+
+// Tombol fit all
+document.getElementById('btnFitAll').addEventListener('click', () => {
+  const b = clusterGroup.getBounds();
+  if (b.isValid()) map.fitBounds(b.pad(0.15));
+});
 </script>
 </body>
 </html>
