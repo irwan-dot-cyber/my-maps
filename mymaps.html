@@ -1,99 +1,95 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="utf-8" />
-  <title>Peta Irigasi + Rute</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-
-  <!-- Leaflet -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-  <!-- MarkerCluster -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
-  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-
-  <!-- Routing -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css"/>
-  <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
-  <script src="https://unpkg.com/@mapbox/polyline@1.1.1/src/polyline.js"></script>
-
-  <!-- Geocoder (search box) -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
-  <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
-
-  <!-- Locate control (Posisi Saya) -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.locatecontrol@0.79.0/dist/L.Control.Locate.min.css" />
-  <script src="https://unpkg.com/leaflet.locatecontrol@0.79.0/dist/L.Control.Locate.min.js"></script>
-
-  <style>
-    html, body, #map { height: 100%; margin: 0; }
-
-    /* Posisi Saya: pojok kanan bawah & warna hijau */
-    .leaflet-right .leaflet-control-locate { margin-right: 10px; margin-bottom: 10px; }
-    .leaflet-control-locate a {
-      background: #16a34a !important;      /* hijau */
-      border-color: #128a3f !important;
-      color: #fff !important;
-    }
-    .leaflet-control-locate a:hover { filter: brightness(1.05); }
-
-    /* Tombol reset rute (di atas Posisi Saya) */
-    .reset-route-control {
-      background: #ffffff;
-      border: 1px solid #bbb;
-      border-radius: 4px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-      padding: 0;
-    }
-    .reset-route-control button {
-      all: unset;
-      display: block;
-      padding: 8px 10px;
-      cursor: pointer;
-      font: 600 12px/1 system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
-    }
-    .reset-route-control button:hover { background: #f2f2f2; }
-
-    /* Pencarian di pojok kanan atas */
-    .leaflet-top.leaflet-right .leaflet-control-geocoder {
-      margin-top: 10px;
-      margin-right: 10px;
-    }
-
-    /* Routing panel: kecilkan dan rapikan */
-    .leaflet-routing-container {
-      font-size: 12px;
-      max-height: 50%;
-      overflow: auto;
-    }
-
-    /* Toggle basemap button (kiri atas, bawah tombol zoom) */
-    .basemap-toggle {
-      background: #fff;
-      border: 1px solid #bbb;
-      border-radius: 4px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-    }
-    .basemap-toggle button {
-      all: unset;
-      display: block;
-      padding: 8px 10px;
-      cursor: pointer;
-      font: 600 12px/1 system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans";
-    }
-    .basemap-toggle button:hover { background: #f2f2f2; }
-  </style>
+<meta charset="UTF-8">
+<title>Peta Proyek PU</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css"/>
+<style>
+  body, html { margin:0; padding:0; height:100%; }
+  #header {
+    background-color: #FFD700;
+    color: black;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    font-weight: bold;
+    font-size: 14px;
+  }
+  #header img {
+    height: 40px;
+    margin-right: 10px;
+  }
+  #map { height: calc(100% - 110px); }
+  .search-box {
+    position: absolute;
+    top: 80px;
+    left: 10px;
+    z-index: 1000;
+    background: white;
+    padding: 5px;
+    border-radius: 4px;
+    box-shadow: 0 0 4px rgba(0,0,0,0.3);
+  }
+  .search-box input {
+    width: 180px;
+    padding: 4px;
+  }
+  #suggestions {
+    position: absolute;
+    background: white;
+    border: 1px solid #ccc;
+    border-top: none;
+    max-height: 120px;
+    overflow-y: auto;
+    width: 180px;
+    display: none;
+    z-index: 2000;
+  }
+  #suggestions div {
+    padding: 4px;
+    cursor: pointer;
+  }
+  #suggestions div:hover {
+    background: #eee;
+  }
+  .leaflet-routing-container {
+    display: none; /* sembunyikan panel bawaan routing */
+  }
+  #route-info {
+    background: #f9f9f9;
+    padding: 8px;
+    font-size: 14px;
+    border-top: 1px solid #ccc;
+  }
+</style>
 </head>
 <body>
+
+<div id="header">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e4/Logo_PU.png/600px-Logo_PU.png" alt="Logo PU">
+  KEMENTERIAN PEKERJAAN UMUM, DIREKTORAT JENDERAL SUMBER DAYA AIR, DIREKTORAT IRIGASI DAN RAWA
+</div>
+
 <div id="map"></div>
+<div id="route-info">Jarak & Waktu tempuh akan muncul di sini</div>
+
+<div class="search-box">
+  <input type="text" id="search" placeholder="Cari lokasi..." oninput="showSuggestions(this.value)"/>
+  <div id="suggestions"></div>
+  <button onclick="locateMe()">Lokasi Saya</button>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 
 <script>
-  // ================== DATA KOORDINAT ==================
-  // Format: ["Nama", lat, lon]
-  const titik = [
-["D.I. Alue Peudeung", 4.905597755, 97.07767342],
+// Array koordinat [nama, lat, lng]
+var locations = [
+  ["D.I. Alue Peudeung", 4.905597755, 97.07767342],
 ["D.I.R. Tanjung Sejaro", -2.9681421, 104.7309104],
 ["D.I.R. Parebok", -2.957959107, 112.9278095],
 ["D.I.R. Kuala Jelai", -2.954167, 110.761667],
@@ -341,165 +337,94 @@
 ["D.I. Kebong", 0.057606, 111.648],
 ["D.I. Manter", -0.073628, 111.489584],
 ["D.I. Bukit Kelam", 0.092149, 111.670843]
-  ];
+];
 
-  // ================== PETA & LAYERS ==================
-  const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 20, attribution: '&copy; OpenStreetMap'
-  });
+var map = L.map('map').setView([-6.175392, 106.827153], 6);
 
-  const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-    maxZoom: 20, attribution: 'Tiles &copy; Esri'
-  });
+// Basemap
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19
+}).addTo(map);
 
-  const map = L.map('map', {
-    center: [-1.5, 113], // tengah Indonesia
-    zoom: 5,
-    layers: [osm] // default OSM (bukan satelit)
-  });
+// Routing control
+var routingControl = L.Routing.control({
+  waypoints: [],
+  routeWhileDragging: true,
+  show: false,
+  createMarker: function() { return null; }
+}).addTo(map);
 
-  // ================== CLUSTER ==================
-  const cluster = L.markerClusterGroup();
+// Update jarak & waktu
+routingControl.on('routesfound', function(e) {
+  var route = e.routes[0];
+  var distance = (route.summary.totalDistance / 1000).toFixed(2); // km
+  var time = (route.summary.totalTime / 60).toFixed(0); // menit
+  document.getElementById('route-info').innerHTML = 
+    `<b>Jarak:</b> ${distance} km &nbsp; | &nbsp; <b>Waktu Tempuh:</b> ${time} menit`;
+});
 
-  // Routing control (global)
-  const routeFormatter = new L.Routing.Formatter({
-    language: 'id',
-    units: 'metric'
-  });
-  // Override formatTime -> "x hari y jam z menit"
-  routeFormatter.formatTime = function(seconds) {
-    seconds = Math.round(seconds);
-    const d = Math.floor(seconds / 86400);
-    const h = Math.floor((seconds % 86400) / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const parts = [];
-    if (d) parts.push(d + ' hari');
-    if (h) parts.push(h + ' jam');
-    if (m || (!d && !h)) parts.push(m + ' menit');
-    return parts.join(' ');
-  };
+var markers = [];
+locations.forEach(function(loc) {
+  var marker = L.marker([loc[1], loc[2]]).addTo(map)
+    .bindPopup(`<b>${loc[0]}</b><br>
+                <button onclick='showRoute(${loc[1]}, ${loc[2]})'>Tunjukkan Rute</button>`);
+  markers.push({name: loc[0], marker: marker});
+});
 
-  const router = L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1' });
-
-  const routing = L.Routing.control({
-    waypoints: [],
-    router,
-    show: true,
-    routeWhileDragging: false,
-    addWaypoints: false,
-    collapsible: true,
-    showAlternatives: false,
-    formatter: routeFormatter
-  }).addTo(map);
-
-  function setRouteFromUserTo(latlng) {
-    return getUserLocation().then((my) => {
-      routing.setWaypoints([my, latlng]);
-    }).catch((e) => {
-      alert('Gagal mendapatkan lokasi Anda. Aktifkan GPS/izin lokasi dan coba lagi.');
-      console.error(e);
+function locateMe() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function(position) {
+      var lat = position.coords.latitude;
+      var lng = position.coords.longitude;
+      L.marker([lat, lng], {color: 'blue'}).addTo(map)
+        .bindPopup("Lokasi Anda").openPopup();
+      map.setView([lat, lng], 13);
+    }, function() {
+      alert("Tidak dapat mengakses lokasi Anda.");
     });
+  } else {
+    alert("Geolocation tidak didukung di browser ini.");
   }
+}
 
-  // Tambahkan marker ke cluster
-  titik.forEach(([nama, lat, lon]) => {
-    const m = L.marker([lat, lon]);
-    m.bindPopup(`
-      <b>${nama}</b><br/>
-      <button id="btn-route-${lat}-${lon}" style="margin-top:6px;padding:6px 8px;border:1px solid #bbb;border-radius:4px;background:#fff;cursor:pointer;">
-        Rute ke sini
-      </button>
-    `);
-    m.on('popupopen', (ev) => {
-      const btn = document.getElementById(`btn-route-${lat}-${lon}`);
-      if (btn) btn.onclick = () => setRouteFromUserTo(L.latLng(lat, lon));
-    });
-    cluster.addLayer(m);
-  });
-  map.addLayer(cluster);
-
-  // ================== GEOCODER (SEARCH, pojok kanan atas) ==================
-  L.Control.geocoder({
-    defaultMarkGeocode: false
-  })
-  .on('markgeocode', function(e) {
-    const center = e.geocode.center;
-    map.setView(center, 14);
-  })
-  .addTo(map);
-
-  // ================== POSISI SAYA (pojok kanan bawah, hijau) ==================
-  const locate = L.control.locate({
-    position: 'bottomright',
-    strings: { title: "Posisi Saya" },
-    setView: 'untilPanOrZoom',
-    flyTo: true,
-    cacheLocation: true,
-    keepCurrentZoomLevel: false,
-    showPopup: false
-  }).addTo(map);
-
-  // Helper untuk dapatkan lokasi user sebagai Promise<L.LatLng>
-  function getUserLocation() {
-    return new Promise((resolve, reject) => {
-      if (locate._event) { /* plugin internal state */
-        // coba ambil dari cache plugin
-      }
-      map.locate({ setView: false, watch: false, enableHighAccuracy: true })
-        .once('locationfound', (e) => resolve(e.latlng))
-        .once('locationerror', (e) => reject(e));
-    });
+function showSuggestions(query) {
+  var suggestionBox = document.getElementById("suggestions");
+  suggestionBox.innerHTML = "";
+  if (query.length === 0) {
+    suggestionBox.style.display = "none";
+    return;
   }
-
-  // ================== RESET RUTE (di atas Posisi Saya) ==================
-  const ResetRouteControl = L.Control.extend({
-    options: { position: 'bottomright' },
-    onAdd: function() {
-      const div = L.DomUtil.create('div', 'reset-route-control leaflet-bar');
-      div.innerHTML = '<button title="Reset Rute">Reset Rute</button>';
-      L.DomEvent.disableClickPropagation(div);
-      L.DomEvent.on(div, 'click', (e) => {
-        routing.setWaypoints([]);
-      });
-      return div;
-    }
-  });
-  map.addControl(new ResetRouteControl());
-
-  // ================== TOGGLE BASEMAP (button, bukan layer control) ==================
-  const BasemapToggle = L.Control.extend({
-    options: { position: 'topleft' },
-    onAdd: function() {
-      const div = L.DomUtil.create('div', 'basemap-toggle leaflet-bar');
-      const btn = L.DomUtil.create('button', '', div);
-      btn.textContent = 'Basemap: Default';
-      let satelliteOn = false;
-
-      const toggle = () => {
-        if (!satelliteOn) {
-          map.removeLayer(osm);
-          esriSat.addTo(map);
-          btn.textContent = 'Basemap: Satelit';
-        } else {
-          map.removeLayer(esriSat);
-          osm.addTo(map);
-          btn.textContent = 'Basemap: Default';
-        }
-        satelliteOn = !satelliteOn;
+  var matches = markers.filter(m => m.name.toLowerCase().includes(query.toLowerCase()));
+  if (matches.length > 0) {
+    matches.forEach(m => {
+      var div = document.createElement("div");
+      div.textContent = m.name;
+      div.onclick = function() {
+        document.getElementById("search").value = m.name;
+        suggestionBox.style.display = "none";
+        map.setView(m.marker.getLatLng(), 14);
+        m.marker.openPopup();
       };
-
-      L.DomEvent.on(btn, 'click', toggle);
-      L.DomEvent.disableClickPropagation(div);
-      return div;
-    }
-  });
-  map.addControl(new BasemapToggle());
-
-  // Fit bounds ke semua titik
-  const allLatLng = titik.map(d => L.latLng(d[1], d[2]));
-  if (allLatLng.length) {
-    map.fitBounds(L.latLngBounds(allLatLng).pad(0.1));
+      suggestionBox.appendChild(div);
+    });
+    suggestionBox.style.display = "block";
+  } else {
+    suggestionBox.style.display = "none";
   }
+}
+
+function showRoute(lat, lng) {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function(position) {
+      var from = L.latLng(position.coords.latitude, position.coords.longitude);
+      var to = L.latLng(lat, lng);
+      routingControl.setWaypoints([from, to]);
+    }, function() {
+      alert("Tidak dapat mengakses lokasi Anda.");
+    });
+  }
+}
 </script>
+
 </body>
 </html>
