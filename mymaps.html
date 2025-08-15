@@ -2,11 +2,13 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<title>Peta Proyek PU</title>
+<title>Pelaksanaan Inpres 2/2025 Tahap 1</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- Leaflet CSS -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
 <style>
   body, html { margin:0; padding:0; height:100%; }
   #header {
@@ -25,8 +27,8 @@
   #map { height: calc(100% - 110px); }
   .search-box {
     position: absolute;
-    top: 80px;
-    left: 10px;
+    top: 10px;
+    right: 10px;
     z-index: 1000;
     background: white;
     padding: 5px;
@@ -34,17 +36,19 @@
     box-shadow: 0 0 4px rgba(0,0,0,0.3);
   }
   .search-box input {
-    width: 180px;
+    width: 200px;
     padding: 4px;
   }
   #suggestions {
     position: absolute;
+    top: 34px;
+    right: 10px;
     background: white;
     border: 1px solid #ccc;
     border-top: none;
     max-height: 120px;
     overflow-y: auto;
-    width: 180px;
+    width: 200px;
     display: none;
     z-index: 2000;
   }
@@ -55,15 +59,24 @@
   #suggestions div:hover {
     background: #eee;
   }
-  .leaflet-routing-container {
-    display: none; /* sembunyikan panel bawaan routing */
-  }
   #route-info {
     background: #f9f9f9;
     padding: 8px;
     font-size: 14px;
     border-top: 1px solid #ccc;
   }
+  .custom-button {
+    position: absolute;
+    right: 10px;
+    z-index: 1000;
+    padding: 6px 10px;
+    border-radius: 4px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  #reset-route { top: 60px; background: #ff5722; }
+  #locate-me { top: 100px; background: #4CAF50; }
 </style>
 </head>
 <body>
@@ -79,17 +92,20 @@
 <div class="search-box">
   <input type="text" id="search" placeholder="Cari lokasi..." oninput="showSuggestions(this.value)"/>
   <div id="suggestions"></div>
-  <button onclick="locateMe()">Lokasi Saya</button>
 </div>
+
+<div id="reset-route" class="custom-button" onclick="resetRoute()">Reset Rute</div>
+<div id="locate-me" class="custom-button" onclick="locateMe()">Posisi Saya</div>
 
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
 
 <script>
-// Array koordinat [nama, lat, lng]
+// Contoh lokasi
 var locations = [
-  ["D.I. Alue Peudeung", 4.905597755, 97.07767342],
+   ["D.I. Alue Peudeung", 4.905597755, 97.07767342],
 ["D.I.R. Tanjung Sejaro", -2.9681421, 104.7309104],
 ["D.I.R. Parebok", -2.957959107, 112.9278095],
 ["D.I.R. Kuala Jelai", -2.954167, 110.761667],
@@ -337,6 +353,7 @@ var locations = [
 ["D.I. Kebong", 0.057606, 111.648],
 ["D.I. Manter", -0.073628, 111.489584],
 ["D.I. Bukit Kelam", 0.092149, 111.670843]
+  // Tambahkan semua lokasi lainnya...
 ];
 
 var map = L.map('map').setView([-6.175392, 106.827153], 6);
@@ -354,39 +371,62 @@ var routingControl = L.Routing.control({
   createMarker: function() { return null; }
 }).addTo(map);
 
+// Fungsi format waktu
+function formatTime(seconds){
+  var days = Math.floor(seconds / 86400);
+  var hours = Math.floor((seconds % 86400) / 3600);
+  var minutes = Math.floor((seconds % 3600) / 60);
+  var str = "";
+  if(days>0) str += days+" hari ";
+  if(hours>0) str += hours+" jam ";
+  str += minutes+" menit";
+  return str;
+}
+
 // Update jarak & waktu
 routingControl.on('routesfound', function(e) {
   var route = e.routes[0];
   var distance = (route.summary.totalDistance / 1000).toFixed(2); // km
-  var time = (route.summary.totalTime / 60).toFixed(0); // menit
+  var time = formatTime(route.summary.totalTime); // hari–jam–menit
   document.getElementById('route-info').innerHTML = 
-    `<b>Jarak:</b> ${distance} km &nbsp; | &nbsp; <b>Waktu Tempuh:</b> ${time} menit`;
+    `<b>Jarak:</b> ${distance} km &nbsp; | &nbsp; <b>Waktu Tempuh:</b> ${time}`;
 });
+
+// Fungsi ikon marker
+function getIcon(name){
+  var iconUrl = '';
+  if(name.startsWith('D.I.R.')){
+    iconUrl = 'https://maps.google.com/mapfiles/ms/icons/red-dot.png';
+  } else if(name.startsWith('D.I.')){
+    iconUrl = 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png';
+  } else {
+    iconUrl = 'https://maps.google.com/mapfiles/ms/icons/green-dot.png';
+  }
+  return L.icon({
+    iconUrl: iconUrl,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowUrl: 'https://unpkg.com/leaflet/dist/images/marker-shadow.png',
+    shadowSize: [41,41]
+  });
+}
+
+// Marker Cluster Group
+var markersCluster = L.markerClusterGroup();
 
 var markers = [];
 locations.forEach(function(loc) {
-  var marker = L.marker([loc[1], loc[2]]).addTo(map)
+  var marker = L.marker([loc[1], loc[2]], {icon:getIcon(loc[0])})
     .bindPopup(`<b>${loc[0]}</b><br>
                 <button onclick='showRoute(${loc[1]}, ${loc[2]})'>Tunjukkan Rute</button>`);
+  markersCluster.addLayer(marker);
   markers.push({name: loc[0], marker: marker});
 });
 
-function locateMe() {
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(function(position) {
-      var lat = position.coords.latitude;
-      var lng = position.coords.longitude;
-      L.marker([lat, lng], {color: 'blue'}).addTo(map)
-        .bindPopup("Lokasi Anda").openPopup();
-      map.setView([lat, lng], 13);
-    }, function() {
-      alert("Tidak dapat mengakses lokasi Anda.");
-    });
-  } else {
-    alert("Geolocation tidak didukung di browser ini.");
-  }
-}
+map.addLayer(markersCluster);
 
+// Pencarian
 function showSuggestions(query) {
   var suggestionBox = document.getElementById("suggestions");
   suggestionBox.innerHTML = "";
@@ -413,6 +453,25 @@ function showSuggestions(query) {
   }
 }
 
+// Lokasi saya
+function locateMe() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function(position) {
+      var lat = position.coords.latitude;
+      var lng = position.coords.longitude;
+      L.marker([lat, lng], {icon:L.icon({iconUrl:'https://maps.google.com/mapfiles/ms/icons/green-dot.png',iconSize:[25,41],iconAnchor:[12,41],popupAnchor:[1,-34]})})
+        .addTo(map)
+        .bindPopup("Lokasi Anda").openPopup();
+      map.setView([lat, lng], 13);
+    }, function() {
+      alert("Tidak dapat mengakses lokasi Anda.");
+    });
+  } else {
+    alert("Geolocation tidak didukung di browser ini.");
+  }
+}
+
+// Tampilkan rute
 function showRoute(lat, lng) {
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(function(position) {
@@ -423,6 +482,12 @@ function showRoute(lat, lng) {
       alert("Tidak dapat mengakses lokasi Anda.");
     });
   }
+}
+
+// Reset rute
+function resetRoute(){
+  routingControl.setWaypoints([]);
+  document.getElementById('route-info').innerHTML = "Jarak & Waktu tempuh akan muncul di sini";
 }
 </script>
 
