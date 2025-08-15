@@ -1,419 +1,128 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Peta Destinasi Irigasi Lengkap</title>
-  <meta charset="utf-8" />
+  <meta charset="utf-8">
+  <title>Peta Irigasi & Rawa</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <!-- Leaflet Locate Control CSS -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol/dist/L.Control.Locate.min.css" />
-  
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css"/>
+
   <style>
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: Arial, sans-serif;
-    }
-    
-    #map { 
-      height: 100vh; 
-      width: 100%;
-    }
-    
-    .route-btn {
-      background-color: #4CAF50;
+    body { margin: 0; }
+    #header {
+      background: #004080;
       color: white;
-      padding: 8px 12px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
-      margin-top: 8px;
-      transition: background-color 0.3s;
-    }
-    
-    .route-btn:hover {
-      background-color: #45a049;
-    }
-    
-    .leaflet-tooltip {
-      background: rgba(255, 255, 255, 0.9);
-      border: 1px solid #999;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 12px;
+      padding: 10px;
+      text-align: center;
       font-weight: bold;
-      white-space: nowrap;
+      font-size: 18px;
     }
-    
-    .route-info {
-      margin-top: 10px;
-      padding: 12px;
-      background: #fff;
-      border-radius: 5px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.2);
-      font-size: 14px;
-      max-width: 300px;
-    }
-    
-    .route-info h4 {
-      margin: 0 0 8px 0;
-      color: #2c3e50;
-      font-size: 16px;
-    }
-    
-    .route-info p {
-      margin: 6px 0;
-      color: #34495e;
-    }
-    
-    .custom-control {
+    #map { height: calc(100vh - 50px); }
+    .distance-info {
       background: white;
-      padding: 10px;
-      border-radius: 5px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      font-size: 14px;
-    }
-    
-    .legend {
-      line-height: 1.5;
-      color: #555;
-    }
-    
-    .legend i {
-      width: 18px;
-      height: 18px;
-      float: left;
-      margin-right: 8px;
-      opacity: 0.7;
-    }
-    
-    .search-container {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      z-index: 1000;
-      background: white;
-      padding: 10px;
-      border-radius: 5px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.2);
-      width: 250px;
-    }
-    
-    #search-input {
-      width: 100%;
-      padding: 8px;
-      margin-bottom: 5px;
-      box-sizing: border-box;
-    }
-    
-    #search-results {
-      max-height: 200px;
-      overflow-y: auto;
-    }
-    
-    .search-result-item {
       padding: 5px;
-      cursor: pointer;
-      border-bottom: 1px solid #eee;
-    }
-    
-    .search-result-item:hover {
-      background-color: #f5f5f5;
+      border-radius: 4px;
+      font-size: 14px;
     }
   </style>
 </head>
 <body>
 
+<div id="header">
+  KEMENTERIAN PEKERJAAN UMUM, DIREKTORAT JENDERAL SUMBER DAYA AIR, DIREKTORAT IRIGASI DAN RAWA
+</div>
 <div id="map"></div>
 
-<div class="search-container">
-  <input type="text" id="search-input" placeholder="Cari lokasi...">
-  <div id="search-results"></div>
-</div>
-
-<!-- Leaflet JS -->
+<!-- JS Libraries -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<!-- Leaflet Locate Control JS -->
-<script src="https://cdn.jsdelivr.net/npm/leaflet.locatecontrol/dist/L.Control.Locate.min.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+<script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 
 <script>
-  // API Key OpenRouteService
-  var orsApiKey = "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6Ijk4Yjg4N2QwMjFmMjQ4OWRiZDA5NWQ1Zjk4MWMwNTBkIiwiaCI6Im11cm11cjY0In0=";
-
-  // Inisialisasi peta dengan view Indonesia
   var map = L.map('map').setView([-2.5, 118], 5);
 
-  // Tambahkan base layer OpenStreetMap
+  // Basemap
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors'
+    attribution: '&copy; OpenStreetMap contributors'
   }).addTo(map);
 
-  // Data destinasi irigasi (disingkat untuk contoh)
-  var destinations = [
-    { name: "D.I. Alue Peudeung", lat: 4.905598, lon: 97.077673, type: "irigasi" },
-    { name: "D.I.R. Tanjung Sejaro", lat: -2.968142, lon: 104.730910, type: "irigasi" },
-    { name: "D.I.R. Parebok", lat: -2.957959, lon: 112.927810, type: "irigasi" },
-    // ... (data lengkap disertakan di sini)
-    { name: "D.I. Bukit Kelam", lat: 0.092149, lon: 111.670843, type: "irigasi" }
-  ];
+  // Marker Cluster
+  var markers = L.markerClusterGroup();
+  map.addLayer(markers);
 
-  // Variabel global
-  var userMarker, routeLayer, routeInfoControl;
-  var destinationMarkers = [];
-  var searchMarker = null;
+  var userMarker, routeLine;
 
-  // Fungsi untuk menandai lokasi pengguna
-  function setUserLocation(lat, lon) {
-    if (userMarker) map.removeLayer(userMarker);
-    
-    userMarker = L.marker([lat, lon], {
-      icon: L.divIcon({
-        className: 'user-location-icon',
-        html: '<div style="background-color: #4285F4; border-radius: 50%; width: 20px; height: 20px; border: 3px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.3);"></div>',
-        iconSize: [26, 26]
-      })
-    }).addTo(map)
-      .bindPopup("Lokasi Anda").openPopup()
-      .bindTooltip("Lokasi Anda", {permanent: true, direction: "top"});
-  }
+  // Load CSV
+  Papa.parse("koordinat.csv", {
+    download: true,
+    header: true,
+    complete: function(results) {
+      results.data.forEach(function(row) {
+        if (row.lat && row.lng) {
+          var m = L.marker([parseFloat(row.lat), parseFloat(row.lng)])
+            .bindPopup("<b>" + row.name + "</b>");
+          m.on('click', function() {
+            if (userMarker) {
+              getRoute(userMarker.getLatLng(), m.getLatLng());
+            }
+          });
+          markers.addLayer(m);
+        }
+      });
+    }
+  });
 
-  // Fungsi untuk mencari lokasi pengguna
-  function locateUser() {
+  // Geocoder Search
+  L.Control.geocoder().addTo(map);
+
+  // Show Your Location Button
+  L.easyButton('fa-location-arrow', function(btn, map) {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(function(pos) {
         var lat = pos.coords.latitude;
-        var lon = pos.coords.longitude;
-        map.setView([lat, lon], 14);
-        setUserLocation(lat, lon);
+        var lng = pos.coords.longitude;
+        if (userMarker) map.removeLayer(userMarker);
+        userMarker = L.marker([lat, lng], {color: 'blue'}).addTo(map)
+          .bindPopup("Lokasi Anda").openPopup();
+        map.setView([lat, lng], 10);
       }, function(err) {
-        alert("Tidak bisa mendapatkan lokasi: " + err.message);
+        alert("Gagal mendapatkan lokasi: " + err.message);
       });
-    } else {
-      alert("Browser Anda tidak mendukung geolokasi.");
     }
-  }
+  }, 'Tampilkan Lokasi Anda').addTo(map);
 
-  // Format jarak
-  function formatDistance(meters) {
-    if (meters < 1000) {
-      return meters.toFixed(0) + " meter";
-    } else {
-      return (meters / 1000).toFixed(1) + " km";
+  // Route Function (OSRM)
+  function getRoute(start, end) {
+    if (routeLine) {
+      map.removeLayer(routeLine);
     }
-  }
-
-  // Format durasi
-  function formatDuration(seconds) {
-    var hours = Math.floor(seconds / 3600);
-    var minutes = Math.floor((seconds % 3600) / 60);
-    
-    if (hours > 0) {
-      return hours + " jam " + minutes + " menit";
-    } else if (minutes > 0) {
-      return minutes + " menit";
-    } else {
-      return "kurang dari 1 menit";
-    }
-  }
-
-  // Fungsi untuk menampilkan info rute
-  function showRouteInfo(destName, distance, duration) {
-    // Hapus info rute sebelumnya jika ada
-    if (routeInfoControl) {
-      map.removeControl(routeInfoControl);
-    }
-    
-    // Buat elemen untuk menampilkan info
-    var infoDiv = L.DomUtil.create('div', 'route-info');
-    infoDiv.innerHTML = `
-      <h4>Rute ke ${destName}</h4>
-      <p><strong>Jarak:</strong> ${formatDistance(distance)}</p>
-      <p><strong>Waktu tempuh:</strong> ${formatDuration(duration)}</p>
-      <p><small>*Estimasi menggunakan kendaraan bermotor</small></p>
-    `;
-    
-    // Buat control untuk menampilkan info
-    routeInfoControl = L.control({position: 'bottomleft'});
-    routeInfoControl.onAdd = function(map) {
-      return infoDiv;
-    };
-    routeInfoControl.addTo(map);
-  }
-
-  // Fungsi untuk mendapatkan rute
-  function getRoute(destLat, destLon, destName) {
-    if (!userMarker) {
-      alert("Silakan tentukan lokasi Anda terlebih dahulu (otomatis atau klik peta).");
-      return;
-    }
-
-    var start = userMarker.getLatLng();
-    var url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${orsApiKey}&start=${start.lng},${start.lat}&end=${destLon},${destLat}`;
-
-    // Tampilkan loading
-    var loadingControl = L.control({position: 'bottomleft'});
-    loadingControl.onAdd = function(map) {
-      var div = L.DomUtil.create('div', 'route-info');
-      div.innerHTML = "<p>Mencari rute...</p>";
-      return div;
-    };
-    loadingControl.addTo(map);
-
+    var url = `https://router.project-osrm.org/route/v1/driving/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&geometries=geojson`;
     fetch(url)
-      .then(response => response.json())
+      .then(res => res.json())
       .then(data => {
-        // Hapus loading
-        map.removeControl(loadingControl);
-        
-        // Hapus rute sebelumnya jika ada
-        if (routeLayer) map.removeLayer(routeLayer);
-        
-        // Gambar rute di peta
-        var coords = data.features[0].geometry.coordinates;
-        var latlngs = coords.map(c => [c[1], c[0]]);
-        routeLayer = L.polyline(latlngs, {
-          color: '#4285F4',
-          weight: 5,
-          opacity: 0.8,
-          dashArray: '5, 5'
-        }).addTo(map);
-        
-        // Sesuaikan view untuk menampilkan seluruh rute
-        map.fitBounds(routeLayer.getBounds(), {padding: [50, 50]});
-        
-        // Dapatkan info jarak dan durasi
-        var distance = data.features[0].properties.segments[0].distance;
-        var duration = data.features[0].properties.segments[0].duration;
-        
-        // Tampilkan info rute
-        showRouteInfo(destName, distance, duration);
-      })
-      .catch(err => {
-        console.error(err);
-        map.removeControl(loadingControl);
-        alert("Gagal mendapatkan rute: " + err.message);
+        if (data.routes && data.routes.length > 0) {
+          var coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+          routeLine = L.polyline(coords, {color: 'blue'}).addTo(map);
+          var dist = (data.routes[0].distance / 1000).toFixed(2);
+          var time = (data.routes[0].duration / 60).toFixed(0);
+          L.popup()
+            .setLatLng(end)
+            .setContent(`<div class='distance-info'>Jarak: ${dist} km<br>Waktu: ${time} menit</div>`)
+            .openOn(map);
+          map.fitBounds(routeLine.getBounds());
+        }
       });
   }
-
-  // Fungsi untuk mencari destinasi
-  function setupSearch() {
-    var searchInput = document.getElementById('search-input');
-    var searchResults = document.getElementById('search-results');
-    
-    searchInput.addEventListener('input', function() {
-      var query = this.value.toLowerCase();
-      searchResults.innerHTML = '';
-      
-      if (query.length < 2) return;
-      
-      var results = destinations.filter(function(dest) {
-        return dest.name.toLowerCase().includes(query);
-      }).slice(0, 10);
-      
-      if (results.length === 0) {
-        searchResults.innerHTML = '<div class="search-result-item">Tidak ditemukan</div>';
-        return;
-      }
-      
-      results.forEach(function(result) {
-        var item = document.createElement('div');
-        item.className = 'search-result-item';
-        item.textContent = result.name;
-        item.addEventListener('click', function() {
-          map.setView([result.lat, result.lon], 14);
-          if (searchMarker) map.removeLayer(searchMarker);
-          searchMarker = L.marker([result.lat, result.lon], {
-            icon: L.divIcon({
-              className: 'search-marker-icon',
-              html: '<div style="background-color: #FF5722; border-radius: 50%; width: 20px; height: 20px; border: 3px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.3);"></div>',
-              iconSize: [26, 26]
-            })
-          }).addTo(map)
-            .bindPopup(result.name)
-            .openPopup();
-          searchInput.value = result.name;
-          searchResults.innerHTML = '';
-        });
-        searchResults.appendChild(item);
-      });
-    });
-  }
-
-  // Fungsi untuk menambahkan legend
-  function addLegend() {
-    var legend = L.control({position: 'bottomright'});
-    
-    legend.onAdd = function(map) {
-      var div = L.DomUtil.create('div', 'custom-control legend');
-      div.innerHTML = `
-        <h4>Keterangan</h4>
-        <p><i style="background:#4285F4"></i> Lokasi Anda</p>
-        <p><i style="background:#FF5722"></i> Hasil Pencarian</p>
-        <p><i style="background:#4CAF50"></i> Destinasi Irigasi</p>
-        <p><i style="background:#4285F4; width:10px; height:3px; margin-top:8px;"></i> Rute</p>
-      `;
-      return div;
-    };
-    
-    legend.addTo(map);
-  }
-
-  // Inisialisasi peta saat dokumen siap
-  document.addEventListener('DOMContentLoaded', function() {
-    // Tambahkan kontrol lokasi
-    L.control.locate({
-      position: 'topleft',
-      strings: {
-        title: "Temukan lokasi saya",
-        popup: "Anda berada dalam radius {distance} {unit} dari titik ini"
-      },
-      locateOptions: {
-        maxZoom: 14
-      }
-    }).addTo(map);
-    
-    // Tambahkan marker untuk semua destinasi
-    destinations.forEach(function(dest) {
-      var marker = L.marker([dest.lat, dest.lon], {
-        icon: L.divIcon({
-          className: 'dest-marker-icon',
-          html: '<div style="background-color: #4CAF50; border-radius: 50%; width: 12px; height: 12px; border: 2px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.3);"></div>',
-          iconSize: [16, 16]
-        })
-      }).addTo(map);
-      
-      var popupContent = `
-        <b>${dest.name}</b><br>
-        <button class='route-btn' onclick='getRoute(${dest.lat},${dest.lon},"${dest.name.replace(/"/g, '\\"')}")'>
-          Rute ke sini
-        </button>
-      `;
-      
-      marker.bindPopup(popupContent);
-      marker.bindTooltip(dest.name, {permanent: true, direction: "top"});
-      
-      destinationMarkers.push(marker);
-    });
-    
-    // Setup pencarian
-    setupSearch();
-    
-    // Tambahkan legend
-    addLegend();
-    
-    // Tambahkan info credit
-    var infoControl = L.control({position: 'bottomright'});
-    infoControl.onAdd = function(map) {
-      var div = L.DomUtil.create('div', 'custom-control');
-      div.innerHTML = '<b>Peta Destinasi Irigasi</b><br><small>Data Koordinat Lengkap</small>';
-      return div;
-    };
-    infoControl.addTo(map);
-  });
 </script>
+
+<!-- EasyButton for location -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.css">
+<script src="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2"></script>
 
 </body>
 </html>
