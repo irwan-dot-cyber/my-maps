@@ -12,144 +12,55 @@
     crossorigin=""
   />
   <!-- MarkerCluster CSS -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
-  />
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
-  />
-  <!-- Leaflet Routing Machine CSS -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css"
-  />
-  <!-- Leaflet Control Search CSS -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet-control-search@2.9.8/dist/leaflet-search.min.css"
-  />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+  <!-- Routing Machine CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css"/>
+  <!-- Control Search CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-search@2.9.8/dist/leaflet-search.min.css"/>
 
   <style>
-    :root{
-      --pu-yellow:#F4C542; /* kuning khas PU (approx) */
-      --pu-blue:#003B6A;
-    }
-    html, body { height: 100%; margin: 0; }
-    .app {
-      display: grid;
-      grid-template-rows: auto auto 1fr;
-      height: 100%;
-      background: #fafafa;
-    }
-    /* HEADER */
-    header {
-      background: var(--pu-yellow);
-      color: #111;
-      border-bottom: 3px solid var(--pu-blue);
-    }
-    .header-wrap {
-      max-width: 1200px;
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 16px;
-      align-items: center;
-      padding: 10px 16px;
-    }
-    .header-wrap img {
-      height: 56px;
-      width: auto;
-      display: block;
-    }
-    .title-block{
-      line-height: 1.2;
-      font-weight: 700;
-      color: #111;
-    }
-    .title-block .kemen {
-      font-size: 18px;
-      letter-spacing: .2px;
-    }
-    .title-block .dirjen,
-    .title-block .direktorat {
-      font-size: 14px;
-      opacity: .95;
-    }
+    :root{ --pu-yellow:#F4C542; --pu-blue:#003B6A; }
+    html, body { height:100%; margin:0; }
+    .app{ display:grid; grid-template-rows:auto auto 1fr; height:100%; background:#fafafa; }
+    header{ background:var(--pu-yellow); color:#111; border-bottom:3px solid var(--pu-blue); }
+    .header-wrap{ max-width:1200px; margin:0 auto; display:grid; grid-template-columns:auto 1fr; gap:16px; align-items:center; padding:10px 16px; }
+    .header-wrap img{ height:56px; }
+    .title-block{ font-weight:700; line-height:1.2; }
+    .title-block .kemen{ font-size:18px; letter-spacing:.2px; }
+    .title-block .dirjen, .title-block .direktorat{ font-size:14px; opacity:.95; }
 
-    /* TOOLBAR */
-    .toolbar {
-      box-shadow: 0 1px 0 rgba(0,0,0,.06);
-      background: #fff;
-      border-bottom: 1px solid #eee;
-    }
-    .toolbar-wrap{
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 8px 16px;
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-    .toolbar .chip{
-      font-size: 12px;
-      padding: 6px 10px;
-      border: 1px solid #e5e5e5;
-      border-radius: 999px;
-      background: #fff;
-    }
-    .toolbar button{
-      padding: 8px 12px;
-      border-radius: 10px;
-      border: 1px solid #e5e5e5;
-      background: #fff;
-      cursor: pointer;
-    }
-    .toolbar button:hover{ background:#f6f6f6; }
+    .toolbar{ background:#fff; border-bottom:1px solid #eee; box-shadow:0 1px 0 rgba(0,0,0,.06); }
+    .toolbar-wrap{ max-width:1200px; margin:0 auto; padding:8px 16px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .toolbar .chip{ font-size:12px; padding:6px 10px; border:1px solid #e5e5e5; border-radius:999px; background:#fff; }
+    .toolbar button, .toolbar .btn{ padding:8px 12px; border-radius:10px; border:1px solid #e5e5e5; background:#fff; cursor:pointer; }
+    .toolbar button:hover, .toolbar .btn:hover{ background:#f6f6f6; }
+    .toolbar .sep{ width:1px; height:28px; background:#eaeaea; margin:0 4px; }
 
-    /* MAP */
-    #map { height: 100%; width: 100%; }
+    #map{ height:100%; width:100%; }
 
-    /* SEARCH override (biar rapi di atas map) */
-    .leaflet-control-search{
-      border-radius: 10px;
-      overflow: hidden;
-    }
-    .leaflet-control-search .search-input{
-      min-width: 220px;
-    }
+    .leaflet-control-search{ border-radius:10px; overflow:hidden; }
+    .leaflet-control-search .search-input{ min-width:220px; }
 
-    /* Routing box */
-    .route-box{
-      font-size: 13px;
-      line-height: 1.4;
-      padding: 6px 8px;
-    }
-    .route-box strong{ color: var(--pu-blue); }
+    .route-box{ font-size:13px; line-height:1.4; padding:6px 8px; }
+    .route-box strong{ color:var(--pu-blue); }
 
-    /* Popup button */
-    .btn-route {
-      display: inline-block;
-      margin-top: 8px;
-      padding: 6px 10px;
-      border: 1px solid var(--pu-blue);
-      color: #fff;
-      background: var(--pu-blue);
-      border-radius: 8px;
-      cursor: pointer;
-      text-decoration: none;
-      font-size: 12px;
+    .btn-route{
+      display:inline-block; margin-top:8px; padding:6px 10px;
+      border:1px solid var(--pu-blue); color:#fff; background:var(--pu-blue);
+      border-radius:8px; cursor:pointer; text-decoration:none; font-size:12px;
     }
-    .btn-route:hover{ filter: brightness(1.05); }
+    .btn-route:hover{ filter:brightness(1.05); }
+    .toggle{
+      display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border:1px solid #e5e5e5; border-radius:999px;
+    }
+    .toggle input{ transform:scale(1.1); }
   </style>
 </head>
 <body>
 <div class="app">
   <header>
     <div class="header-wrap">
-      <!-- Ganti URL logo jika perlu; pakai gambar dari internet -->
       <img alt="Logo Kementerian PUPR"
            src="https://upload.wikimedia.org/wikipedia/commons/3/36/Logo_PUPR.png"
            onerror="this.src='https://raw.githubusercontent.com/hudoro-solusi/examples-assets/main/pupr-logo.png'">
@@ -166,31 +77,36 @@
       <span class="chip">Pencarian hanya berdasarkan <b>nama marker</b></span>
       <button id="btnLocate">Lokasi Saya</button>
       <button id="btnClearRoute">Hapus Rute</button>
-      <button id="btnFitAll">Zoom ke Semua Titik</button>
+      <button id="btnFitAll">Zoom ke Tampilan</button>
+
+      <span class="sep"></span>
+
+      <label class="toggle"><input type="checkbox" id="chkDI" checked> Tampilkan D.I.</label>
+      <label class="toggle"><input type="checkbox" id="chkDIR" checked> Tampilkan D.I.R.</label>
+
+      <span class="sep"></span>
+
+      <button id="btnExportCSV" class="btn">Ekspor CSV (filter)</button>
+      <button id="btnExportGeoJSON" class="btn">Ekspor GeoJSON (filter)</button>
+
+      <span class="sep"></span>
+
+      <span class="chip">Basemap: gunakan kontrol di kanan atas</span>
     </div>
   </div>
 
   <div id="map"></div>
 </div>
 
-<!-- Leaflet JS -->
-<script
-  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-  crossorigin=""
-></script>
-<!-- MarkerCluster -->
+<!-- JS libs -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-<!-- Leaflet Routing Machine -->
 <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
-<!-- Leaflet Control Search -->
 <script src="https://unpkg.com/leaflet-control-search@2.9.8/dist/leaflet-search.src.js"></script>
 
 <script>
-/** =======================
- *  1) DATA MARKER (array)
- *  ======================= */
-const markersData = [
+/* ===== 1) DATA ===== */
+const markersData = [/* ————(pakai data yang sama dari versi sebelumnya; dipendekkan di sini demi singkat)———— */
   {name:"D.I. Alue Peudeung",lon:97.07767342,lat:4.905597755},
   {name:"D.I.R. Tanjung Sejaro",lon:104.7309104,lat:-2.9681421},
   {name:"D.I.R. Parebok",lon:112.9278095,lat:-2.957959107},
@@ -441,99 +357,94 @@ const markersData = [
   {name:"D.I. Bukit Kelam",lon:111.670843,lat:0.092149}
 ];
 
-/** =======================
- *  2) INISIALISASI PETA
- *  ======================= */
-const map = L.map('map', {
-  center: [-1.5, 113], // tengah Indonesia kira-kira
-  zoom: 5,
-  worldCopyJump: true
-});
+/* ===== 2) PETA + BASEMAP ===== */
+const map = L.map('map', { center: [-1.5, 113], zoom: 5, worldCopyJump: true });
 
-// Basemap
-const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 19,
-  attribution: '&copy; OpenStreetMap contributors'
+const basemapOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19, attribution: '&copy; OpenStreetMap contributors'
 }).addTo(map);
 
-// Cluster group untuk manajemen label/marker
-const clusterGroup = L.markerClusterGroup({
-  showCoverageOnHover: false,
-  disableClusteringAtZoom: 12
-});
+const basemapSat = L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  { maxZoom: 19, attribution: '&copy; Esri — World Imagery' }
+);
 
-// Simpan ref marker per nama untuk search
-const markersLayer = L.layerGroup();
+L.control.layers(
+  { "OSM": basemapOSM, "Satelit (Esri)": basemapSat },
+  null,
+  { position: 'topright', collapsed: true }
+).addTo(map);
 
-// Buat marker dari data
-markersData.forEach((d,i) => {
+/* ===== 3) CLUSTERS & FILTER ===== */
+const diCluster = L.markerClusterGroup({ showCoverageOnHover:false, disableClusteringAtZoom:12 });
+const dirCluster = L.markerClusterGroup({ showCoverageOnHover:false, disableClusteringAtZoom:12 });
+const allMarkersLayer = L.layerGroup(); // untuk pencarian
+
+function isDIR(name){
+  const u = name.trim().toUpperCase();
+  return u.startsWith('D.I.R.');
+}
+function isDI(name){
+  const u = name.trim().toUpperCase();
+  return u.startsWith('D.I.') && !u.startsWith('D.I.R.');
+}
+
+const allMarkers = []; // simpan ref marker + meta
+markersData.forEach((d) => {
   const latlng = [d.lat, d.lon];
-  const m = L.marker(latlng, { title: d.name }); // title dipakai plugin search
-  m.bindTooltip(d.name, {direction:'top', offset:[0,-6]}); // tooltip biar tak numpuk (hover)
-  const popupHtml = `
+  const marker = L.marker(latlng, { title: d.name });
+  marker.bindTooltip(d.name, {direction:'top', offset:[0,-6]});
+  marker.bindPopup(`
     <div>
       <strong>${d.name}</strong><br/>
       Koordinat: ${d.lat.toFixed(6)}, ${d.lon.toFixed(6)}<br/>
       <a class="btn-route" href="#" data-lat="${d.lat}" data-lon="${d.lon}">Tunjukkan Rute</a>
-    </div>`;
-  m.bindPopup(popupHtml);
-  clusterGroup.addLayer(m);
-  markersLayer.addLayer(m);
+    </div>
+  `);
+
+  allMarkersLayer.addLayer(marker);
+  allMarkers.push({ marker, data: d });
+
+  if (isDIR(d.name)) dirCluster.addLayer(marker);
+  else if (isDI(d.name)) diCluster.addLayer(marker);
+  else diCluster.addLayer(marker); // default-kan ke DI kalau tidak jelas
 });
-clusterGroup.addTo(map);
 
-// Fit ke semua titik
-const allBounds = clusterGroup.getBounds();
-if (allBounds.isValid()) map.fitBounds(allBounds.pad(0.15));
+// awal: tampilkan dua-duanya
+diCluster.addTo(map);
+dirCluster.addTo(map);
 
-/** =======================
- *  3) PENCARIAN (by marker)
- *  ======================= */
+// bounds awal (semua)
+const initialBounds = L.latLngBounds(markersData.map(d=>[d.lat,d.lon]));
+if (initialBounds.isValid()) map.fitBounds(initialBounds.pad(0.15));
+
+/* ===== 4) SEARCH (khusus marker) ===== */
 const searchControl = new L.Control.Search({
-  layer: markersLayer,
-  propertyName: 'title', // ambil dari marker.options.title
+  layer: allMarkersLayer,          // semua marker; pencarian by nama
+  propertyName: 'title',
   initial: false,
   marker: false,
-  moveToLocation: function(latlng, title, map) {
-    map.setView(latlng, 12);
-  }
+  moveToLocation: function(latlng, title, map) { map.setView(latlng, 12); }
 });
-searchControl.on('search:locationfound', function(e){
-  // buka popup marker yang ditemukan
-  e.layer.openPopup();
-});
+searchControl.on('search:locationfound', (e)=> e.layer.openPopup());
 map.addControl(searchControl);
 
-/** =======================
- *  4) GEOLOCATION tombol
- *  ======================= */
-let userMarker = null;
-let userLatLng = null;
+/* ===== 5) GEOLOCATION ===== */
+let userMarker = null, userLatLng = null;
 
 document.getElementById('btnLocate').addEventListener('click', () => {
-  map.locate({setView: true, maxZoom: 12, enableHighAccuracy: true});
+  map.locate({ setView:true, maxZoom:12, enableHighAccuracy:true });
 });
-
 map.on('locationfound', (e) => {
   userLatLng = e.latlng;
-  if (!userMarker) {
-    userMarker = L.marker(e.latlng, {icon: L.icon({
-      iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-      iconAnchor: [12,41], popupAnchor: [1,-34]
-    })}).addTo(map).bindPopup('Lokasi saya');
-  } else {
-    userMarker.setLatLng(e.latlng);
-  }
+  if (!userMarker){
+    userMarker = L.marker(e.latlng).addTo(map).bindPopup('Lokasi saya');
+  } else userMarker.setLatLng(e.latlng);
   userMarker.openPopup();
 });
+map.on('locationerror', ()=> alert('Tidak bisa mendapatkan lokasi. Aktifkan izin lokasi browser.'));
 
-map.on('locationerror', () => {
-  alert('Tidak bisa mendapatkan lokasi. Pastikan izin lokasi diaktifkan.');
-});
-
-/** =======================
- *  5) ROUTING + jarak & waktu
- *  ======================= */
+ /* ===== 6) ROUTING ===== */
 let routingControl = L.Routing.control({
   waypoints: [],
   routeWhileDragging: true,
@@ -543,74 +454,113 @@ let routingControl = L.Routing.control({
   draggableWaypoints: true,
   fitSelectedRoutes: true,
   router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1' }),
-  createMarker: function(i, wp, nWps){
-    const label = i === 0 ? 'Awal' : (i === nWps-1 ? 'Tujuan' : `WP ${i+1}`);
-    return L.marker(wp.latLng, { draggable: true }).bindTooltip(label, {permanent:false});
-  }
+  createMarker: (i, wp, nWps)=> L.marker(wp.latLng, {draggable:true}).bindTooltip(i===0?'Awal':(i===nWps-1?'Tujuan':`WP ${i+1}`))
 }).addTo(map);
 
-// Tambah panel ringkas jarak & durasi
 const routeBox = L.control({position:'bottomleft'});
 routeBox.onAdd = function(){
   const div = L.DomUtil.create('div','route-box leaflet-bar');
-  div.style.background = '#fff';
-  div.style.borderRadius = '8px';
-  div.style.border = '1px solid #e5e5e5';
-  div.style.padding = '8px 10px';
-  div.innerHTML = 'Rute: <em>belum dipilih</em>';
-  return div;
+  div.style.background='#fff'; div.style.borderRadius='8px';
+  div.style.border='1px solid #e5e5e5'; div.style.padding='8px 10px';
+  div.innerHTML='Rute: <em>belum dipilih</em>'; return div;
 };
 routeBox.addTo(map);
 
-// Update jarak & waktu ketika rute siap
-routingControl.on('routesfound', function(e){
-  const route = e.routes[0];
-  if (!route) return;
-  const meters = route.summary.totalDistance; // meter
-  const secs = route.summary.totalTime; // detik
-  const km = (meters/1000).toFixed(2);
-  const mins = Math.round(secs/60);
-  routeBox.getContainer().innerHTML = `
-    <div>Jarak: <strong>${km} km</strong><br>
-    Waktu tempuh: <strong>${mins} menit</strong></div>`;
+routingControl.on('routesfound', (e)=>{
+  const r=e.routes[0]; if(!r) return;
+  const km=(r.summary.totalDistance/1000).toFixed(2);
+  const mins=Math.round(r.summary.totalTime/60);
+  routeBox.getContainer().innerHTML=`<div>Jarak: <strong>${km} km</strong><br>Waktu tempuh: <strong>${mins} menit</strong></div>`;
 });
+routingControl.on('routingerror', ()=> routeBox.getContainer().innerHTML='Rute: <em>gagal dihitung</em>');
 
-routingControl.on('routingerror', function(){
-  routeBox.getContainer().innerHTML = 'Rute: <em>gagal dihitung</em>';
-});
-
-// Action pada tombol di popup marker: set tujuan rute
-map.on('popupopen', function(e){
+// klik tombol di popup -> set tujuan
+map.on('popupopen', (e)=>{
   const node = e.popup.getElement();
   const btn = node.querySelector('.btn-route');
   if (!btn) return;
-  btn.addEventListener('click', (ev) => {
+  btn.addEventListener('click', (ev)=>{
     ev.preventDefault();
-    const lat = parseFloat(btn.getAttribute('data-lat'));
-    const lon = parseFloat(btn.getAttribute('data-lon'));
-    const dest = L.latLng(lat, lon);
-
-    if (!userLatLng) {
-      alert('Menetapkan tujuan. Disarankan klik "Lokasi Saya" dulu untuk titik awal otomatis.\nAnda masih bisa menyeret titik awal pada garis rute.');
-      // Set rute dengan hanya tujuan (user bisa drag titik awal)
+    const lat=parseFloat(btn.getAttribute('data-lat'));
+    const lon=parseFloat(btn.getAttribute('data-lon'));
+    const dest=L.latLng(lat,lon);
+    if(!userLatLng){
+      alert('Tujuan diset. Klik "Lokasi Saya" agar titik awal otomatis, atau seret titik awal di peta.');
       routingControl.setWaypoints([dest]);
       map.setView(dest, 12);
-    } else {
+    }else{
       routingControl.setWaypoints([userLatLng, dest]);
     }
-  }, { once: true });
+  }, { once:true });
 });
 
-// Tombol hapus rute
-document.getElementById('btnClearRoute').addEventListener('click', () => {
+document.getElementById('btnClearRoute').addEventListener('click', ()=>{
   routingControl.setWaypoints([]);
-  routeBox.getContainer().innerHTML = 'Rute: <em>belum dipilih</em>';
+  routeBox.getContainer().innerHTML='Rute: <em>belum dipilih</em>';
 });
 
-// Tombol fit all
-document.getElementById('btnFitAll').addEventListener('click', () => {
-  const b = clusterGroup.getBounds();
-  if (b.isValid()) map.fitBounds(b.pad(0.15));
+/* ===== 7) FILTER TOGGLE (DI vs DIR) ===== */
+const chkDI = document.getElementById('chkDI');
+const chkDIR = document.getElementById('chkDIR');
+
+function applyFilter(){
+  // tambahkan/lepaskan cluster sesuai toggle
+  if (chkDI.checked){ if(!map.hasLayer(diCluster)) diCluster.addTo(map); }
+  else { if(map.hasLayer(diCluster)) map.removeLayer(diCluster); }
+
+  if (chkDIR.checked){ if(!map.hasLayer(dirCluster)) dirCluster.addTo(map); }
+  else { if(map.hasLayer(dirCluster)) map.removeLayer(dirCluster); }
+}
+
+chkDI.addEventListener('change', ()=> applyFilter());
+chkDIR.addEventListener('change', ()=> applyFilter());
+applyFilter();
+
+/* ===== 8) FIT to VISIBLE ===== */
+document.getElementById('btnFitAll').addEventListener('click', ()=>{
+  const bounds = L.latLngBounds([]);
+  if (map.hasLayer(diCluster)) bounds.extend(diCluster.getBounds());
+  if (map.hasLayer(dirCluster)) bounds.extend(dirCluster.getBounds());
+  if (bounds.isValid()) map.fitBounds(bounds.pad(0.15));
+  else alert('Tidak ada marker yang ditampilkan (cek filter).');
+});
+
+/* ===== 9) EKSPOR (CSV/GeoJSON) ===== */
+function getFilteredData(){
+  // pakai filter toggle, bukan viewport; sesuai permintaan
+  return markersData.filter(d=>{
+    if (isDIR(d.name) && !chkDIR.checked) return false;
+    if (isDI(d.name) && !chkDI.checked) return false;
+    if (!isDIR(d.name) && !isDI(d.name) && !chkDI.checked) return false; // default ke DI
+    return true;
+  });
+}
+
+function download(filename, content, mime='text/plain'){
+  const blob = new Blob([content], {type:mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.style.display='none';
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+
+document.getElementById('btnExportCSV').addEventListener('click', ()=>{
+  const rows = [['name','lat','lon']];
+  getFilteredData().forEach(d=> rows.push([`"${d.name.replace(/"/g,'""')}"`, d.lat, d.lon]));
+  const csv = rows.map(r=>r.join(',')).join('\n');
+  download('di-dir-filter.csv', csv, 'text/csv;charset=utf-8;');
+});
+
+document.getElementById('btnExportGeoJSON').addEventListener('click', ()=>{
+  const fc = {
+    type: 'FeatureCollection',
+    features: getFilteredData().map(d=>({
+      type:'Feature',
+      properties:{ name:d.name },
+      geometry:{ type:'Point', coordinates:[d.lon, d.lat] }
+    }))
+  };
+  download('di-dir-filter.geojson', JSON.stringify(fc, null, 2), 'application/geo+json');
 });
 </script>
 </body>
