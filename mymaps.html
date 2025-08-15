@@ -1,113 +1,86 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="utf-8" />
-  <title>Peta DI/DIR – Kementerian PUPR</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Leaflet CSS -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-    crossorigin=""
-  />
-  <!-- MarkerCluster CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
-  <!-- Routing Machine CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css"/>
-  <!-- Control Search CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-search@2.9.8/dist/leaflet-search.min.css"/>
-
-  <style>
-    :root{ --pu-yellow:#F4C542; --pu-blue:#003B6A; }
-    html, body { height:100%; margin:0; }
-    .app{ display:grid; grid-template-rows:auto auto 1fr; height:100%; background:#fafafa; }
-    header{ background:var(--pu-yellow); color:#111; border-bottom:3px solid var(--pu-blue); }
-    .header-wrap{ max-width:1200px; margin:0 auto; display:grid; grid-template-columns:auto 1fr; gap:16px; align-items:center; padding:10px 16px; }
-    .header-wrap img{ height:56px; }
-    .title-block{ font-weight:700; line-height:1.2; }
-    .title-block .kemen{ font-size:18px; letter-spacing:.2px; }
-    .title-block .dirjen, .title-block .direktorat{ font-size:14px; opacity:.95; }
-
-    .toolbar{ background:#fff; border-bottom:1px solid #eee; box-shadow:0 1px 0 rgba(0,0,0,.06); }
-    .toolbar-wrap{ max-width:1200px; margin:0 auto; padding:8px 16px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-    .toolbar .chip{ font-size:12px; padding:6px 10px; border:1px solid #e5e5e5; border-radius:999px; background:#fff; }
-    .toolbar button, .toolbar .btn{ padding:8px 12px; border-radius:10px; border:1px solid #e5e5e5; background:#fff; cursor:pointer; }
-    .toolbar button:hover, .toolbar .btn:hover{ background:#f6f6f6; }
-    .toolbar .sep{ width:1px; height:28px; background:#eaeaea; margin:0 4px; }
-
-    #map{ height:100%; width:100%; }
-
-    .leaflet-control-search{ border-radius:10px; overflow:hidden; }
-    .leaflet-control-search .search-input{ min-width:220px; }
-
-    .route-box{ font-size:13px; line-height:1.4; padding:6px 8px; }
-    .route-box strong{ color:var(--pu-blue); }
-
-    .btn-route{
-      display:inline-block; margin-top:8px; padding:6px 10px;
-      border:1px solid var(--pu-blue); color:#fff; background:var(--pu-blue);
-      border-radius:8px; cursor:pointer; text-decoration:none; font-size:12px;
+<meta charset="UTF-8">
+<title>Peta Lokasi Pelaksanaan Inpres 2/2025 Tahap 1</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<!-- Leaflet Routing Machine CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css"/>
+<style>
+    body { margin:0; padding:0; font-family: Arial, sans-serif; }
+    #header {
+        background-color: #FFD700;
+        padding: 10px;
+        display: flex;
+        align-items: center;
+        font-weight: bold;
+        font-size: 16px;
     }
-    .btn-route:hover{ filter:brightness(1.05); }
-    .toggle{
-      display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border:1px solid #e5e5e5; border-radius:999px;
+    #header img {
+        height: 50px;
+        margin-right: 10px;
     }
-    .toggle input{ transform:scale(1.1); }
-  </style>
+    #map { height: calc(100vh - 120px); }
+    .search-box {
+        position: absolute;
+        top: 70px;
+        left: 10px;
+        z-index: 1000;
+        background: white;
+        padding: 5px;
+        border-radius: 5px;
+        box-shadow: 0 0 5px rgba(0,0,0,0.3);
+    }
+    .control-buttons {
+        position: absolute;
+        top: 120px;
+        left: 10px;
+        z-index: 1000;
+        background: white;
+        padding: 5px;
+        border-radius: 5px;
+        box-shadow: 0 0 5px rgba(0,0,0,0.3);
+    }
+    #routeInfo {
+        padding: 8px;
+        background: #f5f5f5;
+        border-top: 1px solid #ddd;
+        font-size: 14px;
+    }
+</style>
 </head>
 <body>
-<div class="app">
-  <header>
-    <div class="header-wrap">
-      <img alt="Logo Kementerian PUPR"
-           src="https://upload.wikimedia.org/wikipedia/commons/3/36/Logo_PUPR.png"
-           onerror="this.src='https://raw.githubusercontent.com/hudoro-solusi/examples-assets/main/pupr-logo.png'">
-      <div class="title-block">
-        <div class="kemen">KEMENTERIAN PEKERJAAN UMUM</div>
-        <div class="dirjen">DIREKTORAT JENDERAL SUMBER DAYA AIR</div>
-        <div class="direktorat">DIREKTORAT IRIGASI DAN RAWA</div>
-      </div>
-    </div>
-  </header>
 
-  <div class="toolbar">
-    <div class="toolbar-wrap">
-      <span class="chip">Pencarian hanya berdasarkan <b>nama marker</b></span>
-      <button id="btnLocate">Lokasi Saya</button>
-      <button id="btnClearRoute">Hapus Rute</button>
-      <button id="btnFitAll">Zoom ke Tampilan</button>
-
-      <span class="sep"></span>
-
-      <label class="toggle"><input type="checkbox" id="chkDI" checked> Tampilkan D.I.</label>
-      <label class="toggle"><input type="checkbox" id="chkDIR" checked> Tampilkan D.I.R.</label>
-
-      <span class="sep"></span>
-
-      <button id="btnExportCSV" class="btn">Ekspor CSV (filter)</button>
-      <button id="btnExportGeoJSON" class="btn">Ekspor GeoJSON (filter)</button>
-
-      <span class="sep"></span>
-
-      <span class="chip">Basemap: gunakan kontrol di kanan atas</span>
-    </div>
-  </div>
-
-  <div id="map"></div>
+<div id="header">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/Logo_PU.png/600px-Logo_PU.png" alt="Logo PU">
+    KEMENTERIAN PEKERJAAN UMUM, DIREKTORAT JENDERAL SUMBER DAYA AIR, DIREKTORAT IRIGASI DAN RAWA
 </div>
 
-<!-- JS libs -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-<script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
-<script src="https://unpkg.com/leaflet-control-search@2.9.8/dist/leaflet-search.src.js"></script>
+<div id="map"></div>
+
+<div id="routeInfo">Jarak & Waktu tempuh akan muncul di sini</div>
+
+<div class="search-box">
+    <input type="text" id="searchInput" placeholder="Cari lokasi...">
+    <button onclick="searchLocation()">Cari</button>
+</div>
+
+<div class="control-buttons">
+    <button onclick="showMyLocation()">Lokasi Saya</button>
+    <button onclick="clearRoute()">Hapus Rute</button>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<!-- Leaflet Routing Machine JS -->
+<script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 
 <script>
-/* ===== 1) DATA ===== */
-const markersData = [/* ————(pakai data yang sama dari versi sebelumnya; dipendekkan di sini demi singkat)———— */
-  {name:"D.I. Alue Peudeung",lon:97.07767342,lat:4.905597755},
+// Data lokasi dalam array
+const lokasiData = [
+    {name:"D.I. Alue Peudeung",lon:97.07767342,lat:4.905597755},
   {name:"D.I.R. Tanjung Sejaro",lon:104.7309104,lat:-2.9681421},
   {name:"D.I.R. Parebok",lon:112.9278095,lat:-2.957959107},
   {name:"D.I.R. Kuala Jelai",lon:110.761667,lat:-2.954167},
@@ -357,211 +330,83 @@ const markersData = [/* ————(pakai data yang sama dari versi sebelumnya;
   {name:"D.I. Bukit Kelam",lon:111.670843,lat:0.092149}
 ];
 
-/* ===== 2) PETA + BASEMAP ===== */
-const map = L.map('map', { center: [-1.5, 113], zoom: 5, worldCopyJump: true });
+let map = L.map('map').setView([-6.200, 106.816], 13);
 
-const basemapOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 19, attribution: '&copy; OpenStreetMap contributors'
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap'
 }).addTo(map);
 
-const basemapSat = L.tileLayer(
-  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-  { maxZoom: 19, attribution: '&copy; Esri — World Imagery' }
-);
+let markers = [];
+let routingControl;
 
-L.control.layers(
-  { "OSM": basemapOSM, "Satelit (Esri)": basemapSat },
-  null,
-  { position: 'topright', collapsed: true }
-).addTo(map);
-
-/* ===== 3) CLUSTERS & FILTER ===== */
-const diCluster = L.markerClusterGroup({ showCoverageOnHover:false, disableClusteringAtZoom:12 });
-const dirCluster = L.markerClusterGroup({ showCoverageOnHover:false, disableClusteringAtZoom:12 });
-const allMarkersLayer = L.layerGroup(); // untuk pencarian
-
-function isDIR(name){
-  const u = name.trim().toUpperCase();
-  return u.startsWith('D.I.R.');
-}
-function isDI(name){
-  const u = name.trim().toUpperCase();
-  return u.startsWith('D.I.') && !u.startsWith('D.I.R.');
-}
-
-const allMarkers = []; // simpan ref marker + meta
-markersData.forEach((d) => {
-  const latlng = [d.lat, d.lon];
-  const marker = L.marker(latlng, { title: d.name });
-  marker.bindTooltip(d.name, {direction:'top', offset:[0,-6]});
-  marker.bindPopup(`
-    <div>
-      <strong>${d.name}</strong><br/>
-      Koordinat: ${d.lat.toFixed(6)}, ${d.lon.toFixed(6)}<br/>
-      <a class="btn-route" href="#" data-lat="${d.lat}" data-lon="${d.lon}">Tunjukkan Rute</a>
-    </div>
-  `);
-
-  allMarkersLayer.addLayer(marker);
-  allMarkers.push({ marker, data: d });
-
-  if (isDIR(d.name)) dirCluster.addLayer(marker);
-  else if (isDI(d.name)) diCluster.addLayer(marker);
-  else diCluster.addLayer(marker); // default-kan ke DI kalau tidak jelas
+// Tambahkan marker
+lokasiData.forEach(l => {
+    let marker = L.marker([l.lat, l.lng]).addTo(map)
+        .bindPopup(`<b>${l.nama}</b><br><button onclick="routeTo(${l.lat}, ${l.lng})">Tunjukkan Rute</button>`);
+    marker.nama = l.nama;
+    markers.push(marker);
 });
 
-// awal: tampilkan dua-duanya
-diCluster.addTo(map);
-dirCluster.addTo(map);
-
-// bounds awal (semua)
-const initialBounds = L.latLngBounds(markersData.map(d=>[d.lat,d.lon]));
-if (initialBounds.isValid()) map.fitBounds(initialBounds.pad(0.15));
-
-/* ===== 4) SEARCH (khusus marker) ===== */
-const searchControl = new L.Control.Search({
-  layer: allMarkersLayer,          // semua marker; pencarian by nama
-  propertyName: 'title',
-  initial: false,
-  marker: false,
-  moveToLocation: function(latlng, title, map) { map.setView(latlng, 12); }
-});
-searchControl.on('search:locationfound', (e)=> e.layer.openPopup());
-map.addControl(searchControl);
-
-/* ===== 5) GEOLOCATION ===== */
-let userMarker = null, userLatLng = null;
-
-document.getElementById('btnLocate').addEventListener('click', () => {
-  map.locate({ setView:true, maxZoom:12, enableHighAccuracy:true });
-});
-map.on('locationfound', (e) => {
-  userLatLng = e.latlng;
-  if (!userMarker){
-    userMarker = L.marker(e.latlng).addTo(map).bindPopup('Lokasi saya');
-  } else userMarker.setLatLng(e.latlng);
-  userMarker.openPopup();
-});
-map.on('locationerror', ()=> alert('Tidak bisa mendapatkan lokasi. Aktifkan izin lokasi browser.'));
-
- /* ===== 6) ROUTING ===== */
-let routingControl = L.Routing.control({
-  waypoints: [],
-  routeWhileDragging: true,
-  collapsible: true,
-  show: true,
-  addWaypoints: true,
-  draggableWaypoints: true,
-  fitSelectedRoutes: true,
-  router: L.Routing.osrmv1({ serviceUrl: 'https://router.project-osrm.org/route/v1' }),
-  createMarker: (i, wp, nWps)=> L.marker(wp.latLng, {draggable:true}).bindTooltip(i===0?'Awal':(i===nWps-1?'Tujuan':`WP ${i+1}`))
-}).addTo(map);
-
-const routeBox = L.control({position:'bottomleft'});
-routeBox.onAdd = function(){
-  const div = L.DomUtil.create('div','route-box leaflet-bar');
-  div.style.background='#fff'; div.style.borderRadius='8px';
-  div.style.border='1px solid #e5e5e5'; div.style.padding='8px 10px';
-  div.innerHTML='Rute: <em>belum dipilih</em>'; return div;
-};
-routeBox.addTo(map);
-
-routingControl.on('routesfound', (e)=>{
-  const r=e.routes[0]; if(!r) return;
-  const km=(r.summary.totalDistance/1000).toFixed(2);
-  const mins=Math.round(r.summary.totalTime/60);
-  routeBox.getContainer().innerHTML=`<div>Jarak: <strong>${km} km</strong><br>Waktu tempuh: <strong>${mins} menit</strong></div>`;
-});
-routingControl.on('routingerror', ()=> routeBox.getContainer().innerHTML='Rute: <em>gagal dihitung</em>');
-
-// klik tombol di popup -> set tujuan
-map.on('popupopen', (e)=>{
-  const node = e.popup.getElement();
-  const btn = node.querySelector('.btn-route');
-  if (!btn) return;
-  btn.addEventListener('click', (ev)=>{
-    ev.preventDefault();
-    const lat=parseFloat(btn.getAttribute('data-lat'));
-    const lon=parseFloat(btn.getAttribute('data-lon'));
-    const dest=L.latLng(lat,lon);
-    if(!userLatLng){
-      alert('Tujuan diset. Klik "Lokasi Saya" agar titik awal otomatis, atau seret titik awal di peta.');
-      routingControl.setWaypoints([dest]);
-      map.setView(dest, 12);
-    }else{
-      routingControl.setWaypoints([userLatLng, dest]);
+// Fungsi pencarian
+function searchLocation() {
+    let query = document.getElementById('searchInput').value.toLowerCase();
+    let found = markers.find(m => m.nama.toLowerCase().includes(query));
+    if(found) {
+        map.setView(found.getLatLng(), 15);
+        found.openPopup();
+    } else {
+        alert("Lokasi tidak ditemukan");
     }
-  }, { once:true });
-});
-
-document.getElementById('btnClearRoute').addEventListener('click', ()=>{
-  routingControl.setWaypoints([]);
-  routeBox.getContainer().innerHTML='Rute: <em>belum dipilih</em>';
-});
-
-/* ===== 7) FILTER TOGGLE (DI vs DIR) ===== */
-const chkDI = document.getElementById('chkDI');
-const chkDIR = document.getElementById('chkDIR');
-
-function applyFilter(){
-  // tambahkan/lepaskan cluster sesuai toggle
-  if (chkDI.checked){ if(!map.hasLayer(diCluster)) diCluster.addTo(map); }
-  else { if(map.hasLayer(diCluster)) map.removeLayer(diCluster); }
-
-  if (chkDIR.checked){ if(!map.hasLayer(dirCluster)) dirCluster.addTo(map); }
-  else { if(map.hasLayer(dirCluster)) map.removeLayer(dirCluster); }
 }
 
-chkDI.addEventListener('change', ()=> applyFilter());
-chkDIR.addEventListener('change', ()=> applyFilter());
-applyFilter();
-
-/* ===== 8) FIT to VISIBLE ===== */
-document.getElementById('btnFitAll').addEventListener('click', ()=>{
-  const bounds = L.latLngBounds([]);
-  if (map.hasLayer(diCluster)) bounds.extend(diCluster.getBounds());
-  if (map.hasLayer(dirCluster)) bounds.extend(dirCluster.getBounds());
-  if (bounds.isValid()) map.fitBounds(bounds.pad(0.15));
-  else alert('Tidak ada marker yang ditampilkan (cek filter).');
-});
-
-/* ===== 9) EKSPOR (CSV/GeoJSON) ===== */
-function getFilteredData(){
-  // pakai filter toggle, bukan viewport; sesuai permintaan
-  return markersData.filter(d=>{
-    if (isDIR(d.name) && !chkDIR.checked) return false;
-    if (isDI(d.name) && !chkDI.checked) return false;
-    if (!isDIR(d.name) && !isDI(d.name) && !chkDI.checked) return false; // default ke DI
-    return true;
-  });
+// Fungsi lokasi saya
+function showMyLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
+            let lat = pos.coords.latitude;
+            let lng = pos.coords.longitude;
+            let userMarker = L.marker([lat, lng], {color: 'blue'}).addTo(map)
+                .bindPopup("Lokasi Saya").openPopup();
+            map.setView([lat, lng], 14);
+        }, () => {
+            alert("Gagal mendapatkan lokasi");
+        });
+    } else {
+        alert("Browser tidak mendukung geolokasi");
+    }
 }
 
-function download(filename, content, mime='text/plain'){
-  const blob = new Blob([content], {type:mime});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = filename; a.style.display='none';
-  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+// Fungsi rute + info jarak & waktu
+function routeTo(lat, lng) {
+    if (routingControl) map.removeControl(routingControl);
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
+            routingControl = L.Routing.control({
+                waypoints: [
+                    L.latLng(pos.coords.latitude, pos.coords.longitude),
+                    L.latLng(lat, lng)
+                ],
+                lineOptions: {addWaypoints: false},
+                show: false,
+                routeWhileDragging: false
+            })
+            .on('routesfound', function(e) {
+                let summary = e.routes[0].summary;
+                document.getElementById('routeInfo').innerHTML =
+                    `Jarak: ${(summary.totalDistance / 1000).toFixed(2)} km | Waktu: ${(summary.totalTime / 60).toFixed(0)} menit`;
+            })
+            .addTo(map);
+        });
+    }
 }
 
-document.getElementById('btnExportCSV').addEventListener('click', ()=>{
-  const rows = [['name','lat','lon']];
-  getFilteredData().forEach(d=> rows.push([`"${d.name.replace(/"/g,'""')}"`, d.lat, d.lon]));
-  const csv = rows.map(r=>r.join(',')).join('\n');
-  download('di-dir-filter.csv', csv, 'text/csv;charset=utf-8;');
-});
-
-document.getElementById('btnExportGeoJSON').addEventListener('click', ()=>{
-  const fc = {
-    type: 'FeatureCollection',
-    features: getFilteredData().map(d=>({
-      type:'Feature',
-      properties:{ name:d.name },
-      geometry:{ type:'Point', coordinates:[d.lon, d.lat] }
-    }))
-  };
-  download('di-dir-filter.geojson', JSON.stringify(fc, null, 2), 'application/geo+json');
-});
+// Bersihkan rute
+function clearRoute() {
+    if (routingControl) {
+        map.removeControl(routingControl);
+        document.getElementById('routeInfo').innerHTML = "Jarak & Waktu tempuh akan muncul di sini";
+    }
+}
 </script>
 </body>
 </html>
