@@ -2,9 +2,8 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<title>Pelaksanaan Inpres 2/2025 Tahap 1</title>
+<title>Peta Proyek PU</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- Leaflet CSS -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
@@ -25,11 +24,22 @@
     margin-right: 10px;
   }
   #map { height: calc(100% - 110px); }
-  .search-box {
+  #route-info {
+    background: #f9f9f9;
+    padding: 8px;
+    font-size: 14px;
+    border-top: 1px solid #ccc;
+  }
+  .top-controls {
     position: absolute;
-    top: 10px;
+    top: 60px; /* tepat di bawah header */
     right: 10px;
+    left: 10px;
+    display: flex;
+    justify-content: space-between;
     z-index: 1000;
+  }
+  .search-box {
     background: white;
     padding: 5px;
     border-radius: 4px;
@@ -56,27 +66,28 @@
     padding: 4px;
     cursor: pointer;
   }
-  #suggestions div:hover {
-    background: #eee;
-  }
-  #route-info {
-    background: #f9f9f9;
-    padding: 8px;
-    font-size: 14px;
-    border-top: 1px solid #ccc;
+  #suggestions div:hover { background: #eee; }
+  .bottom-buttons {
+    position: absolute;
+    bottom: 40px; /* di atas info jarak/waktu */
+    left: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    z-index: 1000;
   }
   .custom-button {
-    position: absolute;
-    right: 10px;
-    z-index: 1000;
     padding: 6px 10px;
     border-radius: 4px;
     color: white;
     font-weight: bold;
     cursor: pointer;
+    text-align: center;
+    text-decoration: none;
   }
-  #reset-route { top: 60px; background: #ff5722; }
-  #locate-me { top: 100px; background: #4CAF50; }
+  #home { background: #2196F3; }
+  #reset-route { background: #ff5722; }
+  #locate-me { background: #4CAF50; }
 </style>
 </head>
 <body>
@@ -86,26 +97,32 @@
   KEMENTERIAN PEKERJAAN UMUM, DIREKTORAT JENDERAL SUMBER DAYA AIR, DIREKTORAT IRIGASI DAN RAWA
 </div>
 
-<div id="map"></div>
-<div id="route-info">Jarak & Waktu tempuh akan muncul di sini</div>
-
-<div class="search-box">
-  <input type="text" id="search" placeholder="Cari lokasi..." oninput="showSuggestions(this.value)"/>
-  <div id="suggestions"></div>
+<div class="top-controls">
+  <!-- Tombol Penunjuk Jalan jika mau diletakkan di kanan -->
+  <div id="top-left"></div>
+  <div class="search-box">
+    <input type="text" id="search" placeholder="Cari lokasi..." oninput="showSuggestions(this.value)"/>
+    <div id="suggestions"></div>
+  </div>
 </div>
 
-<div id="reset-route" class="custom-button" onclick="resetRoute()">Reset Rute</div>
-<div id="locate-me" class="custom-button" onclick="locateMe()">Posisi Saya</div>
+<div id="map"></div>
 
-<!-- Leaflet JS -->
+<div class="bottom-buttons">
+  <a href="https://s.pu.go.id/MTI4OA/Pelaksanaan_INPRES2_Tahap1" target="_blank" id="home" class="custom-button">Beranda</a>
+  <div id="reset-route" class="custom-button" onclick="resetRoute()">Reset Rute</div>
+  <div id="locate-me" class="custom-button" onclick="locateMe()">Posisi Saya</div>
+</div>
+
+<div id="route-info">Jarak & Waktu tempuh akan muncul di sini</div>
+
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
 
 <script>
-// Contoh lokasi
 var locations = [
-   ["D.I. Alue Peudeung", 4.905597755, 97.07767342],
+ ["D.I. Alue Peudeung", 4.905597755, 97.07767342],
 ["D.I.R. Tanjung Sejaro", -2.9681421, 104.7309104],
 ["D.I.R. Parebok", -2.957959107, 112.9278095],
 ["D.I.R. Kuala Jelai", -2.954167, 110.761667],
@@ -352,26 +369,14 @@ var locations = [
 ["D.I. Emparu", 0.078888, 111.824516],
 ["D.I. Kebong", 0.057606, 111.648],
 ["D.I. Manter", -0.073628, 111.489584],
-["D.I. Bukit Kelam", 0.092149, 111.670843]
-  // Tambahkan semua lokasi lainnya...
+["D.I. Bukit Kelam", 0.092149, 111.670843] 
 ];
 
 var map = L.map('map').setView([-6.175392, 106.827153], 6);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{ maxZoom:19 }).addTo(map);
 
-// Basemap
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 19
-}).addTo(map);
+var routingControl = L.Routing.control({ waypoints: [], routeWhileDragging: true, show:false, createMarker: function() { return null; } }).addTo(map);
 
-// Routing control
-var routingControl = L.Routing.control({
-  waypoints: [],
-  routeWhileDragging: true,
-  show: false,
-  createMarker: function() { return null; }
-}).addTo(map);
-
-// Fungsi format waktu
 function formatTime(seconds){
   var days = Math.floor(seconds / 86400);
   var hours = Math.floor((seconds % 86400) / 3600);
@@ -383,38 +388,22 @@ function formatTime(seconds){
   return str;
 }
 
-// Update jarak & waktu
 routingControl.on('routesfound', function(e) {
   var route = e.routes[0];
-  var distance = (route.summary.totalDistance / 1000).toFixed(2); // km
-  var time = formatTime(route.summary.totalTime); // hari–jam–menit
-  document.getElementById('route-info').innerHTML = 
-    `<b>Jarak:</b> ${distance} km &nbsp; | &nbsp; <b>Waktu Tempuh:</b> ${time}`;
+  var distance = (route.summary.totalDistance / 1000).toFixed(2);
+  var time = formatTime(route.summary.totalTime);
+  document.getElementById('route-info').innerHTML = `<b>Jarak:</b> ${distance} km &nbsp; | &nbsp; <b>Waktu Tempuh:</b> ${time}`;
 });
 
-// Fungsi ikon marker
 function getIcon(name){
   var iconUrl = '';
-  if(name.startsWith('D.I.R.')){
-    iconUrl = 'https://maps.google.com/mapfiles/ms/icons/red-dot.png';
-  } else if(name.startsWith('D.I.')){
-    iconUrl = 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png';
-  } else {
-    iconUrl = 'https://maps.google.com/mapfiles/ms/icons/green-dot.png';
-  }
-  return L.icon({
-    iconUrl: iconUrl,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowUrl: 'https://unpkg.com/leaflet/dist/images/marker-shadow.png',
-    shadowSize: [41,41]
-  });
+  if(name.startsWith('D.I.R.')) iconUrl = 'https://maps.google.com/mapfiles/ms/icons/red-dot.png';
+  else if(name.startsWith('D.I.')) iconUrl = 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png';
+  else iconUrl = 'https://maps.google.com/mapfiles/ms/icons/green-dot.png';
+  return L.icon({ iconUrl: iconUrl, iconSize:[25,41], iconAnchor:[12,41], popupAnchor:[1,-34], shadowUrl:'https://unpkg.com/leaflet/dist/images/marker-shadow.png', shadowSize:[41,41] });
 }
 
-// Marker Cluster Group
 var markersCluster = L.markerClusterGroup();
-
 var markers = [];
 locations.forEach(function(loc) {
   var marker = L.marker([loc[1], loc[2]], {icon:getIcon(loc[0])})
@@ -423,75 +412,57 @@ locations.forEach(function(loc) {
   markersCluster.addLayer(marker);
   markers.push({name: loc[0], marker: marker});
 });
-
 map.addLayer(markersCluster);
 
-// Pencarian
 function showSuggestions(query) {
   var suggestionBox = document.getElementById("suggestions");
   suggestionBox.innerHTML = "";
-  if (query.length === 0) {
-    suggestionBox.style.display = "none";
-    return;
-  }
+  if(query.length===0){ suggestionBox.style.display="none"; return; }
   var matches = markers.filter(m => m.name.toLowerCase().includes(query.toLowerCase()));
-  if (matches.length > 0) {
-    matches.forEach(m => {
+  if(matches.length>0){
+    matches.forEach(m=>{
       var div = document.createElement("div");
       div.textContent = m.name;
-      div.onclick = function() {
+      div.onclick = function(){
         document.getElementById("search").value = m.name;
-        suggestionBox.style.display = "none";
-        map.setView(m.marker.getLatLng(), 14);
+        suggestionBox.style.display="none";
+        map.setView(m.marker.getLatLng(),14);
         m.marker.openPopup();
       };
       suggestionBox.appendChild(div);
     });
-    suggestionBox.style.display = "block";
-  } else {
-    suggestionBox.style.display = "none";
-  }
+    suggestionBox.style.display="block";
+  } else suggestionBox.style.display="none";
 }
 
-// Lokasi saya
-function locateMe() {
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(function(position) {
+function locateMe(){
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(function(position){
       var lat = position.coords.latitude;
       var lng = position.coords.longitude;
-      L.marker([lat, lng], {icon:L.icon({iconUrl:'https://maps.google.com/mapfiles/ms/icons/green-dot.png',iconSize:[25,41],iconAnchor:[12,41],popupAnchor:[1,-34]})})
+      L.marker([lat,lng], {icon:L.icon({iconUrl:'https://maps.google.com/mapfiles/ms/icons/green-dot.png',iconSize:[25,41],iconAnchor:[12,41],popupAnchor:[1,-34]})})
         .addTo(map)
         .bindPopup("Lokasi Anda").openPopup();
-      map.setView([lat, lng], 13);
-    }, function() {
-      alert("Tidak dapat mengakses lokasi Anda.");
-    });
-  } else {
-    alert("Geolocation tidak didukung di browser ini.");
-  }
+      map.setView([lat,lng],13);
+    }, function(){ alert("Tidak dapat mengakses lokasi Anda."); });
+  } else alert("Geolocation tidak didukung di browser ini.");
 }
 
-// Tampilkan rute
-function showRoute(lat, lng) {
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(function(position) {
+function showRoute(lat,lng){
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(function(position){
       var from = L.latLng(position.coords.latitude, position.coords.longitude);
-      var to = L.latLng(lat, lng);
-      routingControl.setWaypoints([from, to]);
-    }, function() {
-      alert("Tidak dapat mengakses lokasi Anda.");
-    });
+      var to = L.latLng(lat,lng);
+      routingControl.setWaypoints([from,to]);
+    }, function(){ alert("Tidak dapat mengakses lokasi Anda."); });
   }
 }
 
-// Reset rute
 function resetRoute(){
   routingControl.setWaypoints([]);
-  document.getElementById('route-info').innerHTML = "Jarak & Waktu tempuh akan muncul di sini";
+  document.getElementById('route-info').innerHTML="Jarak & Waktu tempuh akan muncul di sini";
 }
 </script>
 
 </body>
 </html>
-
-
