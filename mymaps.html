@@ -123,7 +123,7 @@
   <div id="locate-me" class="custom-button" onclick="locateMe()">Posisi Saya</div>
 </div>
 
-<div id="route-info">Jarak & Waktu tempuh akan muncul di sini</div>
+<div id="route-info">Jarak &amp; Waktu tempuh akan muncul di sini</div>
 
 <!-- Libs -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -133,7 +133,8 @@
 
 <script>
 // ===== KONFIGURASI =====
-const CSV_URL = "https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/data/survey.csv"; // ganti kalau beda repo
+// Ganti ke raw CSV repo kamu kalau beda:
+const CSV_URL = "https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/data/survey.csv";
 
 // ===== PETA & ROUTING =====
 var map = L.map('map').setView([-2.5, 117], 5);
@@ -182,7 +183,7 @@ function locateMe(){
 
 function resetRoute(){
   routingControl.setWaypoints([]);
-  document.getElementById('route-info').innerHTML = "Jarak & Waktu tempuh akan muncul di sini";
+  document.getElementById('route-info').innerHTML = "Jarak &amp; Waktu tempuh akan muncul di sini";
 }
 
 function getIcon(name){
@@ -198,24 +199,33 @@ function getIcon(name){
 
 // ===== MARKERS dari CSV =====
 var markersCluster = L.markerClusterGroup();
-var featuresIndex = []; // buat pencarian
-var allMarkers = [];    // buat fitBounds
+var featuresIndex = []; // untuk pencarian
+var allMarkers = [];    // untuk fitBounds
 
 Papa.parse(CSV_URL, {
   download:true, header:true, skipEmptyLines:true,
   complete: function(res){
     const rows = res.data || [];
     rows.forEach(function(r){
-      const nm  = r.Nama || r.name || "(Tanpa Nama)";
-      const lat = parseFloat(r.Latitude || r.lat || r.latitude);
-      const lng = parseFloat(r.Longitude || r.lng || r.longitude);
+      const nm  = (r.nama_di || r.Nama || r.name || "").toString() || "(Tanpa Nama)";
+      const lat = parseFloat(r.y || r.lat || r.latitude);
+      const lng = parseFloat(r.x || r.lng || r.longitude);
       if (isNaN(lat) || isNaN(lng)) return;
+
+      const prov = (r.provinsi || r.Provinsi || "-").toString();
+      const kab  = (r.kabupaten || r.Kabupaten || "-").toString();
+      const bbws = (r.bbws || r.BBWS || "-").toString();
+      const note = (r.catatan || r.Catatan || "-").toString();
 
       const marker = L.marker([lat, lng], {icon:getIcon(nm)}).bindPopup(`
         <b>${nm}</b><br>
         <div style="color:#555;font-size:12px;margin:2px 0;">
           📍 <b>Koordinat:</b> ${lat.toFixed(6)}, ${lng.toFixed(6)}
         </div>
+        Provinsi: ${prov}<br>
+        Kabupaten: ${kab}<br>
+        BBWS: ${bbws}<br>
+        Catatan: ${note}<br>
         <a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank" rel="noopener">Buka di Google Maps</a><br>
         <button onclick='showRoute(${lat}, ${lng})'>Tunjukkan Rute</button>
       `);
