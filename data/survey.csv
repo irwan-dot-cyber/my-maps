@@ -1,21 +1,6 @@
-Nama,Latitude,Longitude,GlobalID
-D.I. Alue Peudeung,4.905597755,97.07767342,abc123
-D.I.R. Tanjung Sejaro,-2.9681421,104.7309104,def456
-D.I.R. Parebok,-2.957959107,112.9278095,ghi789
-D.I.R. Kuala Jelai,-2.954167,110.761667,jkl012
-D.I. Paluh Manan,3.75116,98.57783,mno345
-D.I. Kolam,3.62731,98.78792,pqr678
-D.I. Bukit Setia,3.94227,98.459,stu901
-D.I. Kerpei,3.61064,98.38525,vwx234
-D.I. Pardomuan Nauli,3.67036,98.39548,yza567
-D.I. Tanjung Keriahan,3.577778,98.34432,bcd890
-D.I.R. Gebang,3.9792,98.3569,efg123
-D.I. Paya Tampak,3.8679,98.482,hij456
-D.I. Modo,1.447,97.4627,klm789
-D.I. Zumuzu,0.94552,97.8693,nop012
-D.I. Sorkam Kanan,1.89583,98.572403,qrs345
-D.I. Sogawu,1.44805,97.468518,tuv678
-D.I. Aran Dalu,3.711865,98.584492,wxy901
-D.I.R. Sisir Gunting,3.801718,98.615082,zab234
-D.I. Kota Datar,3.746665,98.54839,cde567
-D.I. Amplas,3.556636,98.757803,fgh890
+Nama,Latitude,Longitude,GlobalID,ProgresTerakhir,TanggalProgres,Foto1,Foto2,FotoURLs
+D.I. Alue Peudeung,4.905597755,97.07767342,abc123,"Saluran primer 60%","2025-08-20","https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/data/foto/alue1.png","https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/data/foto/alue2.png",
+D.I.R. Tanjung Sejaro,-2.9681421,104.7309104,def456,"Pintu air 40%","2025-08-18","https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/data/foto/tjs1.png",,
+D.I.R. Parebok,-2.957959107,112.9278095,ghi789,"Jaringan sekunder 25%","2025-08-15","https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/data/foto/prb1.png",,
+D.I.R. Kuala Jelai,-2.954167,110.761667,jkl012,"Bangunan pelengkap 10%","2025-08-10",,,"https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/data/foto/kjl1.png"
+D.I. Paluh Manan,3.75116,98.57783,mno345,"Pemeliharaan rutin selesai","2025-08-05",,,
