@@ -1,241 +1,105 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8" />
-<title>Pelaksanaan Inpres 2/2025 Tahap 1</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<title>Peta Daerah Irigasi (CSV)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css"/>
 <style>
-  :root{--pu:#FFD700;--blue:#2196F3;--green:#4CAF50;--orange:#ff5722;--purple:#673ab7;}
-  *{box-sizing:border-box}
-  html,body{height:100%;margin:0}
-  #header{
-    background-color:var(--pu);color:#000;padding:10px;display:flex;align-items:center;gap:10px;
-    font-weight:700;font-size:14px
-  }
-  #header img{height:40px}
-  #map{height:calc(100% - 110px)}
-  #route-info{background:#f9f9f9;padding:8px;font-size:14px;border-top:1px solid #ccc}
-  .top-controls{position:absolute;top:60px;right:10px;left:10px;display:flex;justify-content:space-between;z-index:1000}
-  .search-box{background:#fff;padding:5px;border-radius:4px;box-shadow:0 0 4px rgba(0,0,0,.3);position:relative}
-  .search-box input{width:260px;padding:6px}
-  #suggestions{position:absolute;top:40px;left:0;background:#fff;border:1px solid #ccc;border-top:none;max-height:200px;overflow-y:auto;width:100%;display:none;z-index:2000}
-  #suggestions div{padding:6px;cursor:pointer}
-  #suggestions div:hover{background:#eee}
-  .bottom-buttons{position:absolute;bottom:40px;left:10px;display:flex;flex-direction:column;gap:6px;z-index:1000}
-  .custom-button{padding:8px 12px;border-radius:6px;color:#fff;font-weight:700;cursor:pointer;text-align:center;text-decoration:none}
-  #home{background:var(--blue)} #reset-route{background:var(--orange)} #locate-me{background:var(--green)}
+  html, body { margin:0; padding:0; height:100%; }
+  #map { height: calc(100% - 60px); }
+  #header { background:#FFD700; padding:10px; font-weight:bold; font-size:14px; }
+  #route-info { background:#f9f9f9; padding:6px; font-size:13px; }
   .poi-info{margin-top:6px;font-size:12px;line-height:1.35}
-  .btn-mini{display:inline-block;margin-top:8px;padding:6px 10px;border-radius:6px;color:#fff;font-weight:700;text-decoration:none}
-  .btn-foto{background:var(--purple)}
+  .btn-mini{display:inline-block;margin-top:8px;padding:6px 10px;border-radius:6px;
+            color:#fff;font-weight:700;text-decoration:none;background:#673ab7}
 </style>
 </head>
 <body>
 
-<div id="header">
-  <img src="https://iconape.com/wp-content/png_logo_vector/pu-logo.png" alt="Logo PU" />
-  KEMENTERIAN PEKERJAAN UMUM • DIREKTORAT JENDERAL SUMBER DAYA AIR • DIREKTORAT IRIGASI DAN RAWA
-</div>
-
-<div class="top-controls">
-  <div></div>
-  <div class="search-box">
-    <input type="text" id="search" placeholder="Cari lokasi..." oninput="showSuggestions(this.value)" />
-    <div id="suggestions"></div>
-  </div>
-</div>
-
+<div id="header">Kementerian PU — Daftar Daerah Irigasi (dari survey.csv)</div>
 <div id="map"></div>
-
-<div class="bottom-buttons">
-  <a href="https://s.pu.go.id/MTI4OA/Pelaksanaan_INPRES2_Tahap1" target="_blank" id="home" class="custom-button">Beranda</a>
-  <div id="reset-route" class="custom-button" onclick="resetRoute()">Reset Rute</div>
-  <div id="locate-me" class="custom-button" onclick="locateMe()">Posisi Saya</div>
-</div>
-
 <div id="route-info">Jarak &amp; Waktu tempuh akan muncul di sini</div>
 
-<!-- LIBS -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
-<script src="https://unpkg.com/esri-leaflet@3.0.12/dist/esri-leaflet.js"></script>
+<script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 
 <script>
-/* =========================
-   KONFIGURASI
-   ========================= */
-// Base FeatureServer Survey123 kamu
-const SERVICE_URL = "https://sigi.pu.go.id/portalpupr/rest/services/Hosted/survey123_dd7945ef9e574f07a0e7c82be6bdc3cf/FeatureServer";
-// Index layer titik (umumnya 0; ganti jika layer titik kamu berbeda)
-const LAYER_INDEX = 0;
-// FORM_ID form Survey123 "Tambah Foto Progres"
+// URL CSV dari repo GitHub
+const CSV_URL = "https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/data/survey.csv";
+
+// ID Form Survey123
 const FORM_ID = "dd7945ef9e574f07a0e7c82be6bdc3cf";
 
-/* =========================
-   PETA & ROUTING
-   ========================= */
-var map = L.map('map').setView([-2.5, 117], 5);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19, attribution:'© OpenStreetMap'}).addTo(map);
+// Inisialisasi peta
+var map = L.map('map').setView([-2.5,117],5);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  maxZoom:19, attribution:'© OpenStreetMap'
+}).addTo(map);
 
+// Routing control
 var routingControl = L.Routing.control({
-  waypoints: [],
-  routeWhileDragging: true,
-  show: false,
+  waypoints: [], routeWhileDragging: true, show:false,
   createMarker: function(){ return null; }
 }).addTo(map);
 
-function formatTime(seconds){
-  var days = Math.floor(seconds / 86400);
-  var hours = Math.floor((seconds % 86400) / 3600);
-  var minutes = Math.floor((seconds % 3600) / 60);
-  var str = "";
-  if(days>0) str += days+" hari ";
-  if(hours>0) str += hours+" jam ";
-  str += minutes+" menit";
-  return str;
-}
 routingControl.on('routesfound', function(e){
   var route = e.routes[0];
-  var distance = (route.summary.totalDistance/1000).toFixed(2);
-  var time = formatTime(route.summary.totalTime);
+  var dist = (route.summary.totalDistance/1000).toFixed(2);
+  var time = (route.summary.totalTime/60).toFixed(0);
   document.getElementById('route-info').innerHTML =
-    "<b>Jarak:</b> "+distance+" km &nbsp; | &nbsp; <b>Waktu Tempuh:</b> "+time;
+    "<b>Jarak:</b> "+dist+" km | <b>Waktu:</b> "+time+" menit";
 });
 
-/* =========================
-   UTIL & STYLE
-   ========================= */
-function getIconByName(name){
-  var iconUrl = '';
-  if(name && name.startsWith('D.I.R.')) iconUrl = 'https://maps.google.com/mapfiles/ms/icons/red-dot.png';
-  else if(name && name.startsWith('D.I.')) iconUrl = 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png';
-  else iconUrl = 'https://maps.google.com/mapfiles/ms/icons/green-dot.png';
-  return L.icon({
-    iconUrl, iconSize:[25,41], iconAnchor:[12,41], popupAnchor:[1,-34],
-    shadowUrl:'https://unpkg.com/leaflet/dist/images/marker-shadow.png', shadowSize:[41,41]
-  });
-}
-function bestName(attrs){
-  const keys = ["Nama_Proyek","Nama","name","Project","Judul","Title"];
-  for (const k of keys){ if(attrs[k] && String(attrs[k]).trim()!=="") return String(attrs[k]); }
-  for (const key in attrs){ if(/nama/i.test(key) && attrs[key]) return String(attrs[key]); }
-  return "(Tanpa Nama)";
-}
-
-/* =========================
-   FEATURE LAYER
-   ========================= */
-var featuresIndex = []; // untuk pencarian
-var fl = L.esri.featureLayer({
-  url: SERVICE_URL + "/" + LAYER_INDEX,
-  pointToLayer: function(geojson, latlng){
-    const attrs = geojson.properties || {};
-    const nm = bestName(attrs);
-    return L.marker(latlng, { icon: getIconByName(nm) });
-  }
-}).addTo(map);
-
-// Pasang popup & index pencarian pada tiap feature
-fl.on('createfeature', function(e){
-  const layer = e.layer;
-  const attrs = layer.feature && layer.feature.properties ? layer.feature.properties : {};
-  const nm = bestName(attrs);
-  const lat = layer.getLatLng().lat;
-  const lng = layer.getLatLng().lng;
-  const latStr = lat.toFixed(6);
-  const lngStr = lng.toFixed(6);
-  const gmaps = `https://www.google.com/maps?q=${lat},${lng}`;
-
-  // Ambil GlobalID (nama field bisa 'GlobalID' atau variasinya)
-  const globalid = attrs["GlobalID"] || attrs["globalid"] || attrs["globalId"] || "";
-
-  // URL Survey123 tambah foto (kirim name, dan parentid kalau ada)
-  let tambahFotoUrl = `https://survey123.arcgis.com/share/${FORM_ID}?name=${encodeURIComponent(nm)}`;
-  if (globalid) {
-    tambahFotoUrl += `&parentid=${encodeURIComponent(globalid)}`;
-  }
-
-  const popupHtml = `
-    <b>${nm}</b><br/>
-    <button onclick='showRoute(${lat}, ${lng})'>Tunjukkan Rute</button>
-    <div class="poi-info">
-      <div><b>Koordinat:</b> ${latStr}, ${lngStr}</div>
-      <div><a href="${gmaps}" target="_blank" rel="noopener">Buka di Google Maps</a></div>
-    </div>
-    <a class="btn-mini btn-foto" target="_blank" rel="noopener" href="${tambahFotoUrl}">Tambah Foto</a>
-  `;
-  layer.bindPopup(popupHtml);
-
-  featuresIndex.push({ name: nm, layer: layer });
-});
-
-// Fit bounds saat layer selesai load
-fl.once('load', function(){
-  try { map.fitBounds(fl.getBounds(), { padding:[20,20] }); } catch(e){}
-});
-
-/* =========================
-   PENCARIAN
-   ========================= */
-function showSuggestions(query){
-  var suggestionBox = document.getElementById("suggestions");
-  suggestionBox.innerHTML = "";
-  if(query.length===0){ suggestionBox.style.display="none"; return; }
-  var matches = featuresIndex.filter(m => m.name.toLowerCase().includes(query.toLowerCase()));
-  if(matches.length>0){
-    matches.slice(0,100).forEach(m=>{
-      var div = document.createElement("div");
-      div.textContent = m.name;
-      div.onclick = function(){
-        document.getElementById("search").value = m.name;
-        suggestionBox.style.display="none";
-        var ll = m.layer.getLatLng();
-        map.setView(ll, 14);
-        m.layer.openPopup();
-      };
-      suggestionBox.appendChild(div);
-    });
-    suggestionBox.style.display="block";
-  } else {
-    suggestionBox.style.display="none";
-  }
-}
-
-/* =========================
-   GEOLOCATE & ROUTE
-   ========================= */
-function locateMe(){
-  if(navigator.geolocation){
-    navigator.geolocation.getCurrentPosition(function(position){
-      var lat = position.coords.latitude;
-      var lng = position.coords.longitude;
-      L.marker([lat,lng], {
-        icon:L.icon({iconUrl:'https://maps.google.com/mapfiles/ms/icons/green-dot.png',iconSize:[25,41],iconAnchor:[12,41],popupAnchor:[1,-34]})
-      }).addTo(map).bindPopup("Lokasi Anda").openPopup();
-      map.setView([lat,lng],13);
-    }, function(){ alert("Tidak dapat mengakses lokasi Anda."); });
-  } else {
-    alert("Geolocation tidak didukung di browser ini.");
-  }
-}
-
+// Fungsi routing
 function showRoute(lat,lng){
   if(navigator.geolocation){
-    navigator.geolocation.getCurrentPosition(function(position){
-      var from = L.latLng(position.coords.latitude, position.coords.longitude);
-      var to = L.latLng(lat,lng);
+    navigator.geolocation.getCurrentPosition(function(pos){
+      var from = L.latLng(pos.coords.latitude,pos.coords.longitude);
+      var to   = L.latLng(lat,lng);
       routingControl.setWaypoints([from,to]);
-    }, function(){ alert("Tidak dapat mengakses lokasi Anda."); });
-  } else {
-    alert("Geolocation tidak didukung di browser ini.");
+    });
   }
 }
 
-function resetRoute(){
-  routingControl.setWaypoints([]);
-  document.getElementById('route-info').innerHTML = "Jarak &amp; Waktu tempuh akan muncul di sini";
-}
+// Load CSV dengan PapaParse
+Papa.parse(CSV_URL, {
+  download:true, header:true,
+  complete: function(res){
+    var rows = res.data.filter(r => r.Latitude && r.Longitude);
+    var markers = [];
+    rows.forEach(r => {
+      var lat = parseFloat(r.Latitude);
+      var lng = parseFloat(r.Longitude);
+      var nm  = r.Nama || "Tanpa Nama";
+      var gid = r.GlobalID || "";
+      var latStr = lat.toFixed(6), lngStr = lng.toFixed(6);
+      var gmaps = `https://www.google.com/maps?q=${lat},${lng}`;
+      var tambahFotoUrl = `https://survey123.arcgis.com/share/${FORM_ID}?name=${encodeURIComponent(nm)}`;
+      if(gid) tambahFotoUrl += `&parentid=${encodeURIComponent(gid)}`;
+
+      var popup = `
+        <b>${nm}</b><br>
+        <button onclick='showRoute(${lat},${lng})'>Tunjukkan Rute</button>
+        <div class="poi-info">
+          <div><b>Koordinat:</b> ${latStr}, ${lngStr}</div>
+          <div><a href="${gmaps}" target="_blank">Buka di Google Maps</a></div>
+        </div>
+        <a class="btn-mini" target="_blank" href="${tambahFotoUrl}">Tambah Foto</a>
+      `;
+
+      var marker = L.marker([lat,lng]).bindPopup(popup).addTo(map);
+      markers.push(marker);
+    });
+
+    if(markers.length){
+      var group = L.featureGroup(markers);
+      map.fitBounds(group.getBounds(), {padding:[20,20]});
+    }
+  }
+});
 </script>
 </body>
 </html>
