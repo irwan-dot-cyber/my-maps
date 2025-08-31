@@ -2,30 +2,37 @@
 <html lang="id">
 <head>
 <meta charset="utf-8"/>
-<title>PUPR • Radar Hujan (RainViewer) — Sumatera & Kalimantan</title>
+<title>PUPR • Radar Hujan (RainViewer) — Indonesia</title>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-  :root{--H:74px;--T:56px;--card:#fff;--bd:#eee;--r:12px;--shadow:0 6px 22px rgba(0,0,0,.08);--font:system-ui,Segoe UI,Roboto,Arial}
+  :root{--H:74px;--T:56px;--bd:#eee;--r:12px;--shadow:0 6px 22px rgba(0,0,0,.08);--font:system-ui,Segoe UI,Roboto,Arial}
   html,body{height:100%;margin:0;font-family:var(--font)}
-  #header{position:fixed;top:0;left:0;right:0;height:var(--H);display:flex;align-items:center;gap:12px;padding:10px 14px;background:#fff;border-bottom:1px solid var(--bd);font-weight:700}
+  #header{position:fixed;top:0;left:0;right:0;height:var(--H);
+    display:flex;align-items:center;gap:12px;padding:10px 14px;background:#fff;
+    border-bottom:1px solid var(--bd);font-weight:700;z-index:900}
   #header img{height:48px}
-  .top{position:fixed;top:var(--H);left:0;right:0;height:var(--T);display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 14px;background:#fff;border-bottom:1px solid var(--bd)}
+  .top{position:fixed;top:var(--H);left:0;right:0;height:var(--T);
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 14px;
+    background:#fff;border-bottom:1px solid var(--bd);z-index:900}
   .pill{padding:6px 10px;border:1px solid #dcdcdc;border-radius:999px;background:#fff;cursor:pointer}
   .pill:hover{background:#f6f6f6}
-  .muted{color:#666;font-size:12px}
   #map{position:absolute;top:calc(var(--H) + var(--T));left:0;right:0;bottom:0}
-  .infobox{position:absolute;left:12px;top:calc(var(--H)+var(--T)+10px);background:rgba(255,255,255,.97);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--shadow);padding:8px 10px;font-size:12px;max-width:360px;z-index:800}
-  .panel{position:absolute;right:12px;bottom:12px;width:360px;background:rgba(255,255,255,.97);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--shadow);padding:10px 12px;font-size:13px;z-index:800}
+  .infobox{position:absolute;left:10px;bottom:10px;background:rgba(255,255,255,.9);
+    border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--shadow);
+    padding:6px 8px;font-size:11px;z-index:800;max-width:300px}
+  .panel{position:absolute;right:10px;bottom:60px;width:340px;
+    background:rgba(255,255,255,.95);border:1px solid var(--bd);border-radius:var(--r);
+    box-shadow:var(--shadow);padding:10px 12px;font-size:13px;z-index:800}
   .panel h3{margin:4px 0 8px}
   .legend{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;margin-bottom:6px}
   .grad{height:14px;background:linear-gradient(90deg,#3a7bd5,#00d2ff,#00ff88,#ffee00,#ff7b00,#ff004c,#b800ff);border:1px solid #777;border-radius:6px}
-  .row{margin:4px 0}
   .anim{display:flex;align-items:center;gap:8px;margin-top:6px}
   input[type="range"]{width:160px}
-  label.small{font-size:12px;color:#444}
-  .switch{display:flex;align-items:center;gap:6px}
+  @media(max-width:720px){
+    .panel{width:calc(100% - 20px);left:10px;right:10px;bottom:70px}
+  }
 </style>
 </head>
 <body>
@@ -35,121 +42,62 @@
 </div>
 
 <div class="top">
-  <button class="pill" id="btnSumatera">Sumatera</button>
-  <button class="pill" id="btnKalimantan">Kalimantan</button>
-  <button class="pill" id="btnAll">Indonesia</button>
   <button class="pill" id="btnReload">Reload Data</button>
-
   <div class="anim">
     <button class="pill" id="btnPlay">▶︎</button>
     <input id="frame" type="range" min="0" max="0" step="1" value="0"/>
-    <span class="muted" id="ts">—</span>
-  </div>
-
-  <div class="switch">
-    <input type="checkbox" id="toggleMask" checked/>
-    <label for="toggleMask" class="small">Mask Sumatera & Kalimantan</label>
+    <span id="ts" style="font-size:12px;color:#666">—</span>
   </div>
 </div>
 
 <div id="map"></div>
 
 <div class="infobox">
-  <b>Sumber:</b> RainViewer Radar (global). <span class="muted">Update ~10 menit; tanpa API key.</span><br/>
-  <span class="muted">Kredit: © RainViewer • © OpenStreetMap</span>
+  <b>Sumber:</b> RainViewer Radar (global, update ~10 menit).<br/>
+  <span style="color:#555">Kredit: © RainViewer • © OpenStreetMap</span>
 </div>
 
 <div class="panel">
   <h3>Legenda Radar</h3>
   <div class="legend">
-    <div class="grad" title="Intensitas pantulan radar (DBZ ~ intensitas hujan)"></div>
-    <div class="muted">← ringan … sedang … lebat … sangat lebat →</div>
+    <div class="grad"></div>
+    <div style="font-size:12px;color:#555">← ringan … sedang … lebat … sangat lebat →</div>
   </div>
-  <div class="row"><b>Frame:</b> <span id="ts2" class="muted">—</span></div>
-  <div class="row"><b>Keterangan:</b> Ini adalah **citra radar** (pantulan), bukan prakiraan model; cocok untuk memantau hujan yang sedang/akan lewat beberapa jam ke depan.</div>
+  <div><b>Frame:</b> <span id="ts2" class="muted">—</span></div>
 </div>
 
 <script>
-/* ========= Peta dasar ========= */
-const map=L.map('map',{minZoom:4,maxZoom:18});
+const map=L.map('map',{minZoom:3,maxZoom:18});
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
+map.fitBounds([[-11,94],[6,141]]); // zoom ke Indonesia
 
-const bSum=L.latLngBounds([[-6.6,94.8],[6.5,105.8]]);
-const bKal=L.latLngBounds([[-4.8,108.0],[7.5,119.8]]);
-const bAll=L.latLngBounds(bSum).extend(bKal);
-map.fitBounds(bAll);
-
-btnSumatera.onclick=()=>map.fitBounds(bSum);
-btnKalimantan.onclick=()=>map.fitBounds(bKal);
-btnAll.onclick=()=>map.fitBounds(bAll);
-
-/* ========= Mask (Sumatera + Kalimantan) ========= */
-let maskLayer=null;
-function addMask(){
-  const world=[[[ -90,-180],[90,-180],[90,180],[-90,180] ]];
-  const sum=[[ [94.8,-6.6],[105.8,-6.6],[105.8,6.5],[94.8,6.5] ]];
-  const kal=[[ [108,-4.8],[119.8,-4.8],[119.8,7.5],[108,7.5] ]];
-  maskLayer=L.polygon([...world,...sum,...kal],{fillRule:'evenodd',color:'#000',weight:1,fillColor:'#000',fillOpacity:.4,opacity:.2});
-  maskLayer.addTo(map);
-}
-function removeMask(){ if(maskLayer){ map.removeLayer(maskLayer); maskLayer=null; } }
-toggleMask.onchange=()=>{ if(toggleMask.checked) addMask(); else removeMask(); };
-addMask();
-
-/* ========= RainViewer ========== */
-/* Ambil daftar frame dari API public RainViewer dan load sebagai tile layer.
-   Dok: https://www.rainviewer.com/api.html */
 let frames=[], frameIndex=0, animTimer=null, radarLayer=null;
-
 async function loadFrames(){
   const url='https://api.rainviewer.com/public/weather-maps.json';
   const res=await fetch(url); const json=await res.json();
-  // gunakan past + nowcast; ambil timestamp unix (sec)
-  const arr=[...(json.radar.past||[]), ...(json.radar.nowcast||[])];
-  frames=arr.map(x=>x.time);
-  if(frames.length===0) throw new Error('No frames');
-  frame.max=String(frames.length-1);
-  setFrame(frames.length-1); // pilih frame terbaru
+  frames=[...(json.radar.past||[]),...(json.radar.nowcast||[])].map(x=>x.time);
+  if(!frames.length){alert("Tidak ada frame RainViewer");return;}
+  frame.max=String(frames.length-1); setFrame(frames.length-1);
 }
-
-function frameUrl(t){
-  // 256px tiles, smoothing 1_1; dokumentasi RainViewer
-  return `https://tilecache.rainviewer.com/v2/radar/${t}/256/{z}/{x}/{y}/2/1_1.png`;
-}
-
+function frameUrl(t){return `https://tilecache.rainviewer.com/v2/radar/${t}/256/{z}/{x}/{y}/2/1_1.png`;}
 function setFrame(idx){
-  frameIndex=idx;
-  frame.value=String(idx);
-  const t=frames[idx];
-  const timeStr=new Date(t*1000).toLocaleString('id-ID',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'short'});
+  frameIndex=idx; frame.value=String(idx);
+  const t=frames[idx]; const d=new Date(t*1000);
+  const timeStr=d.toLocaleString('id-ID',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'short'});
   ts.textContent=timeStr; ts2.textContent=timeStr;
-
-  // ganti layer radar
   if(radarLayer) map.removeLayer(radarLayer);
   radarLayer=L.tileLayer(frameUrl(t),{opacity:0.75,attribution:'© RainViewer'}).addTo(map);
 }
-
-frame.oninput=()=> setFrame(parseInt(frame.value,10));
-
+frame.oninput=()=>setFrame(parseInt(frame.value,10));
 btnPlay.onclick=()=>{
-  if(animTimer){
-    clearInterval(animTimer); animTimer=null; btnPlay.textContent='▶︎'; return;
-  }
-  btnPlay.textContent='⏸';
-  animTimer=setInterval(()=>{
+  if(animTimer){clearInterval(animTimer);animTimer=null;btnPlay.textContent='▶︎';return;}
+  btnPlay.textContent='⏸';animTimer=setInterval(()=>{
     let next=frameIndex+1; if(next>=frames.length) next=0;
     setFrame(next);
-  }, 600); // kecepatan animasi (ms)
+  },600);
 };
-
-btnReload.onclick=async ()=>{
-  btnReload.disabled=true; btnReload.textContent='Reloading…';
-  try{ await loadFrames(); } catch(e){ alert('Gagal memuat data RainViewer'); }
-  btnReload.disabled=false; btnReload.textContent='Reload Data';
-};
-
-// init
-loadFrames().catch(()=>{ alert('Gagal mengambil frame RainViewer. Coba lagi.'); });
+btnReload.onclick=loadFrames;
+loadFrames();
 </script>
 </body>
 </html>
