@@ -2,367 +2,150 @@
 <html lang="id">
 <head>
   <meta charset="utf-8" />
-  <title>PUPR • Prakiraan & Peringatan Hujan BMKG — Sumatera & Kalimantan</title>
+  <title>PUPR • Prakiraan Hujan BMKG — Sumatera & Kalimantan</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- Leaflet -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <!-- Esri Leaflet -->
-  <script src="https://unpkg.com/esri-leaflet@3.0.11/dist/esri-leaflet.js"
-    integrity="sha256-u8xG2ZuJ9vJ1y3d+P8z0j+o9czTep3y06dvfKxCgblc=" crossorigin=""></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/esri-leaflet@3.0.11/dist/esri-leaflet.js"></script>
   <style>
-    :root{
-      --header-h: 74px;
-      --card-bg: rgba(255,255,255,.97);
-      --card-br: 12px;
-      --card-bd: 1px solid #e7e7e7;
-      --shadow: 0 6px 22px rgba(0,0,0,.08);
-      --font: system-ui, Segoe UI, Roboto, Arial, sans-serif;
-    }
-    html, body { height: 100%; margin: 0; font-family: var(--font); }
-    #map { position: absolute; top: calc(var(--header-h) + 56px); left: 0; right: 0; bottom: 0; }
-
-    /* === HEADER (menggunakan markup yg kamu kirim) === */
-    #header{
-      position: fixed; z-index: 1200; top: 0; left:0; right:0; height: var(--header-h);
-      display: flex; align-items: center; gap: 12px; padding: 10px 14px;
-      background: #fff; border-bottom: 1px solid #e6e6e6;
-    }
-    #header img{ height: 48px; width: auto; }
-    #header span, #header { font-weight: 700; letter-spacing:.2px; }
-    /* responsif baris panjang */
-    #header { font-size: 14px; line-height: 1.15; }
-
-    /* === TOP CONTROLS (menggunakan markup yg kamu kirim) === */
-    .top-controls{
-      position: fixed; z-index: 1150; top: var(--header-h); left: 0; right: 0; height: 56px;
-      display: flex; align-items: center; justify-content: space-between; gap: 12px;
-      padding: 8px 14px; background: #fff; border-bottom: 1px solid #eee;
-    }
-    #top-left{ display: flex; gap: 8px; align-items: center; }
-    .search-box{ position: relative; width: min(520px, 60vw); }
-    .search-box input{
-      width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid #dcdcdc;
-      font-size: 14px; background:#fff;
-    }
-    #suggestions{
-      position: absolute; top: 42px; left: 0; right: 0;
-      background: var(--card-bg); border: var(--card-bd); border-radius: 10px; box-shadow: var(--shadow);
-      max-height: 320px; overflow: auto; display: none;
-    }
-    #suggestions .item{
-      padding: 8px 10px; cursor: pointer; border-bottom: 1px dashed #eee; font-size: 13px;
-    }
-    #suggestions .item:last-child{ border-bottom: 0; }
-    #suggestions .item:hover{ background: #f6f6f6; }
-
-    /* === PANEL LEGENDAR KANAN BAWAH === */
-    .legend-panel {
-      position: absolute; z-index: 1100; right: 12px; bottom: 12px;
-      width: 340px; max-height: 52vh; overflow: auto;
-      background: var(--card-bg); border: var(--card-bd); border-radius: var(--card-br); box-shadow: var(--shadow);
-      padding: 10px 12px; font-size: 13px;
-    }
-    .legend-panel h3 { margin: 4px 0 6px; font-size: 14px; }
-    .legend-items .item { display:flex; align-items:center; gap:8px; margin:4px 0; }
-    .swatch { width:18px; height:12px; border:1px solid #777; }
-    .status { color:#555; font-size:12px; margin:6px 0; }
-    .impact-list { margin-top:6px; border-top:1px dashed #ddd; padding-top:6px; }
-    .impact-list .row { margin:4px 0; }
-    .muted { color:#777; font-size:12px; }
-
-    /* === Info kiri atas === */
-    .infobox {
-      position:absolute; z-index:1100; left:12px; top: calc(var(--header-h) + 66px);
-      background: var(--card-bg); border: var(--card-bd); border-radius: var(--card-br);
-      box-shadow: var(--shadow); padding:8px 10px; font:12px var(--font);
-    }
-
-    /* Tombol cepat */
-    .pill{ padding: 6px 10px; border:1px solid #dcdcdc; border-radius:999px; background:#fff; cursor:pointer; }
-    .pill:hover{ background:#f6f6f6; }
-
-    /* Toolbar kecil kiri atas di peta */
-    .quickbar{
-      position:absolute; z-index:1100; left:12px; top: calc(var(--header-h) + 120px);
-      display:flex; gap:8px; background: var(--card-bg); border: var(--card-bd);
-      border-radius: var(--card-br); box-shadow: var(--shadow); padding:6px;
-    }
-
-    @media (max-width: 720px){
-      .legend-panel{ width: 300px; }
-      #header{ font-size: 12px; }
-      .search-box{ width: min(420px, 70vw); }
-    }
+    html, body {height:100%; margin:0;}
+    #map {position:absolute; top:130px; bottom:0; left:0; right:0;}
+    #header{position:fixed;top:0;left:0;right:0;height:74px;background:#fff;border-bottom:1px solid #eee;
+      display:flex;align-items:center;gap:12px;padding:10px;font-weight:700;font-family:sans-serif;}
+    #header img{height:48px}
+    .top-controls{position:fixed;top:74px;left:0;right:0;height:56px;background:#fff;border-bottom:1px solid #eee;
+      display:flex;align-items:center;justify-content:space-between;padding:8px 14px;font-family:sans-serif}
+    .pill{padding:6px 10px;border:1px solid #ccc;border-radius:999px;background:#fff;cursor:pointer}
+    .pill:hover{background:#f6f6f6}
+    .legend-panel{position:absolute;bottom:12px;right:12px;width:320px;background:#fff;
+      border:1px solid #eee;border-radius:12px;padding:10px;font-family:sans-serif;font-size:13px}
+    .legend-panel h3{margin:4px 0}
+    .legend-items .item{display:flex;align-items:center;gap:8px;margin:4px 0}
+    .swatch{width:18px;height:12px;border:1px solid #777}
+    .status{font-size:12px;color:#555;margin:6px 0}
+    .impact-list{margin-top:6px;border-top:1px dashed #ddd;padding-top:6px}
   </style>
 </head>
 <body>
-
-  <!-- ====== HEADER & TOP CONTROLS (persis markup kamu) ====== -->
-  <div id="header">
-    <img src="https://iconape.com/wp-content/png_logo_vector/pu-logo.png" alt="Logo PU">
-    KEMENTERIAN PEKERJAAN UMUM DIREKTORAT JENDERAL SUMBER DAYA AIR  DIREKTORAT IRIGASI DAN RAWA
+<div id="header">
+  <img src="https://iconape.com/wp-content/png_logo_vector/pu-logo.png">
+  KEMENTERIAN PEKERJAAN UMUM DIREKTORAT JENDERAL SUMBER DAYA AIR DIREKTORAT IRIGASI DAN RAWA
+</div>
+<div class="top-controls">
+  <div>
+    <button class="pill" id="btnSumatera">Sumatera</button>
+    <button class="pill" id="btnKalimantan">Kalimantan</button>
+    <button class="pill" id="btnFull">Indonesia</button>
+    Periode: <select id="bulanSelect"></select>
+    <span id="status">Memuat…</span>
   </div>
-
-  <div class="top-controls">
-    <div id="top-left">
-      <!-- ruang tombol cepat lain kalau diperlukan -->
-      <button class="pill" id="btnSumatera">Sumatera</button>
-      <button class="pill" id="btnKalimantan">Kalimantan</button>
-      <button class="pill" id="btnFull">Indonesia</button>
-      <div class="muted" style="margin-left:6px;">Periode:
-        <select id="bulanSelect" title="Pilih bulan prakiraan (BMKG)"></select>
-        <span id="status" class="muted">Memuat…</span>
-      </div>
-      <div class="muted" style="margin-left:8px;">Opasitas:
-        <input id="opacity" type="range" min="0" max="1" step="0.05" value="0.8"/>
-        <span id="opacityVal" class="muted">0.80</span>
-      </div>
-    </div>
-    <div class="search-box">
-      <input type="text" id="search" placeholder="Cari lokasi..." oninput="showSuggestions(this.value)"/>
-      <div id="suggestions"></div>
-    </div>
+</div>
+<div id="map"></div>
+<div class="legend-panel">
+  <h3>Legenda</h3>
+  <div id="legendItems">Memuat…</div>
+  <div class="status" id="statusTanggal">Status waktu berlaku: —</div>
+  <div class="impact-list">
+    <strong>Kab/Kota terdampak:</strong>
+    <div id="impactList">Memuat…</div>
   </div>
+</div>
 
-  <!-- PETA -->
-  <div id="map"></div>
+<script>
+const PRAKIRAAN_URL="https://gis.bmkg.go.id/arcgis/rest/services/prakiraan_hujan_bulanan/Prakiraan_Hujan_Bulanan1/MapServer";
+const NOWCAST_URL="https://nowcasting.bmkg.go.id/arcgis/rest/services/production/nowcasting_publik_phase2/MapServer";
+const NOWCAST_LAYER_ID=2;
 
-  <!-- Info kiri atas -->
-  <div class="infobox">
-    <div><strong>Sumber:</strong> BMKG MapServer (Prakiraan Hujan Bulanan & Nowcasting).</div>
-    <div class="muted">Cantumkan kredit BMKG pada aplikasi.</div>
-  </div>
+async function getJson(url){const r=await fetch(url);if(!r.ok)throw new Error(r.status);return r.json();}
 
-  <!-- Panel kanan bawah: legenda & daftar kab/kota terdampak -->
-  <div class="legend-panel" id="legendPanel">
-    <h3>Legenda</h3>
-    <div class="legend-items" id="legendItems">Memuat…</div>
-    <div class="status" id="statusTanggal">Status waktu berlaku: —</div>
-    <div class="impact-list">
-      <strong>Kabupaten/Kota terdampak hujan lebat (aktif):</strong>
-      <div id="impactList" class="muted">Memuat daftar…</div>
-    </div>
-  </div>
+const map=L.map('map');
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(map);
 
-  <!-- Quickbar opsional untuk aksi tambahan -->
-  <div class="quickbar">
-    <button class="pill" id="btnReloadImpact">Reload Peringatan</button>
-  </div>
+// Fokus Indonesia → Sum+Kal
+const sumateraBounds=L.latLngBounds([[-6.6,94.8],[6.5,105.8]]);
+const kalimantanBounds=L.latLngBounds([[-4.8,108],[7.5,119.8]]);
+const sumKalBounds=sumateraBounds.extend(kalimantanBounds);
+map.fitBounds(sumKalBounds);
 
-  <script>
-    // ===== Konfigurasi layanan BMKG =====
-    const PRAKIRAAN_URL =
-      "https://gis.bmkg.go.id/arcgis/rest/services/prakiraan_hujan_bulanan/Prakiraan_Hujan_Bulanan1/MapServer";
-    const NOWCAST_URL =
-      "https://nowcasting.bmkg.go.id/arcgis/rest/services/production/nowcasting_publik_phase2/MapServer";
-    const NOWCAST_LAYER_ID = 2; // Nowcasting aktif
+btnSumatera.onclick=()=>map.fitBounds(sumateraBounds);
+btnKalimantan.onclick=()=>map.fitBounds(kalimantanBounds);
+btnFull.onclick=()=>map.fitBounds(sumKalBounds);
 
-    // ===== Inisialisasi peta =====
-    const map = L.map('map', { zoomControl: true, minZoom: 4, maxZoom: 18 });
-    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      { attribution: '&copy; OpenStreetMap' }).addTo(map);
-    const esriGray = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
-      { attribution: '&copy; Esri, HERE, Garmin' });
+// === Mask Layer (hanya Sumatera & Kalimantan) ===
+const world=[[[ -90,-180],[90,-180],[90,180],[-90,180]]];
+const sumatera=[[ [94.8,-6.6],[105.8,-6.6],[105.8,6.5],[94.8,6.5] ]];
+const kalimantan=[[ [108,-4.8],[119.8,-4.8],[119.8,7.5],[108,7.5] ]];
+const mask=L.polygon([...world,...sumatera,...kalimantan],{
+  color:'#000',weight:1,fillColor:'#ccc',fillOpacity:0.6,fillRule:'evenodd'
+}).addTo(map);
 
-    L.control.layers({ "OSM": osm, "Esri Gray": esriGray }, {}, { position:'topleft' }).addTo(map);
-
-    // Batas pandang Indonesia + preset Sumatera & Kalimantan
-    const indonesiaBounds = L.latLngBounds([[-11.2, 94.8], [6.5, 141.2]]);
-    map.fitBounds(indonesiaBounds);
-    const sumateraBounds   = L.latLngBounds([[-6.6, 94.8], [6.5, 105.8]]);
-    const kalimantanBounds = L.latLngBounds([[-4.8, 108.0], [7.5, 119.8]]);
-
-    document.getElementById('btnSumatera').onclick  = () => map.fitBounds(sumateraBounds);
-    document.getElementById('btnKalimantan').onclick = () => map.fitBounds(kalimantanBounds);
-    document.getElementById('btnFull').onclick       = () => map.fitBounds(indonesiaBounds);
-
-    // ===== Helper =====
-    async function getJson(u){ const r=await fetch(u); if(!r.ok) throw new Error(u); return r.json(); }
-    function humanizeMonth(name){ const m=name.match(/Bulan\s+(.+)$/i); return m?m[1]:name; }
-    function pad(n){ return String(n).padStart(2,'0'); }
-    function fmtWIB(ms){
-      try{ const d=new Date(ms); return `${pad(d.getDate())}-${pad(d.getMonth()+1)}-${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())} WIB`; }
-      catch{ return "—"; }
-    }
-
-    // ===== Prakiraan bulanan (dynamic map layer) =====
-    let prakiraanLayer = null;
-    function setPrakiraanLayer(serviceUrl, layerId){
-      if (prakiraanLayer) map.removeLayer(prakiraanLayer);
-      prakiraanLayer = L.esri.dynamicMapLayer({
-        url: serviceUrl, layers: [layerId],
-        opacity: parseFloat(document.getElementById('opacity').value),
-        useCors: true
-      }).addTo(map);
-      buildLegend(serviceUrl, layerId);
-    }
-    async function buildLegend(serviceUrl, layerId){
-      const legendDiv = document.getElementById('legendItems');
-      legendDiv.textContent = "Memuat…";
-      try{
-        const json = await getJson(`${serviceUrl}/legend?f=pjson`);
-        const entry = (json.layers || []).find(e => e.layerId === layerId);
-        legendDiv.innerHTML = "";
-        if(!entry || !entry.legend?.length){ legendDiv.textContent="Legend tidak tersedia."; return; }
-        entry.legend.forEach(sym => {
-          const row = document.createElement("div"); row.className="item";
-          const sw = document.createElement("div"); sw.className="swatch";
-          if (sym.imageData) {
-            sw.style.backgroundImage = `url(data:${sym.contentType};base64,${sym.imageData})`;
-            sw.style.backgroundSize = "cover"; sw.style.border = "1px solid #666";
-          }
-          const lab = document.createElement("div"); lab.textContent = (sym.label||"").trim();
-          row.appendChild(sw); row.appendChild(lab); legendDiv.appendChild(row);
-        });
-      }catch(e){ legendDiv.textContent="Legend gagal dimuat."; }
-    }
-    async function initPrakiraan(){
-      const status = document.getElementById('status');
-      const select = document.getElementById('bulanSelect');
-      try{
-        const info = await getJson(PRAKIRAAN_URL + "?f=pjson");
-        const layersMap = new Map(info.layers.map(l => [l.id, l]));
-        const group = info.layers.find(l => /Prakiraan\s+Curah\s+Hujan/i.test(l.name) && Array.isArray(l.subLayerIds));
-        const subs = (group?.subLayerIds || []).map(id => layersMap.get(id)).filter(Boolean).sort((a,b)=>b.id-a.id);
-        if(!subs.length){ status.textContent="Daftar bulan tidak ditemukan."; select.disabled = true; return; }
-        subs.forEach((lyr, idx)=>{
-          const opt = document.createElement("option"); opt.value = lyr.id; opt.textContent = humanizeMonth(lyr.name);
-          if(idx===0) opt.selected = true; select.appendChild(opt);
-        });
-        status.textContent = "Siap";
-        setPrakiraanLayer(PRAKIRAAN_URL, parseInt(select.value,10));
-        select.onchange = () => setPrakiraanLayer(PRAKIRAAN_URL, parseInt(select.value,10));
-      }catch(e){ document.getElementById('status').textContent="Gagal memuat prakiraan."; }
-    }
-
-    // Opacity binding
-    const opacityInput = document.getElementById('opacity');
-    const opacityVal = document.getElementById('opacityVal');
-    opacityInput.addEventListener('input', ()=>{
-      opacityVal.textContent = (+opacityInput.value).toFixed(2);
-      if (prakiraanLayer) prakiraanLayer.setOpacity(+opacityInput.value);
+// === Prakiraan bulanan ===
+let prakiraanLayer=null;
+function setPrakiraanLayer(serviceUrl,id){
+  if(prakiraanLayer) map.removeLayer(prakiraanLayer);
+  prakiraanLayer=L.esri.dynamicMapLayer({url:serviceUrl,layers:[id],opacity:0.8}).addTo(map);
+  buildLegend(serviceUrl,id);
+}
+function buildLegend(serviceUrl,id){
+  legendItems.textContent="Memuat…";
+  fetch(`${serviceUrl}/legend?f=pjson`).then(r=>r.json()).then(json=>{
+    const entry=json.layers.find(e=>e.layerId===id);
+    legendItems.innerHTML="";
+    if(!entry) return;
+    entry.legend.forEach(sym=>{
+      const row=document.createElement("div");row.className="item";
+      const sw=document.createElement("div");sw.className="swatch";
+      sw.style.backgroundImage=`url(data:${sym.contentType};base64,${sym.imageData})`;
+      sw.style.backgroundSize="cover";
+      row.appendChild(sw);
+      row.appendChild(document.createTextNode(sym.label||""));
+      legendItems.appendChild(row);
     });
+  });
+}
+function humanizeMonth(name){const m=name.match(/Bulan (.+)$/i);return m?m[1]:name;}
+async function initPrakiraan(){
+  const info=await getJson(PRAKIRAAN_URL+"?f=pjson");
+  const mapId=new Map(info.layers.map(l=>[l.id,l]));
+  const grp=info.layers.find(l=>/Prakiraan Hujan Bulanan/i.test(l.name));
+  const curah=(grp.subLayerIds||[]).map(id=>mapId.get(id)).find(l=>/Curah/i.test(l.name));
+  const subs=(curah.subLayerIds||[]).map(id=>mapId.get(id)).sort((a,b)=>b.id-a.id);
+  bulanSelect.innerHTML="";
+  subs.forEach((lyr,i)=>{
+    const opt=document.createElement("option");opt.value=lyr.id;opt.textContent=humanizeMonth(lyr.name);
+    if(i===0) opt.selected=true;bulanSelect.appendChild(opt);
+  });
+  setPrakiraanLayer(PRAKIRAAN_URL,parseInt(bulanSelect.value));
+  bulanSelect.onchange=()=>setPrakiraanLayer(PRAKIRAAN_URL,parseInt(bulanSelect.value));
+}
+initPrakiraan();
 
-    // ===== Nowcasting aktif (peringatan dini) =====
-    const nowcastLayer = L.esri.featureLayer({
-      url: `${NOWCAST_URL}/${NOWCAST_LAYER_ID}`,
-      style: f => {
-        const tipe = (f.properties?.tipearea || "");
-        const fill = /Terjadi/i.test(tipe) ? '#FFA800' : '#FFFF00';
-        return { color: '#666', weight: 1, fillColor: fill, fillOpacity: .45 };
-      },
-      where: "1=1"
-    }).addTo(map);
+// === Nowcasting aktif ===
+const nowcast=L.esri.featureLayer({
+  url:`${NOWCAST_URL}/${NOWCAST_LAYER_ID}`,
+  style:f=>({color:'#666',weight:1,fillColor:/Terjadi/i.test(f.properties.tipearea)?'#f80':'#ff0',fillOpacity:0.45})
+}).addTo(map);
 
-    const sumateraBounds   = L.latLngBounds([[-6.6, 94.8], [6.5, 105.8]]);
-    const kalimantanBounds = L.latLngBounds([[-4.8, 108.0], [7.5, 119.8]]);
-    const sumKalExtent = L.latLngBounds(sumateraBounds).extend(kalimantanBounds);
-    function inSumKal(latlng){ return sumKalExtent.contains(latlng); }
-
-    function centroidFromRing(coords){
-      if(!Array.isArray(coords) || !coords.length) return null;
-      let sx=0, sy=0; coords.forEach(c=>{ sx+=c[0]; sy+=c[1]; });
-      return L.latLng(sy/coords.length, sx/coords.length);
-    }
-
-    function refreshImpactList(){
-      const listDiv = document.getElementById('impactList');
-      const statusTanggal = document.getElementById('statusTanggal');
-      listDiv.textContent = "Memuat…";
-      nowcastLayer.query()
-        .where("1=1")
-        .fields(["namakotakab","namaprovinsi","waktuberlaku","waktuberakhir","kategoridampak","tipearea"])
-        .returnGeometry(true)
-        .run((err, fc)=>{
-          if(err || !fc || !fc.features?.length){
-            listDiv.innerHTML = "<span class='muted'>Tidak ada peringatan aktif untuk Sumatera/Kalimantan saat ini.</span>";
-            statusTanggal.textContent = "Status waktu berlaku: —";
-            return;
-          }
-          const rows = []; let minStart = null, maxEnd = null;
-          fc.features.forEach(f=>{
-            const p = f.properties || f.attributes || {};
-            const geom = f.geometry || {};
-            const ring = geom.coordinates?.[0];
-            const ctr = centroidFromRing(ring);
-            if(!ctr || !inSumKal(ctr)) return;
-            const kab = (p.namakotakab||"").trim();
-            const prov = (p.namaprovinsi||"").trim();
-            const tipe = (p.tipearea||"").trim();
-            const mulai = p.waktuberlaku; const akhir = p.waktuberakhir;
-            if(mulai){ minStart = (minStart===null)? mulai : Math.min(minStart, mulai); }
-            if(akhir){ maxEnd = (maxEnd===null)? akhir : Math.max(maxEnd, akhir); }
-            rows.push({ kab, prov, tipe });
-          });
-          if(!rows.length){
-            listDiv.innerHTML = "<span class='muted'>Tidak ada peringatan aktif untuk Sumatera/Kalimantan saat ini.</span>";
-            statusTanggal.textContent = "Status waktu berlaku: —";
-            return;
-          }
-          const uniq = new Map();
-          rows.forEach(r=>{
-            const key = r.kab + "##" + r.prov;
-            const prev = uniq.get(key);
-            if(!prev) uniq.set(key, r);
-            else if(/Terjadi/i.test(r.tipe) && !/Terjadi/i.test(prev.tipe)) uniq.set(key, r);
-          });
-          const out = [];
-          [...uniq.values()].sort((a,b)=> a.prov.localeCompare(b.prov)||a.kab.localeCompare(b.kab))
-            .forEach(r=>{
-              const badge = /Terjadi/i.test(r.tipe) ? "🟧 Terjadi" : "🟨 Meluas";
-              out.push(`<div class="row">• <strong>${r.kab}</strong>, ${r.prov} <span class="muted">(${badge})</span></div>`);
-            });
-          listDiv.innerHTML = out.join("");
-
-          const s = minStart ? fmtWIB(minStart) : "—";
-          const e = maxEnd  ? fmtWIB(maxEnd)  : "—";
-          statusTanggal.textContent = `Status waktu berlaku: ${s} s.d. ${e}`;
-        });
-    }
-    nowcastLayer.on('load', refreshImpactList);
-    document.getElementById('btnReloadImpact').onclick = refreshImpactList;
-    setInterval(refreshImpactList, 5*60*1000);
-
-    // ===== Geocoding (search box) pakai Nominatim (negara ID), hasil → pan/zoom + marker sementara =====
-    let suggestTimer = null;
-    let tempMarker = null;
-    function showSuggestions(q){
-      const box = document.getElementById('suggestions');
-      if(suggestTimer) clearTimeout(suggestTimer);
-      if(!q || q.trim().length < 3){ box.style.display='none'; box.innerHTML=''; return; }
-      suggestTimer = setTimeout(async ()=>{
-        try{
-          // batasi ke Indonesia + viewbox Sumatera+Kalimantan agar relevan
-          const vb = `${sumKalExtent.getWest()},${sumKalExtent.getSouth()},${sumKalExtent.getEast()},${sumKalExtent.getNorth()}`;
-          const url = `https://nominatim.openstreetmap.org/search?format=json&countrycodes=ID&addressdetails=1&limit=8&q=${encodeURIComponent(q)}&viewbox=${vb}&bounded=1`;
-          const res = await fetch(url, { headers: { "Accept-Language": "id" }});
-          const data = await res.json();
-          if(!Array.isArray(data) || !data.length){ box.innerHTML = '<div class="item muted">Tidak ada hasil…</div>'; box.style.display='block'; return; }
-          box.innerHTML = data.map(d=>`<div class="item" data-lat="${d.lat}" data-lon="${d.lon}">${d.display_name}</div>`).join('');
-          box.style.display = 'block';
-          // attach click
-          [...box.querySelectorAll('.item')].forEach(el=>{
-            el.onclick = ()=>{
-              const lat = +el.getAttribute('data-lat'), lon = +el.getAttribute('data-lon');
-              if(tempMarker) map.removeLayer(tempMarker);
-              tempMarker = L.marker([lat,lon]).addTo(map);
-              map.setView([lat,lon], 11);
-              box.style.display='none';
-            };
-          });
-        }catch(e){
-          box.innerHTML = '<div class="item muted">Gagal memuat saran…</div>';
-          box.style.display='block';
-        }
-      }, 300); // debounce
-    }
-    window.showSuggestions = showSuggestions; // biar inline oninput tetap jalan
-
-    // ===== Init =====
-    initPrakiraan();
-  </script>
+function centroid(coords){let sx=0,sy=0;coords.forEach(c=>{sx+=c[0];sy+=c[1]});return L.latLng(sy/coords.length,sx/coords.length);}
+function refreshImpactList(){
+  impactList.textContent="Memuat…";
+  nowcast.query().fields(["namakotakab","namaprovinsi","waktuberlaku","waktuberakhir","tipearea"]).returnGeometry(true)
+  .run((err,fc)=>{
+    if(err||!fc.features.length){impactList.textContent="Tidak ada peringatan.";statusTanggal.textContent="—";return;}
+    const rows=[];let minStart=null,maxEnd=null;
+    fc.features.forEach(f=>{
+      const p=f.properties;const ctr=centroid(f.geometry.coordinates[0]);
+      if(!sumKalBounds.contains(ctr)) return;
+      rows.push(`${p.namakotakab}, ${p.namaprovinsi} (${p.tipearea})`);
+      if(p.waktuberlaku) minStart=minStart?Math.min(minStart,p.waktuberlaku):p.waktuberlaku;
+      if(p.waktuberakhir) maxEnd=maxEnd?Math.max(maxEnd,p.waktuberakhir):p.waktuberakhir;
+    });
+    impactList.innerHTML=rows.map(r=>`<div>• ${r}</div>`).join('');
+    statusTanggal.textContent=`Berlaku: ${minStart?new Date(minStart).toLocaleString('id-ID'):''} s.d. ${maxEnd?new Date(maxEnd).toLocaleString('id-ID'):''}`;
+  });
+}
+nowcast.on('load',refreshImpactList);
+setInterval(refreshImpactList,5*60*1000);
+</script>
 </body>
 </html>
