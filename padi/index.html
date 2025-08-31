@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<title>PUPR • Produksi Padi per Provinsi (BPS)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+<style>
+  :root{--Hpx:60px;--Tpx:58px;--bd:#eee;--r:12px;--shadow:0 6px 22px rgba(0,0,0,.08);--font:system-ui,Segoe UI,Roboto,Arial}
+  html,body{height:100%;margin:0;font-family:var(--font)}
+  /* Header 3 baris, rata kiri */
+  #header{position:fixed;top:0;left:0;right:0;z-index:900;display:flex;align-items:center;gap:10px;
+    padding:6px 12px;background:#fff;border-bottom:1px solid var(--bd)}
+  #header img{height:36px}
+  .header-text{display:flex;flex-direction:column;line-height:1.1}
+  .line1{font-weight:800;font-size:14px;text-transform:uppercase}
+  .line2,.line3{font-weight:700;font-size:13px}
+  /* Topbar */
+  .top{position:fixed;top:var(--Hpx);left:0;right:0;z-index:900;display:flex;align-items:center;gap:8px;
+    padding:8px 12px;background:#fff;border-bottom:1px solid var(--bd);flex-wrap:wrap}
+  .pill{padding:6px 10px;border:1px solid #dcdcdc;border-radius:999px;background:#fff;cursor:pointer;font-size:13px}
+  .pill:hover{background:#f6f6f6}
+  .muted{color:#666;font-size:12px}
+  .search{display:flex;align-items:center;gap:6px}
+  .search input{padding:6px 8px;border:1px solid #ccc;border-radius:8px;min-width:180px}
+  /* Map */
+  #map{position:absolute;top:calc(var(--Hpx) + var(--Tpx));left:0;right:0;bottom:0}
+  /* Widgets */
+  .panel{position:absolute;right:10px;bottom:10px;width:340px;background:rgba(255,255,255,.96);
+    border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--shadow);padding:10px 12px;font-size:13px;z-index:800}
+  .panel h3{margin:4px 0 8px}
+  .legend{margin:8px 0}
+  .legend .row{display:flex;align-items:center;gap:8px;margin:4px 0}
+  .sw{width:22px;height:12px;border:1px solid #777;border-radius:3px}
+  .infobox{position:absolute;left:10px;bottom:10px;background:rgba(255,255,255,.9);border:1px solid var(--bd);
+    border-radius:var(--r);box-shadow:var(--shadow);padding:6px 8px;font-size:11px;z-index:800}
+  .note{font-size:11px;color:#555;margin-top:6px}
+  @media(max-width:740px){.panel{width:calc(100% - 20px);left:10px;right:10px}}
+</style>
+</head>
+<body>
+<!-- Header 3 baris -->
+<div id="header">
+  <img src="https://iconape.com/wp-content/png_logo_vector/pu-logo.png" alt="Logo PU">
+  <div class="header-text">
+    <div class="line1">Kementerian Pekerjaan Umum</div>
+    <div class="line2">Direktorat Jenderal Sumber Daya Air</div>
+    <div class="line3">Direktorat Irigasi dan Rawa</div>
+  </div>
+</div>
+
+<!-- Topbar -->
+<div class="top" id="topbar">
+  <button class="pill" id="btnReset">Reset Indonesia</button>
+  <div class="search">
+    <input id="q" type="text" placeholder="Cari provinsi… (mis. Jawa Timur)"/>
+    <button class="pill" id="btnCari">Cari</button>
+  </div>
+  <span class="muted" id="status">Memuat data…</span>
+</div>
+
+<!-- Map -->
+<div id="map"></div>
+
+<!-- Sumber & Legend -->
+<div class="infobox">
+  <b>Sumber:</b> Badan Pusat Statistik (BPS) – “Luas Panen, Produksi, dan Produktivitas Padi Menurut Provinsi (2024)” & BRS 2024.
+  <div class="note">Angka produksi dalam ton GKG. Pastikan CSV-mu pakai nama provinsi yang sama dengan GeoJSON.</div>
+</div>
+
+<div class="panel">
+  <h3>Legenda (Produksi Padi, ton GKG)</h3>
+  <div id="legend" class="legend"></div>
+  <div><b>Tahun:</b> <span id="tahun">2024</span></div>
+</div>
+
+<script>
+/* ====== KONFIGURASI (EDIT URL DI SINI) ====== */
+// 1) GeoJSON provinsi Indonesia (MultiPolygon/Polygon), field nama: "provinsi" atau "name"
+const PROV_GEOJSON_URL = "PUT-URL-GEOJSON-PROVINSI-DI-SINI.geojson";
+// 2) CSV produksi padi terbaru (mis. 2024) dengan kolom: provinsi, produksi_gkg_ton
+const CSV_URL = "PUT-URL-CSV-PRODUKSI-2024.csv";
+// Opsional: Tahun yang ditampilkan
+const TAHUN_DATA = "2024";
+
+/* ====== UTIL ====== */
+function syncOffsets(){
+  const h=document.getElementById('header').offsetHeight;
+  const t=document.getElementById('topbar').offsetHeight;
+  document.documentElement.style.setProperty('--Hpx', h+'px');
+  document.documentElement.style.setProperty('--Tpx', t+'px');
+}
+window.addEventListener('load', syncOffsets);
+window.addEventListener('resize', syncOffsets);
+
+const map=L.map('map',{minZoom:3,maxZoom:18});
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
+map.fitBounds([[-11,94],[6,141]]); // Indonesia penuh
+document.getElementById('tahun').textContent = TAHUN_DATA;
+
+function num(x){const n=Number(x); return isFinite(n)?n:null;}
+function fmt(n){return (n===null||n===undefined) ? "—" : n.toLocaleString('id-ID');}
+function provName(props){return props.provinsi||props.Provinsi||props.PROVINSI||props.name||props.NAMA||props.WADMPR||"";}
+
+/* ====== WARNA/CLASS BREAKS ======
+   Skema kuantil otomatis dari data (5 kelas) */
+function makeColorScale(values){
+  const v = values.filter(x=>x!==null).sort((a,b)=>a-b);
+  if(!v.length){return {stops:[0,1,2,3,4], colors:["#eef5ff","#c7dbff","#8fb3ff","#4c86ff","#1d4ed8"]};}
+  const q = p => v[Math.max(0, Math.min(v.length-1, Math.floor(p*(v.length-1))))];
+  const stops=[ q(0.00), q(0.25), q(0.50), q(0.75), q(1.00) ];
+  const colors=["#eef5ff","#c7dbff","#8fb3ff","#4c86ff","#1d4ed8"]; // biru muda → tua
+  return {stops, colors};
+}
+function colorFor(x, scale){
+  if(x===null) return "#eee";
+  const s=scale.stops; const c=scale.colors;
+  if(x<=s[0])return c[0]; if(x<=s[1])return c[1]; if(x<=s[2])return c[2]; if(x<=s[3])return c[3]; return c[4];
+}
+
+/* ====== LOAD DATA ====== */
+let provLayer=null, dataMap=new Map(), scale=null;
+
+async function loadCSV(){
+  // Jika user belum isi URL, pakai sampel kecil agar peta tetap hidup
+  if(!CSV_URL || CSV_URL.startsWith("PUT-URL")){
+    const sample = [
+      {provinsi:"Jawa Timur", produksi_gkg_ton: 9550000},
+      {provinsi:"Jawa Tengah", produksi_gkg_ton: 9000000},
+      {provinsi:"Jawa Barat", produksi_gkg_ton: 8600000},
+      {provinsi:"Sulawesi Selatan", produksi_gkg_ton: 5000000}
+    ];
+    sample.forEach(r=>dataMap.set(r.provinsi.toLowerCase(), num(r.produksi_gkg_ton)));
+    return {values: sample.map(r=>num(r.produksi_gkg_ton))};
+  }
+  return new Promise((resolve,reject)=>{
+    Papa.parse(CSV_URL, {
+      download: true, header: true, dynamicTyping: true,
+      complete: (res)=>{
+        try{
+          res.data.forEach(row=>{
+            const key=(String(row.provinsi||row.Provinsi||row.PROVINSI||"").trim().toLowerCase());
+            if(!key) return;
+            const val = num(row.produksi_gkg_ton||row.produksi||row.PRODUKSI);
+            dataMap.set(key, val);
+          });
+          resolve({values: [...dataMap.values()]});
+        }catch(e){reject(e);}
+      },
+      error: reject
+    });
+  });
+}
+async function loadGeoJSON(){
+  if(!PROV_GEOJSON_URL || PROV_GEOJSON_URL.startsWith("PUT-URL")){
+    alert("Belum set URL GeoJSON provinsi. Edit konstanta PROV_GEOJSON_URL di skrip.");
+    throw new Error("GeoJSON URL missing");
+  }
+  const r=await fetch(PROV_GEOJSON_URL);
+  if(!r.ok) throw new Error("Gagal load GeoJSON");
+  return r.json();
+}
+
+/* ====== RENDER ====== */
+function buildLegend(scale){
+  const el=document.getElementById('legend'); el.innerHTML="";
+  const {stops, colors}=scale;
+  const labels = [
+    `≤ ${fmt(stops[0])}`,
+    `${fmt(stops[0]+1)}–${fmt(stops[1])}`,
+    `${fmt(stops[1]+1)}–${fmt(stops[2])}`,
+    `${fmt(stops[2]+1)}–${fmt(stops[3])}`,
+    `≥ ${fmt(stops[3]+1)}`
+  ];
+  for(let i=0;i<colors.length;i++){
+    const row=document.createElement('div'); row.className="row";
+    const sw=document.createElement('div'); sw.className="sw"; sw.style.background=colors[i];
+    const tx=document.createElement('div'); tx.textContent=labels[i];
+    row.appendChild(sw); row.appendChild(tx); el.appendChild(row);
+  }
+}
+function highlightFeature(e){ const l=e.target; l.setStyle({weight:2,color:'#111',fillOpacity:0.9}); l.bringToFront(); }
+function resetHighlight(e){ provLayer.resetStyle(e.target); }
+function zoomToFeature(e){ map.fitBounds(e.target.getBounds(), {maxZoom:8}); }
+function attachEvents(layer, props, val){
+  const nama=provName(props)||"(Tanpa nama)";
+  const content = `<b>${nama}</b><br/>Produksi: <b>${fmt(val)}</b> ton GKG (${TAHUN_DATA})`;
+  layer.bindTooltip(content, {sticky:true, direction:'top', opacity:0.9});
+  layer.on({mouseover:highlightFeature, mouseout:resetHighlight, click:zoomToFeature});
+}
+
+async function init(){
+  try{
+    status.textContent="Memuat CSV…";
+    const csv=await loadCSV();
+    status.textContent="Memuat GeoJSON…";
+    const gj=await loadGeoJSON();
+    scale = makeColorScale(csv.values);
+
+    // buat layer
+    provLayer = L.geoJSON(gj, {
+      style: f=>{
+        const key=(provName(f.properties)||"").trim().toLowerCase();
+        const val=dataMap.get(key) ?? null;
+        return {color:'#fff', weight:1, fillColor:colorFor(val, scale), fillOpacity:0.8};
+      },
+      onEachFeature: (f, layer)=>{
+        const key=(provName(f.properties)||"").trim().toLowerCase();
+        attachEvents(layer, f.properties, dataMap.get(key) ?? null);
+      }
+    }).addTo(map);
+
+    buildLegend(scale);
+    status.textContent="Siap";
+  }catch(e){
+    console.error(e);
+    status.textContent="Gagal memuat data. Cek URL GeoJSON/CSV.";
+  }
+}
+init();
+
+/* ====== Pencarian ====== */
+btnReset.onclick=()=> map.fitBounds([[-11,94],[6,141]]);
+btnCari.onclick=()=>{
+  const text=q.value.trim().toLowerCase(); if(!text) return;
+  let found=null;
+  provLayer.eachLayer(l=>{
+    const n=(l.feature && provName(l.feature.properties)||"").trim().toLowerCase();
+    if(n===text){found=l; }
+  });
+  if(!found){
+    // coba partial match
+    provLayer.eachLayer(l=>{
+      const n=(l.feature && provName(l.feature.properties)||"").trim().toLowerCase();
+      if(!found && n.includes(text)) found=l;
+    });
+  }
+  if(found){ map.fitBounds(found.getBounds(), {maxZoom:8}); found.fire('mouseover'); setTimeout(()=>found.fire('mouseout'),1200); }
+  else{ alert("Provinsi tidak ditemukan di GeoJSON."); }
+};
+</script>
+</body>
+</html>
