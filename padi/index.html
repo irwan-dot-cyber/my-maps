@@ -8,7 +8,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 <style>
-  :root{--Hpx:60px;--Tpx:56px;--bd:#eee;--r:12px;--shadow:0 6px 22px rgba(0,0,0,.08);--font:system-ui,Segoe UI,Roboto,Arial}
+  :root{--Hpx:60px;--Tpx:60px;--bd:#eee;--r:12px;--shadow:0 6px 22px rgba(0,0,0,.08);--font:system-ui,Segoe UI,Roboto,Arial}
   html,body{height:100%;margin:0;font-family:var(--font)}
   /* Header */
   #header{position:fixed;top:0;left:0;right:0;z-index:900;display:flex;align-items:center;gap:10px;
@@ -23,8 +23,13 @@
   .pill{padding:6px 10px;border:1px solid #dcdcdc;border-radius:999px;background:#fff;cursor:pointer;font-size:13px}
   .pill:hover{background:#f6f6f6}
   .muted{color:#666;font-size:12px}
-  .search{display:flex;align-items:center;gap:6px}
-  .search input{padding:6px 8px;border:1px solid #ccc;border-radius:8px;min-width:180px}
+  /* Search + suggestions */
+  .search{position:relative;display:flex;align-items:center;gap:6px}
+  .search input{padding:6px 8px;border:1px solid #ccc;border-radius:8px;min-width:220px}
+  .suggestions{position:absolute;top:36px;left:0;background:#fff;border:1px solid #ccc;border-radius:8px;box-shadow:var(--shadow);
+    max-height:220px;overflow:auto;z-index:1000;min-width:220px}
+  .suggestions div{padding:8px 10px;cursor:pointer}
+  .suggestions div:hover{background:#f0f0f0}
   /* Map */
   #map{position:absolute;top:calc(var(--Hpx) + var(--Tpx));left:0;right:0;bottom:0}
   /* Widgets */
@@ -36,7 +41,7 @@
   .sw{width:22px;height:12px;border:1px solid #777;border-radius:3px}
   .infobox{position:absolute;left:10px;bottom:10px;background:rgba(255,255,255,.9);border:1px solid var(--bd);
     border-radius:var(--r);box-shadow:var(--shadow);padding:6px 8px;font-size:11px;z-index:800}
-  .note{font-size:11px;color:#555;margin-top:6px}
+  .source-note{color:#666;font-size:12px;margin-left:4px}
   @media(max-width:740px){.panel{width:calc(100% - 20px);left:10px;right:10px}}
 </style>
 </head>
@@ -55,13 +60,13 @@
 <div class="top" id="topbar">
   <button class="pill" id="btnReset">Reset Indonesia</button>
   <div class="search">
-    <input id="q" type="text" placeholder="Cari provinsi… (mis. Jawa Timur)"/>
-    <button class="pill" id="btnCari">Cari</button>
+    <input id="q" type="text" placeholder="Cari provinsi… (ketik 'a' → Aceh)" autocomplete="off" oninput="showSuggestions(this.value)"/>
+    <div id="suggestions" class="suggestions" style="display:none"></div>
   </div>
+  <button class="pill" id="btnCari">Cari</button>
   <span class="muted" id="status">Memuat data…</span>
 </div>
 
-<!-- Map -->
 <div id="map"></div>
 
 <!-- Sumber & Legend -->
@@ -73,17 +78,20 @@
 <div class="panel">
   <h3>Legenda Produksi Padi (ton GKG)</h3>
   <div id="legend" class="legend"></div>
-  <div><b>Tahun:</b> <span id="tahun">2024</span></div>
+  <div>
+    <b>Tahun:</b> <span id="tahun">2024</span>
+    <em class="source-note">(Sumber data: BPS)</em>
+  </div>
 </div>
 
 <script>
-/* ===== URL data ===== */
+/* ===== Konfigurasi ===== */
 const PROV_GEOJSON_URL =
   "https://sigi.pu.go.id/portalpupr/rest/services/Hosted/Polygon_Admin__SimplifyPolyg/FeatureServer/1/query?where=1=1&outFields=wadmpr&f=geojson";
-const CSV_URL = "produksi_padi_2024_BPS_per_provinsi.csv"; // upload file ini ke repo yg sama
+const CSV_URL = "produksi_padi_2024_BPS_per_provinsi.csv";
 const TAHUN_DATA = "2024";
 
-/* ===== Map init ===== */
+/* ===== Layout dinamis ===== */
 function syncOffsets(){
   const h=document.getElementById('header').offsetHeight;
   const t=document.getElementById('topbar').offsetHeight;
@@ -93,115 +101,158 @@ function syncOffsets(){
 window.addEventListener('load', syncOffsets);
 window.addEventListener('resize', syncOffsets);
 
+/* ===== Map ===== */
 const map=L.map('map',{minZoom:3,maxZoom:18});
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
 map.fitBounds([[-11,94],[6,141]]);
 
 /* ===== Util ===== */
+function normName(s){
+  if(!s) return "";
+  s=String(s).trim().toLowerCase().replace(/\s+/g," ");
+  s=s.replace(/^dki jakarta.*$/,"dki jakarta");
+  s=s.replace(/^daerah khusus ibukota jakarta.*$/,"dki jakarta");
+  s=s.replace(/^di yogyakarta.*$/,"di yogyakarta");
+  s=s.replace(/^daerah istimewa yogyakarta.*$/,"di yogyakarta");
+  s=s.replace(/^kep(\.|) riau$/,"kepulauan riau");
+  s=s.replace(/^kep(\.|) bangka belitung$/,"kepulauan bangka belitung");
+  return s;
+}
+function provName(props){ return (props.wadmpr||"").trim(); }
 function num(x){const n=Number(x); return isFinite(n)?n:null;}
-function fmt(n){return (n===null||n===undefined) ? "—" : n.toLocaleString('id-ID');}
-function provName(props){ return props.wadmpr || ""; }
+function fmt(n){return (n==null)?"—":Number(n).toLocaleString('id-ID');}
 
-/* ===== Warna ===== */
+/* ===== Skala warna & legenda ===== */
 function makeColorScale(values){
-  const v=values.filter(x=>x!==null).sort((a,b)=>a-b);
+  const v=values.filter(x=>x!=null).sort((a,b)=>a-b);
   if(!v.length) return {stops:[0,1,2,3,4],colors:["#eee","#c7dbff","#8fb3ff","#4c86ff","#1d4ed8"]};
-  const q = p => v[Math.floor(p*(v.length-1))];
-  const stops=[ q(0.00), q(0.25), q(0.50), q(0.75), q(1.00) ];
+  const q=p=>v[Math.floor(p*(v.length-1))];
+  const stops=[q(0),q(0.25),q(0.5),q(0.75),q(1)];
   const colors=["#eef5ff","#c7dbff","#8fb3ff","#4c86ff","#1d4ed8"];
   return {stops,colors};
 }
 function colorFor(x,scale){
-  if(x===null) return "#eee";
-  const s=scale.stops, c=scale.colors;
-  if(x<=s[0])return c[0]; if(x<=s[1])return c[1]; if(x<=s[2])return c[2]; if(x<=s[3])return c[3]; return c[4];
+  if(x==null) return "#eee";
+  const s=scale.stops,c=scale.colors;
+  return x<=s[0]?c[0]:x<=s[1]?c[1]:x<=s[2]?c[2]:x<=s[3]?c[3]:c[4];
+}
+function buildLegend(scale){
+  const el=document.getElementById('legend'); el.innerHTML="";
+  const s=scale.stops, labels=[`≤ ${fmt(s[0])}`,`${fmt(s[0]+1)}–${fmt(s[1])}`,`${fmt(s[1]+1)}–${fmt(s[2])}`,`${fmt(s[2]+1)}–${fmt(s[3])}`,`≥ ${fmt(s[3]+1)}`];
+  scale.colors.forEach((c,i)=>{
+    const row=document.createElement('div'); row.className="row";
+    row.innerHTML = `<div class="sw" style="background:${c}"></div><div>${labels[i]}</div>`;
+    el.appendChild(row);
+  });
 }
 
-/* ===== Data join ===== */
-let dataMap=new Map(), provLayer=null, scale=null;
+/* ===== Data ===== */
+let dataMap=new Map(), provLayer=null, scale=null, provinsiList=[];
 async function loadCSV(){
-  return new Promise((resolve,reject)=>{
-    Papa.parse(CSV_URL,{download:true,header:true,dynamicTyping:true,
-      complete:res=>{
-        res.data.forEach(r=>{
-          const key=(String(r.provinsi||"").trim().toLowerCase());
-          if(key) dataMap.set(key, num(r.produksi_gkg_ton));
-        });
-        resolve();
-      }, error:reject
+  return new Promise((resolve)=>{
+    Papa.parse(CSV_URL,{
+      download:true, header:true, dynamicTyping:true,
+      complete:(res)=>{
+        try{
+          if(!res.data || !res.data.length) throw new Error("CSV kosong");
+          res.data.forEach(r=>{
+            const key=normName(r.provinsi);
+            if(key) dataMap.set(key, num(r.produksi_gkg_ton));
+          });
+          resolve("csv-ok");
+        }catch(e){ console.warn("CSV kosong/format tidak sesuai:", e); resolve("csv-fail"); }
+      },
+      error:(err)=>{ console.warn("CSV error:", err); resolve("csv-fail"); }
     });
   });
 }
 async function loadGeoJSON(){ const r=await fetch(PROV_GEOJSON_URL); return r.json(); }
 
-function buildLegend(scale){
-  const el=document.getElementById('legend'); el.innerHTML="";
-  const {stops,colors}=scale;
-  const labels=[
-    `≤ ${fmt(stops[0])}`,
-    `${fmt(stops[0]+1)}–${fmt(stops[1])}`,
-    `${fmt(stops[1]+1)}–${fmt(stops[2])}`,
-    `${fmt(stops[2]+1)}–${fmt(stops[3])}`,
-    `≥ ${fmt(stops[3]+1)}`
-  ];
-  for(let i=0;i<colors.length;i++){
-    const row=document.createElement('div'); row.className="row";
-    const sw=document.createElement('div'); sw.className="sw"; sw.style.background=colors[i];
-    const tx=document.createElement('div'); tx.textContent=labels[i];
-    row.appendChild(sw); row.appendChild(tx); el.appendChild(row);
-  }
-}
-
+/* ===== Render ===== */
 function highlightFeature(e){ e.target.setStyle({weight:2,color:'#111',fillOpacity:0.9}); e.target.bringToFront();}
-function resetHighlight(e){ provLayer.resetStyle(e.target);}
+function resetHighlight(e){ provLayer.resetStyle(e.target); }
 function zoomToFeature(e){ map.fitBounds(e.target.getBounds(),{maxZoom:8}); }
-
 function attachEvents(layer,props,val){
   const nama=provName(props)||"(tanpa nama)";
-  const content=`<b>${nama}</b><br/>Produksi: <b>${fmt(val)}</b> ton GKG (${TAHUN_DATA})`;
-  layer.bindTooltip(content,{sticky:true});
+  layer.bindTooltip(`<b>${nama}</b><br/>Produksi: <b>${fmt(val)}</b> ton GKG (${TAHUN_DATA})`,{sticky:true});
   layer.on({mouseover:highlightFeature,mouseout:resetHighlight,click:zoomToFeature});
 }
 
-/* ===== Init ===== */
 async function init(){
   try{
     status.textContent="Memuat CSV…";
-    await loadCSV();
-    status.textContent="Memuat GeoJSON…";
+    const csvMode = await loadCSV();
+    status.textContent = (csvMode==="csv-ok") ? "CSV OK, memuat boundary…" : "CSV tidak terbaca. Memuat boundary…";
+
     const gj=await loadGeoJSON();
-    const values=[...dataMap.values()].filter(x=>x!==null);
+    provinsiList = gj.features.map(f=>provName(f.properties)).filter(Boolean).sort();
+
+    const values=[...dataMap.values()].filter(x=>x!=null);
     scale=makeColorScale(values);
+
+    let matched=0, missing=[];
     provLayer=L.geoJSON(gj,{
       style:f=>{
-        const key=(provName(f.properties)||"").trim().toLowerCase();
-        const val=dataMap.get(key)??null;
+        const k=normName(provName(f.properties));
+        const val=dataMap.get(k);
+        if(val!=null) matched++; else missing.push(provName(f.properties));
         return {color:'#fff',weight:1,fillColor:colorFor(val,scale),fillOpacity:0.8};
       },
       onEachFeature:(f,layer)=>{
-        const key=(provName(f.properties)||"").trim().toLowerCase();
-        attachEvents(layer,f.properties,dataMap.get(key)??null);
+        const k=normName(provName(f.properties));
+        attachEvents(layer,f.properties,dataMap.get(k));
       }
     }).addTo(map);
+
     buildLegend(scale);
-    status.textContent="Siap";
-  }catch(e){console.error(e); status.textContent="Gagal load data";}
+    status.textContent = (csvMode==="csv-ok")
+      ? `Siap • Match: ${matched} prov • Unmatch: ${Math.max(0,38-matched)}`
+      : `Siap (cek CSV untuk pewarnaan akurat)`;
+    if(csvMode==="csv-ok" && missing.length){ console.warn("Provinsi tanpa data (cek penamaan CSV):", missing); }
+
+  }catch(e){ console.error(e); status.textContent="Gagal load data"; }
 }
 init();
 
-/* ===== Pencarian ===== */
-btnReset.onclick=()=> map.fitBounds([[-11,94],[6,141]]);
-btnCari.onclick=()=>{
-  const text=q.value.trim().toLowerCase(); if(!text)return;
+/* ===== Search + Autocomplete ===== */
+function doSearch(text){
   let found=null;
+  const target=(text||"").trim().toLowerCase();
   provLayer.eachLayer(l=>{
     const n=(provName(l.feature.properties)||"").trim().toLowerCase();
-    if(n===text) found=l;
-    if(!found && n.includes(text)) found=l;
+    if(n===target) found=l;
   });
-  if(found){ map.fitBounds(found.getBounds(),{maxZoom:8}); found.fire('mouseover'); setTimeout(()=>found.fire('mouseout'),1200);}
-  else alert("Provinsi tidak ditemukan");
-};
+  if(found){
+    map.fitBounds(found.getBounds(),{maxZoom:8});
+    found.fire('mouseover'); setTimeout(()=>found.fire('mouseout'),1200);
+  }else alert("Provinsi tidak ditemukan");
+}
+function showSuggestions(val){
+  const box=document.getElementById("suggestions");
+  box.innerHTML="";
+  if(!val){ box.style.display="none"; return; }
+  const v=val.toLowerCase();
+  const hits = provinsiList.filter(p=>p.toLowerCase().startsWith(v)).slice(0,12);
+  if(!hits.length){ box.style.display="none"; return; }
+  hits.forEach(name=>{
+    const div=document.createElement("div");
+    div.textContent=name;
+    div.onclick=()=>{
+      document.getElementById("q").value=name;
+      box.style.display="none";
+      doSearch(name);
+    };
+    box.appendChild(div);
+  });
+  box.style.display="block";
+}
+btnCari.onclick=()=> doSearch(q.value);
+btnReset.onclick=()=> map.fitBounds([[-11,94],[6,141]]);
+document.addEventListener('click',(e)=>{
+  if(!document.querySelector('.search').contains(e.target)){
+    document.getElementById('suggestions').style.display='none';
+  }
+});
 </script>
 </body>
 </html>
