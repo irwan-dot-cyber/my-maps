@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <title>PUPR • Sebaran Gudang BULOG Nasional</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet core -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <!-- MarkerCluster -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css">
+  <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+
+  <!-- Leaflet Search -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-search/dist/leaflet-search.min.css">
+  <script src="https://unpkg.com/leaflet-search/dist/leaflet-search.min.js"></script>
+
+  <style>
+    html, body { height:100%; margin:0; }
+    body { font-family: Arial, sans-serif; }
+
+    /* Header PU */
+    #header{
+      position:fixed; top:0; left:0; right:0; z-index:1000;
+      background:#f9c318; color:#1C2D5A; font-weight:bold; font-size:14px;
+      padding:8px 12px; display:flex; align-items:center; gap:12px;
+      box-shadow:0 2px 6px rgba(0,0,0,.2);
+    }
+    #header img{ height:40px; }
+
+    #map { position:absolute; top:60px; left:0; right:0; bottom:0; }
+
+    .leaflet-control-search .search-input{ padding:.35rem .6rem; font-size:13px; }
+
+    /* Geolocate button */
+    .locate-btn{
+      background:#fff; border-radius:6px; box-shadow:0 2px 6px rgba(0,0,0,.2);
+      width:36px; height:36px; display:flex; align-items:center; justify-content:center;
+      cursor:pointer; font-size:18px; line-height:1; user-select:none;
+    }
+    .locate-btn:hover{ background:#f3f3f3; }
+    .leaflet-control.custom-locate{ padding:4px; }
+  </style>
+</head>
+<body>
+
+  <!-- Header Kementerian PU -->
+  <div id="header">
+    <img src="https://iconape.com/wp-content/png_logo_vector/pu-logo.png" alt="Logo PU">
+    <div>
+      KEMENTERIAN PEKERJAAN UMUM<br>
+      DIREKTORAT JENDERAL SUMBER DAYA AIR<br>
+      DIREKTORAT IRIGASI DAN RAWA
+    </div>
+  </div>
+
+  <div id="map"></div>
+
+  <script>
+    // --- Peta dasar
+    const map = L.map('map').setView([-2.5,118],5);
+    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+      maxZoom:19, attribution:'© OpenStreetMap'
+    }).addTo(map);
+
+    const imagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
+      maxZoom:19, attribution:'Tiles © Esri'
+    });
+
+    L.control.layers({ "OSM": osm, "Esri WorldImagery": imagery }, {}, {collapsed:true}).addTo(map);
+    L.control.scale({ metric:true, imperial:false }).addTo(map);
+
+    // --- Icon marker gudang
+    const bulogIcon = L.icon({
+      iconUrl:'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+      iconSize:[26,26], iconAnchor:[13,26], popupAnchor:[0,-20]
+    });
+
+    // --- Cluster group
+    const clusterGroup = L.markerClusterGroup({
+      showCoverageOnHover: false,
+      spiderfyOnMaxZoom: true,
+      disableClusteringAtZoom: 16
+    });
+
+    // --- Layer untuk index pencarian (tetap marker biasa, tak di-render terpisah)
+    const searchLayer = L.layerGroup();
+
+    function buildPopup(p){
+      return `
+        <b>${p.name||'-'}</b><br>
+        <i>${p.type||''}</i><br><br>
+        <b>Alamat:</b> ${p.address||'-'}<br>
+        <b>Kab/Kota:</b> ${p.city_regency||'-'}<br>
+        <b>Provinsi:</b> ${p.province||'-'}<br>
+        ${p.source_url?`<a href="${p.source_url}" target="_blank" rel="noopener">Sumber</a>`:''}
+      `;
+    }
+
+    // --- Muat GeoJSON lokal
+    fetch('bulog_gudang_master_nasional_v1_seed.geojson')
+      .then(r=>r.json())
+      .then(data=>{
+        const markers = [];
+        (data.features || []).forEach(f=>{
+          if(!f.geometry || f.geometry.type!=='Point') return;
+          const coords = f.geometry.coordinates;
+          if(!coords || coords.length<2) return;
+
+          const p = f.properties || {};
+          const latlng = [coords[1], coords[0]];
+
+          // string gabungan untuk pencarian
+          const searchKey = [p.name, p.city_regency, p.province].filter(Boolean).join(' — ');
+
+          const m = L.marker(latlng, {icon: bulogIcon});
+          m.bindPopup(buildPopup(p));
+          m.featureProperties = Object.assign({_search: searchKey}, p); // simpan attr utk search
+
+          clusterGroup.addLayer(m);
+          markers.push(m);
+        });
+
+        // tambahkan cluster ke peta
+        map.addLayer(clusterGroup);
+
+        // fit bounds kalau ada data
+        if (markers.length){
+          const g = L.featureGroup(markers);
+          try { map.fitBounds(g.getBounds(), {padding:[20,20]}); } catch(e){}
+        }
+
+        // index untuk search (tak perlu ditambahkan ke map)
+        markers.forEach(m => searchLayer.addLayer(m));
+
+        // Search control (mencari pada marker2 di searchLayer)
+        const searchCtrl = new L.Control.Search({
+          layer: searchLayer,
+          initial: false,
+          zoom: 15,
+          marker: false,
+          textPlaceholder: 'Cari Gudang / Kota / Provinsi...',
+          propertyName: '_search', // ambil dari m.featureProperties._search
+          moveToLocation: function(latlng, title, map) {
+            map.setView(latlng, 15);
+          },
+          filterData: function(text, records){
+            // bangun record dari markers
+            const out = {};
+            searchLayer.eachLayer(function(layer){
+              const prop = layer.featureProperties || {};
+              const key = (prop._search || '').toLowerCase();
+              if (key.indexOf(text.toLowerCase()) !== -1){
+                out[prop._search] = layer.getLatLng();
+              }
+            });
+            return out;
+          }
+        });
+
+        searchCtrl.on('search:locationfound', function(e){
+          // buka popup & pastikan marker terlihat (auto-uncluster)
+          clusterGroup.zoomToShowLayer(e.layer, function(){
+            e.layer.openPopup();
+          });
+        });
+
+        map.addControl(searchCtrl);
+      })
+      .catch(err=>{
+        console.error(err);
+        alert('GeoJSON tidak ditemukan. Pastikan "bulog_gudang_master_nasional_v1_seed.geojson" ada di folder yang sama.');
+      });
+
+    // --- Geolocation (My Location)
+    let meMarker=null, meCircle=null;
+
+    function locateMe(){
+      if(!('geolocation' in navigator)){
+        alert('Browser kamu tidak mendukung Geolocation.');
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        pos=>{
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          const acc = pos.coords.accuracy || 100;
+
+          if(meMarker) map.removeLayer(meMarker);
+          if(meCircle) map.removeLayer(meCircle);
+
+          meMarker = L.marker([lat,lon]).bindPopup('Lokasi saya');
+          meCircle = L.circle([lat,lon], {radius: acc, color:'#2b7', fillColor:'#2b7', fillOpacity:0.1});
+
+          meMarker.addTo(map).openPopup();
+          meCircle.addTo(map);
+          map.setView([lat,lon], 15);
+        },
+        err=>{
+          let msg = 'Gagal mendapatkan lokasi.';
+          if (window.isSecureContext === false) {
+            msg += '\nCatatan: Geolocation butuh HTTPS atau localhost.';
+          }
+          alert(msg);
+          console.warn(err);
+        },
+        { enableHighAccuracy:true, timeout:10000, maximumAge:30000 }
+      );
+    }
+
+    // --- Custom control tombol 📍
+    const LocateControl = L.Control.extend({
+      options:{ position:'topleft' },
+      onAdd: function(){
+        const div = L.DomUtil.create('div','leaflet-control custom-locate');
+        const btn = L.DomUtil.create('div','locate-btn',div);
+        btn.title = 'Lokasi saya';
+        btn.innerText = '📍';
+        L.DomEvent.on(btn,'click', (e)=>{ L.DomEvent.stopPropagation(e); locateMe(); });
+        return div;
+      }
+    });
+    map.addControl(new LocateControl());
+  </script>
+</body>
+</html>
