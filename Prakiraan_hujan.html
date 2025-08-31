@@ -7,12 +7,12 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-  :root{--H:74px;--T:56px;--bd:#eee;--r:12px;--shadow:0 6px 22px rgba(0,0,0,.08);--font:system-ui,Segoe UI,Roboto,Arial}
+  :root{--H:58px;--T:56px;--bd:#eee;--r:12px;--shadow:0 6px 22px rgba(0,0,0,.08);--font:system-ui,Segoe UI,Roboto,Arial}
   html,body{height:100%;margin:0;font-family:var(--font)}
   #header{position:fixed;top:0;left:0;right:0;height:var(--H);
-    display:flex;align-items:center;gap:12px;padding:10px 14px;background:#fff;
-    border-bottom:1px solid var(--bd);font-weight:700;z-index:900}
-  #header img{height:48px}
+    display:flex;align-items:center;gap:10px;padding:6px 12px;background:#fff;
+    border-bottom:1px solid var(--bd);font-weight:700;font-size:13px;z-index:900;line-height:1.2;text-align:center;justify-content:center}
+  #header img{height:38px}
   .top{position:fixed;top:var(--H);left:0;right:0;height:var(--T);
     display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 14px;
     background:#fff;border-bottom:1px solid var(--bd);z-index:900}
@@ -28,8 +28,8 @@
   .panel h3{margin:4px 0 8px}
   .legend{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;margin-bottom:6px}
   .grad{height:14px;background:linear-gradient(90deg,#3a7bd5,#00d2ff,#00ff88,#ffee00,#ff7b00,#ff004c,#b800ff);border:1px solid #777;border-radius:6px}
-  .anim{display:flex;align-items:center;gap:8px;margin-top:6px}
-  input[type="range"]{width:160px}
+  .anim{display:flex;align-items:center;gap:8px}
+  input[type="range"]{width:140px}
   @media(max-width:720px){
     .panel{width:calc(100% - 20px);left:10px;right:10px;bottom:70px}
   }
@@ -69,7 +69,7 @@
 <script>
 const map=L.map('map',{minZoom:3,maxZoom:18});
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
-map.fitBounds([[-11,94],[6,141]]); // zoom ke Indonesia
+map.fitBounds([[-11,94],[6,141]]); // extent Indonesia
 
 let frames=[], frameIndex=0, animTimer=null, radarLayer=null;
 async function loadFrames(){
