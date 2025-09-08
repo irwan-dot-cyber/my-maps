@@ -5,6 +5,8 @@
 <title>Compare Citra Sentinel-2 (Inpres 2/2025)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
 <style>
   html,body {height:100%; margin:0}
   #header{background:#FFD700;color:#000;padding:10px;font-weight:700;display:flex;align-items:center;gap:10px}
@@ -12,7 +14,7 @@
   #toolbar{
     position:absolute; top:64px; left:10px; z-index:1000;
     background:#fff; padding:10px; border-radius:10px; box-shadow:0 6px 14px rgba(0,0,0,.15);
-    display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; max-width:860px
+    display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; max-width:900px
   }
   #toolbar .col{display:flex; flex-direction:column; gap:4px}
   #toolbar label{font-size:12px; color:#333}
@@ -31,6 +33,10 @@
   }
   .suggestions div{padding:6px 8px; cursor:pointer}
   .suggestions div:hover{background:#f2f2f2}
+
+  /* marker bounce */
+  .leaflet-marker-icon.bounce{animation:marker-bounce 600ms cubic-bezier(.28,.84,.42,1) 1;transform-origin:bottom center}
+  @keyframes marker-bounce{0%{transform:translateY(0)}25%{transform:translateY(-14px)}55%{transform:translateY(0)}75%{transform:translateY(-7px)}100%{transform:translateY(0)}}
 </style>
 </head>
 <body>
@@ -76,15 +82,14 @@
 
   <!-- Libs -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
   <script src="https://unpkg.com/esri-leaflet@3.0.12/dist/esri-leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-side-by-side@2.0.1/leaflet-side-by-side.min.js"></script>
   <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 
   <script>
   // ====== KONFIG ======
-  // CSV titik yang sama dengan mymaps.html
   const CSV_URL = "https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/data/survey.csv";
-  // Sentinel-2 ImageServer Esri (time-enabled)
   const S2_URL  = "https://sentinel.arcgis.com/arcgis/rest/services/Sentinel2/ImageServer";
 
   // ====== PETA ======
@@ -113,7 +118,7 @@
   fillMonths('leftMonth', prevYm);
   fillMonths('rightMonth', thisYm);
 
-  // ====== Bangun layer Sentinel-2 per bulan + cloud ======
+  // ====== Sentinel-2 layer builder ======
   function buildS2Layer(ym, cloudMax){
     const [start,end]=monthStartEnd(ym);
     const where=`acquisitiondate >= DATE '${start} 00:00:00' AND acquisitiondate < DATE '${end} 00:00:00' AND cloudcover <= ${Number(cloudMax)||100}`;
@@ -126,13 +131,12 @@
   }
 
   let leftLayer=null, rightLayer=null, sbs=null;
-
   function applyCompare(){
     // set center dari input
     const c=document.getElementById('center').value.trim();
     if(c){
       const parts=c.split(',').map(v=>parseFloat(v.trim()));
-      if(parts.length===2 && parts.every(n=>!isNaN(n))) map.setView([parts[0],parts[1]], Math.max(map.getZoom(), 11));
+      if(parts.length===2 && parts.every(n=>!isNaN(n))) map.setView([parts[0],parts[1]], Math.max(map.getZoom(), 12));
     }
     const ymL=document.getElementById('leftMonth').value;
     const ymR=document.getElementById('rightMonth').value;
@@ -158,16 +162,59 @@
   document.getElementById('applyBtn').addEventListener('click', applyCompare);
   document.getElementById('clearBtn').addEventListener('click', ()=>clearCompare(true));
 
-  // ====== Ambil lokasi dari survey.csv (buat search/suggest) ======
-  const idx=[]; // {name, lat, lng}
-  Papa.parse(CSV_URL,{download:true,header:true,skipEmptyLines:true,complete:res=>{
-    (res.data||[]).forEach(r=>{
-      const nm=(r.nama_di||"").toString().trim();
-      const lat=parseFloat(r.y), lng=parseFloat(r.x);
-      if(nm && !isNaN(lat) && !isNaN(lng)) idx.push({name:nm, lat, lng});
-    });
-  }});
+  // ====== Tampilkan TAGGING dari CSV ======
+  const cluster = L.markerClusterGroup();
+  const idx = []; // {name, lat, lng, marker}
 
+  function getIcon(name){
+    const url = (name && name.startsWith('D.I.R.')) ? 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
+              : 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png';
+    return L.icon({
+      iconUrl:url, iconSize:[25,41], iconAnchor:[12,41], popupAnchor:[1,-34],
+      shadowUrl:'https://unpkg.com/leaflet/dist/images/marker-shadow.png', shadowSize:[41,41]
+    });
+  }
+
+  Papa.parse(CSV_URL,{
+    download:true, header:true, skipEmptyLines:true,
+    complete: res=>{
+      (res.data||[]).forEach(r=>{
+        const nm  = (r.nama_di||r.Nama||"").toString().trim();
+        const lat = parseFloat(r.y||r.lat||r.latitude);
+        const lng = parseFloat(r.x||r.lng||r.longitude);
+        if(!nm || isNaN(lat)||isNaN(lng)) return;
+
+        const prov=(r.provinsi||r.Provinsi||"-").toString();
+        const kab =(r.kabupaten||r.Kabupaten||"-").toString();
+        const bbws=(r.bbws||r.BBWS||"-").toString();
+        const note=(r.catatan||r.Catatan||"-").toString();
+
+        const popupHtml = `
+          <b>${nm}</b><br>
+          <div style="color:#555;font-size:12px;margin:2px 0;">📍 <b>Koordinat:</b> ${lat.toFixed(6)}, ${lng.toFixed(6)}</div>
+          Provinsi: ${prov}<br>Kabupaten: ${kab}<br>BBWS: ${bbws}<br>Catatan: ${note}<br>
+          <a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank" rel="noopener">Buka di Google Maps</a><br>
+          <a href="#" onclick="focusAndApply(${lat},${lng});return false;">Fokus & Perbarui Compare</a>
+        `;
+
+        const m=L.marker([lat,lng],{icon:getIcon(nm)}).bindPopup(popupHtml);
+        m.on('popupopen',()=>{ const el=m.getElement(); if(el){ el.classList.remove('bounce'); void el.offsetWidth; el.classList.add('bounce'); }});
+        cluster.addLayer(m);
+        idx.push({name:nm, lat, lng, marker:m});
+      });
+      map.addLayer(cluster);
+    },
+    error: ()=>alert("Gagal memuat CSV untuk tagging.")
+  });
+
+  // klik di popup "Fokus & Perbarui Compare"
+  window.focusAndApply = function(lat,lng){
+    document.getElementById('center').value = `${lat}, ${lng}`;
+    map.setView([lat,lng], 13);
+    applyCompare();
+  }
+
+  // ====== Pencarian nama DI ======
   const sInput=document.getElementById('search');
   const sBox =document.getElementById('suggestions');
   sInput.addEventListener('input', ()=>{
@@ -180,6 +227,7 @@
         sInput.value=it.name; sBox.style.display="none";
         document.getElementById('center').value=`${it.lat}, ${it.lng}`;
         map.setView([it.lat,it.lng], 13);
+        it.marker.openPopup();
         applyCompare();
       };
       sBox.appendChild(d);
@@ -201,17 +249,19 @@
       }
     }
     if(pname && idx.length){
-      const it=idx.find(i=>i.name.toLowerCase()===decodeURIComponent(pname).toLowerCase());
+      const dec=decodeURIComponent(pname).toLowerCase();
+      const it=idx.find(i=>i.name.toLowerCase()===dec);
       if(it){
         document.getElementById('center').value=`${it.lat}, ${it.lng}`;
         map.setView([it.lat,it.lng], 13);
+        it.marker.openPopup();
         applyCompare();
       }
     }
   }
-  // apply awal
+
+  // apply awal & coba param setelah beberapa saat (nunggu CSV selesai)
   applyCompare();
-  // coba pakai param setelah CSV index terisi (sedikit delay aman)
   setTimeout(tryCenterFromParams, 800);
   </script>
 </body>
