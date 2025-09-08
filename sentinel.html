@@ -12,7 +12,7 @@
   #toolbar{
     position:absolute; top:64px; left:10px; z-index:1000;
     background:#fff; padding:10px; border-radius:10px; box-shadow:0 6px 14px rgba(0,0,0,.15);
-    display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; max-width:680px
+    display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; max-width:860px
   }
   #toolbar .col{display:flex; flex-direction:column; gap:4px}
   #toolbar label{font-size:12px; color:#333}
@@ -21,6 +21,16 @@
   #toolbar .btn.alt{background:#666}
   #map{height:calc(100% - 56px)}
   .hint{font-size:11px;color:#666}
+
+  /* search DI */
+  .search-box{position:relative}
+  .search-box input{min-width:260px}
+  .suggestions{
+    position:absolute; top:64px; left:0; right:0; background:#fff; border:1px solid #ccc; border-top:none;
+    max-height:220px; overflow:auto; display:none; z-index:2000; border-radius:0 0 6px 6px
+  }
+  .suggestions div{padding:6px 8px; cursor:pointer}
+  .suggestions div:hover{background:#f2f2f2}
 </style>
 </head>
 <body>
@@ -30,10 +40,17 @@
   </div>
 
   <div id="toolbar">
+    <div class="col search-box">
+      <label>Cari DI (dari survey.csv)</label>
+      <input id="search" placeholder="ketik nama DI…">
+      <div id="suggestions" class="suggestions"></div>
+      <small class="hint">klik hasil → peta & ‘Lokasi fokus’ terisi otomatis</small>
+    </div>
+
     <div class="col">
-      <label>Lokasi fokus</label>
+      <label>Lokasi fokus (lat, lng)</label>
       <input id="center" placeholder="-6.175392, 106.827153" value="-6.175392, 106.827153"/>
-      <small class="hint">lat, lng — misal: -6.175392, 106.827153 (Monas)</small>
+      <small class="hint">contoh: -6.175392, 106.827153 (Monas)</small>
     </div>
 
     <div class="col">
@@ -45,8 +62,8 @@
 
     <div class="col">
       <label>Maksimum Cloud Cover (%)</label>
-      <input id="cloud" type="number" min="0" max="100" step="5" value="20"/>
-      <small class="hint">Semakin kecil = lebih sedikit awan</small>
+      <input id="cloud" type="number" min="0" max="100" step="5" value="50"/>
+      <small class="hint">awal bagus di 50–80 biar pasti muncul</small>
     </div>
 
     <div class="col" style="gap:6px">
@@ -61,107 +78,141 @@
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://unpkg.com/esri-leaflet@3.0.12/dist/esri-leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-side-by-side@2.0.1/leaflet-side-by-side.min.js"></script>
+  <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 
   <script>
-  // ====== Konstanta layanan Sentinel-2 Esri (time-enabled, updated daily) ======
-  // Docs/REST menunjukkan field: acquisitiondate (date), cloudcover (double)  ⟶ filter via mosaicRule.where
-  // https://sentinel.arcgis.com/arcgis/rest/services/Sentinel2/ImageServer
-  const S2_URL = "https://sentinel.arcgis.com/arcgis/rest/services/Sentinel2/ImageServer";
+  // ====== KONFIG ======
+  // CSV titik yang sama dengan mymaps.html
+  const CSV_URL = "https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/data/survey.csv";
+  // Sentinel-2 ImageServer Esri (time-enabled)
+  const S2_URL  = "https://sentinel.arcgis.com/arcgis/rest/services/Sentinel2/ImageServer";
 
-  // ====== Map dasar ======
+  // ====== PETA ======
   const map = L.map('map', {center: [-6.175392,106.827153], zoom: 11});
-  const basemap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
 
-  // ====== Helper buat isi dropdown bulan (24 bulan ke belakang) ======
-  function fmtMonth(date){ // YYYY-MM
-    const y = date.getFullYear(), m = String(date.getMonth()+1).padStart(2,'0');
-    return `${y}-${m}`;
-  }
-  function monthStartEnd(ym){ // returns [start, end) in 'YYYY-MM-DD'
-    const [y,m] = ym.split('-').map(Number);
-    const start = new Date(y, m-1, 1);
-    const end   = new Date(y, m, 1);
-    const s = `${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,'0')}-01`;
-    const e = `${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-01`;
+  // ====== Helper bulan ======
+  function fmtMonth(date){ const y=date.getFullYear(), m=String(date.getMonth()+1).padStart(2,'0'); return `${y}-${m}`; }
+  function monthStartEnd(ym){
+    const [y,m]=ym.split('-').map(Number);
+    const start=new Date(y,m-1,1), end=new Date(y,m,1);
+    const s=`${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,'0')}-01`;
+    const e=`${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-01`;
     return [s,e];
   }
-  function fillMonths(selId, defaultYm){
-    const sel = document.getElementById(selId);
-    sel.innerHTML = "";
-    const now = new Date();
+  function fillMonths(selId, defYm){
+    const sel=document.getElementById(selId); sel.innerHTML="";
+    const now=new Date();
     for(let i=0;i<24;i++){
-      const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
-      const ym = fmtMonth(d);
-      const opt = document.createElement('option');
-      opt.value = ym; opt.textContent = ym;
-      if(ym===defaultYm) opt.selected = true;
-      sel.appendChild(opt);
+      const d=new Date(now.getFullYear(), now.getMonth()-i, 1);
+      const ym=fmtMonth(d); const opt=document.createElement('option');
+      opt.value=ym; opt.textContent=ym; if(ym===defYm) opt.selected=true; sel.appendChild(opt);
     }
   }
-  const today = new Date();
-  const thisYm = fmtMonth(today);
-  const prevYm = fmtMonth(new Date(today.getFullYear(), today.getMonth()-1, 1));
-  fillMonths('leftMonth',  prevYm);  // before
-  fillMonths('rightMonth', thisYm);  // after
+  const today=new Date(), thisYm=fmtMonth(today), prevYm=fmtMonth(new Date(today.getFullYear(), today.getMonth()-1, 1));
+  fillMonths('leftMonth', prevYm);
+  fillMonths('rightMonth', thisYm);
 
-  // ====== Build ImageMapLayer dengan filter bulan + cloudcover ======
+  // ====== Bangun layer Sentinel-2 per bulan + cloud ======
   function buildS2Layer(ym, cloudMax){
-    const [start,end] = monthStartEnd(ym);
-    // WHERE pakai format ArcGIS SQL Date:
-    // acquisitiondate >= DATE 'YYYY-MM-DD 00:00:00' AND acquisitiondate < DATE 'YYYY-MM-DD 00:00:00' AND cloudcover <= X
-    const where = `acquisitiondate >= DATE '${start} 00:00:00' AND acquisitiondate < DATE '${end} 00:00:00' AND cloudcover <= ${Number(cloudMax)||100}`;
+    const [start,end]=monthStartEnd(ym);
+    const where=`acquisitiondate >= DATE '${start} 00:00:00' AND acquisitiondate < DATE '${end} 00:00:00' AND cloudcover <= ${Number(cloudMax)||100}`;
     return L.esri.imageMapLayer({
-      url: S2_URL,
-      mosaicRule: {
-        where,
-        mosaicMethod: "attribute", // gunakan default sortField=best (lihat service)
-        ascending: true
-      },
-      // Render: natural color (4-3-2) dengan DRA (opsional). Bisa juga "Color Infrared", "NDVI", dsb (lihat rasterFunctionInfos di REST).
-      renderingRule: { "rasterFunction":"Natural Color with DRA" },
-      opacity: 1
+      url:S2_URL,
+      mosaicRule:{ where, mosaicMethod:"attribute", ascending:true },
+      renderingRule:{ "rasterFunction":"Natural Color with DRA" },
+      opacity:1
     });
   }
 
   let leftLayer=null, rightLayer=null, sbs=null;
 
   function applyCompare(){
-    // pusatkan peta jika user ganti koordinat
-    const c = document.getElementById('center').value.trim();
+    // set center dari input
+    const c=document.getElementById('center').value.trim();
     if(c){
-      const parts = c.split(',').map(v=>parseFloat(v.trim()));
-      if(parts.length===2 && parts.every(n=>!isNaN(n))) map.setView([parts[0], parts[1]], map.getZoom());
+      const parts=c.split(',').map(v=>parseFloat(v.trim()));
+      if(parts.length===2 && parts.every(n=>!isNaN(n))) map.setView([parts[0],parts[1]], Math.max(map.getZoom(), 11));
     }
+    const ymL=document.getElementById('leftMonth').value;
+    const ymR=document.getElementById('rightMonth').value;
+    const cc =document.getElementById('cloud').value;
 
-    const ymL = document.getElementById('leftMonth').value;
-    const ymR = document.getElementById('rightMonth').value;
-    const cc  = document.getElementById('cloud').value;
+    clearCompare(false);
+    leftLayer = buildS2Layer(ymL, cc).addTo(map);
+    rightLayer= buildS2Layer(ymR, cc).addTo(map);
+    sbs=L.control.sideBySide(leftLayer, rightLayer).addTo(map);
 
-    clearCompare(false); // cleanup tanpa sentuh tombol
-
-    leftLayer  = buildS2Layer(ymL, cc).addTo(map);
-    rightLayer = buildS2Layer(ymR, cc).addTo(map);
-    sbs = L.control.sideBySide(leftLayer, rightLayer).addTo(map);
-
-    document.getElementById('applyBtn').textContent = "Perbarui";
-    document.getElementById('clearBtn').style.display = "inline-block";
+    document.getElementById('applyBtn').textContent="Perbarui";
+    document.getElementById('clearBtn').style.display="inline-block";
   }
-
-  function clearCompare(removeFromMap=true){
+  function clearCompare(remove=true){
     if(sbs){ sbs.remove(); sbs=null; }
-    if(removeFromMap){
+    if(remove){
       if(leftLayer){ map.removeLayer(leftLayer); leftLayer=null; }
       if(rightLayer){ map.removeLayer(rightLayer); rightLayer=null; }
     }
-    document.getElementById('clearBtn').style.display = "none";
-    document.getElementById('applyBtn').textContent = "Terapkan";
+    document.getElementById('clearBtn').style.display="none";
+    document.getElementById('applyBtn').textContent="Terapkan";
   }
-
   document.getElementById('applyBtn').addEventListener('click', applyCompare);
   document.getElementById('clearBtn').addEventListener('click', ()=>clearCompare(true));
 
-  // Auto-apply awal
+  // ====== Ambil lokasi dari survey.csv (buat search/suggest) ======
+  const idx=[]; // {name, lat, lng}
+  Papa.parse(CSV_URL,{download:true,header:true,skipEmptyLines:true,complete:res=>{
+    (res.data||[]).forEach(r=>{
+      const nm=(r.nama_di||"").toString().trim();
+      const lat=parseFloat(r.y), lng=parseFloat(r.x);
+      if(nm && !isNaN(lat) && !isNaN(lng)) idx.push({name:nm, lat, lng});
+    });
+  }});
+
+  const sInput=document.getElementById('search');
+  const sBox =document.getElementById('suggestions');
+  sInput.addEventListener('input', ()=>{
+    const q=sInput.value.trim().toLowerCase(); sBox.innerHTML="";
+    if(!q){ sBox.style.display="none"; return; }
+    const hits=idx.filter(it=>it.name.toLowerCase().includes(q)).slice(0,100);
+    hits.forEach(it=>{
+      const d=document.createElement('div'); d.textContent=it.name;
+      d.onclick=()=>{
+        sInput.value=it.name; sBox.style.display="none";
+        document.getElementById('center').value=`${it.lat}, ${it.lng}`;
+        map.setView([it.lat,it.lng], 13);
+        applyCompare();
+      };
+      sBox.appendChild(d);
+    });
+    sBox.style.display=hits.length?"block":"none";
+  });
+
+  // ====== Dukung URL param dari mymaps.html ======
+  // contoh: sentinel.html?lat=-6.2&lng=106.8  atau  sentinel.html?name=D.I.%20Alue%20Peudeung
+  function getParam(n){ return new URLSearchParams(location.search).get(n); }
+  function tryCenterFromParams(){
+    const plat=getParam('lat'), plng=getParam('lng'), pname=getParam('name');
+    if(plat && plng){
+      const lat=parseFloat(plat), lng=parseFloat(plng);
+      if(!isNaN(lat)&&!isNaN(lng)){
+        document.getElementById('center').value=`${lat}, ${lng}`;
+        map.setView([lat,lng], 13);
+        applyCompare(); return;
+      }
+    }
+    if(pname && idx.length){
+      const it=idx.find(i=>i.name.toLowerCase()===decodeURIComponent(pname).toLowerCase());
+      if(it){
+        document.getElementById('center').value=`${it.lat}, ${it.lng}`;
+        map.setView([it.lat,it.lng], 13);
+        applyCompare();
+      }
+    }
+  }
+  // apply awal
   applyCompare();
+  // coba pakai param setelah CSV index terisi (sedikit delay aman)
+  setTimeout(tryCenterFromParams, 800);
   </script>
 </body>
 </html>
