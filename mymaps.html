@@ -10,94 +10,40 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
 <style>
   body, html { margin:0; padding:0; height:100%; }
-  #header {
-    background-color: #FFD700; color: black; padding: 10px;
-    display: flex; align-items: center; font-weight: bold; font-size: 14px;
-  }
-  #header img { height: 40px; margin-right: 10px; }
-  #map { height: calc(100% - 110px); }
+  #header { background:#FFD700; color:black; padding:10px; display:flex; align-items:center; font-weight:bold; font-size:14px; }
+  #header img { height:40px; margin-right:10px; }
+  #map { height:calc(100% - 140px); } /* sedikit dikurangi biar panel compare muat */
   #route-info { background:#f9f9f9; padding:8px; font-size:14px; border-top:1px solid #ccc; }
 
-  .top-controls {
-    position:absolute; top:60px; right:10px; left:10px;
-    display:flex; justify-content:space-between; z-index:1000;
-  }
-  .search-box {
-    background:white; padding:5px; border-radius:4px; box-shadow:0 0 4px rgba(0,0,0,0.3); position:relative;
-  }
-  .search-box input { width: 240px; padding: 6px; }
-  #suggestions {
-    position:absolute; top:40px; left:0; right:0; background:white;
-    border:1px solid #ccc; border-top:none; max-height:220px; overflow-y:auto;
-    display:none; z-index:2000;
-  }
+  .top-controls { position:absolute; top:60px; right:10px; left:10px; display:flex; justify-content:space-between; gap:10px; z-index:1000; }
+  .search-box { background:white; padding:5px; border-radius:4px; box-shadow:0 0 4px rgba(0,0,0,0.3); position:relative; }
+  .search-box input { width:240px; padding:6px; }
+  #suggestions { position:absolute; top:40px; left:0; right:0; background:white; border:1px solid #ccc; border-top:none; max-height:220px; overflow-y:auto; display:none; z-index:2000; }
   #suggestions div { padding:6px; cursor:pointer; }
   #suggestions div:hover { background:#eee; }
 
-  .bottom-buttons {
-    position:absolute; bottom:40px; left:10px;
-    display:flex; flex-direction:column; gap:6px; z-index:1000;
-  }
+  .bottom-buttons { position:absolute; bottom:40px; left:10px; display:flex; flex-direction:column; gap:6px; z-index:1000; }
+  .custom-button{ position:relative; overflow:hidden; border-radius:10px; transition:.2s; box-shadow:0 6px 14px rgba(0,0,0,.12); font-weight:700; text-align:center; text-decoration:none; padding:8px 12px; cursor:pointer; color:#fff; }
+  #home       { background: linear-gradient(135deg,#2196F3,#1b7ed0); }
+  #reset-route{ background: linear-gradient(135deg,#ff5722,#e24a18); }
+  #locate-me  { background: linear-gradient(135deg,#4CAF50,#3f8f44); }
 
-  /* ====== Animasi tombol bawah ====== */
-  .custom-button{
-    position: relative; overflow: hidden; border-radius: 10px;
-    transition: transform .15s ease, box-shadow .2s ease, opacity .3s ease;
-    box-shadow: 0 6px 14px rgba(0,0,0,.12); will-change: transform;
-    animation: btn-enter .5s ease both; color:#fff; font-weight:700;
-    text-align:center; text-decoration:none; padding:8px 12px; cursor:pointer;
+  /* Panel Compare */
+  .compare-panel{
+    background:white; padding:8px; border-radius:8px; box-shadow:0 0 6px rgba(0,0,0,.2);
+    display:flex; gap:8px; align-items:flex-start; flex-wrap:wrap; min-width:300px;
   }
-  .custom-button:hover{ transform: translateY(-2px); box-shadow: 0 10px 18px rgba(0,0,0,.18); }
-  .custom-button:active{ transform: translateY(0) scale(.98); box-shadow: 0 4px 10px rgba(0,0,0,.16); }
+  .compare-panel label{ font-size:12px; color:#333; display:block; margin-bottom:3px; }
+  .compare-panel select, .compare-panel input{ padding:6px; font-size:12px; width:220px; }
+  .compare-panel .row{ display:flex; flex-direction:column; }
+  .compare-actions{ display:flex; gap:6px; align-items:center; }
+  .btn{ background:#222; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; font-weight:700; }
+  .btn.alt{ background:#666; }
+  .hint{ font-size:11px; color:#666; }
 
-  /* stagger & gradient */
-  #home       { animation-delay: .05s; background: linear-gradient(135deg,#2196F3,#1b7ed0); }
-  #reset-route{ animation-delay: .15s; background: linear-gradient(135deg,#ff5722,#e24a18); }
-  #locate-me  { animation-delay: .25s; background: linear-gradient(135deg,#4CAF50,#3f8f44); }
-
-  /* sheen hover */
-  .custom-button::after{
-    content:""; position:absolute; top:0; left:-150%; width:130%; height:100%;
-    background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,.25) 50%, transparent 100%);
-    transform: skewX(-20deg); transition: left .6s ease;
-  }
-  .custom-button:hover::after{ left:120%; }
-
-  /* ripple circle */
-  .ripple{
-    position:absolute; border-radius:50%; transform: scale(0);
-    background: rgba(255,255,255,.45); animation: ripple .5s ease-out forwards; pointer-events:none;
-  }
-  @keyframes ripple{ to{ transform: scale(12); opacity: 0; } }
-  @keyframes btn-enter{ from{ opacity:0; transform: translateY(8px) scale(.98); } to{ opacity:1; transform: translateY(0) scale(1); } }
-
-  /* Pulse lembut khusus tombol Posisi Saya */
-  #locate-me { position: relative; }
-  #locate-me::before{
-    content:""; position:absolute; inset:-4px; border-radius:10px; border:2px solid rgba(255,255,255,.65);
-    opacity:0; transform: scale(.9); pointer-events:none; animation: pulse-ring 4s ease-out infinite;
-  }
-  #locate-me:hover::before, #locate-me:active::before{ animation-play-state: paused; }
-  @keyframes pulse-ring{
-    0% { opacity:0; transform: scale(.9); }
-    8% { opacity:.9; transform: scale(1.02); }
-    35%{ opacity:.35; transform: scale(1.25); }
-    60%{ opacity:0; transform: scale(1.35); }
-    100%{ opacity:0; transform: scale(1.35); }
-  }
-
-  /* ===== Marker bounce via CSS ===== */
-  .leaflet-marker-icon.bounce {
-    animation: marker-bounce 600ms cubic-bezier(.28,.84,.42,1) 1;
-    transform-origin: bottom center;
-  }
-  @keyframes marker-bounce {
-    0%   { transform: translateY(0); }
-    25%  { transform: translateY(-14px); }
-    55%  { transform: translateY(0); }
-    75%  { transform: translateY(-7px); }
-    100% { transform: translateY(0); }
-  }
+  /* Marker bounce */
+  .leaflet-marker-icon.bounce { animation: marker-bounce 600ms cubic-bezier(.28,.84,.42,1) 1; transform-origin: bottom center; }
+  @keyframes marker-bounce {0%{transform:translateY(0);}25%{transform:translateY(-14px);}55%{transform:translateY(0);}75%{transform:translateY(-7px);}100%{transform:translateY(0);} }
 </style>
 </head>
 <body>
@@ -108,10 +54,39 @@
 </div>
 
 <div class="top-controls">
-  <div id="top-left"></div>
+  <!-- Search -->
   <div class="search-box">
     <input type="text" id="search" placeholder="Cari lokasi..." oninput="showSuggestions(this.value)"/>
     <div id="suggestions"></div>
+  </div>
+
+  <!-- Compare Panel -->
+  <div class="compare-panel">
+    <div class="row">
+      <label>Kiri (Before)</label>
+      <select id="leftPreset">
+        <option value="esri_imagery" selected>Esri World Imagery (current)</option>
+        <option value="esri_imagery_clarity">Esri World Imagery Clarity</option>
+        <option value="osm">OSM Standard</option>
+        <option value="custom">Custom URL (XYZ)</option>
+      </select>
+      <input id="leftCustom" placeholder="https://{s}.domain/{z}/{x}/{y}.png" style="display:none">
+    </div>
+    <div class="row">
+      <label>Kanan (After)</label>
+      <select id="rightPreset">
+        <option value="esri_imagery_clarity" selected>Esri World Imagery Clarity</option>
+        <option value="esri_imagery">Esri World Imagery (current)</option>
+        <option value="osm">OSM Standard</option>
+        <option value="custom">Custom URL (XYZ)</option>
+      </select>
+      <input id="rightCustom" placeholder="https://{s}.domain/{z}/{x}/{y}.png" style="display:none">
+    </div>
+    <div class="compare-actions">
+      <button class="btn" id="btnStartCompare">Bandingkan Citra</button>
+      <button class="btn alt" id="btnStopCompare" style="display:none;">Keluar</button>
+    </div>
+    <div class="hint">Bisa pakai template XYZ apa saja (Wayback / WMTS tiled). Contoh: <code>https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png</code></div>
   </div>
 </div>
 
@@ -130,163 +105,134 @@
 <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
 <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+<!-- Esri Leaflet & Side-by-Side -->
+<script src="https://unpkg.com/esri-leaflet@3.0.12/dist/esri-leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-side-by-side@2.0.1/leaflet-side-by-side.min.js"></script>
 
 <script>
-// ===== KONFIGURASI =====
-// Ganti ke raw CSV repo kamu kalau beda:
-const CSV_URL = "https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/data/survey.csv";
+// ===== KONFIG CSV/FOTO =====
+const CSV_URL   = "https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/data/survey.csv";
+const FOTO_BASE = "https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/data/images/";
 
-// ===== PETA & ROUTING =====
-var map = L.map('map').setView([-2.5, 117], 5);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(map);
+// ===== MAP BASIC =====
+var map = L.map('map').setView([-2.5,117],5);
+var baseOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
 
-var routingControl = L.Routing.control({
-  waypoints: [], routeWhileDragging: true, show:false,
-  createMarker: function(){ return null; }
-}).addTo(map);
-
-function formatTime(seconds){
-  const days = Math.floor(seconds/86400);
-  const hours = Math.floor((seconds%86400)/3600);
-  const minutes = Math.floor((seconds%3600)/60);
-  let str = "";
-  if(days>0) str += days+" hari ";
-  if(hours>0) str += hours+" jam ";
-  str += minutes+" menit";
-  return str;
-}
-routingControl.on('routesfound', function(e){
-  const r = e.routes[0];
-  const dist = (r.summary.totalDistance/1000).toFixed(2);
-  const time = formatTime(r.summary.totalTime);
-  document.getElementById('route-info').innerHTML = `<b>Jarak:</b> ${dist} km &nbsp; | &nbsp; <b>Waktu Tempuh:</b> ${time}`;
+// Routing (masih buat info jarak saat dibutuhkan)
+var routingControl = L.Routing.control({ waypoints:[], show:false, createMarker:()=>null }).addTo(map);
+routingControl.on('routesfound', e=>{
+  const r=e.routes[0]; const d=(r.summary.totalDistance/1000).toFixed(2);
+  const tSec=r.summary.totalTime, min=Math.floor((tSec%3600)/60), hrs=Math.floor(tSec/3600);
+  const label = (hrs? `${hrs} jam `:"")+`${min} menit`;
+  document.getElementById('route-info').innerHTML=`<b>Jarak:</b> ${d} km &nbsp; | &nbsp; <b>Waktu:</b> ${label}`;
 });
 
-function showRoute(lat,lng){
-  if(!navigator.geolocation) return alert("Geolocation tidak didukung di browser ini.");
-  navigator.geolocation.getCurrentPosition(function(pos){
-    const from = L.latLng(pos.coords.latitude, pos.coords.longitude);
-    const to   = L.latLng(lat, lng);
-    routingControl.setWaypoints([from, to]);
-  }, ()=>alert("Tidak dapat mengakses lokasi Anda."));
-}
-
 function locateMe(){
-  if(!navigator.geolocation) return alert("Geolocation tidak didukung di browser ini.");
-  navigator.geolocation.getCurrentPosition(function(pos){
-    const lat = pos.coords.latitude, lng = pos.coords.longitude;
-    L.marker([lat,lng], {icon:L.icon({iconUrl:'https://maps.google.com/mapfiles/ms/icons/green-dot.png',iconSize:[25,41],iconAnchor:[12,41],popupAnchor:[1,-34]})})
+  if(!navigator.geolocation) return alert("Geolocation tidak didukung");
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const lat=pos.coords.latitude, lng=pos.coords.longitude;
+    L.marker([lat,lng],{icon:L.icon({iconUrl:'https://maps.google.com/mapfiles/ms/icons/green-dot.png',iconSize:[25,41],iconAnchor:[12,41]})})
       .addTo(map).bindPopup("Lokasi Anda").openPopup();
-    map.setView([lat,lng], 13);
-  }, ()=>alert("Tidak dapat mengakses lokasi Anda."));
+    map.setView([lat,lng],13);
+  });
 }
-
-function resetRoute(){
-  routingControl.setWaypoints([]);
-  document.getElementById('route-info').innerHTML = "Jarak &amp; Waktu tempuh akan muncul di sini";
-}
-
+function resetRoute(){ routingControl.setWaypoints([]); document.getElementById('route-info').innerHTML="Jarak &amp; Waktu tempuh akan muncul di sini"; }
 function getIcon(name){
-  let iconUrl = '';
-  if(name && name.startsWith('D.I.R.')) iconUrl = 'https://maps.google.com/mapfiles/ms/icons/red-dot.png';
-  else if(name && name.startsWith('D.I.')) iconUrl = 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png';
-  else iconUrl = 'https://maps.google.com/mapfiles/ms/icons/green-dot.png';
   return L.icon({
-    iconUrl, iconSize:[25,41], iconAnchor:[12,41], popupAnchor:[1,-34],
+    iconUrl: (name && name.startsWith('D.I.R.')) ? 'https://maps.google.com/mapfiles/ms/icons/red-dot.png' : 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+    iconSize:[25,41], iconAnchor:[12,41], popupAnchor:[1,-34],
     shadowUrl:'https://unpkg.com/leaflet/dist/images/marker-shadow.png', shadowSize:[41,41]
   });
 }
 
 // ===== MARKERS dari CSV =====
-var markersCluster = L.markerClusterGroup();
-var featuresIndex = []; // untuk pencarian
-var allMarkers = [];    // untuk fitBounds
+var cluster=L.markerClusterGroup(), index=[];
+Papa.parse(CSV_URL,{download:true,header:true,skipEmptyLines:true,complete:res=>{
+  (res.data||[]).forEach(r=>{
+    const nm=(r.nama_di||"").toString(); const lat=parseFloat(r.y); const lng=parseFloat(r.x);
+    if(isNaN(lat)||isNaN(lng)) return;
+    const prov=(r.provinsi||"-").toString(), kab=(r.kabupaten||"-").toString(), bbws=(r.bbws||"-").toString(), note=(r.catatan||"-").toString();
+    const foto=(r.foto||"").toString().trim();
+    const fotoUrl = foto ? (/^https?:\/\//i.test(foto)? foto : (FOTO_BASE+encodeURIComponent(foto))) : "";
+    const imgHtml = fotoUrl ? `<div style="margin-top:8px"><img src="${fotoUrl}" style="width:220px;max-height:160px;object-fit:cover;border:1px solid #ddd;border-radius:6px"/></div>` : "";
 
-Papa.parse(CSV_URL, {
-  download:true, header:true, skipEmptyLines:true,
-  complete: function(res){
-    const rows = res.data || [];
-    rows.forEach(function(r){
-      const nm  = (r.nama_di || r.Nama || r.name || "").toString() || "(Tanpa Nama)";
-      const lat = parseFloat(r.y || r.lat || r.latitude);
-      const lng = parseFloat(r.x || r.lng || r.longitude);
-      if (isNaN(lat) || isNaN(lng)) return;
-
-      const prov = (r.provinsi || r.Provinsi || "-").toString();
-      const kab  = (r.kabupaten || r.Kabupaten || "-").toString();
-      const bbws = (r.bbws || r.BBWS || "-").toString();
-      const note = (r.catatan || r.Catatan || "-").toString();
-
-      const marker = L.marker([lat, lng], {icon:getIcon(nm)}).bindPopup(`
-        <b>${nm}</b><br>
-        <div style="color:#555;font-size:12px;margin:2px 0;">
-          📍 <b>Koordinat:</b> ${lat.toFixed(6)}, ${lng.toFixed(6)}
-        </div>
-        Provinsi: ${prov}<br>
-        Kabupaten: ${kab}<br>
-        BBWS: ${bbws}<br>
-        Catatan: ${note}<br>
-        <a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank" rel="noopener">Buka di Google Maps</a><br>
-        <button onclick='showRoute(${lat}, ${lng})'>Tunjukkan Rute</button>
-      `);
-
-      // bounce saat popup dibuka
-      marker.on('popupopen', function(){
-        const el = marker.getElement();
-        if(el){ el.classList.remove('bounce'); void el.offsetWidth; el.classList.add('bounce'); }
-      });
-
-      markersCluster.addLayer(marker);
-      featuresIndex.push({name:nm, marker});
-      allMarkers.push(marker);
-    });
-
-    map.addLayer(markersCluster);
-
-    // Fit ke semua marker
-    if(allMarkers.length){
-      const group = L.featureGroup(allMarkers);
-      map.fitBounds(group.getBounds(), { padding:[20,20] });
-    }
-  },
-  error: function(){ alert("Gagal memuat CSV. Cek URL atau format file."); }
-});
-
-// ===== PENCARIAN =====
-function showSuggestions(query){
-  const box = document.getElementById("suggestions");
-  box.innerHTML = "";
-  if(!query){ box.style.display="none"; return; }
-  const matches = featuresIndex.filter(m => m.name.toLowerCase().includes(query.toLowerCase()));
-  matches.slice(0,100).forEach(m=>{
-    const div = document.createElement("div");
-    div.textContent = m.name;
-    div.onclick = function(){
-      document.getElementById("search").value = m.name;
-      box.style.display="none";
-      map.setView(m.marker.getLatLng(), 14);
-      m.marker.openPopup();
-    };
-    box.appendChild(div);
+    const m=L.marker([lat,lng],{icon:getIcon(nm)}).bindPopup(`
+      <b>${nm}</b><br>
+      Provinsi: ${prov}<br>
+      Kabupaten: ${kab}<br>
+      BBWS: ${bbws}<br>
+      Catatan: ${note}<br>
+      <a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank" rel="noopener">Buka di Google Maps</a>
+      ${imgHtml}`);
+    m.on('popupopen',()=>{const el=m.getElement(); if(el){el.classList.remove('bounce'); void el.offsetWidth; el.classList.add('bounce');}});
+    cluster.addLayer(m); index.push({name:nm,marker:m});
   });
-  box.style.display = matches.length ? "block" : "none";
+  map.addLayer(cluster);
+}});
+
+function showSuggestions(q){
+  const box=document.getElementById("suggestions"); box.innerHTML="";
+  if(!q){box.style.display="none";return;}
+  const m=index.filter(m=>m.name.toLowerCase().includes(q.toLowerCase()));
+  m.forEach(m=>{const d=document.createElement("div"); d.textContent=m.name; d.onclick=()=>{document.getElementById("search").value=m.name; box.style.display="none"; map.setView(m.marker.getLatLng(),14); m.marker.openPopup();}; box.appendChild(d);});
+  box.style.display=m.length?"block":"none";
 }
 
-// ===== Ripple tombol bawah =====
-document.querySelector('.bottom-buttons')?.addEventListener('click', function(e){
-  const btn = e.target.closest('.custom-button');
-  if(!btn) return;
-  const rect = btn.getBoundingClientRect();
-  const span = document.createElement('span');
-  span.className = 'ripple';
-  const size = Math.max(rect.width, rect.height);
-  span.style.width = span.style.height = size + 'px';
-  span.style.left = (e.clientX - rect.left - size/2) + 'px';
-  span.style.top  = (e.clientY - rect.top  - size/2) + 'px';
-  btn.appendChild(span);
-  setTimeout(()=> span.remove(), 500);
-});
-</script>
+// ======== COMPARE (Side-by-Side) =========
+let sideBySideCtl=null, leftLayer=null, rightLayer=null;
 
+// Preset builders
+function buildPreset(preset, customUrl){
+  if(preset==='esri_imagery') return L.esri.basemapLayer('Imagery');
+  if(preset==='esri_imagery_clarity') return L.esri.basemapLayer('ImageryClarity');
+  if(preset==='osm') return L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19});
+  if(preset==='custom'){
+    if(!customUrl) { alert("Masukkan URL XYZ untuk Custom"); return null; }
+    return L.tileLayer(customUrl,{maxZoom:22, tileSize:256, crossOrigin:true});
+  }
+  return null;
+}
+
+function startCompare(){
+  const lp=document.getElementById('leftPreset').value;
+  const rp=document.getElementById('rightPreset').value;
+  const lurl=document.getElementById('leftCustom').value.trim();
+  const rurl=document.getElementById('rightCustom').value.trim();
+
+  // cleanup previous
+  stopCompare(false);
+
+  leftLayer = buildPreset(lp, lurl);
+  rightLayer= buildPreset(rp, rurl);
+  if(!leftLayer || !rightLayer){ return; }
+
+  leftLayer.addTo(map);
+  rightLayer.addTo(map);
+  sideBySideCtl = L.control.sideBySide(leftLayer, rightLayer).addTo(map);
+
+  document.getElementById('btnStartCompare').style.display='none';
+  document.getElementById('btnStopCompare').style.display='inline-block';
+}
+function stopCompare(removeLayers=true){
+  if(sideBySideCtl){ sideBySideCtl.remove(); sideBySideCtl=null; }
+  if(removeLayers){
+    if(leftLayer){ map.removeLayer(leftLayer); leftLayer=null; }
+    if(rightLayer){ map.removeLayer(rightLayer); rightLayer=null; }
+  }
+  document.getElementById('btnStartCompare').style.display='inline-block';
+  document.getElementById('btnStopCompare').style.display='none';
+}
+
+// Toggle custom input
+['leftPreset','rightPreset'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', e=>{
+    const isLeft=(id==='leftPreset');
+    const show=(e.target.value==='custom');
+    document.getElementById(isLeft?'leftCustom':'rightCustom').style.display= show ? 'block' : 'none';
+  });
+});
+document.getElementById('btnStartCompare').addEventListener('click', startCompare);
+document.getElementById('btnStopCompare').addEventListener('click', ()=>stopCompare(true));
+</script>
 </body>
 </html>
