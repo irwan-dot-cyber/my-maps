@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<title>Compare Citra Sentinel-2 (Inpres 2/2025)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<style>
+  html,body {height:100%; margin:0}
+  #header{background:#FFD700;color:#000;padding:10px;font-weight:700;display:flex;align-items:center;gap:10px}
+  #header img{height:36px}
+  #toolbar{
+    position:absolute; top:64px; left:10px; z-index:1000;
+    background:#fff; padding:10px; border-radius:10px; box-shadow:0 6px 14px rgba(0,0,0,.15);
+    display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; max-width:680px
+  }
+  #toolbar .col{display:flex; flex-direction:column; gap:4px}
+  #toolbar label{font-size:12px; color:#333}
+  #toolbar select,#toolbar input{padding:6px 8px; font-size:13px; min-width:180px}
+  #toolbar .btn{background:#222;color:#fff;border:none;border-radius:8px;padding:8px 12px;font-weight:700;cursor:pointer}
+  #toolbar .btn.alt{background:#666}
+  #map{height:calc(100% - 56px)}
+  .hint{font-size:11px;color:#666}
+</style>
+</head>
+<body>
+  <div id="header">
+    <img src="https://iconape.com/wp-content/png_logo_vector/pu-logo.png" alt="PU"/>
+    KEMENTERIAN PEKERJAAN UMUM — DIREKTORAT SDA — DIREKTORAT IRIGASI & RAWA
+  </div>
+
+  <div id="toolbar">
+    <div class="col">
+      <label>Lokasi fokus</label>
+      <input id="center" placeholder="-6.175392, 106.827153" value="-6.175392, 106.827153"/>
+      <small class="hint">lat, lng — misal: -6.175392, 106.827153 (Monas)</small>
+    </div>
+
+    <div class="col">
+      <label>Kiri (Before) — Bulan</label>
+      <select id="leftMonth"></select>
+      <label style="margin-top:4px">Kanan (After) — Bulan</label>
+      <select id="rightMonth"></select>
+    </div>
+
+    <div class="col">
+      <label>Maksimum Cloud Cover (%)</label>
+      <input id="cloud" type="number" min="0" max="100" step="5" value="20"/>
+      <small class="hint">Semakin kecil = lebih sedikit awan</small>
+    </div>
+
+    <div class="col" style="gap:6px">
+      <button class="btn" id="applyBtn">Terapkan</button>
+      <button class="btn alt" id="clearBtn" style="display:none">Keluar Compare</button>
+    </div>
+  </div>
+
+  <div id="map"></div>
+
+  <!-- Libs -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/esri-leaflet@3.0.12/dist/esri-leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-side-by-side@2.0.1/leaflet-side-by-side.min.js"></script>
+
+  <script>
+  // ====== Konstanta layanan Sentinel-2 Esri (time-enabled, updated daily) ======
+  // Docs/REST menunjukkan field: acquisitiondate (date), cloudcover (double)  ⟶ filter via mosaicRule.where
+  // https://sentinel.arcgis.com/arcgis/rest/services/Sentinel2/ImageServer
+  const S2_URL = "https://sentinel.arcgis.com/arcgis/rest/services/Sentinel2/ImageServer";
+
+  // ====== Map dasar ======
+  const map = L.map('map', {center: [-6.175392,106.827153], zoom: 11});
+  const basemap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+
+  // ====== Helper buat isi dropdown bulan (24 bulan ke belakang) ======
+  function fmtMonth(date){ // YYYY-MM
+    const y = date.getFullYear(), m = String(date.getMonth()+1).padStart(2,'0');
+    return `${y}-${m}`;
+  }
+  function monthStartEnd(ym){ // returns [start, end) in 'YYYY-MM-DD'
+    const [y,m] = ym.split('-').map(Number);
+    const start = new Date(y, m-1, 1);
+    const end   = new Date(y, m, 1);
+    const s = `${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,'0')}-01`;
+    const e = `${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-01`;
+    return [s,e];
+  }
+  function fillMonths(selId, defaultYm){
+    const sel = document.getElementById(selId);
+    sel.innerHTML = "";
+    const now = new Date();
+    for(let i=0;i<24;i++){
+      const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+      const ym = fmtMonth(d);
+      const opt = document.createElement('option');
+      opt.value = ym; opt.textContent = ym;
+      if(ym===defaultYm) opt.selected = true;
+      sel.appendChild(opt);
+    }
+  }
+  const today = new Date();
+  const thisYm = fmtMonth(today);
+  const prevYm = fmtMonth(new Date(today.getFullYear(), today.getMonth()-1, 1));
+  fillMonths('leftMonth',  prevYm);  // before
+  fillMonths('rightMonth', thisYm);  // after
+
+  // ====== Build ImageMapLayer dengan filter bulan + cloudcover ======
+  function buildS2Layer(ym, cloudMax){
+    const [start,end] = monthStartEnd(ym);
+    // WHERE pakai format ArcGIS SQL Date:
+    // acquisitiondate >= DATE 'YYYY-MM-DD 00:00:00' AND acquisitiondate < DATE 'YYYY-MM-DD 00:00:00' AND cloudcover <= X
+    const where = `acquisitiondate >= DATE '${start} 00:00:00' AND acquisitiondate < DATE '${end} 00:00:00' AND cloudcover <= ${Number(cloudMax)||100}`;
+    return L.esri.imageMapLayer({
+      url: S2_URL,
+      mosaicRule: {
+        where,
+        mosaicMethod: "attribute", // gunakan default sortField=best (lihat service)
+        ascending: true
+      },
+      // Render: natural color (4-3-2) dengan DRA (opsional). Bisa juga "Color Infrared", "NDVI", dsb (lihat rasterFunctionInfos di REST).
+      renderingRule: { "rasterFunction":"Natural Color with DRA" },
+      opacity: 1
+    });
+  }
+
+  let leftLayer=null, rightLayer=null, sbs=null;
+
+  function applyCompare(){
+    // pusatkan peta jika user ganti koordinat
+    const c = document.getElementById('center').value.trim();
+    if(c){
+      const parts = c.split(',').map(v=>parseFloat(v.trim()));
+      if(parts.length===2 && parts.every(n=>!isNaN(n))) map.setView([parts[0], parts[1]], map.getZoom());
+    }
+
+    const ymL = document.getElementById('leftMonth').value;
+    const ymR = document.getElementById('rightMonth').value;
+    const cc  = document.getElementById('cloud').value;
+
+    clearCompare(false); // cleanup tanpa sentuh tombol
+
+    leftLayer  = buildS2Layer(ymL, cc).addTo(map);
+    rightLayer = buildS2Layer(ymR, cc).addTo(map);
+    sbs = L.control.sideBySide(leftLayer, rightLayer).addTo(map);
+
+    document.getElementById('applyBtn').textContent = "Perbarui";
+    document.getElementById('clearBtn').style.display = "inline-block";
+  }
+
+  function clearCompare(removeFromMap=true){
+    if(sbs){ sbs.remove(); sbs=null; }
+    if(removeFromMap){
+      if(leftLayer){ map.removeLayer(leftLayer); leftLayer=null; }
+      if(rightLayer){ map.removeLayer(rightLayer); rightLayer=null; }
+    }
+    document.getElementById('clearBtn').style.display = "none";
+    document.getElementById('applyBtn').textContent = "Terapkan";
+  }
+
+  document.getElementById('applyBtn').addEventListener('click', applyCompare);
+  document.getElementById('clearBtn').addEventListener('click', ()=>clearCompare(true));
+
+  // Auto-apply awal
+  applyCompare();
+  </script>
+</body>
+</html>
