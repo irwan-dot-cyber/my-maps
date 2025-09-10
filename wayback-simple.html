@@ -6,29 +6,33 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <style>
-  html,body{height:100%;margin:0}
-  #map{height:100%}
+  html, body { height:100%; margin:0; }
+  #map { height:100%; }
+  /* Biar slider kelihatan */
+  .leaflet-sbs-range {
+    z-index: 1000 !important;
+  }
 </style>
 </head>
 <body>
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<!-- ganti CDN side-by-side ke versi mapbox (lebih stabil) -->
-<script src="https://unpkg.com/leaflet-side-by-side/leaflet-side-by-side.js"></script>
+<!-- Pakai plugin yang bener dari mapbox repo -->
+<script src="https://cdn.jsdelivr.net/npm/leaflet-side-by-side@2.0.1/leaflet-side-by-side.min.js"></script>
 
 <script>
-const map = L.map('map').setView([-6.1754,106.8272], 12);
+  const map = L.map('map').setView([-6.1754, 106.8272], 12);
 
-// Dua versi Wayback contoh
-const urlLeft  = "https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/20190716/MapServer/tile/{z}/{y}/{x}";
-const urlRight = "https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/20240120/MapServer/tile/{z}/{y}/{x}";
+  // Dua snapshot contoh dari Wayback
+  const urlLeft  = "https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/20190716/MapServer/tile/{z}/{y}/{x}";
+  const urlRight = "https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/20240120/MapServer/tile/{z}/{y}/{x}";
 
-const layerLeft  = L.tileLayer(urlLeft , { maxZoom:19, crossOrigin:true }).addTo(map);
-const layerRight = L.tileLayer(urlRight, { maxZoom:19, crossOrigin:true }).addTo(map);
+  const layerLeft  = L.tileLayer(urlLeft, { maxZoom: 19, crossOrigin: true }).addTo(map);
+  const layerRight = L.tileLayer(urlRight, { maxZoom: 19, crossOrigin: true }).addTo(map);
 
-// slider muncul otomatis
-L.control.sideBySide(layerLeft, layerRight).addTo(map);
+  // Inisialisasi slider
+  L.control.sideBySide(layerLeft, layerRight).addTo(map);
 </script>
 </body>
 </html>
