@@ -2,52 +2,33 @@
 <html lang="id">
 <head>
 <meta charset="utf-8">
-<title>Wayback Compare Simple</title>
+<title>Wayback Compare Fixed</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <style>
   html,body{height:100%;margin:0}
   #map{height:100%}
-  #toolbar{
-    position:absolute;top:10px;left:10px;z-index:1000;
-    background:white;padding:8px;border-radius:6px;
-    box-shadow:0 2px 8px rgba(0,0,0,.2);
-  }
-  input{width:420px;display:block;margin:4px 0;padding:6px}
-  button{padding:6px 10px;font-weight:bold;cursor:pointer}
 </style>
 </head>
 <body>
-<div id="toolbar">
-  <label>Kiri (Before):</label>
-  <input id="leftUrl" value="https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/20190716/MapServer/tile/{z}/{y}/{x}">
-  <label>Kanan (After):</label>
-  <input id="rightUrl" value="https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/20240120/MapServer/tile/{z}/{y}/{x}">
-  <button onclick="applyCompare()">Bandingkan</button>
-</div>
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-side-by-side@2.0.1/leaflet-side-by-side.min.js"></script>
 
 <script>
-const map=L.map('map').setView([-6.1754,106.8272],12);
-let sbs,leftLayer,rightLayer;
+const map = L.map('map').setView([-6.1754,106.8272], 12);
 
-function applyCompare(){
-  if(sbs){ sbs.remove(); }
-  if(leftLayer) map.removeLayer(leftLayer);
-  if(rightLayer) map.removeLayer(rightLayer);
+// contoh URL versi lama & baru (Jakarta area)
+const urlLeft  = "https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/20190716/MapServer/tile/{z}/{y}/{x}";
+const urlRight = "https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/20240120/MapServer/tile/{z}/{y}/{x}";
 
-  const leftUrl=document.getElementById('leftUrl').value.trim();
-  const rightUrl=document.getElementById('rightUrl').value.trim();
+// buat layer kiri & kanan
+const layerLeft  = L.tileLayer(urlLeft, { maxZoom: 19, crossOrigin: true }).addTo(map);
+const layerRight = L.tileLayer(urlRight, { maxZoom: 19, crossOrigin: true }).addTo(map);
 
-  leftLayer=L.tileLayer(leftUrl,{maxZoom:19,crossOrigin:true}).addTo(map);
-  rightLayer=L.tileLayer(rightUrl,{maxZoom:19,crossOrigin:true}).addTo(map);
-
-  sbs=L.control.sideBySide(leftLayer,rightLayer).addTo(map);
-}
-applyCompare();
+// aktifkan slider
+L.control.sideBySide(layerLeft, layerRight).addTo(map);
 </script>
 </body>
 </html>
