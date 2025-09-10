@@ -2,22 +2,20 @@
 <html lang="id">
 <head>
 <meta charset="utf-8">
-<title>Wayback Compare (No-Plugin)</title>
+<title>Wayback Compare (1 Lokasi Contoh)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <style>
   html,body{height:100%;margin:0}
   #map{height:100%}
-  /* Slider overlay */
+  /* Slider */
   #swipe{
     position:absolute; z-index:1000; top:12px; left:50%;
-    transform:translateX(-50%);
-    width:340px; height:28px; padding:4px 8px;
-    background:rgba(255,255,255,.9); border-radius:8px;
-    box-shadow:0 2px 10px rgba(0,0,0,.2);
-    display:flex; align-items:center; gap:8px; font:600 12px system-ui,Segoe UI,Arial;
+    transform:translateX(-50%); width:360px; height:30px; padding:6px 10px;
+    background:rgba(255,255,255,.92); border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,.2);
+    display:flex; align-items:center; gap:10px; font:600 12px system-ui,Segoe UI,Arial;
   }
-  #range{width:260px}
+  #range{width:270px}
 </style>
 </head>
 <body>
@@ -30,36 +28,53 @@
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
-  const map = L.map('map').setView([-6.1754,106.8272], 12);
+  // === 1) Lokasi contoh (ubah sesuai kebutuhan) ===
+  const sample = {
+    name: "Contoh Lokasi: D.I.R. Tanjung Sejaro",
+    lat:  -2.9681421,
+    lng: 104.7309104
+  };
 
-  // Dua versi Wayback (pastikan ada /tile/{z}/{y}/{x})
+  // === 2) Inisialisasi peta ke lokasi contoh ===
+  const map = L.map('map').setView([sample.lat, sample.lng], 13);
+
+  // === 3) Dua versi Wayback (pastikan /tile/{z}/{y}/{x}) ===
+  // Silakan ganti ke versi tanggal lain kalau mau
   const urlLeft  = "https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/20190716/MapServer/tile/{z}/{y}/{x}";
   const urlRight = "https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/20240120/MapServer/tile/{z}/{y}/{x}";
 
   const left  = L.tileLayer(urlLeft , {maxZoom:19, crossOrigin:true}).addTo(map);
   const right = L.tileLayer(urlRight, {maxZoom:19, crossOrigin:true}).addTo(map);
 
-  // —— Swipe tanpa plugin: clip layer kanan berdasarkan slider ——
+  // === 4) Marker lokasi contoh ===
+  const marker = L.marker([sample.lat, sample.lng]).addTo(map);
+  marker.bindPopup(`
+    <b>${sample.name}</b><br>
+    Koordinat: ${sample.lat.toFixed(6)}, ${sample.lng.toFixed(6)}<br>
+    <a href="https://www.google.com/maps?q=${sample.lat},${sample.lng}" target="_blank">Buka di Google Maps</a><br>
+    <a href="#" onclick="recenter();return false;">Fokuskan ke titik</a>
+  `);
+
+  function recenter(){
+    map.setView([sample.lat, sample.lng], 15);
+    marker.openPopup();
+  }
+
+  // === 5) Slider tanpa plugin: clip layer kanan ===
   const range = document.getElementById('range');
 
   function applyClip(){
-    const p = Number(range.value)/100;               // 0..1
+    const p = Number(range.value)/100;             // 0..1
     const w = map.getSize().x; const h = map.getSize().y;
     const clipW = Math.round(w * p);
-    const el = right.getContainer();                 // DOM container untuk layer kanan
+    const el = right.getContainer();
     if(!el) return;
-    // gunakan clip-path supaya bagian kiri terlihat dari layer kiri
-    el.style.clipPath = `polygon(0px 0px, ${clipW}px 0px, ${clipW}px ${h}px, 0px ${h}px)`;
-    el.style.webkitClipPath = el.style.clipPath;     // Safari
+    el.style.clipPath = `polygon(0 0, ${clipW}px 0, ${clipW}px ${h}px, 0 ${h}px)`;
+    el.style.webkitClipPath = el.style.clipPath;
   }
-
-  // panggil saat slider digeser / peta di-resize / zoom / move
   range.addEventListener('input', applyClip);
   map.on('resize zoom move', applyClip);
-
-  // tunggu tiles terpasang dulu baru apply
   right.on('load', applyClip);
-  // apply awal
   applyClip();
 </script>
 </body>
