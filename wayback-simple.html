@@ -2,12 +2,39 @@
 <html lang="id">
 <head>
 <meta charset="utf-8">
-<title>Wayback Compare Fixed</title>
+<title>Wayback Compare Simple (Visible Slider)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <style>
   html,body{height:100%;margin:0}
   #map{height:100%}
+
+  /* --- BIKIN SLIDER-NYA KELIATAN --- */
+  .leaflet-sbs-range{
+    position:absolute !important;
+    z-index:1000 !important;
+    top:12px;               /* posisinya */
+    left:50%;
+    transform:translateX(-50%);
+    width:320px;            /* lebar slider */
+    height:26px;
+    background:rgba(255,255,255,.85);
+    border-radius:6px;
+    padding:4px 8px;
+    box-shadow:0 2px 8px rgba(0,0,0,.25);
+  }
+  .leaflet-sbs-range::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    appearance:none;
+    width:20px;height:20px;border-radius:50%;
+    background:#FFD700;border:2px solid #000;
+    cursor:pointer;
+  }
+  .leaflet-sbs-range::-moz-range-thumb{
+    width:20px;height:20px;border-radius:50%;
+    background:#FFD700;border:2px solid #000;
+    cursor:pointer;
+  }
 </style>
 </head>
 <body>
@@ -17,18 +44,17 @@
 <script src="https://unpkg.com/leaflet-side-by-side@2.0.1/leaflet-side-by-side.min.js"></script>
 
 <script>
-const map = L.map('map').setView([-6.1754,106.8272], 12);
+  const map = L.map('map').setView([-6.1754,106.8272], 12);
 
-// contoh URL versi lama & baru (Jakarta area)
-const urlLeft  = "https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/20190716/MapServer/tile/{z}/{y}/{x}";
-const urlRight = "https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/20240120/MapServer/tile/{z}/{y}/{x}";
+  // Dua versi Wayback contoh (Jakarta): PASTI lengkap pakai /tile/{z}/{y}/{x}
+  const urlLeft  = "https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/20190716/MapServer/tile/{z}/{y}/{x}";
+  const urlRight = "https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/20240120/MapServer/tile/{z}/{y}/{x}";
 
-// buat layer kiri & kanan
-const layerLeft  = L.tileLayer(urlLeft, { maxZoom: 19, crossOrigin: true }).addTo(map);
-const layerRight = L.tileLayer(urlRight, { maxZoom: 19, crossOrigin: true }).addTo(map);
+  const leftLayer  = L.tileLayer(urlLeft , {maxZoom:19, crossOrigin:true}).addTo(map);
+  const rightLayer = L.tileLayer(urlRight, {maxZoom:19, crossOrigin:true}).addTo(map);
 
-// aktifkan slider
-L.control.sideBySide(layerLeft, layerRight).addTo(map);
+  // Tambah slider (after layers exist)
+  const sbs = L.control.sideBySide(leftLayer, rightLayer).addTo(map);
 </script>
 </body>
 </html>
