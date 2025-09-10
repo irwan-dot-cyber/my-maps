@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<title>Compare Esri Wayback (Inpres 2/2025)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
+<style>
+  html,body{height:100%;margin:0}
+  #header{background:#FFD700;color:#000;padding:10px;font-weight:700;display:flex;align-items:center;gap:10px}
+  #header img{height:36px}
+  #map{height:calc(100% - 56px)}
+  #toolbar{
+    position:absolute; top:64px; left:10px; right:10px; z-index:1000;
+    display:flex; gap:10px; flex-wrap:wrap; align-items:flex-start;
+  }
+  .panel{
+    background:#fff; padding:10px; border-radius:10px; box-shadow:0 6px 14px rgba(0,0,0,.15);
+    display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;
+  }
+  .col{display:flex; flex-direction:column; gap:4px}
+  label{font-size:12px; color:#333}
+  input, select{padding:6px 8px; font-size:13px; min-width:200px}
+  .btn{background:#222;color:#fff;border:none;border-radius:8px;padding:8px 12px;font-weight:700;cursor:pointer}
+  .btn.alt{background:#666}
+  .hint{font-size:11px;color:#666}
+  .search-box{position:relative}
+  .search-box input{min-width:260px}
+  .suggestions{
+    position:absolute; top:64px; left:0; right:0; background:#fff; border:1px solid #ccc; border-top:none;
+    max-height:220px; overflow:auto; display:none; z-index:2000; border-radius:0 0 6px 6px
+  }
+  .suggestions div{padding:6px 8px; cursor:pointer}
+  .suggestions div:hover{background:#f2f2f2}
+  .leaflet-marker-icon.bounce{animation:marker-bounce 600ms cubic-bezier(.28,.84,.42,1) 1;transform-origin:bottom center}
+  @keyframes marker-bounce{0%{transform:translateY(0)}25%{transform:translateY(-14px)}55%{transform:translateY(0)}75%{transform:translateY(-7px)}100%{transform:translateY(0)}}
+</style>
+</head>
+<body>
+  <div id="header">
+    <img src="https://iconape.com/wp-content/png_logo_vector/pu-logo.png" alt="PU"/>
+    KEMENTERIAN PEKERJAAN UMUM — DIREKTORAT SDA — DIREKTORAT IRIGASI & RAWA
+  </div>
+
+  <div id="toolbar">
+    <div class="panel">
+      <div class="col search-box">
+        <label>Cari DI (dari survey.csv)</label>
+        <input id="search" placeholder="ketik nama DI…">
+        <div id="suggestions" class="suggestions"></div>
+        <small class="hint">klik hasil → peta fokus & slider diperbarui</small>
+      </div>
+
+      <div class="col">
+        <label>Lokasi fokus (lat, lng)</label>
+        <input id="center" placeholder="-6.175392, 106.827153" value="-6.175392, 106.827153"/>
+        <small class="hint">contoh: -6.175392, 106.827153 (Monas)</small>
+      </div>
+
+      <div class="col">
+        <label>Kiri (Before)</label>
+        <select id="leftPreset">
+          <option value="esri_imagery" selected>Esri World Imagery (current)</option>
+          <option value="custom">Custom XYZ (paste Wayback Tile URL)</option>
+        </select>
+        <input id="leftCustom" placeholder="paste Wayback Tile URL di sini" style="display:none">
+      </div>
+
+      <div class="col">
+        <label>Kanan (After)</label>
+        <select id="rightPreset">
+          <option value="custom" selected>Custom XYZ (paste Wayback Tile URL)</option>
+          <option value="esri_imagery">Esri World Imagery (current)</option>
+        </select>
+        <input id="rightCustom" placeholder="paste Wayback Tile URL di sini">
+        <small class="hint">Contoh pola (bisa berbeda): https://wayback.maptiles.arcgis.com/.../MapServer/tile/{z}/{y}/{x}?ts=2025XXXX</small>
+      </div>
+
+      <div class="col" style="gap:6px">
+        <button class="btn" id="applyBtn">Bandingkan</button>
+        <button class="btn alt" id="clearBtn" style="display:none">Keluar Compare</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="map"></div>
+
+  <!-- Libs -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+  <script src="https://unpkg.com/leaflet-side-by-side@2.0.1/leaflet-side-by-side.min.js"></script>
+  <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+
+  <script>
+  // ====== KONFIG DATA ======
+  const CSV_URL = "https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/data/survey.csv";
+
+  // ====== PETA ======
+  const map = L.map('map', {center: [-2.5,117], zoom: 5});
+  const baseOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+
+  // ====== BUILDER LAYER ======
+  function buildPreset(preset, customUrl){
+    if(preset==='esri_imagery'){
+      return L.tileLayer('https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom:19, crossOrigin:true});
+    }
+    if(preset==='custom'){
+      if(!customUrl){ alert("Masukkan URL XYZ untuk Custom"); return null; }
+      // terima apa saja (Wayback Tile URL dari Living Atlas / ArcGIS REST), asalkan mengandung {z}/{x}/{y} atau {z}/{y}/{x}
+      return L.tileLayer(customUrl, {maxZoom:22, tileSize:256, crossOrigin:true});
+    }
+    return null;
+  }
+
+  // ====== COMPARE ======
+  let leftLayer=null, rightLayer=null, sbs=null;
+  function applyCompare(){
+    // set center
+    const c=document.getElementById('center').value.trim();
+    if(c){
+      const parts=c.split(',').map(v=>parseFloat(v.trim()));
+      if(parts.length===2 && parts.every(n=>!isNaN(n))) map.setView([parts[0],parts[1]], Math.max(map.getZoom(), 12));
+    }
+
+    const lp=document.getElementById('leftPreset').value;
+    const rp=document.getElementById('rightPreset').value;
+    const lurl=document.getElementById('leftCustom').value.trim();
+    const rurl=document.getElementById('rightCustom').value.trim();
+
+    clearCompare(false);
+
+    leftLayer  = buildPreset(lp, lurl);
+    rightLayer = buildPreset(rp, rurl);
+    if(!leftLayer || !rightLayer) return;
+
+    leftLayer.addTo(map);
+    rightLayer.addTo(map);
+    sbs = L.control.sideBySide(leftLayer, rightLayer).addTo(map);
+
+    document.getElementById('applyBtn').textContent="Perbarui";
+    document.getElementById('clearBtn').style.display="inline-block";
+  }
+  function clearCompare(remove=true){
+    if(sbs){ sbs.remove(); sbs=null; }
+    if(remove){
+      if(leftLayer){ map.removeLayer(leftLayer); leftLayer=null; }
+      if(rightLayer){ map.removeLayer(rightLayer); rightLayer=null; }
+    }
+    document.getElementById('clearBtn').style.display="none";
+    document.getElementById('applyBtn').textContent="Bandingkan";
+  }
+  document.getElementById('applyBtn').addEventListener('click', applyCompare);
+  document.getElementById('clearBtn').addEventListener('click', ()=>clearCompare(true));
+  ['leftPreset','rightPreset'].forEach(id=>{
+    document.getElementById(id).addEventListener('change', e=>{
+      const isLeft=(id==='leftPreset');
+      const show=(e.target.value==='custom');
+      document.getElementById(isLeft?'leftCustom':'rightCustom').style.display = show ? 'block' : 'none';
+    });
+  });
+
+  // ====== TAGGING dari CSV (markers + search) ======
+  const cluster = L.markerClusterGroup();
+  const idx = []; // {name, lat, lng, marker}
+  function getIcon(name){
+    const url = (name && name.startsWith('D.I.R.')) ? 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
+              : 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png';
+    return L.icon({
+      iconUrl:url, iconSize:[25,41], iconAnchor:[12,41], popupAnchor:[1,-34],
+      shadowUrl:'https://unpkg.com/leaflet/dist/images/marker-shadow.png', shadowSize:[41,41]
+    });
+  }
+  Papa.parse(CSV_URL,{
+    download:true, header:true, skipEmptyLines:true,
+    complete: res=>{
+      const markers=[];
+      (res.data||[]).forEach(r=>{
+        const nm  = (r.nama_di||r.Nama||"").toString().trim();
+        const lat = parseFloat(r.y||r.lat||r.latitude);
+        const lng = parseFloat(r.x||r.lng||r.longitude);
+        if(!nm || isNaN(lat)||isNaN(lng)) return;
+
+        const prov=(r.provinsi||r.Provinsi||"-").toString();
+        const kab =(r.kabupaten||r.Kabupaten||"-").toString();
+        const bbws=(r.bbws||r.BBWS||"-").toString();
+        const note=(r.catatan||r.Catatan||"-").toString();
+
+        const popupHtml = `
+          <b>${nm}</b><br>
+          <div style="color:#555;font-size:12px;margin:2px 0;">📍 <b>Koordinat:</b> ${lat.toFixed(6)}, ${lng.toFixed(6)}</div>
+          Provinsi: ${prov}<br>Kabupaten: ${kab}<br>BBWS: ${bbws}<br>Catatan: ${note}<br>
+          <a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank" rel="noopener">Buka di Google Maps</a><br>
+          <a href="#" onclick="focusHere(${lat},${lng});return false;">Fokus & Perbarui Compare</a>
+        `;
+        const m=L.marker([lat,lng],{icon:getIcon(nm)}).bindPopup(popupHtml);
+        m.on('popupopen',()=>{ const el=m.getElement(); if(el){ el.classList.remove('bounce'); void el.offsetWidth; el.classList.add('bounce'); }});
+        cluster.addLayer(m);
+        idx.push({name:nm, lat, lng, marker:m});
+        markers.push(m);
+      });
+      map.addLayer(cluster);
+      if(markers.length){
+        const g=L.featureGroup(markers);
+        map.fitBounds(g.getBounds(), {padding:[20,20]});
+      }
+      setTimeout(tryCenterFromParams, 300);
+    },
+    error: ()=>alert("Gagal memuat CSV untuk tagging.")
+  });
+
+  // klik dari popup
+  window.focusHere = function(lat,lng){
+    document.getElementById('center').value = `${lat}, ${lng}`;
+    map.setView([lat,lng], 13);
+    applyCompare();
+  }
+
+  // pencarian
+  const sInput=document.getElementById('search');
+  const sBox =document.getElementById('suggestions');
+  sInput.addEventListener('input', ()=>{
+    const q=sInput.value.trim().toLowerCase(); sBox.innerHTML="";
+    if(!q){ sBox.style.display="none"; return; }
+    const hits=idx.filter(it=>it.name.toLowerCase().includes(q)).slice(0,100);
+    hits.forEach(it=>{
+      const d=document.createElement('div'); d.textContent=it.name;
+      d.onclick=()=>{
+        sInput.value=it.name; sBox.style.display="none";
+        document.getElementById('center').value=`${it.lat}, ${it.lng}`;
+        map.setView([it.lat,it.lng], 13);
+        it.marker.openPopup();
+        applyCompare();
+      };
+      sBox.appendChild(d);
+    });
+    sBox.style.display=hits.length?"block":"none";
+  });
+
+  // param URL: ?lat=..&lng=.. atau ?name=...
+  function getParam(n){ return new URLSearchParams(location.search).get(n); }
+  function tryCenterFromParams(){
+    const plat=getParam('lat'), plng=getParam('lng'), pname=getParam('name');
+    if(plat && plng){
+      const lat=parseFloat(plat), lng=parseFloat(plng);
+      if(!isNaN(lat)&&!isNaN(lng)){
+        document.getElementById('center').value=`${lat}, ${lng}`;
+        map.setView([lat,lng], 13);
+        applyCompare(); return;
+      }
+    }
+    if(pname && idx.length){
+      const dec=decodeURIComponent(pname).toLowerCase();
+      const it=idx.find(i=>i.name.toLowerCase()===dec);
+      if(it){
+        document.getElementById('center').value=`${it.lat}, ${it.lng}`;
+        map.setView([it.lat,it.lng], 13);
+        it.marker.openPopup();
+        applyCompare();
+      }
+    }
+  }
+  </script>
+</body>
+</html>
