@@ -2,37 +2,65 @@
 <html lang="id">
 <head>
 <meta charset="utf-8">
-<title>Wayback Compare Fixed Slider</title>
+<title>Wayback Compare (No-Plugin)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <style>
-  html, body { height:100%; margin:0; }
-  #map { height:100%; }
-  /* Biar slider kelihatan */
-  .leaflet-sbs-range {
-    z-index: 1000 !important;
+  html,body{height:100%;margin:0}
+  #map{height:100%}
+  /* Slider overlay */
+  #swipe{
+    position:absolute; z-index:1000; top:12px; left:50%;
+    transform:translateX(-50%);
+    width:340px; height:28px; padding:4px 8px;
+    background:rgba(255,255,255,.9); border-radius:8px;
+    box-shadow:0 2px 10px rgba(0,0,0,.2);
+    display:flex; align-items:center; gap:8px; font:600 12px system-ui,Segoe UI,Arial;
   }
+  #range{width:260px}
 </style>
 </head>
 <body>
 <div id="map"></div>
+<div id="swipe">
+  <span>Before</span>
+  <input id="range" type="range" min="0" max="100" value="50">
+  <span>After</span>
+</div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<!-- Pakai plugin yang bener dari mapbox repo -->
-<script src="https://cdn.jsdelivr.net/npm/leaflet-side-by-side@2.0.1/leaflet-side-by-side.min.js"></script>
-
 <script>
-  const map = L.map('map').setView([-6.1754, 106.8272], 12);
+  const map = L.map('map').setView([-6.1754,106.8272], 12);
 
-  // Dua snapshot contoh dari Wayback
+  // Dua versi Wayback (pastikan ada /tile/{z}/{y}/{x})
   const urlLeft  = "https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/20190716/MapServer/tile/{z}/{y}/{x}";
   const urlRight = "https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/20240120/MapServer/tile/{z}/{y}/{x}";
 
-  const layerLeft  = L.tileLayer(urlLeft, { maxZoom: 19, crossOrigin: true }).addTo(map);
-  const layerRight = L.tileLayer(urlRight, { maxZoom: 19, crossOrigin: true }).addTo(map);
+  const left  = L.tileLayer(urlLeft , {maxZoom:19, crossOrigin:true}).addTo(map);
+  const right = L.tileLayer(urlRight, {maxZoom:19, crossOrigin:true}).addTo(map);
 
-  // Inisialisasi slider
-  L.control.sideBySide(layerLeft, layerRight).addTo(map);
+  // —— Swipe tanpa plugin: clip layer kanan berdasarkan slider ——
+  const range = document.getElementById('range');
+
+  function applyClip(){
+    const p = Number(range.value)/100;               // 0..1
+    const w = map.getSize().x; const h = map.getSize().y;
+    const clipW = Math.round(w * p);
+    const el = right.getContainer();                 // DOM container untuk layer kanan
+    if(!el) return;
+    // gunakan clip-path supaya bagian kiri terlihat dari layer kiri
+    el.style.clipPath = `polygon(0px 0px, ${clipW}px 0px, ${clipW}px ${h}px, 0px ${h}px)`;
+    el.style.webkitClipPath = el.style.clipPath;     // Safari
+  }
+
+  // panggil saat slider digeser / peta di-resize / zoom / move
+  range.addEventListener('input', applyClip);
+  map.on('resize zoom move', applyClip);
+
+  // tunggu tiles terpasang dulu baru apply
+  right.on('load', applyClip);
+  // apply awal
+  applyClip();
 </script>
 </body>
 </html>
