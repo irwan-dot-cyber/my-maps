@@ -4,15 +4,13 @@
 <meta charset="utf-8"/>
 <title>PUPR • Radar Hujan (RainViewer) — Indonesia</title>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<link rel="icon" href="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" />
+<!-- favicon & manifest inline biar console bersih -->
+<link rel="icon" href="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="/>
+<link rel="manifest" href='data:application/manifest+json,{"name":"Hujan","short_name":"Hujan","start_url":".","display":"standalone","background_color":"#ffffff","theme_color":"#ffffff"}'>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-  :root{
-    --Hpx:60px; --Tpx:48px; --bd:#eee; --r:12px;
-    --shadow:0 6px 22px rgba(0,0,0,.08);
-    --font:system-ui, Segoe UI, Roboto, Arial, sans-serif;
-  }
+  :root{--Hpx:60px;--Tpx:48px;--bd:#eee;--r:12px;--shadow:0 6px 22px rgba(0,0,0,.08);--font:system-ui, Segoe UI, Roboto, Arial, sans-serif}
   html,body{height:100%;margin:0;font-family:var(--font)}
   /* Header */
   #header{position:fixed;top:0;left:0;right:0;z-index:900;display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border-bottom:1px solid var(--bd)}
@@ -20,18 +18,16 @@
   .header-text{display:flex;flex-direction:column;line-height:1.1}
   .line1{font-weight:800;font-size:14px;text-transform:uppercase}
   .line2,.line3{font-weight:700;font-size:13px}
-
   /* Topbar */
   .top{position:fixed;left:0;right:0;z-index:900;top:var(--Hpx);display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border-bottom:1px solid var(--bd);white-space:nowrap;overflow:hidden}
   .pill{padding:6px 10px;border:1px solid #dcdcdc;border-radius:999px;background:#fff;cursor:pointer}
   .pill:hover{background:#f6f6f6}
+  .select-pill{padding:5px 10px;border:1px solid #dcdcdc;border-radius:999px;background:#fff;cursor:pointer}
   .anim{display:flex;align-items:center;gap:8px;flex:1 1 auto;min-width:0}
   #frame{width:160px;max-width:44vw;flex:0 1 auto;accent-color:#3a7bd5}
   .ts-badge{font-size:12px;color:#666;max-width:40vw;overflow:hidden;text-overflow:ellipsis}
-
   /* Map */
   #map{position:absolute;left:0;right:0;bottom:0;top:calc(var(--Hpx) + var(--Tpx))}
-
   /* Info & panel */
   .infobox{position:absolute;left:10px;bottom:10px;z-index:800;background:rgba(255,255,255,.92);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--shadow);padding:6px 8px;font-size:11px;max-width:300px}
   .panel{position:absolute;right:10px;bottom:60px;z-index:800;width:340px;background:rgba(255,255,255,.95);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--shadow);padding:10px 12px;font-size:13px}
@@ -57,9 +53,15 @@
   <!-- Topbar -->
   <div class="top" id="topbar">
     <button class="pill" id="btnReload">Reload Data</button>
+    <button class="pill" id="btnLoc">Lokasi saya</button>
     <div class="anim">
       <button class="pill" id="btnPlay" title="Play/Pause">▶︎</button>
       <input id="frame" type="range" min="0" max="0" step="1" value="0" aria-label="Frame radar"/>
+      <select id="spd" class="select-pill" title="Kecepatan animasi">
+        <option value="400">Cepat</option>
+        <option value="600" selected>Sedang</option>
+        <option value="900">Lambat</option>
+      </select>
       <span id="ts" class="ts-badge">Memuat data…</span>
     </div>
   </div>
@@ -108,17 +110,22 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution:'© OpenStreetMap', noWrap:true, detectRetina:true, maxNativeZoom:19
 }).addTo(map);
 map.fitBounds([[-11,94],[6,141]]);
+// batasi panning kurang-lebih Indonesia biar tile di luar area tidak banyak diminta
+map.setMaxBounds([[-12, 92], [8, 142]]);
+map.on('drag', () => map.panInsideBounds(map.options.maxBounds, { animate:false }));
 
 /* ===== DOM refs ===== */
 const el = {
   frame: document.getElementById('frame'),
   ts: document.getElementById('ts'),
   ts2: document.getElementById('ts2'),
+  spd: document.getElementById('spd'),
   op: document.getElementById('op'),
   opv: document.getElementById('opv'),
   meta: document.getElementById('meta'),
   btnPlay: document.getElementById('btnPlay'),
-  btnReload: document.getElementById('btnReload')
+  btnReload: document.getElementById('btnReload'),
+  btnLoc: document.getElementById('btnLoc')
 };
 
 /* ===== RainViewer state ===== */
@@ -151,12 +158,10 @@ async function loadFrames(){
     el.frame.min = '0';
     el.frame.max = String(frames.length-1);
 
-    // status
     const first = frames[0], last = frames[frames.length-1];
     el.meta.textContent = `Frame: ${frames.length} • Range: ${fmtTime(first)} – ${fmtTime(last)} WIB`;
     el.ts.textContent = `Terbaru: ${fmtTime(last)} • ${frames.length} frame`;
 
-    // tampilkan frame terakhir
     setFrame(frames.length-1);
   }catch(e){
     console.error(e);
@@ -183,27 +188,40 @@ function setFrame(idx){
     opacity: op,
     attribution: '© RainViewer',
     noWrap: true,
-    updateWhenIdle: false,
+    updateWhenIdle: true,
     keepBuffer: 4,
-    maxNativeZoom: 12,     // radar native s.d. z=12
-    maxZoom: 18,           // biar bisa zoom-in tanpa minta z>12
+    maxNativeZoom: 12,    // radar native s.d. z=12
+    maxZoom: 18,          // boleh zoom-in, Leaflet upscale; tidak minta z>12
     errorTileUrl: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=='
-  }).addTo(map);
+  })
+  // telan error tile biar console tidak berisik
+  .on('tileerror', () => {})
+  .addTo(map);
 }
 
-/* ===== UI handlers ===== */
+/* ===== Animation controls ===== */
+function startAnimation(){
+  stopAnimation();
+  const speed = Number(el.spd.value || 600);
+  el.btnPlay.textContent='⏸';
+  animTimer = setInterval(() => {
+    const next = (frameIndex+1) % frames.length;
+    setFrame(next);
+  }, speed);
+}
+function stopAnimation(){
+  if (animTimer){ clearInterval(animTimer); animTimer=null; }
+  el.btnPlay.textContent='▶︎';
+}
+
 el.frame.addEventListener('input', () => setFrame(parseInt(el.frame.value,10)));
 
 el.btnPlay.addEventListener('click', () => {
-  if (animTimer){
-    clearInterval(animTimer); animTimer=null; el.btnPlay.textContent='▶︎';
-  }else{
-    el.btnPlay.textContent='⏸';
-    animTimer = setInterval(() => {
-      const next = (frameIndex+1) % frames.length;
-      setFrame(next);
-    }, 600);
-  }
+  if (animTimer) stopAnimation(); else startAnimation();
+});
+
+el.spd.addEventListener('change', () => {
+  if (animTimer){ startAnimation(); } // restart dengan speed baru
 });
 
 el.op.addEventListener('input', ()=>{
@@ -211,28 +229,36 @@ el.op.addEventListener('input', ()=>{
   if (radarLayer) radarLayer.setOpacity(Number(el.op.value)/100);
 });
 
+/* ===== Reload & Auto-refresh ===== */
 el.btnReload.addEventListener('click', async () => {
   const wasPlaying = !!animTimer;
-  if (animTimer){ clearInterval(animTimer); animTimer=null; el.btnPlay.textContent='▶︎'; }
+  stopAnimation();
   await loadFrames();
-  if (wasPlaying) el.btnPlay.click(); // lanjut animasi lagi
+  if (wasPlaying) startAnimation();
 });
 
-/* ===== Auto-refresh tiap 5 menit ===== */
 function startAutoRefresh(){
   if (refreshTimer) clearInterval(refreshTimer);
   refreshTimer = setInterval(async ()=>{
     const wasPlaying = !!animTimer;
-    if (animTimer){ clearInterval(animTimer); animTimer=null; el.btnPlay.textContent='▶︎'; }
+    stopAnimation();
     await loadFrames();
-    if (wasPlaying) el.btnPlay.click();
+    if (wasPlaying) startAnimation();
   }, 5*60*1000);
 }
 
+/* ===== Geolocation: Lokasi saya ===== */
+el.btnLoc.addEventListener('click', ()=>{
+  if (!('geolocation' in navigator)) return alert('Geolocation tidak didukung browser.');
+  navigator.geolocation.getCurrentPosition(
+    p => { map.setView([p.coords.latitude, p.coords.longitude], 8); },
+    err => alert('Gagal ambil lokasi: ' + err.message),
+    { enableHighAccuracy:true, timeout:8000 }
+  );
+});
+
 /* ===== Kickoff ===== */
 loadFrames().then(startAutoRefresh);
-
-/* ===== Recompute layout after fonts/images loaded ===== */
 addEventListener('load', syncOffsets);
 </script>
 </body>
