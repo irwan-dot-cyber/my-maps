@@ -71,7 +71,7 @@
 
 <!-- Sumber & Legend -->
 <div class="infobox">
-  <b>Sumber:</b> BPS (2024) & BIG Batas Provinsi (WADMPR).<br/>
+  <b>Sumber:</b> BPS (2024) & Boundary Nasional (WADMPR/provinsi).<br/>
   <span style="color:#555">Angka produksi: ton GKG</span>
 </div>
 
@@ -86,11 +86,12 @@
 
 <script>
 /* ===== Konfigurasi ===== */
-/* Boundary resmi BIG (field nama provinsi: WADMPR) */
+/* Pakai BPS MapServer: field nama = 'provinsi' (stabil untuk geojson).
+   Jika ingin kembali ke BIG (WADMPR), cukup ganti URL di bawah. */
 const PROV_GEOJSON_URL =
-  "https://geoservices.big.go.id/gis/rest/services/STIG/Batas_Provinsi/MapServer/0/query?where=1=1&outFields=WADMPR&f=geojson";
+  "https://geoportal.bps.go.id/server/rest/services/Peta_Penduduk_SP2020_Online_MIL1/MapServer/2/query?where=1=1&outFields=provinsi&f=geojson";
 
-/* CSV RAW GitHub (langsung dari repo kamu) */
+/* CSV RAW GitHub (punya kamu) */
 const CSV_URL =
   "https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/padi/produksi_padi_2024_BPS_per_provinsi.csv";
 
@@ -115,7 +116,7 @@ map.fitBounds([[-11,94],[6,141]]);
 function normName(s){
   if(!s) return "";
   s = String(s).toLowerCase().normalize("NFKD")
-      .replace(/[\u0300-\u036f]/g,"") // hapus aksen
+      .replace(/[\u0300-\u036f]/g,"")     // hapus aksen jika ada
       .replace(/\s+/g," ").trim();
   // alias umum
   s = s.replace(/^provinsi\s+/,"");
@@ -123,14 +124,22 @@ function normName(s){
   s = s.replace(/^daerah khusus ibukota jakarta.*$/,"dki jakarta");
   s = s.replace(/^di yogyakarta.*$/,"di yogyakarta");
   s = s.replace(/^daerah istimewa yogyakarta.*$/,"di yogyakarta");
-  s = s.replace(/^kep(\.|) riau$/,"kepulauan riau");
-  s = s.replace(/^kep(\.|) bangka belitung$/,"kepulauan bangka belitung");
+  s = s.replace(/^kep(\.|)\s*riau$/,"kepulauan riau");
+  s = s.replace(/^kep(\.|)\s*bangka belitung$/,"kepulauan bangka belitung");
   return s;
 }
+
+/* KUNCI: provName memanggil normName di dalamnya */
 function provName(props){
-  // tahan banting: BIG=WADMPR; beberapa sumber lain=wadmpr
-  return (props.WADMPR || props.wadmpr || "").toString().trim();
+  const raw = (props.provinsi || props.WADMPR || props.wadmpr || "").toString().trim();
+  return normName(raw);
 }
+
+/* Untuk tooltip yang rapi (tampilkan nama asli dari properti pertama yang ada) */
+function prettyProv(props){
+  return (props.provinsi || props.WADMPR || props.wadmpr || "").toString().trim() || "(tanpa nama)";
+}
+
 function num(x){const n=Number(x); return isFinite(n)?n:null;}
 function fmt(n){return (n==null)?"—":Number(n).toLocaleString('id-ID');}
 
@@ -167,9 +176,16 @@ function buildLegend(scale){
 
 /* ===== Data ===== */
 let dataMap=new Map(), provLayer=null, scale=null, provinsiList=[];
+
+/* Tambah cache-buster untuk fetch agar tidak ke-cache GitHub Pages */
+function withBuster(url){
+  const sep = url.includes("?") ? "&" : "?";
+  return `${url}${sep}t=${Date.now()}`;
+}
+
 async function loadCSV(){
   return new Promise((resolve)=>{
-    Papa.parse(CSV_URL,{
+    Papa.parse(withBuster(CSV_URL),{
       download:true, header:true, dynamicTyping:true,
       complete:(res)=>{
         try{
@@ -179,28 +195,29 @@ async function loadCSV(){
                            res.meta.fields.some(f=>f.toLowerCase()=="produksi_gkg_ton");
           if(!headerOk) throw new Error("Header CSV harus: provinsi,produksi_gkg_ton");
           res.data.forEach(r=>{
-            const key=normName(r.provinsi);
+            const key = normName(r.provinsi);
             if(key) dataMap.set(key, num(r.produksi_gkg_ton));
           });
           document.getElementById('status').textContent = "CSV OK, memuat boundary…";
           resolve("csv-ok");
         }catch(e){
           document.getElementById('status').textContent = "CSV gagal/kolom tidak cocok (cek header & isi)";
-          console.warn("CSV kosong/format tidak sesuai:", e, res);
+          console.warn("CSV format issue:", e, res);
           resolve("csv-fail");
         }
       },
       error:(err)=>{
-        document.getElementById('status').textContent = "Gagal mengunduh CSV (cek CORS/URL)";
+        document.getElementById('status').textContent = "Gagal mengunduh CSV (cek URL/CORS)";
         console.warn("CSV error:", err);
         resolve("csv-fail");
       }
     });
   });
 }
+
 async function loadGeoJSON(){
-  const r=await fetch(PROV_GEOJSON_URL);
-  if(!r.ok) throw new Error("Gagal fetch boundary BIG");
+  const r=await fetch(withBuster(PROV_GEOJSON_URL));
+  if(!r.ok) throw new Error("Gagal fetch boundary");
   return r.json();
 }
 
@@ -209,7 +226,7 @@ function highlightFeature(e){ e.target.setStyle({weight:2,color:'#111',fillOpaci
 function resetHighlight(e){ provLayer.resetStyle(e.target); }
 function zoomToFeature(e){ map.fitBounds(e.target.getBounds(),{maxZoom:8}); }
 function attachEvents(layer,props,val){
-  const nama=provName(props)||"(tanpa nama)";
+  const nama=prettyProv(props);
   layer.bindTooltip(`<b>${nama}</b><br/>Produksi: <b>${fmt(val)}</b> ton GKG (${TAHUN_DATA})`,{sticky:true});
   layer.on({mouseover:highlightFeature,mouseout:resetHighlight,click:zoomToFeature});
 }
@@ -224,25 +241,26 @@ async function init(){
     const gj=await loadGeoJSON();
 
     // daftar provinsi utk autocomplete
-    provinsiList = gj.features.map(f=>provName(f.properties)).filter(Boolean).sort();
+    provinsiList = gj.features
+      .map(f=>prettyProv(f.properties))
+      .filter(Boolean).sort();
 
     // skala warna dari nilai CSV
     const values=[...dataMap.values()].filter(x=>x!=null);
     scale=makeColorScale(values);
 
-    let matched=0;
-    const missing=[];
+    let matched=0, missing=[];
 
     provLayer=L.geoJSON(gj,{
       style:f=>{
-        const k=normName(provName(f.properties));
-        const val=dataMap.get(k);
-        if(val!=null) matched++; else missing.push(provName(f.properties));
+        const key = provName(f.properties);      // <-- sudah normalized di sini
+        const val = dataMap.get(key);
+        if(val!=null) matched++; else missing.push(prettyProv(f.properties));
         return {color:'#fff',weight:1,fillColor:colorFor(val,scale),fillOpacity:0.8};
       },
       onEachFeature:(f,layer)=>{
-        const k=normName(provName(f.properties));
-        attachEvents(layer,f.properties,dataMap.get(k));
+        const key = provName(f.properties);
+        attachEvents(layer,f.properties,dataMap.get(key));
       }
     }).addTo(map);
 
@@ -271,7 +289,7 @@ function doSearch(text){
   const target = normName(text||"");
   if(!provLayer) return;
   provLayer.eachLayer(l=>{
-    const n = normName(provName(l.feature.properties));
+    const n = provName(l.feature.properties); // sudah normalized
     if(n===target) found=l;
   });
   if(found){
