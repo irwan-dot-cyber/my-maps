@@ -4,6 +4,7 @@
 <meta charset="utf-8"/>
 <title>PUPR • Radar Hujan (RainViewer) — Indonesia</title>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="icon" href="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
@@ -25,8 +26,8 @@
   .pill{padding:6px 10px;border:1px solid #dcdcdc;border-radius:999px;background:#fff;cursor:pointer}
   .pill:hover{background:#f6f6f6}
   .anim{display:flex;align-items:center;gap:8px;flex:1 1 auto;min-width:0}
-  #frame{width:140px;max-width:40vw;flex:0 1 auto;accent-color:#3a7bd5}
-  .ts-badge{font-size:12px;color:#666;max-width:30vw;overflow:hidden;text-overflow:ellipsis}
+  #frame{width:160px;max-width:44vw;flex:0 1 auto;accent-color:#3a7bd5}
+  .ts-badge{font-size:12px;color:#666;max-width:40vw;overflow:hidden;text-overflow:ellipsis}
 
   /* Map */
   #map{position:absolute;left:0;right:0;bottom:0;top:calc(var(--Hpx) + var(--Tpx))}
@@ -37,8 +38,9 @@
   .panel h3{margin:4px 0 8px}
   .legend{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;margin-bottom:6px}
   .grad{height:14px;border:1px solid #777;border-radius:6px;background:linear-gradient(90deg,#3a7bd5,#00d2ff,#00ff88,#ffee00,#ff7b00,#ff004c,#b800ff)}
-  @media (max-width:720px){.panel{width:calc(100% - 20px);left:10px;right:10px;bottom:70px}#frame{width:110px;max-width:48vw}}
-  @media (max-width:420px){#frame{width:90px;max-width:50vw}.line1{font-size:13px}.line2,.line3{font-size:12px}}
+  .row{display:flex;align-items:center;gap:8px;margin-top:6px}
+  @media (max-width:720px){.panel{width:calc(100% - 20px);left:10px;right:10px;bottom:70px}#frame{width:120px;max-width:48vw}}
+  @media (max-width:420px){#frame{width:100px;max-width:52vw}.line1{font-size:13px}.line2,.line3{font-size:12px}}
 </style>
 </head>
 <body>
@@ -62,20 +64,31 @@
     </div>
   </div>
 
+  <!-- Map -->
   <div id="map"></div>
 
+  <!-- Info -->
   <div class="infobox">
     <b>Sumber:</b> RainViewer Radar (pembaruan ±10 menit).<br/>
     <span style="color:#555">Kredit: © RainViewer • © OpenStreetMap</span>
   </div>
 
+  <!-- Panel -->
   <div class="panel">
     <h3>Legenda Radar</h3>
     <div class="legend">
       <div class="grad" title="Intensitas pantulan radar"></div>
       <div style="font-size:12px;color:#555">← ringan … sedang … lebat … sangat lebat →</div>
     </div>
-    <div><b>Frame:</b> <span id="ts2" class="muted">—</span></div>
+    <div class="row"><b>Frame:</b> <span id="ts2" class="muted">—</span></div>
+    <div class="row">
+      <b>Opacity:</b>
+      <input id="op" type="range" min="20" max="100" step="5" value="75" style="vertical-align:middle"/>
+      <span id="opv" style="font-size:12px;color:#555">75%</span>
+    </div>
+    <div class="row" style="font-size:12px;color:#666">
+      <span id="meta">—</span>
+    </div>
   </div>
 
 <script>
@@ -90,24 +103,39 @@ addEventListener('load', syncOffsets);
 addEventListener('resize', syncOffsets);
 
 /* ===== Leaflet map ===== */
-const map = L.map('map', {minZoom:3,maxZoom:18});
+const map = L.map('map', { minZoom: 3, maxZoom: 18 });
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution:'© OpenStreetMap',
-  noWrap:true, detectRetina:true
+  attribution:'© OpenStreetMap', noWrap:true, detectRetina:true, maxNativeZoom:19
 }).addTo(map);
 map.fitBounds([[-11,94],[6,141]]);
 
-/* ===== RainViewer logic ===== */
+/* ===== DOM refs ===== */
 const el = {
   frame: document.getElementById('frame'),
-  ts:    document.getElementById('ts'),
-  ts2:   document.getElementById('ts2'),
+  ts: document.getElementById('ts'),
+  ts2: document.getElementById('ts2'),
+  op: document.getElementById('op'),
+  opv: document.getElementById('opv'),
+  meta: document.getElementById('meta'),
   btnPlay: document.getElementById('btnPlay'),
   btnReload: document.getElementById('btnReload')
 };
 
-let frames=[], frameIndex=0, animTimer=null, radarLayer=null;
+/* ===== RainViewer state ===== */
+let frames=[], frameIndex=0, animTimer=null, refreshTimer=null, radarLayer=null;
 
+/* ===== Helpers ===== */
+function frameUrl(t){
+  // skema v2 RainViewer tiles
+  return `https://tilecache.rainviewer.com/v2/radar/${t}/256/{z}/{x}/{y}/2/1_1.png`;
+}
+function fmtTime(ts){
+  return new Date(ts*1000).toLocaleString('id-ID', {
+    timeZone:'Asia/Jakarta', hour:'2-digit', minute:'2-digit', day:'2-digit', month:'short'
+  });
+}
+
+/* ===== Load frames ===== */
 async function loadFrames(){
   try{
     el.ts.textContent = 'Memuat data…';
@@ -116,39 +144,50 @@ async function loadFrames(){
     const json = await res.json();
     const past = Array.isArray(json?.radar?.past) ? json.radar.past : [];
     const nowc = Array.isArray(json?.radar?.nowcast) ? json.radar.nowcast : [];
-    frames = [...past, ...nowc].map(x=>x.time).sort((a,b)=>a-b); // past→now
-    if (!frames.length) throw new Error('Tidak ada frame radar.');
+    frames = [...past, ...nowc].map(x=>x.time).sort((a,b)=>a-b);
 
-    // set slider & tampilkan frame terakhir (terbaru)
+    if (!frames.length) throw new Error('Tidak ada frame radar');
+
     el.frame.min = '0';
     el.frame.max = String(frames.length-1);
+
+    // status
+    const first = frames[0], last = frames[frames.length-1];
+    el.meta.textContent = `Frame: ${frames.length} • Range: ${fmtTime(first)} – ${fmtTime(last)} WIB`;
+    el.ts.textContent = `Terbaru: ${fmtTime(last)} • ${frames.length} frame`;
+
+    // tampilkan frame terakhir
     setFrame(frames.length-1);
   }catch(e){
     console.error(e);
     el.ts.textContent = 'Gagal memuat RainViewer';
-    alert('Gagal memuat data RainViewer. Coba lagi.');
+    alert('Gagal memuat data RainViewer. Cek koneksi / pemblokir iklan, lalu klik Reload.');
   }
 }
 
-function frameUrl(t){
-  // skema v2 RainViewer tiles
-  return `https://tilecache.rainviewer.com/v2/radar/${t}/256/{z}/{x}/{y}/2/1_1.png`;
-}
-
+/* ===== Render frame ===== */
 function setFrame(idx){
   if (!frames.length) return;
   frameIndex = Math.max(0, Math.min(idx, frames.length-1));
   el.frame.value = String(frameIndex);
 
   const t = frames[frameIndex];
-  const d = new Date(t*1000);
-  const label = d.toLocaleString('id-ID', {hour:'2-digit', minute:'2-digit', day:'2-digit', month:'short'});
+  const label = fmtTime(t);
   el.ts.textContent = label;
   el.ts2.textContent = label;
 
   if (radarLayer) map.removeLayer(radarLayer);
+  const op = Number(el.op?.value || 75)/100;
+
   radarLayer = L.tileLayer(frameUrl(t), {
-    opacity:0.75, attribution:'© RainViewer', noWrap:true, updateWhenIdle:false, keepBuffer:4
+    opacity: op,
+    attribution: '© RainViewer',
+    noWrap: true,
+    updateWhenIdle: false,
+    keepBuffer: 4,
+    maxNativeZoom: 12,     // radar native s.d. z=12
+    maxZoom: 18,           // biar bisa zoom-in tanpa minta z>12
+    errorTileUrl: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=='
   }).addTo(map);
 }
 
@@ -167,16 +206,34 @@ el.btnPlay.addEventListener('click', () => {
   }
 });
 
-el.btnReload.addEventListener('click', async () => {
-  // kalau sedang play, tetap play setelah reload
-  const wasPlaying = !!animTimer;
-  if (animTimer){ clearInterval(animTimer); animTimer=null; }
-  await loadFrames();
-  if (wasPlaying){ el.btnPlay.click(); }
+el.op.addEventListener('input', ()=>{
+  el.opv.textContent = el.op.value+'%';
+  if (radarLayer) radarLayer.setOpacity(Number(el.op.value)/100);
 });
 
-/* first load */
-loadFrames();
+el.btnReload.addEventListener('click', async () => {
+  const wasPlaying = !!animTimer;
+  if (animTimer){ clearInterval(animTimer); animTimer=null; el.btnPlay.textContent='▶︎'; }
+  await loadFrames();
+  if (wasPlaying) el.btnPlay.click(); // lanjut animasi lagi
+});
+
+/* ===== Auto-refresh tiap 5 menit ===== */
+function startAutoRefresh(){
+  if (refreshTimer) clearInterval(refreshTimer);
+  refreshTimer = setInterval(async ()=>{
+    const wasPlaying = !!animTimer;
+    if (animTimer){ clearInterval(animTimer); animTimer=null; el.btnPlay.textContent='▶︎'; }
+    await loadFrames();
+    if (wasPlaying) el.btnPlay.click();
+  }, 5*60*1000);
+}
+
+/* ===== Kickoff ===== */
+loadFrames().then(startAutoRefresh);
+
+/* ===== Recompute layout after fonts/images loaded ===== */
+addEventListener('load', syncOffsets);
 </script>
 </body>
 </html>
