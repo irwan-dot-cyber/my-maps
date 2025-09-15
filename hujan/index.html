@@ -30,7 +30,7 @@
   #map{position:absolute;left:0;right:0;bottom:0;top:calc(var(--Hpx) + var(--Tpx))}
   /* Info & panel */
   .infobox{position:absolute;left:10px;bottom:10px;z-index:800;background:rgba(255,255,255,.92);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--shadow);padding:6px 8px;font-size:11px;max-width:300px}
-  .panel{position:absolute;right:10px;bottom:60px;z-index:800;width:340px;background:rgba(255,255,255,.95);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--shadow);padding:10px 12px;font-size:13px}
+  .panel{position:absolute;right:10px;bottom:60px;z-index:800;width:360px;background:rgba(255,255,255,.95);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--shadow);padding:10px 12px;font-size:13px}
   .panel h3{margin:4px 0 8px}
   .legend{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;margin-bottom:6px}
   .grad{height:14px;border:1px solid #777;border-radius:6px;background:linear-gradient(90deg,#3a7bd5,#00d2ff,#00ff88,#ffee00,#ff7b00,#ff004c,#b800ff)}
@@ -52,8 +52,9 @@
 
   <!-- Topbar -->
   <div class="top" id="topbar">
-    <button class="pill" id="btnReload">Reload Data</button>
+    <button class="pill" id="btnReload">Reload</button>
     <button class="pill" id="btnLoc">Lokasi saya</button>
+    <button class="pill" id="btnLightning" title="Tampilkan/sempunyikan petir" disabled>⚡ Petir</button>
     <div class="anim">
       <button class="pill" id="btnPlay" title="Play/Pause">▶︎</button>
       <input id="frame" type="range" min="0" max="0" step="1" value="0" aria-label="Frame radar"/>
@@ -71,23 +72,19 @@
 
   <!-- Info -->
   <div class="infobox">
-    <b>Sumber:</b> RainViewer Radar (pembaruan ±10 menit).<br/>
+    <b>Sumber:</b> RainViewer Radar & Lightning (pembaruan ±10 menit).<br/>
     <span style="color:#555">Kredit: © RainViewer • © OpenStreetMap</span>
   </div>
 
   <!-- Panel -->
   <div class="panel">
-    <h3>Legenda Radar</h3>
+    <h3>Legenda</h3>
     <div class="legend">
       <div class="grad" title="Intensitas pantulan radar"></div>
-      <div style="font-size:12px;color:#555">← ringan … sedang … lebat … sangat lebat →</div>
+      <div style="font-size:12px;color:#555">Radar: ← ringan … sedang … lebat … sangat lebat →</div>
     </div>
+    <div class="row" style="font-size:12px;color:#555">⚡ Petir (jika tersedia) ditampilkan sebagai overlay titik/ikon.</div>
     <div class="row"><b>Frame:</b> <span id="ts2" class="muted">—</span></div>
-    <div class="row">
-      <b>Opacity:</b>
-      <input id="op" type="range" min="20" max="100" step="5" value="75" style="vertical-align:middle"/>
-      <span id="opv" style="font-size:12px;color:#555">75%</span>
-    </div>
     <div class="row" style="font-size:12px;color:#666">
       <span id="meta">—</span>
     </div>
@@ -110,7 +107,6 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution:'© OpenStreetMap', noWrap:true, detectRetina:true, maxNativeZoom:19
 }).addTo(map);
 map.fitBounds([[-11,94],[6,141]]);
-// batasi panning kurang-lebih Indonesia biar tile di luar area tidak banyak diminta
 map.setMaxBounds([[-12, 92], [8, 142]]);
 map.on('drag', () => map.panInsideBounds(map.options.maxBounds, { animate:false }));
 
@@ -120,26 +116,34 @@ const el = {
   ts: document.getElementById('ts'),
   ts2: document.getElementById('ts2'),
   spd: document.getElementById('spd'),
-  op: document.getElementById('op'),
-  opv: document.getElementById('opv'),
   meta: document.getElementById('meta'),
   btnPlay: document.getElementById('btnPlay'),
   btnReload: document.getElementById('btnReload'),
-  btnLoc: document.getElementById('btnLoc')
+  btnLoc: document.getElementById('btnLoc'),
+  btnLightning: document.getElementById('btnLightning')
 };
 
 /* ===== RainViewer state ===== */
-let frames=[], frameIndex=0, animTimer=null, refreshTimer=null, radarLayer=null;
+let frames=[], frameIndex=0, animTimer=null, refreshTimer=null;
+let radarLayer=null;
+
+/* Lightning state (opsional) */
+let lightFrames=[], lightningOn=false, lightningLayer=null;
 
 /* ===== Helpers ===== */
-function frameUrl(t){
-  // skema v2 RainViewer tiles
-  return `https://tilecache.rainviewer.com/v2/radar/${t}/256/{z}/{x}/{y}/2/1_1.png`;
-}
+function frameUrl(t){ return `https://tilecache.rainviewer.com/v2/radar/${t}/256/{z}/{x}/{y}/2/1_1.png`; }
+function lightningUrl(t){ return `https://tilecache.rainviewer.com/v2/lightning/${t}/256/{z}/{x}/{y}/2/1_1.png`; }
 function fmtTime(ts){
   return new Date(ts*1000).toLocaleString('id-ID', {
     timeZone:'Asia/Jakarta', hour:'2-digit', minute:'2-digit', day:'2-digit', month:'short'
   });
+}
+function nearestFrame(arr, t){
+  if (!arr.length) return null;
+  // ambil frame <= t; kalau tidak ada, pakai terdekat
+  let best = arr[0];
+  for (const x of arr){ if (x<=t) best=x; else break; }
+  return best;
 }
 
 /* ===== Load frames ===== */
@@ -149,9 +153,18 @@ async function loadFrames(){
     const res = await fetch('https://api.rainviewer.com/public/weather-maps.json', {cache:'no-store'});
     if(!res.ok) throw new Error('HTTP '+res.status);
     const json = await res.json();
+
     const past = Array.isArray(json?.radar?.past) ? json.radar.past : [];
     const nowc = Array.isArray(json?.radar?.nowcast) ? json.radar.nowcast : [];
     frames = [...past, ...nowc].map(x=>x.time).sort((a,b)=>a-b);
+
+    // lightning (opsional)
+    const l = json?.lightning;
+    const lp = Array.isArray(l?.past) ? l.past : [];
+    const ln = Array.isArray(l?.nowcast) ? l.nowcast : [];
+    lightFrames = [...lp, ...ln].map(x=>x.time).sort((a,b)=>a-b);
+    el.btnLightning.disabled = lightFrames.length === 0;
+    el.btnLightning.title = lightFrames.length ? "Tampilkan/sembunyikan petir" : "Data petir tidak tersedia";
 
     if (!frames.length) throw new Error('Tidak ada frame radar');
 
@@ -159,7 +172,7 @@ async function loadFrames(){
     el.frame.max = String(frames.length-1);
 
     const first = frames[0], last = frames[frames.length-1];
-    el.meta.textContent = `Frame: ${frames.length} • Range: ${fmtTime(first)} – ${fmtTime(last)} WIB`;
+    el.meta.textContent = `Radar frame: ${frames.length} • Range: ${fmtTime(first)} – ${fmtTime(last)} WIB`;
     el.ts.textContent = `Terbaru: ${fmtTime(last)} • ${frames.length} frame`;
 
     setFrame(frames.length-1);
@@ -181,22 +194,31 @@ function setFrame(idx){
   el.ts.textContent = label;
   el.ts2.textContent = label;
 
+  // radar (opacity fixed 80%)
   if (radarLayer) map.removeLayer(radarLayer);
-  const op = Number(el.op?.value || 75)/100;
-
   radarLayer = L.tileLayer(frameUrl(t), {
-    opacity: op,
+    opacity: 0.8,
     attribution: '© RainViewer',
     noWrap: true,
     updateWhenIdle: true,
     keepBuffer: 4,
-    maxNativeZoom: 12,    // radar native s.d. z=12
-    maxZoom: 18,          // boleh zoom-in, Leaflet upscale; tidak minta z>12
+    maxNativeZoom: 12,
+    maxZoom: 18,
     errorTileUrl: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=='
-  })
-  // telan error tile biar console tidak berisik
-  .on('tileerror', () => {})
-  .addTo(map);
+  }).on('tileerror', () => {}).addTo(map);
+
+  // lightning overlay (opsional)
+  if (lightningOn && lightFrames.length){
+    const lt = nearestFrame(lightFrames, t) ?? lightFrames[lightFrames.length-1];
+    if (lightningLayer) map.removeLayer(lightningLayer);
+    lightningLayer = L.tileLayer(lightningUrl(lt), {
+      opacity: 0.9, attribution:'© RainViewer', noWrap:true,
+      updateWhenIdle:true, keepBuffer:4, maxNativeZoom:12, maxZoom:18,
+      errorTileUrl: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=='
+    }).on('tileerror', () => {}).addTo(map);
+  } else if (lightningLayer){
+    map.removeLayer(lightningLayer); lightningLayer=null;
+  }
 }
 
 /* ===== Animation controls ===== */
@@ -215,19 +237,8 @@ function stopAnimation(){
 }
 
 el.frame.addEventListener('input', () => setFrame(parseInt(el.frame.value,10)));
-
-el.btnPlay.addEventListener('click', () => {
-  if (animTimer) stopAnimation(); else startAnimation();
-});
-
-el.spd.addEventListener('change', () => {
-  if (animTimer){ startAnimation(); } // restart dengan speed baru
-});
-
-el.op.addEventListener('input', ()=>{
-  el.opv.textContent = el.op.value+'%';
-  if (radarLayer) radarLayer.setOpacity(Number(el.op.value)/100);
-});
+el.btnPlay.addEventListener('click', () => { if (animTimer) stopAnimation(); else startAnimation(); });
+el.spd.addEventListener('change', () => { if (animTimer){ startAnimation(); } });
 
 /* ===== Reload & Auto-refresh ===== */
 el.btnReload.addEventListener('click', async () => {
@@ -236,7 +247,6 @@ el.btnReload.addEventListener('click', async () => {
   await loadFrames();
   if (wasPlaying) startAnimation();
 });
-
 function startAutoRefresh(){
   if (refreshTimer) clearInterval(refreshTimer);
   refreshTimer = setInterval(async ()=>{
@@ -255,6 +265,15 @@ el.btnLoc.addEventListener('click', ()=>{
     err => alert('Gagal ambil lokasi: ' + err.message),
     { enableHighAccuracy:true, timeout:8000 }
   );
+});
+
+/* ===== Toggle Lightning ===== */
+el.btnLightning.addEventListener('click', ()=>{
+  if (el.btnLightning.disabled) return;
+  lightningOn = !lightningOn;
+  el.btnLightning.style.background = lightningOn ? '#ffe9a3' : '#fff';
+  el.btnLightning.style.borderColor = lightningOn ? '#e0c96a' : '#dcdcdc';
+  setFrame(frameIndex); // redraw current frame dengan / tanpa petir
 });
 
 /* ===== Kickoff ===== */
