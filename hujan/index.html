@@ -2,185 +2,50 @@
 <html lang="id">
 <head>
 <meta charset="utf-8"/>
-<title>PUPR • Radar Hujan (RainViewer) — Indonesia</title>
+<title>PU • Radar Hujan (RainViewer) — Indonesia</title>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
   :root{
-    /* akan diisi dinamis lewat JS */
-    --Hpx: 60px;  /* header height (fallback) */
-    --Tpx: 48px;  /* topbar height (fallback) */
-    --bd:#eee; --r:12px; --shadow:0 6px 22px rgba(0,0,0,.08);
-    --font: system-ui, Segoe UI, Roboto, Arial, sans-serif;
+    --Hpx:60px; --Tpx:48px; --bd:#eee; --r:12px;
+    --shadow:0 6px 22px rgba(0,0,0,.08);
+    --font:system-ui, Segoe UI, Roboto, Arial, sans-serif;
   }
   html,body{height:100%;margin:0;font-family:var(--font)}
-  /* ===== Header 3 baris, rata kiri ===== */
-  #header{
-    position:fixed; top:0; left:0; right:0; z-index:900;
-    display:flex; align-items:center; gap:10px;
-    padding:8px 12px; background:#fff; border-bottom:1px solid var(--bd);
-  }
-  #header img{height:36px; flex:0 0 auto}
-  .header-text{display:flex; flex-direction:column; line-height:1.1}
-  .line1{font-weight:800; font-size:14px; text-transform:uppercase}
-  .line2{font-weight:700; font-size:13px}
-  .line3{font-weight:700; font-size:13px}
+  /* Header */
+  #header{position:fixed;top:0;left:0;right:0;z-index:900;display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border-bottom:1px solid var(--bd)}
+  #header img{height:36px}
+  .header-text{display:flex;flex-direction:column;line-height:1.1}
+  .line1{font-weight:800;font-size:14px;text-transform:uppercase}
+  .line2,.line3{font-weight:700;font-size:13px}
 
-  /* ===== Topbar: reload + anim slider (tetap sejajar) ===== */
-  .top{
-    position:fixed; left:0; right:0; z-index:900;
-    top: var(--Hpx);
-    display:flex; align-items:center; gap:10px;
-    padding:8px 12px; background:#fff; border-bottom:1px solid var(--bd);
-    /* cegah elemen turun baris */
-    white-space:nowrap; overflow:hidden;
-  }
-  .pill{
-    padding:6px 10px; border:1px solid #dcdcdc; border-radius:999px;
-    background:#fff; cursor:pointer; flex:0 0 auto;
-  }
+  /* Topbar */
+  .top{position:fixed;left:0;right:0;z-index:900;top:var(--Hpx);display:flex;align-items:center;gap:10px;padding:8px 12px;background:#fff;border-bottom:1px solid var(--bd);white-space:nowrap;overflow:hidden}
+  .pill{padding:6px 10px;border:1px solid #dcdcdc;border-radius:999px;background:#fff;cursor:pointer}
   .pill:hover{background:#f6f6f6}
+  .anim{display:flex;align-items:center;gap:8px;flex:1 1 auto;min-width:0}
+  #frame{width:140px;max-width:40vw;flex:0 1 auto;accent-color:#3a7bd5}
+  .ts-badge{font-size:12px;color:#666;max-width:30vw;overflow:hidden;text-overflow:ellipsis}
 
-  .anim{
-    display:flex; align-items:center; gap:8px; flex:1 1 auto; min-width:0;
-  }
-  /* slider diperkecil & boleh mengecil lagi di layar sempit */
-  #frame{
-    width:140px; max-width:40vw; flex:0 1 auto;
-    accent-color:#3a7bd5;
-  }
-  .ts-badge{
-    font-size:12px; color:#666; flex:0 0 auto;
-    max-width:30vw; overflow:hidden; text-overflow:ellipsis;
-  }
+  /* Map */
+  #map{position:absolute;left:0;right:0;bottom:0;top:calc(var(--Hpx) + var(--Tpx))}
 
-  /* ===== Map di bawah header+topbar dinamis ===== */
-  #map{
-    position:absolute; left:0; right:0; bottom:0;
-    top: calc(var(--Hpx) + var(--Tpx));
-  }
-
-  /* ===== Panel & infobox ===== */
-  .infobox{
-    position:absolute; left:10px; bottom:10px; z-index:800;
-    background:rgba(255,255,255,.92); border:1px solid var(--bd);
-    border-radius:var(--r); box-shadow:var(--shadow);
-    padding:6px 8px; font-size:11px; max-width:300px;
-  }
-  .panel{
-    position:absolute; right:10px; bottom:60px; z-index:800;
-    width:340px; background:rgba(255,255,255,.95); border:1px solid var(--bd);
-    border-radius:var(--r); box-shadow:var(--shadow);
-    padding:10px 12px; font-size:13px;
-  }
+  /* Info & panel */
+  .infobox{position:absolute;left:10px;bottom:10px;z-index:800;background:rgba(255,255,255,.92);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--shadow);padding:6px 8px;font-size:11px;max-width:300px}
+  .panel{position:absolute;right:10px;bottom:60px;z-index:800;width:340px;background:rgba(255,255,255,.95);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--shadow);padding:10px 12px;font-size:13px}
   .panel h3{margin:4px 0 8px}
-  .legend{display:grid; grid-template-columns:auto 1fr; gap:6px 10px; align-items:center; margin-bottom:6px}
-  .grad{height:14px; border:1px solid #777; border-radius:6px;
-        background:linear-gradient(90deg,#3a7bd5,#00d2ff,#00ff88,#ffee00,#ff7b00,#ff004c,#b800ff);}
-  @media (max-width: 720px){
-    .panel{width:calc(100% - 20px); left:10px; right:10px; bottom:70px}
-    #frame{width:110px; max-width:48vw}
-  }
-  @media (max-width: 420px){
-    #frame{width:90px; max-width:50vw}
-    .line1{font-size:13px}
-    .line2,.line3{font-size:12px}
-  }
+  .legend{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;margin-bottom:6px}
+  .grad{height:14px;border:1px solid #777;border-radius:6px;background:linear-gradient(90deg,#3a7bd5,#00d2ff,#00ff88,#ffee00,#ff7b00,#ff004c,#b800ff)}
+  @media (max-width:720px){.panel{width:calc(100% - 20px);left:10px;right:10px;bottom:70px}#frame{width:110px;max-width:48vw}}
+  @media (max-width:420px){#frame{width:90px;max-width:50vw}.line1{font-size:13px}.line2,.line3{font-size:12px}}
 </style>
 </head>
 <body>
-  <!-- Header 3 baris -->
+  <!-- Header -->
   <div id="header">
     <img src="https://iconape.com/wp-content/png_logo_vector/pu-logo.png" alt="Logo PU">
     <div class="header-text">
       <div class="line1">Kementerian Pekerjaan Umum</div>
       <div class="line2">Direktorat Jenderal Sumber Daya Air</div>
       <div class="line3">Direktorat Irigasi dan Rawa</div>
-    </div>
-  </div>
-
-  <!-- Topbar: Reload + Anim (sejajar) -->
-  <div class="top" id="topbar">
-    <button class="pill" id="btnReload">Reload Data</button>
-    <div class="anim">
-      <button class="pill" id="btnPlay" title="Play/Pause">▶︎</button>
-      <input id="frame" type="range" min="0" max="0" step="1" value="0" aria-label="Frame radar"/>
-      <span id="ts" class="ts-badge">—</span>
-    </div>
-  </div>
-
-  <!-- Peta -->
-  <div id="map"></div>
-
-  <!-- Sumber -->
-  <div class="infobox">
-    <b>Sumber:</b> RainViewer Radar (update ~10 menit).<br/>
-    <span style="color:#555">Kredit: © RainViewer • © OpenStreetMap</span>
-  </div>
-
-  <!-- Panel Legenda -->
-  <div class="panel">
-    <h3>Legenda Radar</h3>
-    <div class="legend">
-      <div class="grad" title="Intensitas pantulan radar"></div>
-      <div style="font-size:12px;color:#555">← ringan … sedang … lebat … sangat lebat →</div>
-    </div>
-    <div><b>Frame:</b> <span id="ts2" class="muted">—</span></div>
-  </div>
-
-<script>
-/* ===== Hitung tinggi header & topbar dinamis ===== */
-function syncOffsets(){
-  const h = document.getElementById('header').offsetHeight;
-  const t = document.getElementById('topbar').offsetHeight;
-  document.documentElement.style.setProperty('--Hpx', h + 'px');
-  document.documentElement.style.setProperty('--Tpx', t + 'px');
-}
-window.addEventListener('load', syncOffsets);
-window.addEventListener('resize', syncOffsets);
-
-/* ===== Leaflet Map ===== */
-const map=L.map('map',{minZoom:3,maxZoom:18});
-L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
-map.fitBounds([[-11,94],[6,141]]); // Indonesia penuh
-
-/* ===== RainViewer Radar ===== */
-let frames=[], frameIndex=0, animTimer=null, radarLayer=null;
-
-async function loadFrames(){
-  try{
-    const res=await fetch('https://api.rainviewer.com/public/weather-maps.json');
-    const json=await res.json();
-    frames=[...(json.radar.past||[]),...(json.radar.nowcast||[])].map(x=>x.time);
-    if(!frames.length){ alert('Tidak ada frame RainViewer'); return; }
-    frame.max=String(frames.length-1);
-    setFrame(frames.length-1);
-  }catch(e){
-    alert('Gagal memuat data RainViewer'); console.error(e);
-  }
-}
-function frameUrl(t){ return `https://tilecache.rainviewer.com/v2/radar/${t}/256/{z}/{x}/{y}/2/1_1.png`; }
-function setFrame(idx){
-  frameIndex=idx; frame.value=String(idx);
-  const t=frames[idx], d=new Date(t*1000);
-  const label=d.toLocaleString('id-ID',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'short'});
-  ts.textContent=label; ts2.textContent=label;
-  if(radarLayer) map.removeLayer(radarLayer);
-  radarLayer=L.tileLayer(frameUrl(t),{opacity:0.75,attribution:'© RainViewer'}).addTo(map);
-}
-frame.oninput=()=> setFrame(parseInt(frame.value,10));
-btnPlay.onclick=()=>{
-  if(animTimer){ clearInterval(animTimer); animTimer=null; btnPlay.textContent='▶︎'; return; }
-  btnPlay.textContent='⏸';
-  animTimer=setInterval(()=>{
-    let next=frameIndex+1; if(next>=frames.length) next=0;
-    setFrame(next);
-  }, 600);
-};
-btnReload.onclick=loadFrames;
-
-loadFrames();
-</script>
-</body>
-</html>
