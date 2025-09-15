@@ -71,7 +71,7 @@
 
 <!-- Sumber & Legend -->
 <div class="infobox">
-  <b>Sumber:</b> BPS (2024) & SIGI PUPR (wadmpr provinsi).<br/>
+  <b>Sumber:</b> BPS (2024) & BIG Batas Provinsi (WADMPR).<br/>
   <span style="color:#555">Angka produksi: ton GKG</span>
 </div>
 
@@ -86,10 +86,20 @@
 
 <script>
 /* ===== Konfigurasi ===== */
+// Boundary resmi BIG (field nama provinsi: WADMPR)
 const PROV_GEOJSON_URL =
-  "https://sigi.pu.go.id/portalpupr/rest/services/Hosted/Polygon_Admin__SimplifyPolyg/FeatureServer/1/query?where=1=1&outFields=wadmpr&f=geojson";
-const CSV_URL = "produksi_padi_2024_BPS_per_provinsi.csv";
+  "https://geoservices.big.go.id/gis/rest/services/STIG/Batas_Provinsi/MapServer/0/query?where=1=1&outFields=WADMPR&f=geojson";
+
+// Ganti ke path CSV kamu (atau link raw GitHub). Simpan CSV di folder yang sama utk relatif path:
+const CSV_URL = "produksi_padi_2024_BPS_per_provinsi.csv"; // contoh: "https://raw.githubusercontent.com/user/repo/branch/produksi_padi_2024_BPS_per_provinsi.csv"
 const TAHUN_DATA = "2024";
+
+/* (Opsional) Inline CSV minimal untuk sanity check.
+   Aktifkan baris di loadCSV() bila perlu.
+const CSV_INLINE = `provinsi,produksi_gkg_ton
+Aceh,1643355
+Sumatera Utara,2154117`;
+*/
 
 /* ===== Layout dinamis ===== */
 function syncOffsets(){
@@ -109,16 +119,24 @@ map.fitBounds([[-11,94],[6,141]]);
 /* ===== Util ===== */
 function normName(s){
   if(!s) return "";
-  s=String(s).trim().toLowerCase().replace(/\s+/g," ");
-  s=s.replace(/^dki jakarta.*$/,"dki jakarta");
-  s=s.replace(/^daerah khusus ibukota jakarta.*$/,"dki jakarta");
-  s=s.replace(/^di yogyakarta.*$/,"di yogyakarta");
-  s=s.replace(/^daerah istimewa yogyakarta.*$/,"di yogyakarta");
-  s=s.replace(/^kep(\.|) riau$/,"kepulauan riau");
-  s=s.replace(/^kep(\.|) bangka belitung$/,"kepulauan bangka belitung");
+  s = String(s).toLowerCase().normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g,"") // hapus aksen
+      .replace(/\s+/g," ").trim();
+
+  // alias umum
+  s = s.replace(/^provinsi\s+/,"");
+  s = s.replace(/^dki jakarta.*$/,"dki jakarta");
+  s = s.replace(/^daerah khusus ibukota jakarta.*$/,"dki jakarta");
+  s = s.replace(/^di yogyakarta.*$/,"di yogyakarta");
+  s = s.replace(/^daerah istimewa yogyakarta.*$/,"di yogyakarta");
+  s = s.replace(/^kep(\.|) riau$/,"kepulauan riau");
+  s = s.replace(/^kep(\.|) bangka belitung$/,"kepulauan bangka belitung");
   return s;
 }
-function provName(props){ return (props.wadmpr||"").trim(); }
+function provName(props){
+  // tahan banting: baca WADMPR (BIG) atau wadmpr bila sumber lain
+  return (props.WADMPR || props.wadmpr || "").toString().trim();
+}
 function num(x){const n=Number(x); return isFinite(n)?n:null;}
 function fmt(n){return (n==null)?"—":Number(n).toLocaleString('id-ID');}
 
@@ -138,7 +156,14 @@ function colorFor(x,scale){
 }
 function buildLegend(scale){
   const el=document.getElementById('legend'); el.innerHTML="";
-  const s=scale.stops, labels=[`≤ ${fmt(s[0])}`,`${fmt(s[0]+1)}–${fmt(s[1])}`,`${fmt(s[1]+1)}–${fmt(s[2])}`,`${fmt(s[2]+1)}–${fmt(s[3])}`,`≥ ${fmt(s[3]+1)}`];
+  const s=scale.stops;
+  const labels=[
+    `≤ ${fmt(s[0])}`,
+    `${fmt(s[0])} – ${fmt(s[1])}`,
+    `${fmt(s[1])} – ${fmt(s[2])}`,
+    `${fmt(s[2])} – ${fmt(s[3])}`,
+    `≥ ${fmt(s[3])}`
+  ];
   scale.colors.forEach((c,i)=>{
     const row=document.createElement('div'); row.className="row";
     row.innerHTML = `<div class="sw" style="background:${c}"></div><div>${labels[i]}</div>`;
@@ -154,22 +179,56 @@ async function loadCSV(){
       download:true, header:true, dynamicTyping:true,
       complete:(res)=>{
         try{
-          if(!res.data || !res.data.length) throw new Error("CSV kosong");
+          if(!res.data || !res.data.length) throw new Error("CSV kosong/kolom tidak cocok");
+
+          // Validasi header minimal
+          const headerOk = res.meta && res.meta.fields &&
+                           res.meta.fields.some(f=>f.toLowerCase()=="provinsi") &&
+                           res.meta.fields.some(f=>f.toLowerCase()=="produksi_gkg_ton");
+          if(!headerOk) throw new Error("Header CSV harus: provinsi,produksi_gkg_ton");
+
           res.data.forEach(r=>{
             const key=normName(r.provinsi);
             if(key) dataMap.set(key, num(r.produksi_gkg_ton));
           });
+          document.getElementById('status').textContent = "CSV OK, memuat boundary…";
           resolve("csv-ok");
-        }catch(e){ console.warn("CSV kosong/format tidak sesuai:", e); resolve("csv-fail"); }
+        }catch(e){
+          document.getElementById('status').textContent = "CSV gagal/kolom tidak cocok (cek header & hosting)";
+          console.warn("CSV kosong/format tidak sesuai:", e, res);
+          resolve("csv-fail");
+        }
       },
-      error:(err)=>{ console.warn("CSV error:", err); resolve("csv-fail"); }
+      error:(err)=>{
+        document.getElementById('status').textContent = "Gagal mengunduh CSV (cek CORS/URL)";
+        console.warn("CSV error:", err);
+        resolve("csv-fail");
+      }
     });
+
+    /* ====== (Opsional) fallback ke CSV_INLINE saat testing ======
+    Papa.parse(CSV_INLINE,{ header:true, dynamicTyping:true,
+      complete:(res)=>{
+        res.data.forEach(r=>{
+          const key=normName(r.provinsi);
+          if(key) dataMap.set(key, num(r.produksi_gkg_ton));
+        });
+        document.getElementById('status').textContent = "CSV INLINE OK, memuat boundary…";
+        resolve("csv-ok");
+      }
+    });
+    ============================================================= */
   });
 }
-async function loadGeoJSON(){ const r=await fetch(PROV_GEOJSON_URL); return r.json(); }
 
-/* ===== Render ===== */
-function highlightFeature(e){ e.target.setStyle({weight:2,color:'#111',fillOpacity:0.9}); e.target.bringToFront();}
+async function loadGeoJSON(){
+  const r=await fetch(PROV_GEOJSON_URL);
+  if(!r.ok) throw new Error("Gagal fetch boundary BIG");
+  return r.json();
+}
+
+/* ===== Interaksi layer ===== */
+function highlightFeature(e){ e.target.setStyle({weight:2,color:'#111',fillOpacity:0.9}); e.target.bringToFront(); }
 function resetHighlight(e){ provLayer.resetStyle(e.target); }
 function zoomToFeature(e){ map.fitBounds(e.target.getBounds(),{maxZoom:8}); }
 function attachEvents(layer,props,val){
@@ -178,19 +237,25 @@ function attachEvents(layer,props,val){
   layer.on({mouseover:highlightFeature,mouseout:resetHighlight,click:zoomToFeature});
 }
 
+/* ===== Init ===== */
 async function init(){
   try{
     status.textContent="Memuat CSV…";
     const csvMode = await loadCSV();
-    status.textContent = (csvMode==="csv-ok") ? "CSV OK, memuat boundary…" : "CSV tidak terbaca. Memuat boundary…";
 
+    status.textContent = (csvMode==="csv-ok") ? "CSV OK, memuat boundary…" : "CSV tidak terbaca. Memuat boundary…";
     const gj=await loadGeoJSON();
+
+    // daftar provinsi utk autocomplete
     provinsiList = gj.features.map(f=>provName(f.properties)).filter(Boolean).sort();
 
+    // skala warna dari nilai CSV
     const values=[...dataMap.values()].filter(x=>x!=null);
     scale=makeColorScale(values);
 
-    let matched=0, missing=[];
+    let matched=0;
+    const missing=[];
+
     provLayer=L.geoJSON(gj,{
       style:f=>{
         const k=normName(provName(f.properties));
@@ -205,21 +270,31 @@ async function init(){
     }).addTo(map);
 
     buildLegend(scale);
-    status.textContent = (csvMode==="csv-ok")
-      ? `Siap • Match: ${matched} prov • Unmatch: ${Math.max(0,38-matched)}`
-      : `Siap (cek CSV untuk pewarnaan akurat)`;
-    if(csvMode==="csv-ok" && missing.length){ console.warn("Provinsi tanpa data (cek penamaan CSV):", missing); }
 
-  }catch(e){ console.error(e); status.textContent="Gagal load data"; }
+    const total = gj.features.length;
+    const unmatch = Math.max(0, total - matched);
+    status.textContent = (csvMode==="csv-ok")
+      ? `Siap • Match: ${matched}/${total} • Unmatch: ${unmatch}`
+      : `Siap (cek CSV untuk pewarnaan akurat)`;
+
+    if(csvMode==="csv-ok" && missing.length){
+      console.warn("Provinsi tanpa data (cek penamaan CSV):", missing);
+    }
+
+  }catch(e){
+    console.error(e);
+    status.textContent="Gagal load data (lihat Console)";
+  }
 }
 init();
 
-/* ===== Search + Autocomplete (includes) ===== */
+/* ===== Search + Autocomplete ===== */
 function doSearch(text){
   let found=null;
-  const target=(text||"").trim().toLowerCase();
+  const target = normName(text||"");
+  if(!provLayer) return;
   provLayer.eachLayer(l=>{
-    const n=(provName(l.feature.properties)||"").trim().toLowerCase();
+    const n = normName(provName(l.feature.properties));
     if(n===target) found=l;
   });
   if(found){
