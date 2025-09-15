@@ -10,32 +10,43 @@
 <style>
   :root{--Hpx:60px;--Tpx:60px;--bd:#eee;--r:12px;--shadow:0 6px 22px rgba(0,0,0,.08);--font:system-ui,Segoe UI,Roboto,Arial}
   html,body{height:100%;margin:0;font-family:var(--font)}
-  #header{position:fixed;top:0;left:0;right:0;z-index:900;display:flex;align-items:center;gap:10px;padding:6px 12px;background:#fff;border-bottom:1px solid var(--bd)}
+  /* Header */
+  #header{position:fixed;top:0;left:0;right:0;z-index:900;display:flex;align-items:center;gap:10px;
+    padding:6px 12px;background:#fff;border-bottom:1px solid var(--bd)}
   #header img{height:36px}
   .header-text{display:flex;flex-direction:column;line-height:1.1}
   .line1{font-weight:800;font-size:14px;text-transform:uppercase}
   .line2,.line3{font-weight:700;font-size:13px}
-  .top{position:fixed;top:var(--Hpx);left:0;right:0;z-index:900;display:flex;align-items:center;gap:8px;padding:8px 12px;background:#fff;border-bottom:1px solid var(--bd);flex-wrap:wrap}
+  /* Topbar */
+  .top{position:fixed;top:var(--Hpx);left:0;right:0;z-index:900;display:flex;align-items:center;gap:8px;
+    padding:8px 12px;background:#fff;border-bottom:1px solid var(--bd);flex-wrap:wrap}
   .pill{padding:6px 10px;border:1px solid #dcdcdc;border-radius:999px;background:#fff;cursor:pointer;font-size:13px}
   .pill:hover{background:#f6f6f6}
   .muted{color:#666;font-size:12px}
+  /* Search */
   .search{position:relative;display:flex;align-items:center;gap:6px}
   .search input{padding:6px 8px;border:1px solid #ccc;border-radius:8px;min-width:220px}
-  .suggestions{position:absolute;top:36px;left:0;background:#fff;border:1px solid #ccc;border-radius:8px;box-shadow:var(--shadow);max-height:220px;overflow:auto;z-index:1000;min-width:220px}
+  .suggestions{position:absolute;top:36px;left:0;background:#fff;border:1px solid #ccc;border-radius:8px;box-shadow:var(--shadow);
+    max-height:220px;overflow:auto;z-index:1000;min-width:220px}
   .suggestions div{padding:8px 10px;cursor:pointer}
   .suggestions div:hover{background:#f0f0f0}
+  /* Map */
   #map{position:absolute;top:calc(var(--Hpx) + var(--Tpx));left:0;right:0;bottom:0}
-  .panel{position:absolute;right:10px;bottom:10px;width:340px;background:rgba(255,255,255,.96);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--shadow);padding:10px 12px;font-size:13px;z-index:800}
+  /* Widgets */
+  .panel{position:absolute;right:10px;bottom:10px;width:340px;background:rgba(255,255,255,.96);
+    border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--shadow);padding:10px 12px;font-size:13px;z-index:800}
   .panel h3{margin:4px 0 8px}
   .legend{margin:8px 0}
   .legend .row{display:flex;align-items:center;gap:8px;margin:4px 0}
   .sw{width:22px;height:12px;border:1px solid #777;border-radius:3px}
-  .infobox{position:absolute;left:10px;bottom:10px;background:rgba(255,255,255,.9);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--shadow);padding:6px 8px;font-size:11px;z-index:800}
+  .infobox{position:absolute;left:10px;bottom:10px;background:rgba(255,255,255,.9);border:1px solid var(--bd);
+    border-radius:var(--r);box-shadow:var(--shadow);padding:6px 8px;font-size:11px;z-index:800}
   .source-note{color:#666;font-size:12px;margin-left:4px}
   @media(max-width:740px){.panel{width:calc(100% - 20px);left:10px;right:10px}}
 </style>
 </head>
 <body>
+<!-- Header -->
 <div id="header">
   <img src="https://iconape.com/wp-content/png_logo_vector/pu-logo.png" alt="Logo PU">
   <div class="header-text">
@@ -45,6 +56,7 @@
   </div>
 </div>
 
+<!-- Topbar -->
 <div class="top" id="topbar">
   <button class="pill" id="btnReset">Reset</button>
   <div class="search">
@@ -57,8 +69,9 @@
 
 <div id="map"></div>
 
+<!-- Sumber & Legend -->
 <div class="infobox">
-  <b>Sumber:</b> BPS (2024) & SIGI PUPR (WADMPR).<br/>
+  <b>Sumber:</b> BPS (2024) & SIGI PUPR (WADMPR – boundary provinsi).<br/>
   <span style="color:#555">Angka produksi: ton GKG</span>
 </div>
 
@@ -73,9 +86,9 @@
 
 <script>
 /* ===== Konfigurasi ===== */
-/* Kembali ke SIGI PUPR – langsung GeoJSON. Field nama: WADMPR (UPPERCASE). */
+/* Endpoint baru SIGI: /portalpu/ */
 const PROV_GEOJSON_URL =
-  "https://sigi.pu.go.id/portalpupr/rest/services/Hosted/Polygon_Admin__SimplifyPolyg/FeatureServer/1/query?where=1%3D1&outFields=WADMPR&outSR=4326&f=geojson";
+  "https://sigi.pu.go.id/portalpu/rest/services/Hosted/Polygon_Admin__SimplifyPolyg/FeatureServer/1/query?where=1%3D1&outFields=WADMPR&outSR=4326&f=geojson";
 
 /* CSV RAW GitHub kamu */
 const CSV_URL =
@@ -113,26 +126,22 @@ function normName(s){
   s = s.replace(/^kep(\.|)\s*bangka belitung$/,"kepulauan bangka belitung");
   return s;
 }
-
-/* Ambil nama provinsi dari berbagai kemungkinan field, lalu dinormalisasi */
 function getPropCI(props, candidates){
   const keys = Object.keys(props||{});
   for(const cand of candidates){
-    const hit = keys.find(k => k.toLowerCase() === cand.toLowerCase());
+    const hit = keys.find(k => k.toLowerCase()===cand.toLowerCase());
     if(hit && props[hit]!=null) return props[hit];
   }
-  // fallback: cari mirip
   const like = keys.find(k => /prov|wadmpr|wadmprov|name_?1|namobj/i.test(k));
   return like ? props[like] : "";
 }
-function provName(props){
+function provKey(props){
   const raw = getPropCI(props, ["WADMPR","wadmpr","provinsi","WADMPROV","wadmprov","NAME_1","name_1","NAMOBJ","namobj"]);
   return normName(raw);
 }
-function prettyProv(props){
+function provPretty(props){
   return getPropCI(props, ["WADMPR","wadmpr","provinsi","WADMPROV","wadmprov","NAME_1","name_1","NAMOBJ","namobj"]) || "(tanpa nama)";
 }
-
 function num(x){const n=Number(x); return isFinite(n)?n:null;}
 function fmt(n){return (n==null)?"—":Number(n).toLocaleString('id-ID');}
 
@@ -178,24 +187,23 @@ async function loadCSV(){
       complete:(res)=>{
         try{
           if(!res.data || !res.data.length) throw new Error("CSV kosong/kolom tidak cocok");
-          const headerOk = res.meta && res.meta.fields &&
-                           res.meta.fields.some(f=>f.toLowerCase()=="provinsi") &&
-                           res.meta.fields.some(f=>f.toLowerCase()=="produksi_gkg_ton");
+          const headerOk = res.meta?.fields?.some(f=>f.toLowerCase()=="provinsi")
+                        && res.meta?.fields?.some(f=>f.toLowerCase()=="produksi_gkg_ton");
           if(!headerOk) throw new Error("Header CSV harus: provinsi,produksi_gkg_ton");
           res.data.forEach(r=>{
             const key=normName(r.provinsi);
             if(key) dataMap.set(key, num(r.produksi_gkg_ton));
           });
-          document.getElementById('status').textContent = "CSV OK, memuat boundary…";
+          status.textContent = "CSV OK, memuat boundary…";
           resolve("csv-ok");
         }catch(e){
-          document.getElementById('status').textContent = "CSV gagal/kolom tidak cocok (cek header & isi)";
+          status.textContent = "CSV gagal/kolom tidak cocok (cek header & isi)";
           console.warn("CSV issue:", e, res);
           resolve("csv-fail");
         }
       },
       error:(err)=>{
-        document.getElementById('status').textContent = "Gagal mengunduh CSV (cek URL/CORS)";
+        status.textContent = "Gagal mengunduh CSV (cek URL/CORS)";
         console.warn("CSV error:", err);
         resolve("csv-fail");
       }
@@ -206,16 +214,14 @@ async function loadCSV(){
 async function loadGeoJSON(){
   const r=await fetch(withBuster(PROV_GEOJSON_URL));
   if(!r.ok) throw new Error("Gagal fetch boundary SIGI");
-  // kadang SIGI balas HTML error → cek cepat:
   const txt = await r.text();
   try{
     const json = JSON.parse(txt);
     if(!json.features || !json.features.length) throw new Error("Boundary kosong / features[] tidak ada");
-    // debug: tunjukkan kunci properti yang ada
     console.log("Sample boundary property keys:", Object.keys(json.features[0].properties||{}));
     return json;
   }catch(e){
-    console.error("Response bukan JSON/GeoJSON valid. Cuplikan:", txt.slice(0,200));
+    console.error("Response bukan GeoJSON valid. Cuplikan:", txt.slice(0,200));
     throw e;
   }
 }
@@ -225,7 +231,7 @@ function highlightFeature(e){ e.target.setStyle({weight:2,color:'#111',fillOpaci
 function resetHighlight(e){ provLayer.resetStyle(e.target); }
 function zoomToFeature(e){ map.fitBounds(e.target.getBounds(),{maxZoom:8}); }
 function attachEvents(layer,props,val){
-  const nama=prettyProv(props);
+  const nama=provPretty(props);
   layer.bindTooltip(`<b>${nama}</b><br/>Produksi: <b>${fmt(val)}</b> ton GKG (${TAHUN_DATA})`,{sticky:true});
   layer.on({mouseover:highlightFeature,mouseout:resetHighlight,click:zoomToFeature});
 }
@@ -239,7 +245,7 @@ async function init(){
     status.textContent = (csvMode==="csv-ok") ? "CSV OK, memuat boundary…" : "CSV tidak terbaca. Memuat boundary…";
     const gj = await loadGeoJSON();
 
-    provinsiList = gj.features.map(f=>prettyProv(f.properties)).filter(Boolean).sort();
+    provinsiList = gj.features.map(f=>provPretty(f.properties)).filter(Boolean).sort();
 
     const values=[...dataMap.values()].filter(x=>x!=null);
     scale=makeColorScale(values);
@@ -248,13 +254,13 @@ async function init(){
 
     provLayer=L.geoJSON(gj,{
       style:f=>{
-        const key=provName(f.properties);       // normalized
+        const key=provKey(f.properties);       // normalized
         const val=dataMap.get(key);
-        if(val!=null) matched++; else missing.push(prettyProv(f.properties));
+        if(val!=null) matched++; else missing.push(provPretty(f.properties));
         return {color:'#fff',weight:1,fillColor:colorFor(val,scale),fillOpacity:0.8};
       },
       onEachFeature:(f,layer)=>{
-        const key=provName(f.properties);
+        const key=provKey(f.properties);
         attachEvents(layer,f.properties,dataMap.get(key));
       }
     }).addTo(map);
@@ -283,7 +289,7 @@ function doSearch(text){
   const target = normName(text||"");
   if(!provLayer) return;
   provLayer.eachLayer(l=>{
-    const n = provName(l.feature.properties); // normalized
+    const n = provKey(l.feature.properties); // normalized
     if(n===target) found=l;
   });
   if(found){
