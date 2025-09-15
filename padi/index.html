@@ -86,20 +86,15 @@
 
 <script>
 /* ===== Konfigurasi ===== */
-// Boundary resmi BIG (field nama provinsi: WADMPR)
+/* Boundary resmi BIG (field nama provinsi: WADMPR) */
 const PROV_GEOJSON_URL =
   "https://geoservices.big.go.id/gis/rest/services/STIG/Batas_Provinsi/MapServer/0/query?where=1=1&outFields=WADMPR&f=geojson";
 
-// Ganti ke path CSV kamu (atau link raw GitHub). Simpan CSV di folder yang sama utk relatif path:
-const CSV_URL = "produksi_padi_2024_BPS_per_provinsi.csv"; // contoh: "https://raw.githubusercontent.com/user/repo/branch/produksi_padi_2024_BPS_per_provinsi.csv"
-const TAHUN_DATA = "2024";
+/* CSV RAW GitHub (langsung dari repo kamu) */
+const CSV_URL =
+  "https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/padi/produksi_padi_2024_BPS_per_provinsi.csv";
 
-/* (Opsional) Inline CSV minimal untuk sanity check.
-   Aktifkan baris di loadCSV() bila perlu.
-const CSV_INLINE = `provinsi,produksi_gkg_ton
-Aceh,1643355
-Sumatera Utara,2154117`;
-*/
+const TAHUN_DATA = "2024";
 
 /* ===== Layout dinamis ===== */
 function syncOffsets(){
@@ -122,7 +117,6 @@ function normName(s){
   s = String(s).toLowerCase().normalize("NFKD")
       .replace(/[\u0300-\u036f]/g,"") // hapus aksen
       .replace(/\s+/g," ").trim();
-
   // alias umum
   s = s.replace(/^provinsi\s+/,"");
   s = s.replace(/^dki jakarta.*$/,"dki jakarta");
@@ -134,7 +128,7 @@ function normName(s){
   return s;
 }
 function provName(props){
-  // tahan banting: baca WADMPR (BIG) atau wadmpr bila sumber lain
+  // tahan banting: BIG=WADMPR; beberapa sumber lain=wadmpr
   return (props.WADMPR || props.wadmpr || "").toString().trim();
 }
 function num(x){const n=Number(x); return isFinite(n)?n:null;}
@@ -180,13 +174,10 @@ async function loadCSV(){
       complete:(res)=>{
         try{
           if(!res.data || !res.data.length) throw new Error("CSV kosong/kolom tidak cocok");
-
-          // Validasi header minimal
           const headerOk = res.meta && res.meta.fields &&
                            res.meta.fields.some(f=>f.toLowerCase()=="provinsi") &&
                            res.meta.fields.some(f=>f.toLowerCase()=="produksi_gkg_ton");
           if(!headerOk) throw new Error("Header CSV harus: provinsi,produksi_gkg_ton");
-
           res.data.forEach(r=>{
             const key=normName(r.provinsi);
             if(key) dataMap.set(key, num(r.produksi_gkg_ton));
@@ -194,7 +185,7 @@ async function loadCSV(){
           document.getElementById('status').textContent = "CSV OK, memuat boundary…";
           resolve("csv-ok");
         }catch(e){
-          document.getElementById('status').textContent = "CSV gagal/kolom tidak cocok (cek header & hosting)";
+          document.getElementById('status').textContent = "CSV gagal/kolom tidak cocok (cek header & isi)";
           console.warn("CSV kosong/format tidak sesuai:", e, res);
           resolve("csv-fail");
         }
@@ -205,22 +196,8 @@ async function loadCSV(){
         resolve("csv-fail");
       }
     });
-
-    /* ====== (Opsional) fallback ke CSV_INLINE saat testing ======
-    Papa.parse(CSV_INLINE,{ header:true, dynamicTyping:true,
-      complete:(res)=>{
-        res.data.forEach(r=>{
-          const key=normName(r.provinsi);
-          if(key) dataMap.set(key, num(r.produksi_gkg_ton));
-        });
-        document.getElementById('status').textContent = "CSV INLINE OK, memuat boundary…";
-        resolve("csv-ok");
-      }
-    });
-    ============================================================= */
   });
 }
-
 async function loadGeoJSON(){
   const r=await fetch(PROV_GEOJSON_URL);
   if(!r.ok) throw new Error("Gagal fetch boundary BIG");
