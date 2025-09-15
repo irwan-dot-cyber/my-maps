@@ -7,8 +7,6 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
-<!-- Konverter ArcGIS JSON -> GeoJSON (UMD exposes window.arcgisToGeoJSON.arcgisToGeoJSON) -->
-<script src="https://unpkg.com/@esri/arcgis-to-geojson-utils@1.3.0/dist/arcgis-to-geojson.umd.min.js"></script>
 <style>
   :root{--Hpx:60px;--Tpx:60px;--bd:#eee;--r:12px;--shadow:0 6px 22px rgba(0,0,0,.08);--font:system-ui,Segoe UI,Roboto,Arial}
   html,body{height:100%;margin:0;font-family:var(--font)}
@@ -60,7 +58,7 @@
 <div id="map"></div>
 
 <div class="infobox">
-  <b>Sumber:</b> BPS (2024) & boundary nasional (BPS/BIG/SIGI).<br/>
+  <b>Sumber:</b> BPS (2024) & SIGI PUPR (WADMPR).<br/>
   <span style="color:#555">Angka produksi: ton GKG</span>
 </div>
 
@@ -75,33 +73,25 @@
 
 <script>
 /* ===== Konfigurasi ===== */
-const CSV_URL = "https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/padi/produksi_padi_2024_BPS_per_provinsi.csv";
+/* Kembali ke SIGI PUPR – langsung GeoJSON. Field nama: WADMPR (UPPERCASE). */
+const PROV_GEOJSON_URL =
+  "https://sigi.pu.go.id/portalpupr/rest/services/Hosted/Polygon_Admin__SimplifyPolyg/FeatureServer/1/query?where=1%3D1&outFields=WADMPR&outSR=4326&f=geojson";
+
+/* CSV RAW GitHub kamu */
+const CSV_URL =
+  "https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/padi/produksi_padi_2024_BPS_per_provinsi.csv";
+
 const TAHUN_DATA = "2024";
 
-/* Kandidat sumber boundary (di-try satu per satu) */
-const BOUNDARY_SOURCES = [
-  { // BPS ArcGIS JSON (provinsi)
-    type: "arcgis",
-    name: "BPS-MapServer-2",
-    url: "https://geoportal.bps.go.id/server/rest/services/Peta_Penduduk_SP2020_Online_MIL1/MapServer/2/query?where=1%3D1&outFields=*&returnGeometry=true&outSR=4326&f=json"
-  },
-  { // BIG ArcGIS JSON (WADMPR)
-    type: "arcgis",
-    name: "BIG-Batas_Provinsi-0",
-    url: "https://geoservices.big.go.id/gis/rest/services/STIG/Batas_Provinsi/MapServer/0/query?where=1%3D1&outFields=*&returnGeometry=true&outSR=4326&f=json"
-  },
-  { // SIGI PUPR ArcGIS JSON (wadmpr)
-    type: "arcgis",
-    name: "SIGI-Polygon_Admin_Simplify-1",
-    url: "https://sigi.pu.go.id/portalpupr/rest/services/Hosted/Polygon_Admin__SimplifyPolyg/FeatureServer/1/query?where=1%3D1&outFields=*&returnGeometry=true&outSR=4326&f=json"
-  }
-];
-
 /* ===== Layout dinamis ===== */
-function syncOffsets(){ const h=header.offsetHeight, t=topbar.offsetHeight;
+function syncOffsets(){
+  const h=document.getElementById('header').offsetHeight;
+  const t=document.getElementById('topbar').offsetHeight;
   document.documentElement.style.setProperty('--Hpx', h+'px');
-  document.documentElement.style.setProperty('--Tpx', t+'px'); }
-addEventListener('load', syncOffsets); addEventListener('resize', syncOffsets);
+  document.documentElement.style.setProperty('--Tpx', t+'px');
+}
+window.addEventListener('load', syncOffsets);
+window.addEventListener('resize', syncOffsets);
 
 /* ===== Map ===== */
 const map=L.map('map',{minZoom:3,maxZoom:18});
@@ -109,110 +99,129 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© Op
 map.fitBounds([[-11,94],[6,141]]);
 
 /* ===== Util ===== */
-function withBuster(url){const sep=url.includes("?")?"&":"?"; return `${url}${sep}t=${Date.now()}`;}
 function normName(s){
   if(!s) return "";
-  s=String(s).toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," ").trim();
-  s=s.replace(/^provinsi\s+/,"");
-  s=s.replace(/^dki jakarta.*$/,"dki jakarta");
-  s=s.replace(/^daerah khusus ibukota jakarta.*$/,"dki jakarta");
-  s=s.replace(/^di yogyakarta.*$/,"di yogyakarta");
-  s=s.replace(/^daerah istimewa yogyakarta.*$/,"di yogyakarta");
-  s=s.replace(/^kep(\.|)\s*riau$/,"kepulauan riau");
-  s=s.replace(/^kep(\.|)\s*bangka belitung$/,"kepulauan bangka belitung");
+  s = String(s).toLowerCase().normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g,"")
+      .replace(/\s+/g," ").trim();
+  s = s.replace(/^provinsi\s+/,"");
+  s = s.replace(/^dki jakarta.*$/,"dki jakarta");
+  s = s.replace(/^daerah khusus ibukota jakarta.*$/,"dki jakarta");
+  s = s.replace(/^di yogyakarta.*$/,"di yogyakarta");
+  s = s.replace(/^daerah istimewa yogyakarta.*$/,"di yogyakarta");
+  s = s.replace(/^kep(\.|)\s*riau$/,"kepulauan riau");
+  s = s.replace(/^kep(\.|)\s*bangka belitung$/,"kepulauan bangka belitung");
   return s;
 }
-function getPropCI(props,cands){
-  const keys=Object.keys(props||{}); for(const c of cands){
-    const hit=keys.find(k=>k.toLowerCase()===c.toLowerCase()); if(hit) return props[hit];
+
+/* Ambil nama provinsi dari berbagai kemungkinan field, lalu dinormalisasi */
+function getPropCI(props, candidates){
+  const keys = Object.keys(props||{});
+  for(const cand of candidates){
+    const hit = keys.find(k => k.toLowerCase() === cand.toLowerCase());
+    if(hit && props[hit]!=null) return props[hit];
   }
-  const like=keys.find(k=>/prov|wadmpr|wadmprov|name_?1|namobj|province/i.test(k)); return like?props[like]:"";
+  // fallback: cari mirip
+  const like = keys.find(k => /prov|wadmpr|wadmprov|name_?1|namobj/i.test(k));
+  return like ? props[like] : "";
 }
-function provName(props){ return normName(getPropCI(props,[
-  "provinsi","PROVINSI","Provinsi",
-  "WADMPR","wadmpr","WADMPROV","wadmprov",
-  "NAME_1","name_1","NAMOBJ","namobj",
-  "province","Province","PROVINCE","provname"
-])); }
-function prettyProv(props){ return getPropCI(props,[
-  "provinsi","PROVINSI","Provinsi",
-  "WADMPR","wadmpr","WADMPROV","wadmprov",
-  "NAME_1","name_1","NAMOBJ","namobj",
-  "province","Province","PROVINCE","provname"
-]) || "(tanpa nama)"; }
+function provName(props){
+  const raw = getPropCI(props, ["WADMPR","wadmpr","provinsi","WADMPROV","wadmprov","NAME_1","name_1","NAMOBJ","namobj"]);
+  return normName(raw);
+}
+function prettyProv(props){
+  return getPropCI(props, ["WADMPR","wadmpr","provinsi","WADMPROV","wadmprov","NAME_1","name_1","NAMOBJ","namobj"]) || "(tanpa nama)";
+}
+
 function num(x){const n=Number(x); return isFinite(n)?n:null;}
 function fmt(n){return (n==null)?"—":Number(n).toLocaleString('id-ID');}
+
+/* ===== Skala warna & legenda ===== */
 function makeColorScale(values){
   const v=values.filter(x=>x!=null).sort((a,b)=>a-b);
   if(!v.length) return {stops:[0,1,2,3,4],colors:["#eee","#c7dbff","#8fb3ff","#4c86ff","#1d4ed8"]};
-  const q=p=>v[Math.floor(p*(v.length-1))]; const stops=[q(0),q(0.25),q(0.5),q(0.75),q(1)];
-  return {stops,colors:["#eef5ff","#c7dbff","#8fb3ff","#4c86ff","#1d4ed8"]}; }
-function colorFor(x,scale){ if(x==null) return "#eee"; const s=scale.stops,c=scale.colors;
-  return x<=s[0]?c[0]:x<=s[1]?c[1]:x<=s[2]?c[2]:x<=s[3]?c[3]:c[4]; }
+  const q=p=>v[Math.floor(p*(v.length-1))];
+  const stops=[q(0),q(0.25),q(0.5),q(0.75),q(1)];
+  const colors=["#eef5ff","#c7dbff","#8fb3ff","#4c86ff","#1d4ed8"];
+  return {stops,colors};
+}
+function colorFor(x,scale){
+  if(x==null) return "#eee";
+  const s=scale.stops,c=scale.colors;
+  return x<=s[0]?c[0]:x<=s[1]?c[1]:x<=s[2]?c[2]:x<=s[3]?c[3]:c[4];
+}
 function buildLegend(scale){
-  const el=document.getElementById('legend'); el.innerHTML=""; const s=scale.stops;
-  const labels=[`≤ ${fmt(s[0])}`,`${fmt(s[0])} – ${fmt(s[1])}`,`${fmt(s[1])} – ${fmt(s[2])}`,`${fmt(s[2])} – ${fmt(s[3])}`,`≥ ${fmt(s[3])}`];
-  scale.colors.forEach((c,i)=>{const row=document.createElement('div'); row.className="row";
-    row.innerHTML=`<div class="sw" style="background:${c}"></div><div>${labels[i]}</div>`; el.appendChild(row);});
+  const el=document.getElementById('legend'); el.innerHTML="";
+  const s=scale.stops;
+  const labels=[
+    `≤ ${fmt(s[0])}`,
+    `${fmt(s[0])} – ${fmt(s[1])}`,
+    `${fmt(s[1])} – ${fmt(s[2])}`,
+    `${fmt(s[2])} – ${fmt(s[3])}`,
+    `≥ ${fmt(s[3])}`
+  ];
+  scale.colors.forEach((c,i)=>{
+    const row=document.createElement('div'); row.className="row";
+    row.innerHTML = `<div class="sw" style="background:${c}"></div><div>${labels[i]}</div>`;
+    el.appendChild(row);
+  });
 }
 
 /* ===== Data ===== */
 let dataMap=new Map(), provLayer=null, scale=null, provinsiList=[];
+function withBuster(url){ const sep=url.includes("?")?"&":"?"; return `${url}${sep}t=${Date.now()}`; }
+
 async function loadCSV(){
   return new Promise((resolve)=>{
-    Papa.parse(withBuster(CSV_URL),{download:true,header:true,dynamicTyping:true,
+    Papa.parse(withBuster(CSV_URL),{
+      download:true, header:true, dynamicTyping:true,
       complete:(res)=>{
         try{
-          if(!res.data?.length) throw new Error("CSV kosong");
-          const fields=(res.meta?.fields||[]).map(f=>f.toLowerCase());
-          if(!fields.includes("provinsi")||!fields.includes("produksi_gkg_ton")) throw new Error("Header tidak cocok");
-          res.data.forEach(r=>{ const k=normName(r.provinsi); if(k) dataMap.set(k, num(r.produksi_gkg_ton)); });
-          status.textContent="CSV OK, memuat boundary…"; resolve("csv-ok");
-        }catch(e){ status.textContent="CSV gagal/kolom tidak cocok"; console.warn("CSV issue:",e,res); resolve("csv-fail");}
+          if(!res.data || !res.data.length) throw new Error("CSV kosong/kolom tidak cocok");
+          const headerOk = res.meta && res.meta.fields &&
+                           res.meta.fields.some(f=>f.toLowerCase()=="provinsi") &&
+                           res.meta.fields.some(f=>f.toLowerCase()=="produksi_gkg_ton");
+          if(!headerOk) throw new Error("Header CSV harus: provinsi,produksi_gkg_ton");
+          res.data.forEach(r=>{
+            const key=normName(r.provinsi);
+            if(key) dataMap.set(key, num(r.produksi_gkg_ton));
+          });
+          document.getElementById('status').textContent = "CSV OK, memuat boundary…";
+          resolve("csv-ok");
+        }catch(e){
+          document.getElementById('status').textContent = "CSV gagal/kolom tidak cocok (cek header & isi)";
+          console.warn("CSV issue:", e, res);
+          resolve("csv-fail");
+        }
       },
-      error:(err)=>{ status.textContent="Gagal unduh CSV"; console.warn("CSV error:",err); resolve("csv-fail"); }
+      error:(err)=>{
+        document.getElementById('status').textContent = "Gagal mengunduh CSV (cek URL/CORS)";
+        console.warn("CSV error:", err);
+        resolve("csv-fail");
+      }
     });
   });
 }
 
-/* Ambil ArcGIS JSON dan convert ke GeoJSON */
-async function fetchArcGISAsGeoJSON(url){
-  const r=await fetch(withBuster(url)); if(!r.ok) throw new Error("HTTP "+r.status);
-  const esri=await r.json();
-  if(esri.error){ throw new Error(`ArcGIS error ${esri.error.code}: ${esri.error.message}`); }
-  const feats=esri.features||[];
-  if(!feats.length) throw new Error("Boundary kosong");
-  const esri2geo = window.arcgisToGeoJSON && window.arcgisToGeoJSON.arcgisToGeoJSON;
-  if(typeof esri2geo!=="function") throw new Error("Konverter ESRI→GeoJSON tidak tersedia");
-  console.log("Sample boundary property keys:", Object.keys(feats[0].attributes||{}));
-  return {
-    type:"FeatureCollection",
-    features: feats.map(f=>({type:"Feature",properties:(f.attributes||{}),geometry:esri2geo(f.geometry)}))
-  };
-}
-
-/* Coba beberapa sumber hingga salah satu sukses */
-async function loadAnyBoundary(){
-  const errors=[];
-  for(const s of BOUNDARY_SOURCES){
-    try{
-      status.textContent=`Memuat boundary… (${s.name})`;
-      if(s.type==="arcgis"){
-        const gj=await fetchArcGISAsGeoJSON(s.url);
-        console.log("Boundary OK from:", s.name);
-        return gj;
-      }
-    }catch(e){
-      console.warn("Boundary source failed:", s.name, e);
-      errors.push(`${s.name}: ${e.message}`);
-      continue;
-    }
+async function loadGeoJSON(){
+  const r=await fetch(withBuster(PROV_GEOJSON_URL));
+  if(!r.ok) throw new Error("Gagal fetch boundary SIGI");
+  // kadang SIGI balas HTML error → cek cepat:
+  const txt = await r.text();
+  try{
+    const json = JSON.parse(txt);
+    if(!json.features || !json.features.length) throw new Error("Boundary kosong / features[] tidak ada");
+    // debug: tunjukkan kunci properti yang ada
+    console.log("Sample boundary property keys:", Object.keys(json.features[0].properties||{}));
+    return json;
+  }catch(e){
+    console.error("Response bukan JSON/GeoJSON valid. Cuplikan:", txt.slice(0,200));
+    throw e;
   }
-  throw new Error("Semua sumber boundary gagal.\n"+errors.join("\n"));
 }
 
 /* ===== Interaksi layer ===== */
-function highlightFeature(e){ e.target.setStyle({weight:2,color:'#111',fillOpacity:0.9}); e.target.bringToFront();}
+function highlightFeature(e){ e.target.setStyle({weight:2,color:'#111',fillOpacity:0.9}); e.target.bringToFront(); }
 function resetHighlight(e){ provLayer.resetStyle(e.target); }
 function zoomToFeature(e){ map.fitBounds(e.target.getBounds(),{maxZoom:8}); }
 function attachEvents(layer,props,val){
@@ -224,31 +233,43 @@ function attachEvents(layer,props,val){
 /* ===== Init ===== */
 async function init(){
   try{
+    status.textContent="Memuat CSV…";
     const csvMode = await loadCSV();
-    status.textContent = (csvMode==="csv-ok") ? "CSV OK, memuat boundary…" : "CSV tidak terbaca. Memuat boundary…";
 
-    const gj = await loadAnyBoundary();
+    status.textContent = (csvMode==="csv-ok") ? "CSV OK, memuat boundary…" : "CSV tidak terbaca. Memuat boundary…";
+    const gj = await loadGeoJSON();
 
     provinsiList = gj.features.map(f=>prettyProv(f.properties)).filter(Boolean).sort();
+
     const values=[...dataMap.values()].filter(x=>x!=null);
     scale=makeColorScale(values);
 
     let matched=0, missing=[];
+
     provLayer=L.geoJSON(gj,{
       style:f=>{
-        const key=provName(f.properties);
+        const key=provName(f.properties);       // normalized
         const val=dataMap.get(key);
         if(val!=null) matched++; else missing.push(prettyProv(f.properties));
         return {color:'#fff',weight:1,fillColor:colorFor(val,scale),fillOpacity:0.8};
       },
-      onEachFeature:(f,layer)=>{ const key=provName(f.properties); attachEvents(layer,f.properties,dataMap.get(key)); }
+      onEachFeature:(f,layer)=>{
+        const key=provName(f.properties);
+        attachEvents(layer,f.properties,dataMap.get(key));
+      }
     }).addTo(map);
 
     buildLegend(scale);
-    const total=gj.features.length, unmatch=Math.max(0,total-matched);
-    status.textContent=(csvMode==="csv-ok")?`Siap • Match: ${matched}/${total} • Unmatch: ${unmatch}`:`Siap (cek CSV)`;
-    if(csvMode==="csv-ok" && missing.length){ console.warn("Provinsi tanpa data:", missing); }
 
+    const total = gj.features.length;
+    const unmatch = Math.max(0, total - matched);
+    status.textContent = (csvMode==="csv-ok")
+      ? `Siap • Match: ${matched}/${total} • Unmatch: ${unmatch}`
+      : `Siap (cek CSV untuk pewarnaan akurat)`;
+
+    if(csvMode==="csv-ok" && missing.length){
+      console.warn("Provinsi tanpa data (cek penamaan CSV):", missing);
+    }
   }catch(e){
     console.error(e);
     status.textContent="Gagal load data (lihat Console)";
@@ -258,23 +279,44 @@ init();
 
 /* ===== Search + Autocomplete ===== */
 function doSearch(text){
-  let found=null; const target=normName(text||""); if(!provLayer) return;
-  provLayer.eachLayer(l=>{ const n=provName(l.feature.properties); if(n===target) found=l; });
-  if(found){ map.fitBounds(found.getBounds(),{maxZoom:8}); found.fire('mouseover'); setTimeout(()=>found.fire('mouseout'),1200); }
-  else alert("Provinsi tidak ditemukan");
+  let found=null;
+  const target = normName(text||"");
+  if(!provLayer) return;
+  provLayer.eachLayer(l=>{
+    const n = provName(l.feature.properties); // normalized
+    if(n===target) found=l;
+  });
+  if(found){
+    map.fitBounds(found.getBounds(),{maxZoom:8});
+    found.fire('mouseover'); setTimeout(()=>found.fire('mouseout'),1200);
+  }else alert("Provinsi tidak ditemukan");
 }
 function showSuggestions(val){
-  const box=document.getElementById("suggestions"); box.innerHTML="";
+  const box=document.getElementById("suggestions");
+  box.innerHTML="";
   if(!val){ box.style.display="none"; return; }
-  const v=val.toLowerCase(); const hits=provinsiList.filter(p=>p.toLowerCase().includes(v)).slice(0,12);
+  const v=val.toLowerCase();
+  const hits = provinsiList.filter(p=>p.toLowerCase().includes(v)).slice(0,12);
   if(!hits.length){ box.style.display="none"; return; }
-  hits.forEach(name=>{ const div=document.createElement("div"); div.textContent=name;
-    div.onclick=()=>{ q.value=name; box.style.display="none"; doSearch(name); }; box.appendChild(div); });
+  hits.forEach(name=>{
+    const div=document.createElement("div");
+    div.textContent=name;
+    div.onclick=()=>{
+      document.getElementById("q").value=name;
+      box.style.display="none";
+      doSearch(name);
+    };
+    box.appendChild(div);
+  });
   box.style.display="block";
 }
-btnCari.onclick=()=>doSearch(q.value);
-btnReset.onclick=()=>map.fitBounds([[-11,94],[6,141]]);
-addEventListener('click',e=>{ if(!document.querySelector('.search').contains(e.target)) document.getElementById('suggestions').style.display='none'; });
+btnCari.onclick=()=> doSearch(q.value);
+btnReset.onclick=()=> map.fitBounds([[-11,94],[6,141]]);
+document.addEventListener('click',(e)=>{
+  if(!document.querySelector('.search').contains(e.target)){
+    document.getElementById('suggestions').style.display='none';
+  }
+});
 </script>
 </body>
 </html>
