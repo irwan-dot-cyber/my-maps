@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="utf-8"/>
-<title>PU • Produksi Padi per Provinsi (BPS 2024)</title>
+<title>PUPR • Produksi Padi per Provinsi (BPS 2024)</title>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -10,43 +10,32 @@
 <style>
   :root{--Hpx:60px;--Tpx:60px;--bd:#eee;--r:12px;--shadow:0 6px 22px rgba(0,0,0,.08);--font:system-ui,Segoe UI,Roboto,Arial}
   html,body{height:100%;margin:0;font-family:var(--font)}
-  /* Header */
-  #header{position:fixed;top:0;left:0;right:0;z-index:900;display:flex;align-items:center;gap:10px;
-    padding:6px 12px;background:#fff;border-bottom:1px solid var(--bd)}
+  #header{position:fixed;top:0;left:0;right:0;z-index:900;display:flex;align-items:center;gap:10px;padding:6px 12px;background:#fff;border-bottom:1px solid var(--bd)}
   #header img{height:36px}
   .header-text{display:flex;flex-direction:column;line-height:1.1}
   .line1{font-weight:800;font-size:14px;text-transform:uppercase}
   .line2,.line3{font-weight:700;font-size:13px}
-  /* Topbar */
-  .top{position:fixed;top:var(--Hpx);left:0;right:0;z-index:900;display:flex;align-items:center;gap:8px;
-    padding:8px 12px;background:#fff;border-bottom:1px solid var(--bd);flex-wrap:wrap}
+  .top{position:fixed;top:var(--Hpx);left:0;right:0;z-index:900;display:flex;align-items:center;gap:8px;padding:8px 12px;background:#fff;border-bottom:1px solid var(--bd);flex-wrap:wrap}
   .pill{padding:6px 10px;border:1px solid #dcdcdc;border-radius:999px;background:#fff;cursor:pointer;font-size:13px}
   .pill:hover{background:#f6f6f6}
   .muted{color:#666;font-size:12px}
-  /* Search */
   .search{position:relative;display:flex;align-items:center;gap:6px}
   .search input{padding:6px 8px;border:1px solid #ccc;border-radius:8px;min-width:220px}
-  .suggestions{position:absolute;top:36px;left:0;background:#fff;border:1px solid #ccc;border-radius:8px;box-shadow:var(--shadow);
-    max-height:220px;overflow:auto;z-index:1000;min-width:220px}
+  .suggestions{position:absolute;top:36px;left:0;background:#fff;border:1px solid #ccc;border-radius:8px;box-shadow:var(--shadow);max-height:220px;overflow:auto;z-index:1000;min-width:220px}
   .suggestions div{padding:8px 10px;cursor:pointer}
   .suggestions div:hover{background:#f0f0f0}
-  /* Map */
   #map{position:absolute;top:calc(var(--Hpx) + var(--Tpx));left:0;right:0;bottom:0}
-  /* Widgets */
-  .panel{position:absolute;right:10px;bottom:10px;width:340px;background:rgba(255,255,255,.96);
-    border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--shadow);padding:10px 12px;font-size:13px;z-index:800}
+  .panel{position:absolute;right:10px;bottom:10px;width:340px;background:rgba(255,255,255,.96);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--shadow);padding:10px 12px;font-size:13px;z-index:800}
   .panel h3{margin:4px 0 8px}
   .legend{margin:8px 0}
   .legend .row{display:flex;align-items:center;gap:8px;margin:4px 0}
   .sw{width:22px;height:12px;border:1px solid #777;border-radius:3px}
-  .infobox{position:absolute;left:10px;bottom:10px;background:rgba(255,255,255,.9);border:1px solid var(--bd);
-    border-radius:var(--r);box-shadow:var(--shadow);padding:6px 8px;font-size:11px;z-index:800}
+  .infobox{position:absolute;left:10px;bottom:10px;background:rgba(255,255,255,.9);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--shadow);padding:6px 8px;font-size:11px;z-index:800}
   .source-note{color:#666;font-size:12px;margin-left:4px}
   @media(max-width:740px){.panel{width:calc(100% - 20px);left:10px;right:10px}}
 </style>
 </head>
 <body>
-<!-- Header -->
 <div id="header">
   <img src="https://iconape.com/wp-content/png_logo_vector/pu-logo.png" alt="Logo PU">
   <div class="header-text">
@@ -56,7 +45,6 @@
   </div>
 </div>
 
-<!-- Topbar -->
 <div class="top" id="topbar">
   <button class="pill" id="btnReset">Reset</button>
   <div class="search">
@@ -69,9 +57,8 @@
 
 <div id="map"></div>
 
-<!-- Sumber & Legend -->
 <div class="infobox">
-  <b>Sumber:</b> BPS (2024) & SIGI PU (WADMPR – boundary provinsi).<br/>
+  <b>Sumber:</b> BPS (2024) & Boundary (GeoJSON raw GitHub).<br/>
   <span style="color:#555">Angka produksi: ton GKG</span>
 </div>
 
@@ -86,25 +73,25 @@
 
 <script>
 /* ===== Konfigurasi ===== */
-/* Endpoint baru SIGI: /portalpu/ */
+// pakai file kamu sendiri (anti-CORS)
 const PROV_GEOJSON_URL =
-  "https://sigi.pu.go.id/portalpu/rest/services/Hosted/Polygon_Admin__SimplifyPolyg/FeatureServer/1/query?where=1%3D1&outFields=WADMPR&outSR=4326&f=geojson";
+  "https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/padi/Polygon_Admin__SimplifyPolyg.geojson";
 
-/* CSV RAW GitHub kamu */
-const CSV_URL =
-  "https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/padi/produksi_padi_2024_BPS_per_provinsi.csv";
+// CSV default: 38 prov. Bisa switch ke BPS via query `?csv=bps`
+const CSV_38 = "https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/padi/produksi_padi_2024_38prov.csv";
+const CSV_BPS = "https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/padi/produksi_padi_2024_BPS_per_provinsi.csv";
+const useBps = /[?&]csv=bps\b/i.test(location.search);
+const CSV_URL = useBps ? CSV_BPS : CSV_38;
 
 const TAHUN_DATA = "2024";
 
 /* ===== Layout dinamis ===== */
-function syncOffsets(){
-  const h=document.getElementById('header').offsetHeight;
-  const t=document.getElementById('topbar').offsetHeight;
+function syncOffsets(){ const h=header.offsetHeight, t=topbar.offsetHeight;
   document.documentElement.style.setProperty('--Hpx', h+'px');
   document.documentElement.style.setProperty('--Tpx', t+'px');
 }
-window.addEventListener('load', syncOffsets);
-window.addEventListener('resize', syncOffsets);
+addEventListener('load', syncOffsets);
+addEventListener('resize', syncOffsets);
 
 /* ===== Map ===== */
 const map=L.map('map',{minZoom:3,maxZoom:18});
@@ -112,11 +99,11 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© Op
 map.fitBounds([[-11,94],[6,141]]);
 
 /* ===== Util ===== */
+function withBuster(url){ const sep=url.includes("?")?"&":"?"; return `${url}${sep}t=${Date.now()}`; }
+
 function normName(s){
   if(!s) return "";
-  s = String(s).toLowerCase().normalize("NFKD")
-      .replace(/[\u0300-\u036f]/g,"")
-      .replace(/\s+/g," ").trim();
+  s = String(s).toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," ").trim();
   s = s.replace(/^provinsi\s+/,"");
   s = s.replace(/^dki jakarta.*$/,"dki jakarta");
   s = s.replace(/^daerah khusus ibukota jakarta.*$/,"dki jakarta");
@@ -124,6 +111,8 @@ function normName(s){
   s = s.replace(/^daerah istimewa yogyakarta.*$/,"di yogyakarta");
   s = s.replace(/^kep(\.|)\s*riau$/,"kepulauan riau");
   s = s.replace(/^kep(\.|)\s*bangka belitung$/,"kepulauan bangka belitung");
+  // alias pemekaran Papua (kalau CSV/GeoJSON beda)
+  s = s.replace(/^papua barat daya$/,"papua barat daya");
   return s;
 }
 function getPropCI(props, candidates){
@@ -132,16 +121,11 @@ function getPropCI(props, candidates){
     const hit = keys.find(k => k.toLowerCase()===cand.toLowerCase());
     if(hit && props[hit]!=null) return props[hit];
   }
-  const like = keys.find(k => /prov|wadmpr|wadmprov|name_?1|namobj/i.test(k));
+  const like = keys.find(k => /prov|wadmpr|wadmprov|name_?1|namobj|propinsi|propinsi/i.test(k));
   return like ? props[like] : "";
 }
-function provKey(props){
-  const raw = getPropCI(props, ["WADMPR","wadmpr","provinsi","WADMPROV","wadmprov","NAME_1","name_1","NAMOBJ","namobj"]);
-  return normName(raw);
-}
-function provPretty(props){
-  return getPropCI(props, ["WADMPR","wadmpr","provinsi","WADMPROV","wadmprov","NAME_1","name_1","NAMOBJ","namobj"]) || "(tanpa nama)";
-}
+function provKey(props){ const raw = getPropCI(props, ["WADMPR","wadmpr","provinsi","NAME_1","name_1","NAMOBJ","namobj","Propinsi","PROPINSI","name"]); return normName(raw); }
+function provPretty(props){ return getPropCI(props, ["WADMPR","wadmpr","provinsi","NAME_1","name_1","NAMOBJ","namobj","Propinsi","PROPINSI","name"]) || "(tanpa nama)"; }
 function num(x){const n=Number(x); return isFinite(n)?n:null;}
 function fmt(n){return (n==null)?"—":Number(n).toLocaleString('id-ID');}
 
@@ -154,31 +138,15 @@ function makeColorScale(values){
   const colors=["#eef5ff","#c7dbff","#8fb3ff","#4c86ff","#1d4ed8"];
   return {stops,colors};
 }
-function colorFor(x,scale){
-  if(x==null) return "#eee";
-  const s=scale.stops,c=scale.colors;
-  return x<=s[0]?c[0]:x<=s[1]?c[1]:x<=s[2]?c[2]:x<=s[3]?c[3]:c[4];
-}
+function colorFor(x,scale){ if(x==null) return "#eee"; const s=scale.stops,c=scale.colors; return x<=s[0]?c[0]:x<=s[1]?c[1]:x<=s[2]?c[2]:x<=s[3]?c[3]:c[4]; }
 function buildLegend(scale){
   const el=document.getElementById('legend'); el.innerHTML="";
-  const s=scale.stops;
-  const labels=[
-    `≤ ${fmt(s[0])}`,
-    `${fmt(s[0])} – ${fmt(s[1])}`,
-    `${fmt(s[1])} – ${fmt(s[2])}`,
-    `${fmt(s[2])} – ${fmt(s[3])}`,
-    `≥ ${fmt(s[3])}`
-  ];
-  scale.colors.forEach((c,i)=>{
-    const row=document.createElement('div'); row.className="row";
-    row.innerHTML = `<div class="sw" style="background:${c}"></div><div>${labels[i]}</div>`;
-    el.appendChild(row);
-  });
+  const s=scale.stops, labels=[`≤ ${fmt(s[0])}`,`${fmt(s[0])} – ${fmt(s[1])}`,`${fmt(s[1])} – ${fmt(s[2])}`,`${fmt(s[2])} – ${fmt(s[3])}`,`≥ ${fmt(s[3])}`];
+  scale.colors.forEach((c,i)=>{ const row=document.createElement('div'); row.className="row"; row.innerHTML=`<div class="sw" style="background:${c}"></div><div>${labels[i]}</div>`; el.appendChild(row); });
 }
 
 /* ===== Data ===== */
 let dataMap=new Map(), provLayer=null, scale=null, provinsiList=[];
-function withBuster(url){ const sep=url.includes("?")?"&":"?"; return `${url}${sep}t=${Date.now()}`; }
 
 async function loadCSV(){
   return new Promise((resolve)=>{
@@ -186,44 +154,37 @@ async function loadCSV(){
       download:true, header:true, dynamicTyping:true,
       complete:(res)=>{
         try{
-          if(!res.data || !res.data.length) throw new Error("CSV kosong/kolom tidak cocok");
-          const headerOk = res.meta?.fields?.some(f=>f.toLowerCase()=="provinsi")
-                        && res.meta?.fields?.some(f=>f.toLowerCase()=="produksi_gkg_ton");
-          if(!headerOk) throw new Error("Header CSV harus: provinsi,produksi_gkg_ton");
+          const fields=(res.meta&&res.meta.fields)||[];
+          if(!res.data?.length) throw new Error("CSV kosong");
+          // deteksi kolom
+          const provCol = fields.find(f=>/prov/i.test(f)) || "provinsi";
+          let prodCol = fields.find(f=>/produksi.*gkg|gkg|ton/i.test(f)) || "produksi_gkg_ton";
+          // isi map
           res.data.forEach(r=>{
-            const key=normName(r.provinsi);
-            if(key) dataMap.set(key, num(r.produksi_gkg_ton));
+            const key = normName(r[provCol]);
+            const val = num(r[prodCol]);
+            if(key) dataMap.set(key, val);
           });
           status.textContent = "CSV OK, memuat boundary…";
           resolve("csv-ok");
         }catch(e){
-          status.textContent = "CSV gagal/kolom tidak cocok (cek header & isi)";
+          status.textContent = "CSV gagal/kolom tidak cocok (cek header)";
           console.warn("CSV issue:", e, res);
           resolve("csv-fail");
         }
       },
-      error:(err)=>{
-        status.textContent = "Gagal mengunduh CSV (cek URL/CORS)";
-        console.warn("CSV error:", err);
-        resolve("csv-fail");
-      }
+      error:(err)=>{ status.textContent="Gagal unduh CSV"; console.warn(err); resolve("csv-fail"); }
     });
   });
 }
 
 async function loadGeoJSON(){
   const r=await fetch(withBuster(PROV_GEOJSON_URL));
-  if(!r.ok) throw new Error("Gagal fetch boundary SIGI");
-  const txt = await r.text();
-  try{
-    const json = JSON.parse(txt);
-    if(!json.features || !json.features.length) throw new Error("Boundary kosong / features[] tidak ada");
-    console.log("Sample boundary property keys:", Object.keys(json.features[0].properties||{}));
-    return json;
-  }catch(e){
-    console.error("Response bukan GeoJSON valid. Cuplikan:", txt.slice(0,200));
-    throw e;
-  }
+  if(!r.ok) throw new Error("Gagal fetch boundary (raw GitHub?)");
+  const json = await r.json();
+  if(!json.features?.length) throw new Error("Boundary kosong / features tidak ada");
+  console.log("Boundary keys:", Object.keys(json.features[0].properties||{}));
+  return json;
 }
 
 /* ===== Interaksi layer ===== */
@@ -254,7 +215,7 @@ async function init(){
 
     provLayer=L.geoJSON(gj,{
       style:f=>{
-        const key=provKey(f.properties);       // normalized
+        const key=provKey(f.properties);
         const val=dataMap.get(key);
         if(val!=null) matched++; else missing.push(provPretty(f.properties));
         return {color:'#fff',weight:1,fillColor:colorFor(val,scale),fillOpacity:0.8};
@@ -270,7 +231,7 @@ async function init(){
     const total = gj.features.length;
     const unmatch = Math.max(0, total - matched);
     status.textContent = (csvMode==="csv-ok")
-      ? `Siap • Match: ${matched}/${total} • Unmatch: ${unmatch}`
+      ? `Siap • Match: ${matched}/${total} • Unmatch: ${unmatch} • Dataset: ${useBps?'BPS':'38 prov'}`
       : `Siap (cek CSV untuk pewarnaan akurat)`;
 
     if(csvMode==="csv-ok" && missing.length){
@@ -289,7 +250,7 @@ function doSearch(text){
   const target = normName(text||"");
   if(!provLayer) return;
   provLayer.eachLayer(l=>{
-    const n = provKey(l.feature.properties); // normalized
+    const n = provKey(l.feature.properties);
     if(n===target) found=l;
   });
   if(found){
@@ -298,8 +259,7 @@ function doSearch(text){
   }else alert("Provinsi tidak ditemukan");
 }
 function showSuggestions(val){
-  const box=document.getElementById("suggestions");
-  box.innerHTML="";
+  const box=document.getElementById("suggestions"); box.innerHTML="";
   if(!val){ box.style.display="none"; return; }
   const v=val.toLowerCase();
   const hits = provinsiList.filter(p=>p.toLowerCase().includes(v)).slice(0,12);
@@ -307,22 +267,14 @@ function showSuggestions(val){
   hits.forEach(name=>{
     const div=document.createElement("div");
     div.textContent=name;
-    div.onclick=()=>{
-      document.getElementById("q").value=name;
-      box.style.display="none";
-      doSearch(name);
-    };
+    div.onclick=()=>{ q.value=name; box.style.display="none"; doSearch(name); };
     box.appendChild(div);
   });
   box.style.display="block";
 }
 btnCari.onclick=()=> doSearch(q.value);
 btnReset.onclick=()=> map.fitBounds([[-11,94],[6,141]]);
-document.addEventListener('click',(e)=>{
-  if(!document.querySelector('.search').contains(e.target)){
-    document.getElementById('suggestions').style.display='none';
-  }
-});
+addEventListener('click',(e)=>{ if(!document.querySelector('.search').contains(e.target)){ suggestions.style.display='none'; }});
 </script>
 </body>
 </html>
