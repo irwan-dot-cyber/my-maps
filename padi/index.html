@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="utf-8"/>
-<title>PU • Produksi Padi per Provinsi (BPS 2024)</title>
+<title>PUPR • Produksi Padi per Provinsi (BPS 2024)</title>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -10,21 +10,26 @@
 <style>
   :root{--Hpx:60px;--Tpx:60px;--bd:#eee;--r:12px;--shadow:0 6px 22px rgba(0,0,0,.08);--font:system-ui,Segoe UI,Roboto,Arial}
   html,body{height:100%;margin:0;font-family:var(--font)}
+  /* Header */
   #header{position:fixed;top:0;left:0;right:0;z-index:900;display:flex;align-items:center;gap:10px;padding:6px 12px;background:#fff;border-bottom:1px solid var(--bd)}
   #header img{height:36px}
   .header-text{display:flex;flex-direction:column;line-height:1.1}
   .line1{font-weight:800;font-size:14px;text-transform:uppercase}
   .line2,.line3{font-weight:700;font-size:13px}
+  /* Topbar */
   .top{position:fixed;top:var(--Hpx);left:0;right:0;z-index:900;display:flex;align-items:center;gap:8px;padding:8px 12px;background:#fff;border-bottom:1px solid var(--bd);flex-wrap:wrap}
   .pill{padding:6px 10px;border:1px solid #dcdcdc;border-radius:999px;background:#fff;cursor:pointer;font-size:13px}
   .pill:hover{background:#f6f6f6}
   .muted{color:#666;font-size:12px}
+  /* Search */
   .search{position:relative;display:flex;align-items:center;gap:6px}
   .search input{padding:6px 8px;border:1px solid #ccc;border-radius:8px;min-width:220px}
   .suggestions{position:absolute;top:36px;left:0;background:#fff;border:1px solid #ccc;border-radius:8px;box-shadow:var(--shadow);max-height:220px;overflow:auto;z-index:1000;min-width:220px}
   .suggestions div{padding:8px 10px;cursor:pointer}
   .suggestions div:hover{background:#f0f0f0}
+  /* Map */
   #map{position:absolute;top:calc(var(--Hpx) + var(--Tpx));left:0;right:0;bottom:0}
+  /* Widgets */
   .panel{position:absolute;right:10px;bottom:10px;width:340px;background:rgba(255,255,255,.96);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--shadow);padding:10px 12px;font-size:13px;z-index:800}
   .panel h3{margin:4px 0 8px}
   .legend{margin:8px 0}
@@ -36,6 +41,7 @@
 </style>
 </head>
 <body>
+<!-- Header -->
 <div id="header">
   <img src="https://iconape.com/wp-content/png_logo_vector/pu-logo.png" alt="Logo PU">
   <div class="header-text">
@@ -45,6 +51,7 @@
   </div>
 </div>
 
+<!-- Topbar -->
 <div class="top" id="topbar">
   <button class="pill" id="btnReset">Reset</button>
   <div class="search">
@@ -57,8 +64,9 @@
 
 <div id="map"></div>
 
+<!-- Sumber & Legend -->
 <div class="infobox">
-  <b>Sumber:</b> BPS (2024) & Boundary (GeoJSON dari repo ini).<br/>
+  <b>Sumber:</b> BPS (2024) & Boundary (GeoJSON repo ini).<br/>
   <span style="color:#555">Angka produksi: ton GKG</span>
 </div>
 
@@ -72,16 +80,15 @@
 </div>
 
 <script>
-/* ===== Konfigurasi (pakai file lokal—anti CORS/TLS) ===== */
+/* ===== Konfigurasi: file lokal (anti-CORS) ===== */
 const PROV_GEOJSON_URL = "Polygon_Admin__SimplifyPolyg.geojson";
-const CSV_BPS = "produksi_padi_2024_BPS_per_provinsi.csv";
-const useBps = /[?&]csv=bps\b/i.test(location.search);
-const CSV_URL = useBps ? CSV_BPS : CSV_38;
+const CSV_URL = "produksi_padi_2024_BPS_per_provinsi.csv"; // <- pakai BPS saja
 const TAHUN_DATA = "2024";
 
 /* ===== Layout ===== */
 function syncOffsets(){
-  const h=header.offsetHeight, t=topbar.offsetHeight;
+  const h=document.getElementById('header').offsetHeight;
+  const t=document.getElementById('topbar').offsetHeight;
   document.documentElement.style.setProperty('--Hpx', h+'px');
   document.documentElement.style.setProperty('--Tpx', t+'px');
 }
@@ -96,19 +103,25 @@ map.fitBounds([[-11,94],[6,141]]);
 /* ===== Util ===== */
 function withBuster(url){ const sep=url.includes("?")?"&":"?"; return `${url}${sep}t=${Date.now()}`; }
 
+/* angka: string kosong -> null (bukan 0), dukung format ribuan/koma */
 function num(x){
   if (x === null || x === undefined) return null;
   if (typeof x === "number") return isFinite(x) ? x : null;
   let s = String(x).trim();
-  if (s === "") return null; // jangan jadikan 0
-  s = s.replace(/\s/g,"").replace(/[^0-9,.\-]/g,"")
-       .replace(/\.(?=\d{3}(\D|$))/g,"").replace(/,/g,".");
+  if (s === "") return null;
+  s = s.replace(/\s/g,"")
+       .replace(/[^0-9,.\-]/g,"")
+       .replace(/\.(?=\d{3}(\D|$))/g,"")  // hapus ribuan 1.234.567 -> 1234567
+       .replace(/,/g,".");
   const n = Number(s);
   return isFinite(n) ? n : null;
 }
+
 function normName(s){
   if(!s) return "";
-  s = String(s).toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g," ").trim();
+  s = String(s).toLowerCase().normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g,"")
+      .replace(/\s+/g," ").trim();
   s = s.replace(/^provinsi\s+/,"");
   s = s.replace(/^dki jakarta.*$/,"dki jakarta");
   s = s.replace(/^daerah khusus ibukota jakarta.*$/,"dki jakarta");
@@ -122,6 +135,7 @@ function normName(s){
   s = s.replace(/^papua pegunungan$/,"papua pegunungan");
   return s;
 }
+
 function getPropCI(props, candidates){
   const keys = Object.keys(props||{});
   for(const cand of candidates){
@@ -131,11 +145,16 @@ function getPropCI(props, candidates){
   const like = keys.find(k => /prov|wadmpr|wadmprov|name_?1|namobj|propinsi|name/i.test(k));
   return like ? props[like] : "";
 }
-function provKey(props){ const raw = getPropCI(props, ["WADMPR","wadmpr","provinsi","NAME_1","name_1","NAMOBJ","namobj","Propinsi","PROPINSI","name"]); return normName(raw); }
-function provPretty(props){ return getPropCI(props, ["WADMPR","wadmpr","provinsi","NAME_1","name_1","NAMOBJ","namobj","Propinsi","PROPINSI","name"]) || "(tanpa nama)"; }
+function provKey(props){
+  const raw = getPropCI(props, ["WADMPR","wadmpr","provinsi","NAME_1","name_1","NAMOBJ","namobj","Propinsi","PROPINSI","name"]);
+  return normName(raw);
+}
+function provPretty(props){
+  return getPropCI(props, ["WADMPR","wadmpr","provinsi","NAME_1","name_1","NAMOBJ","namobj","Propinsi","PROPINSI","name"]) || "(tanpa nama)";
+}
 function fmt(n){return (n==null)?"—":Number(n).toLocaleString('id-ID');}
 
-/* ===== Skala/Legenda ===== */
+/* ===== Skala warna & legenda ===== */
 function makeColorScale(values){
   const v=values.filter(x=>x!=null).sort((a,b)=>a-b);
   if(!v.length) return {stops:[0,1,2,3,4],colors:["#eee","#c7dbff","#8fb3ff","#4c86ff","#1d4ed8"]};
@@ -144,11 +163,26 @@ function makeColorScale(values){
   const colors=["#eef5ff","#c7dbff","#8fb3ff","#4c86ff","#1d4ed8"];
   return {stops,colors};
 }
-function colorFor(x,scale){ if(x==null) return "#eee"; const s=scale.stops,c=scale.colors; return x<=s[0]?c[0]:x<=s[1]?c[1]:x<=s[2]?c[2]:x<=s[3]?c[3]:c[4]; }
+function colorFor(x,scale){
+  if(x==null) return "#eee";
+  const s=scale.stops,c=scale.colors;
+  return x<=s[0]?c[0]:x<=s[1]?c[1]:x<=s[2]?c[2]:x<=s[3]?c[3]:c[4];
+}
 function buildLegend(scale){
   const el=document.getElementById('legend'); el.innerHTML="";
-  const s=scale.stops, labels=[`≤ ${fmt(s[0])}`,`${fmt(s[0])} – ${fmt(s[1])}`,`${fmt(s[1])} – ${fmt(s[2])}`,`${fmt(s[2])} – ${fmt(s[3])}`,`≥ ${fmt(s[3])}`];
-  scale.colors.forEach((c,i)=>{ const row=document.createElement('div'); row.className="row"; row.innerHTML=`<div class="sw" style="background:${c}"></div><div>${labels[i]}</div>`; el.appendChild(row); });
+  const s=scale.stops;
+  const labels=[
+    `≤ ${fmt(s[0])}`,
+    `${fmt(s[0])} – ${fmt(s[1])}`,
+    `${fmt(s[1])} – ${fmt(s[2])}`,
+    `${fmt(s[2])} – ${fmt(s[3])}`,
+    `≥ ${fmt(s[3])}`
+  ];
+  scale.colors.forEach((c,i)=>{
+    const row=document.createElement('div'); row.className="row";
+    row.innerHTML = `<div class="sw" style="background:${c}"></div><div>${labels[i]}</div>`;
+    el.appendChild(row);
+  });
 }
 
 /* ===== Data ===== */
@@ -235,7 +269,7 @@ async function init(){
     const total = gj.features.length;
     const unmatch = Math.max(0, total - matched);
     status.textContent = (csvMode==="csv-ok")
-      ? `Siap • Match: ${matched}/${total} • Unmatch: ${unmatch} • Dataset: ${useBps?'BPS':'38 prov'}`
+      ? `Siap • Match: ${matched}/${total} • Unmatch: ${unmatch} • Dataset: BPS`
       : `Siap (cek CSV untuk pewarnaan akurat)`;
 
     if(csvMode==="csv-ok" && missing.length){
