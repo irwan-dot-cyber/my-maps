@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Survey123 Lite — Form + Peta</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-o9N1j7kGStb6xHf1gYbM7VYAu6GkZ5dUXwX3Qf0Qh3s=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o9N1j7kGStb6xHf1gYbM7VYAu6GkZ5dUXwX3Qf0Qh3s=" crossorigin=""></script>
+  <style>
+    :root { --bg:#0f172a; --card:#111827; --muted:#94a3b8; --brand:#22c55e; }
+    *{box-sizing:border-box} body{margin:0;font-family:system-ui,Segoe UI,Roboto,Ubuntu,Arial;background:var(--bg);color:#e5e7eb}
+    header{padding:16px 20px;border-bottom:1px solid #1f2937;background:#0b1224;position:sticky;top:0;z-index:10}
+    main{display:grid;grid-template-columns:1.1fr 1fr;gap:16px;padding:16px}
+    #map{height:70vh;border-radius:14px;overflow:hidden;border:1px solid #1f2937}
+    .card{background:var(--card);border:1px solid #1f2937;border-radius:14px;overflow:hidden}
+    .card h2{margin:0;padding:14px 16px;border-bottom:1px solid #1f2937;font-size:18px}
+    form{padding:14px 16px;display:grid;gap:10px}
+    label{font-size:12px;color:var(--muted)}
+    input, select, textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #334155;background:#0b1224;color:#e5e7eb}
+    textarea{min-height:84px;resize:vertical}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .actions{display:flex;gap:10px;margin-top:6px}
+    button{cursor:pointer;border:0;padding:10px 14px;border-radius:10px}
+    .primary{background:var(--brand);color:#001b0a;font-weight:600}
+    .ghost{background:#0b1224;color:#e5e7eb;border:1px solid #334155}
+    .hint{font-size:12px;color:var(--muted)}
+    .toast{margin:12px 16px;padding:10px 12px;border-radius:10px;background:#052e1a;border:1px solid #14532d;color:#bbf7d0;display:none}
+    @media (max-width: 980px){ main{grid-template-columns:1fr;}
+      #map{height:50vh}}
+  </style>
+</head>
+<body>
+  <header>
+    <strong>Survey123 Lite</strong>
+    <span class="hint">&nbsp;• klik peta untuk set titik, atau pakai tombol "Lokasi saya"</span>
+  </header>
+
+  <main>
+    <div class="card">
+      <h2>Peta</h2>
+      <div id="map"></div>
+      <div style="padding:10px 16px;display:flex;gap:8px;align-items:center">
+        <button id="btnLocate" class="ghost">📍 Lokasi saya</button>
+        <button id="btnClear" class="ghost">🧹 Clear marker</button>
+        <span class="hint" id="coords">Lat: -, Lng: -, Acc: -</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Form Input</h2>
+      <div id="toast" class="toast"></div>
+      <form id="surveyForm">
+        <div>
+          <label>Nama pelapor</label>
+          <input name="reporter" placeholder="Nama lengkap" required />
+        </div>
+        <div class="row">
+          <div>
+            <label>Kategori</label>
+            <select name="category" required>
+              <option value="">-- pilih --</option>
+              <option>Jalan</option>
+              <option>Jembatan</option>
+              <option>Drainase</option>
+              <option>Bangunan</option>
+              <option>Lainnya</option>
+            </select>
+          </div>
+          <div>
+            <label>Tingkat keparahan</label>
+            <select name="severity" required>
+              <option value="">-- pilih --</option>
+              <option value="1">1 (ringan)</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5 (berat)</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label>Uraian singkat</label>
+          <textarea name="notes" placeholder="Deskripsi kondisi / catatan"></textarea>
+        </div>
+        <div>
+          <label>Foto (opsional)</label>
+          <input type="file" accept="image/*" capture="environment" name="photo" />
+          <div class="hint">Ambil foto lapangan. Akan dikompresi otomatis sebelum dikirim.</div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Latitude</label>
+            <input id="lat" name="lat" readonly placeholder="klik peta / lokasi saya" />
+          </div>
+          <div>
+            <label>Longitude</label>
+            <input id="lng" name="lng" readonly />
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Accuracy (m)</label>
+            <input id="acc" name="accuracy" readonly />
+          </div>
+          <div>
+            <label>Waktu</label>
+            <input id="ts" name="timestamp" readonly />
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="primary">Kirim</button>
+          <button type="reset" class="ghost">Reset</button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    // ====== KONFIG ======
+    const CONFIG = {
+      // Ganti dengan URL Web App Google Apps Script kamu (Deploy > Web app, akses: Anyone)
+      APPS_SCRIPT_URL: 'PASTE_YOUR_APPS_SCRIPT_WEBAPP_URL_HERE'
+    };
+
+    // ====== PETA ======
+    const map = L.map('map', { zoomControl: true });
+    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 20, attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+    map.setView([-2.5, 118], 5);
+
+    let marker = null;
+    let accuracy = null;
+
+    function setPoint(lat, lng) {
+      if (!marker) {
+        marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+        marker.on('dragend', () => {
+          const pos = marker.getLatLng();
+          updateForm(pos.lat, pos.lng, accuracy);
+        });
+      } else {
+        marker.setLatLng([lat, lng]);
+      }
+      map.setView([lat, lng], Math.max(map.getZoom(), 16));
+      updateForm(lat, lng, accuracy);
+    }
+
+    function updateForm(lat, lng, acc) {
+      document.getElementById('lat').value = lat.toFixed(6);
+      document.getElementById('lng').value = lng.toFixed(6);
+      document.getElementById('acc').value = acc ? Math.round(acc) : '';
+      document.getElementById('ts').value = new Date().toISOString();
+      document.getElementById('coords').textContent = `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}, Acc: ${acc?Math.round(acc):'-'} m`;
+    }
+
+    map.on('click', (e) => {
+      accuracy = null;
+      setPoint(e.latlng.lat, e.latlng.lng);
+    });
+
+    document.getElementById('btnLocate').addEventListener('click', () => {
+      map.locate({ setView: true, maxZoom: 17, enableHighAccuracy: true });
+    });
+    document.getElementById('btnClear').addEventListener('click', () => {
+      if (marker) { map.removeLayer(marker); marker = null; }
+      document.getElementById('lat').value = '';
+      document.getElementById('lng').value = '';
+      document.getElementById('acc').value = '';
+      document.getElementById('coords').textContent = 'Lat: -, Lng: -, Acc: -';
+    });
+
+    map.on('locationfound', (e) => {
+      accuracy = e.accuracy;
+      setPoint(e.latlng.lat, e.latlng.lng);
+    });
+    map.on('locationerror', () => toast('❌ Izin lokasi ditolak. Klik peta untuk set titik.'));
+
+    // ====== UTIL FOTO (kompres ke base64) ======
+    async function fileToBase64Compressed(file, maxSizePx = 1600, quality = 0.8) {
+      if (!file) return null;
+      const img = new Image();
+      const dataUrl = await new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(fr.result);
+        fr.onerror = reject;
+        fr.readAsDataURL(file);
+      });
+      img.src = dataUrl;
+      await img.decode();
+      const canvas = document.createElement('canvas');
+      let { width, height } = img;
+      const scale = Math.min(1, maxSizePx / Math.max(width, height));
+      width = Math.round(width * scale); height = Math.round(height * scale);
+      canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      const out = canvas.toDataURL('image/jpeg', quality);
+      return out; // data:image/jpeg;base64,...
+    }
+
+    // ====== SUBMIT ======
+    const form = document.getElementById('surveyForm');
+    function toast(msg, ok=false){
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.style.display = 'block';
+      t.style.background = ok ? '#052e1a' : '#3f1f1f';
+      t.style.borderColor = ok ? '#14532d' : '#7f1d1d';
+      t.style.color = ok ? '#bbf7d0' : '#fecaca';
+      setTimeout(()=> t.style.display='none', 5000);
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const lat = parseFloat(fd.get('lat'));
+      const lng = parseFloat(fd.get('lng'));
+      if (Number.isNaN(lat) || Number.isNaN(lng)) { toast('Titik belum dipilih. Klik peta atau pakai "Lokasi saya".'); return; }
+
+      const photoFile = fd.get('photo');
+      const photoB64 = photoFile && photoFile.size ? await fileToBase64Compressed(photoFile, 1600, 0.8) : null;
+
+      const payload = {
+        timestamp: new Date().toISOString(),
+        reporter: fd.get('reporter')?.trim() || '',
+        category: fd.get('category') || '',
+        severity: fd.get('severity') || '',
+        notes: fd.get('notes')?.trim() || '',
+        lat, lng, accuracy: parseFloat(fd.get('accuracy')) || null,
+        photo: photoB64, photoFilename: photoFile?.name || null,
+        userAgent: navigator.userAgent
+      };
+
+      try {
+        if (!CONFIG.APPS_SCRIPT_URL || CONFIG.APPS_SCRIPT_URL.includes('PASTE')) {
+          console.warn('APPS_SCRIPT_URL belum diisi. Payload:', payload);
+          toast('Simulasi kirim (URL backend belum diisi). Lihat console untuk payload.');
+          return;
+        }
+        const res = await fetch(CONFIG.APPS_SCRIPT_URL, {
+          method: 'POST',
+          // Gunakan text/plain agar tidak perlu preflight CORS di Apps Script
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+        const txt = await res.text();
+        let data = {};
+        try { data = JSON.parse(txt); } catch {}
+        if (res.ok && (data.ok || data.result === 'success')) {
+          toast('✅ Laporan tersimpan. Terima kasih!', true);
+          form.reset();
+        } else {
+          toast('Gagal menyimpan. Coba lagi.');
+          console.error('Backend response:', txt);
+        }
+      } catch (err) {
+        console.error(err);
+        toast('Jaringan/Server error. Coba lagi.');
+      }
+    });
+  </script>
+
+  <!-- 
+  ================= GOOGLE APPS SCRIPT (BACKEND) =================
+  1) Buat Google Sheet, catat Sheet ID dan nama sheet (misal: "Form").
+  2) Buat folder di Drive untuk foto; ambil Folder ID.
+  3) Apps Script (Code.gs) — paste kode di bawah, ganti SHEET_ID, SHEET_NAME, FOLDER_ID.
+  4) Deploy > New deployment > type: Web app > Who has access: Anyone
+     Salin URL dan tempel ke CONFIG.APPS_SCRIPT_URL di atas.
+  ----------------------------------------------------------------
+  const SHEET_ID = 'PASTE_SHEET_ID';
+  const SHEET_NAME = 'Form';
+  const FOLDER_ID = 'PASTE_DRIVE_FOLDER_ID';
+
+  function doPost(e) {
+    try {
+      const payload = JSON.parse(e.postData.contents || '{}');
+      const ss = SpreadsheetApp.openById(SHEET_ID);
+      const sh = ss.getSheetByName(SHEET_NAME) || ss.getSheets()[0];
+
+      let photoUrl = '';
+      if (payload.photo) {
+        const parts = payload.photo.split(',');
+        const meta = parts[0];
+        const base64 = parts[1];
+        const contentType = (meta.match(/data:(.*);base64/) || [,'image/jpeg'])[1];
+        const bytes = Utilities.base64Decode(base64);
+        const name = (payload.photoFilename || ('foto_'+Date.now()+'.jpg')).replace(/[^\w.\-]/g,'_');
+        const blob = Utilities.newBlob(bytes, contentType, name);
+        const folder = DriveApp.getFolderById(FOLDER_ID);
+        const file = folder.createFile(blob);
+        photoUrl = file.getUrl();
+      }
+
+      sh.appendRow([
+        new Date(), payload.reporter, payload.category, payload.severity, payload.notes,
+        payload.lat, payload.lng, payload.accuracy, photoUrl, payload.userAgent
+      ]);
+
+      return ContentService.createTextOutput(JSON.stringify({ ok: true, photoUrl }))
+        .setMimeType(ContentService.MimeType.JSON);
+    } catch (err) {
+      return ContentService.createTextOutput(JSON.stringify({ ok:false, error: String(err) }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+  -->
+</body>
+</html>
