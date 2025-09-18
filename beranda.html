@@ -88,12 +88,17 @@
 
     <!-- HERO banner / instagram-like post -->
     <article class="hero">
-      <div class="media">
-        <img src="assets/hero.jpg" alt="Bendung / tampak udara infrastruktur irigasi" />
+      <div class="media ig-embed" style="display:grid;place-items:center">
+        <blockquote class="instagram-media"
+          data-instgrm-permalink="https://www.instagram.com/p/DN8POAhkjSb/?img_index=2"
+          data-instgrm-version="14" data-instgrm-captioned
+          style="background:#fff;border:0;margin:0 auto;max-width:540px;width:100%">
+        </blockquote>
       </div>
       <div class="caption">
-        <strong>Instruksi Presiden No. 2 Tahun 2025</strong>
-        <div class="muted">Percepatan pembangunan, peningkatan, rehabilitasi, serta operasi dan pemeliharaan jaringan irigasi untuk mendukung swasembada pangan.</div>
+        <strong>Instagram terbaru</strong>
+        <div class="muted">Klik media untuk membuka post asli di Instagram.</div>
+      </div>
       </div>
     </article>
 
@@ -102,31 +107,18 @@
       <div class="muted">Jumlah Pengunjung: <strong id="counter">—</strong></div>
     </footer>
 
-    <div class="sep"></div>
+    
 
     <!-- Placeholder sections (optional) -->
-    <section id="monitoring" class="card">
-      <h2 style="margin:0 0 6px">Monitoring</h2>
-      <p class="muted" style="margin:0">Tautkan ke dashboard (Grafana/Metabase/Leaflet) di sini.</p>
-    </section>
+    
 
-    <section id="form" class="card">
-      <h2 style="margin:0 0 6px">Form Survey</h2>
-      <p class="muted" style="margin:0 0 8px">Buka formulir survei lapangan.</p>
-      <a class="btn frm" href="survey-cascading-map.html"><span>Buka Form</span></a>
-    </section>
+    
 
-    <section id="statistik" class="card">
-      <h2 style="margin:0 0 6px">Statistik</h2>
-      <p class="muted" style="margin:0">Grafik ringkas (akan diisi nanti).</p>
-    </section>
+    
 
-    <section id="rute" class="card">
-      <h2 style="margin:0 0 6px">Rute</h2>
-      <p class="muted" style="margin:0">Tautan peta rute inspeksi / jalur ke lokasi.</p>
-    </section>
+    
   </div>
-
+  <script async src="https://www.instagram.com/embed.js"></script>
   <script>
     // Tahun otomatis
     document.getElementById('year').textContent = new Date().getFullYear();
