@@ -9,10 +9,17 @@
   *{box-sizing:border-box} body{margin:0;background:#0f1115;color:var(--fg);font:500 15px/1.55 system-ui,Segoe UI,Inter,Arial}
   .wrap{max-width:1200px;margin:auto;padding:22px}
   h1{font:800 20px/1.2;margin:0}
-  .formbox{background:#171922;border:1px solid var(--line);border-radius:12px;padding:12px;margin:16px 0;display:flex;flex-wrap:wrap;gap:12px}
+
+  /* form identitas */
+  .formbox{background:#171922;border:1px solid var(--line);border-radius:12px;padding:12px;margin:16px 0;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start}
   .formbox input{flex:1;min-width:180px;padding:10px 12px;border-radius:8px;border:1px solid #26304f;background:#0f1320;color:var(--fg)}
   .btn{border:1px solid #26304f;background:#0f1320;color:#dce6ff;border-radius:10px;padding:10px 14px;cursor:pointer}
   .btn:disabled{opacity:.4;cursor:not-allowed}
+  .hint{font-size:12px;color:#9aa7c7;margin-top:-6px}
+  .error{font-size:12px;color:#ff8a8a;margin-top:-6px;display:none}
+  .oktag{display:none;align-items:center;gap:6px;background:#0c1f12;border:1px solid #1f5f3a;color:#b7ffd2;padding:6px 10px;border-radius:999px}
+
+  /* tabel */
   .card{background:#171922;border:1px solid var(--line);border-radius:14px;padding:10px 12px}
   .table{width:100%;border-collapse:collapse}
   .th,.td{padding:12px;border-bottom:1px solid var(--line);vertical-align:middle}
@@ -24,6 +31,7 @@
   .thumb img{width:100%;height:100%;object-fit:cover}
   .pick{text-align:center;width:90px}
   .disabled-note{font-size:12px;color:#ff9b9b;margin-top:6px}
+
   /* keranjang */
   .cart-panel{position:fixed;inset:0 0 0 auto;max-width:420px;transform:translateX(110%);transition:.25s ease;background:#0f1115;border-left:1px solid #26304f;box-shadow:-10px 0 30px rgba(0,0,0,.5);z-index:50;display:flex;flex-direction:column}
   .cart-panel.open{transform:translateX(0)}
@@ -36,6 +44,11 @@
   .total{display:flex;align-items:center;justify-content:space-between;font-weight:800;margin-bottom:10px}
   .btn-primary{background:linear-gradient(135deg,#3b82f6,#22c55e);border:none;color:#fff;width:100%}
   .xbtn{cursor:pointer;color:#ff9b9b;border:1px solid #5b2b2b;background:#1a0d0d;border-radius:8px;padding:6px 8px;width:100%}
+
+  /* toast */
+  .toast{position:fixed;top:14px;right:14px;background:#1b2339;color:#eaf2ff;border:1px solid #2b3a66;padding:10px 14px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);opacity:0;transform:translateY(-10px);transition:.2s;z-index:60}
+  .toast.show{opacity:1;transform:translateY(0)}
+
   @media (max-width:760px){
     thead{display:none}
     .table, tbody, .row, .td{display:block;width:100%}
@@ -54,8 +67,18 @@
 
   <!-- form identitas -->
   <div class="formbox">
-    <input id="nama" placeholder="Nama Pemesan" />
-    <input id="telp" placeholder="No. Telp / WA" />
+    <div style="flex:1;min-width:220px">
+      <input id="nama" placeholder="Nama Pemesan" autocomplete="name"/>
+      <div class="hint">Isi nama lengkap</div>
+    </div>
+    <div style="flex:1;min-width:220px">
+      <input id="telp" placeholder="No. Telp / WA (10–15 digit angka)" inputmode="numeric" />
+      <div id="telpErr" class="error">No. telp salah. Masukkan 10–15 digit angka saja.</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button id="okBtn" class="btn">OK</button>
+      <div id="okTag" class="oktag">✔️ Terverifikasi</div>
+    </div>
     <button id="cartBtn" class="btn" style="margin-left:auto">🧺 Keranjang</button>
   </div>
 
@@ -87,99 +110,129 @@
   </div>
 </aside>
 
+<!-- toast -->
+<div id="toast" class="toast"></div>
+
 <script>
-const SETS=[
+/* ====== KONFIG ====== */
+const SETS = [
   {id:"set-nothing", title:"Nothing is Imposible", back:"./gambar/Nothing_Back.png"},
   {id:"set-zenius", title:"Zenius Street Logo", back:"./gambar/Zenius_Back.png"}
 ];
-const PRICE=30000;
-const SCRIPT_URL="https://script.google.com/macros/s/AKfycby20E4jQz5pGqSn0atadu1QGSVaUVXStt8GYiNnBlKvr-eyU-fz7cJJXRxxQqKkMLDSLw/exec"; // ganti URL Apps Script kamu
-let USER_KEY=null;
+const PRICE = 30000;
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby20E4jQz5pGqSn0atadu1QGSVaUVXStt8GYiNnBlKvr-eyU-fz7cJJXRxxQqKkMLDSLw/exec"; // <-- GANTI: URL Apps Script kamu
+const WA_NUMBER = "6281219929245"; // <-- GANTI: nomor WhatsApp penjual (tanpa +)
 
-const lsKey=()=>`orderCart_${USER_KEY}`;
-const loadCart=()=>JSON.parse(localStorage.getItem(lsKey())||"{}");
-const saveCart=(c)=>localStorage.setItem(lsKey(),JSON.stringify(c));
-const formatIDR=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n);
+/* ====== STATE ====== */
+let USER_KEY = null;     // namespace keranjang
+let CONFIRMED = false;   // hasil klik OK
 
-/* render list */
-const tbody=document.getElementById("tbody");
+/* ====== HELPERS ====== */
+const lsKey = ()=> `orderCart_${USER_KEY}`;
+const loadCart = ()=> JSON.parse(localStorage.getItem(lsKey())||"{}");
+const saveCart = (c)=> localStorage.setItem(lsKey(), JSON.stringify(c));
+const formatIDR = n => new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n);
+const validTelp = t => /^\d{10,15}$/.test(t);
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000); }
+
+/* ====== RENDER LIST ====== */
+const tbody = document.getElementById("tbody");
 function render(){
-  const cart=USER_KEY?loadCart():{};
-  tbody.innerHTML="";
+  const cart = (USER_KEY && CONFIRMED) ? loadCart() : {};
+  tbody.innerHTML = "";
   SETS.forEach((s,i)=>{
-    if(cart[s.id]) return;
-    const tr=document.createElement("tr");
-    tr.innerHTML=`
+    if(cart[s.id]) return; // sembunyikan yang sudah dipilih
+    const disabled = !(USER_KEY && CONFIRMED);
+    const tr = document.createElement("tr");
+    tr.className = "row";
+    tr.innerHTML = `
       <td class="td no">${i+1}</td>
       <td class="td"><div class="title">${s.title}</div><div style="color:#9aa7c7">ID: ${s.id}</div></td>
-      <td class="td"><div class="thumb"><img src="${s.back}"></div></td>
+      <td class="td"><div class="thumb"><img src="${s.back}" alt="${s.title}"></div></td>
       <td class="td pick">
-        <input type="checkbox" data-id="${s.id}" ${USER_KEY?"":"disabled"}>
-        ${USER_KEY?"":"<div class='disabled-note'>Isi identitas dulu</div>"}
+        <input type="checkbox" data-id="${s.id}" ${disabled?"disabled":""}>
+        ${disabled?`<div class="disabled-note">Klik OK dulu</div>`:""}
       </td>`;
     tbody.appendChild(tr);
   });
   tbody.querySelectorAll("input[type=checkbox]").forEach(cb=>{
-    cb.onchange=()=>{
-      const id=cb.dataset.id;
-      const cart=loadCart();
-      if(cb.checked){cart[id]={qty:1,price:PRICE};saveCart(cart);render();}
+    cb.onchange = ()=>{
+      const id = cb.dataset.id;
+      const cart = loadCart();
+      if(cb.checked){ cart[id] = {qty:1, price:PRICE}; saveCart(cart); render(); toast('Ditambahkan ke keranjang'); }
     };
   });
 }
 
-/* validasi identitas */
-function validTelp(t){return /^\d{10,15}$/.test(t);}
-document.getElementById("nama").oninput=document.getElementById("telp").oninput=()=>{
-  const nama=document.getElementById("nama").value.trim();
-  const telp=document.getElementById("telp").value.trim();
-  if(nama && validTelp(telp)){
-    USER_KEY=nama.replace(/\s+/g,"_")+"_"+telp;
-  }else{USER_KEY=null;}
+/* ====== VALIDASI + KONFIRMASI ====== */
+const namaEl = document.getElementById("nama");
+const telpEl = document.getElementById("telp");
+const errEl  = document.getElementById("telpErr");
+const okBtn  = document.getElementById("okBtn");
+const okTag  = document.getElementById("okTag");
+
+okBtn.onclick = ()=>{
+  const nama = namaEl.value.trim();
+  const telp = telpEl.value.trim();
+  if(!nama){ toast("Nama belum diisi"); return; }
+  if(!validTelp(telp)){ errEl.style.display="block"; toast("No. telp salah (10–15 digit angka)"); return; }
+  errEl.style.display="none";
+  USER_KEY = nama.replace(/\s+/g,"_")+"_"+telp;
+  CONFIRMED = true;
+  okTag.style.display="inline-flex";
+  toast("Identitas OK. Silakan pilih barang.");
   render();
 };
 
-/* keranjang */
-const cartPanel=document.getElementById("cartPanel");
-document.getElementById("cartBtn").onclick=()=>{renderCart();cartPanel.classList.add("open");};
-document.getElementById("closeCart").onclick=()=>cartPanel.classList.remove("open");
+telpEl.addEventListener("input", ()=>{ errEl.style.display = validTelp(telpEl.value.trim()) ? "none":"block"; });
+namaEl.addEventListener("input", ()=>{ if(CONFIRMED){CONFIRMED=false; okTag.style.display="none"; render();} });
+
+/* ====== KERANJANG ====== */
+const cartPanel = document.getElementById("cartPanel");
+document.getElementById("cartBtn").onclick = ()=>{ renderCart(); cartPanel.classList.add("open"); };
+document.getElementById("closeCart").onclick = ()=> cartPanel.classList.remove("open");
 
 function renderCart(){
-  const cart=USER_KEY?loadCart():{};
-  const body=document.getElementById("cartBody"); body.innerHTML=""; let total=0;
+  const cart = (USER_KEY)? loadCart() : {};
+  const body = document.getElementById("cartBody"); body.innerHTML = ""; let total=0;
   Object.entries(cart).forEach(([id,{qty,price}])=>{
-    const s=SETS.find(x=>x.id===id); total+=qty*price;
-    const div=document.createElement("div"); div.className="cart-row";
-    div.innerHTML=`
-      <div class="cart-thumb"><img src="${s.back}"></div>
+    const s = SETS.find(x=>x.id===id); total += qty*price;
+    const div = document.createElement("div"); div.className="cart-row";
+    div.innerHTML = `
+      <div class="cart-thumb"><img src="${s.back}" alt="${s.title}"></div>
       <div><div style="font-weight:800">${s.title}</div><div style="color:#9aa7c7">Qty: ${qty} × ${formatIDR(price)}</div></div>
       <div><button class="xbtn" data-del="${id}">Hapus</button></div>`;
     body.appendChild(div);
   });
-  if(!Object.keys(cart).length) body.innerHTML="<p style='color:#9aa7c7'>Keranjang kosong</p>";
-  document.getElementById("grand").textContent=formatIDR(total);
-  body.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{const id=b.dataset.del;const cart=loadCart();delete cart[id];saveCart(cart);render();renderCart();});
+  if(!Object.keys(cart).length) body.innerHTML = "<p style='color:#9aa7c7'>Keranjang kosong</p>";
+  document.getElementById("grand").textContent = formatIDR(total);
+  body.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{ const id=b.dataset.del; const c=loadCart(); delete c[id]; saveCart(c); render(); renderCart(); });
 }
 
-/* submit */
-document.getElementById("submitBtn").onclick=()=>{
-  if(!USER_KEY){alert("Isi identitas dulu!");return;}
-  const cart=loadCart(); if(!Object.keys(cart).length){alert("Keranjang kosong");return;}
-  const [nama,telp]=USER_KEY.split("_");
-  const now=new Date();
-  const grand=Object.values(cart).reduce((a,c)=>a+c.qty*c.price,0);
-  const noBon="BON-"+now.getFullYear().toString().slice(-2)+(now.getMonth()+1).toString().padStart(2,"0")+now.getDate().toString().padStart(2,"0")+"-"+Math.random().toString(36).slice(2,7).toUpperCase();
+/* ====== SUBMIT ====== */
+document.getElementById("submitBtn").onclick = ()=>{
+  if(!(USER_KEY && CONFIRMED)){ toast("Klik OK pada identitas dulu"); return; }
+  const cart = loadCart(); if(!Object.keys(cart).length){ toast("Keranjang kosong"); return; }
 
-  // 1) WA message
-  let pesan=`Pesanan Baru 🚨%0ANama: ${nama}%0ATelp: ${telp}%0ATanggal: ${now.toLocaleString('id-ID')}%0A%0A`;
+  const [nama, telp] = (()=>{
+    const idx = USER_KEY.lastIndexOf("_");
+    return [USER_KEY.slice(0,idx).replaceAll("_"," "), USER_KEY.slice(idx+1)];
+  })();
+
+  const now = new Date();
+  const grand = Object.values(cart).reduce((a,c)=>a+c.qty*c.price,0);
+  const noBon = "BON-"+now.getFullYear().toString().slice(-2)+(now.getMonth()+1).toString().padStart(2,"0")+now.getDate().toString().padStart(2,"0")+"-"+Math.random().toString(36).slice(2,7).toUpperCase();
+
+  // 1) WA
+  let pesan=`Pesanan Baru 🚨%0ANama: ${encodeURIComponent(nama)}%0ATelp: ${telp}%0ATanggal: ${encodeURIComponent(now.toLocaleString('id-ID'))}%0A%0A`;
   Object.entries(cart).forEach(([id,{qty,price}],i)=>{
     const s=SETS.find(x=>x.id===id);
-    pesan+=`${i+1}. ${s.title} – ${qty} x ${formatIDR(price)}%0A`;
+    pesan+=`${i+1}. ${encodeURIComponent(s.title)} – ${qty} x ${encodeURIComponent(formatIDR(price))}%0A`;
   });
-  pesan+=`%0ATotal: ${formatIDR(grand)}`;
-  window.open(`https://wa.me/6281219929245?text=${pesan}`,"_blank"); // ganti nomor WA kamu
+  pesan+=`%0ATotal: ${encodeURIComponent(formatIDR(grand))}`;
+  window.open(`https://wa.me/${WA_NUMBER}?text=${pesan}`,"_blank");
 
-  // 2) Bon PDF
+  // 2) PDF
   let rows=Object.entries(cart).map(([id,{qty,price}],i)=>{
     const s=SETS.find(x=>x.id===id);
     return `<tr><td>${i+1}</td><td>${s.title}</td><td>${qty}</td><td>${formatIDR(price)}</td><td>${formatIDR(qty*price)}</td></tr>`;
@@ -188,12 +241,12 @@ document.getElementById("submitBtn").onclick=()=>{
   <style>body{font-family:Arial;margin:24px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:6px}</style>
   </head><body><h2>Bon Pesanan</h2><p>No: ${noBon}<br>Nama: ${nama}<br>Telp: ${telp}<br>Tanggal: ${now.toLocaleString('id-ID')}</p>
   <table><tr><th>No</th><th>Judul</th><th>Qty</th><th>Harga</th><th>Subtotal</th></tr>${rows}
-  <tr><td colspan=4 style="text-align:right"><b>Total</b></td><td><b>${formatIDR(grand)}</b></td></tr></table>
+  <tr><td colspan="4" style="text-align:right"><b>Total</b></td><td><b>${formatIDR(grand)}</b></td></tr></table>
   <script>window.print();<\/script></body></html>`;
   const w=window.open("","_blank"); w.document.write(html); w.document.close();
 
   // 3) Save ke Google Sheet
-  const items=Object.entries(cart).map(([id,{qty,price}])=>{
+  const items = Object.entries(cart).map(([id,{qty,price}])=>{
     const s=SETS.find(x=>x.id===id);
     return {id,title:s.title,qty,price,subtotal:qty*price};
   });
@@ -201,13 +254,14 @@ document.getElementById("submitBtn").onclick=()=>{
     method:"POST",
     headers:{"Content-Type":"application/json"},
     body:JSON.stringify({noBon,nama,telp,items,total:grand,source:"order_design.html"})
-  }).then(r=>r.json()).then(res=>{if(!res.ok)console.warn("GAS save fail",res);})
-  .catch(err=>console.warn("GAS error",err))
-  .finally(()=>{
-    localStorage.removeItem(lsKey()); render(); renderCart();
-  });
+  }).catch(err=>console.warn("GAS error",err));
+
+  // reset
+  localStorage.removeItem(lsKey()); render(); renderCart(); cartPanel.classList.remove("open");
+  toast("Pesanan dikirim. Terima kasih!");
 };
 
+/* INIT */
 render();
 </script>
 </body>
