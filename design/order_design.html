@@ -34,10 +34,10 @@
   .pick{text-align:center;width:90px}
   .disabled-note{font-size:12px;color:#ff9b9b;margin-top:6px}
 
-  /* backdrop + keranjang */
-  .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;z-index:49}
+  /* backdrop + keranjang (z-index tinggi + pointer events) */
+  .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;z-index:9000}
   .backdrop.show{display:block}
-  .cart-panel{position:fixed;inset:0 0 0 auto;max-width:420px;transform:translateX(110%);transition:.25s ease;background:#0f1115;border-left:1px solid #26304f;box-shadow:-10px 0 30px rgba(0,0,0,.5);z-index:50;display:flex;flex-direction:column}
+  .cart-panel{position:fixed;inset:0 0 0 auto;max-width:420px;transform:translateX(110%);transition:.25s ease;background:#0f1115;border-left:1px solid #26304f;box-shadow:-10px 0 30px rgba(0,0,0,.5);z-index:9010;display:flex;flex-direction:column;pointer-events:auto}
   .cart-panel.open{transform:translateX(0)}
   .cart-head{display:flex;align-items:center;justify-content:space-between;padding:14px;border-bottom:1px solid #26304f}
   .cart-body{padding:12px;overflow:auto;flex:1}
@@ -50,7 +50,7 @@
   .xbtn{cursor:pointer;color:#ff9b9b;border:1px solid #5b2b2b;background:#1a0d0d;border-radius:8px;padding:6px 8px;width:100%}
 
   /* lightbox carousel */
-  .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;z-index:80}
+  .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;z-index:9500}
   .lightbox.show{display:flex}
   .lb-inner{position:relative;max-width:94vw}
   .lightbox .close{position:absolute;top:-48px;right:0;background:#1b2339;color:#eaf2ff;border:1px solid #2b3a66;border-radius:10px;padding:8px 12px;cursor:pointer}
@@ -62,7 +62,7 @@
   .thumbs img.active{opacity:1;border-color:#3b82f6}
 
   /* toast */
-  .toast{position:fixed;top:14px;right:14px;background:#1b2339;color:#eaf2ff;border:1px solid #2b3a66;padding:10px 14px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);opacity:0;transform:translateY(-10px);transition:.2s;z-index:90}
+  .toast{position:fixed;top:14px;right:14px;background:#1b2339;color:#eaf2ff;border:1px solid #2b3a66;padding:10px 14px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);opacity:0;transform:translateY(-10px);transition:.2s;z-index:9600}
   .toast.show{opacity:1;transform:translateY(0)}
 
   @media (max-width:760px){
@@ -158,7 +158,6 @@ const SETS = [
   {
     id:"set-zenius",
     title:"Zenius Street Logo",
-    // kalau belum ada logo/mockup, biarkan undefined; akan fallback hanya 1 gambar
     back:"./gambar/Zenius_Back.png"
   }
 ];
@@ -192,10 +191,16 @@ const lbPrev=document.getElementById('lbPrev');
 const lbNext=document.getElementById('lbNext');
 let lbList=[], lbIndex=0;
 
+function imgsFor(set){
+  const arr=[set.back];
+  if(set.logo) arr.unshift(set.logo);
+  if(set.mockup) arr.push(set.mockup);
+  return [...new Set(arr.filter(Boolean))];
+}
 function openLightbox(list, start=0){
   lbList=list; lbIndex=start; setLbImage();
-  lb.classList.add('show'); lb.setAttribute('aria-hidden','false');
   renderThumbs();
+  lb.classList.add('show'); lb.setAttribute('aria-hidden','false');
 }
 function closeLightbox(){
   lb.classList.remove('show'); lb.setAttribute('aria-hidden','true');
@@ -207,31 +212,24 @@ function renderThumbs(){
   lbList.forEach((src,i)=>{
     const im=document.createElement('img');
     im.src=src; if(i===lbIndex) im.classList.add('active');
-    im.onclick=()=>{lbIndex=i; setLbImage(); renderThumbs();}
+    im.onclick=()=>{lbIndex=i; setLbImage(); renderThumbs();};
     lbThumbs.appendChild(im);
   });
 }
 lbPrev.onclick=()=>{ if(!lbList.length) return; lbIndex=(lbIndex-1+lbList.length)%lbList.length; setLbImage(); renderThumbs(); };
 lbNext.onclick=()=>{ if(!lbList.length) return; lbIndex=(lbIndex+1)%lbList.length; setLbImage(); renderThumbs(); };
-lbClose.onclick=(e)=>{ e.stopPropagation(); closeLightbox(); };
+lbClose.onclick=(e)=>{ e.preventDefault(); e.stopPropagation(); closeLightbox(); };
 lb.addEventListener('click', (e)=>{ if(e.target===lb) closeLightbox(); });
-document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') { closeLightbox(); closeCart(); }});
+document.addEventListener('keydown', (e)=>{ if(e.key==='Escape'){ closeLightbox(); closeCart(); }});
 
 /* ====== RENDER LIST ====== */
 const tbody = document.getElementById("tbody");
-function imgsFor(set){
-  const arr=[set.back]; // back wajib
-  if(set.logo) arr.unshift(set.logo); // logo di depan
-  if(set.mockup) arr.push(set.mockup);
-  // buang duplikat & undefined
-  return [...new Set(arr.filter(Boolean))];
-}
 function render(){
   const cart = (USER_KEY && CONFIRMED) ? loadCart() : {};
   tbody.innerHTML = "";
   let rowNo=0;
   SETS.forEach((s)=>{
-    if(cart[s.id]) return; // sembunyikan yang sudah dipilih
+    if(cart[s.id]) return;
     rowNo++;
     const disabled = !(USER_KEY && CONFIRMED);
     const tr = document.createElement("tr");
@@ -250,12 +248,9 @@ function render(){
         ${disabled?`<div class="disabled-note">Klik OK dulu</div>`:""}
       </td>`;
     tbody.appendChild(tr);
-
-    // lightbox click
     tr.querySelector(".thumb").onclick = ()=> openLightbox(allImgs, 0);
   });
 
-  // pilih item
   tbody.querySelectorAll("input[type=checkbox]").forEach(cb=>{
     cb.onchange = ()=>{
       const id = cb.dataset.id;
@@ -296,6 +291,18 @@ function closeCart(){ cartPanel.classList.remove("open"); cartPanel.setAttribute
 document.getElementById("cartBtn").onclick = (e)=>{ e.preventDefault(); openCart(); };
 document.getElementById("closeCart").onclick = (e)=>{ e.preventDefault(); closeCart(); };
 backdrop.addEventListener('click', closeCart);
+
+/* ——— UNIVERSAL CLOSE HANDLER ——— */
+document.addEventListener('click', (e)=>{
+  if (e.target.closest('#closeCart')) { e.preventDefault(); closeCart(); }
+  if (e.target.id === 'backdrop') { e.preventDefault(); closeCart(); }
+});
+document.addEventListener('keydown', (e)=>{
+  if (e.key === 'Escape') {
+    const lb = document.getElementById('lightbox');
+    if (!lb.classList.contains('show')) closeCart();
+  }
+});
 
 function renderCart(){
   const cart = (USER_KEY)? loadCart() : {};
