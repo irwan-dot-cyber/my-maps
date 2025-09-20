@@ -3,77 +3,41 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Order Desain Kaos • Tabel Pilih (Responsive)</title>
+<title>Order Desain Kaos • List</title>
 <style>
-  :root{
-    --bg:#0f1115; --card:#171922; --fg:#e8eefc; --muted:#9aa7c7; --line:#23283a; --accent2:#4da3ff;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:linear-gradient(180deg,#0f1115,#0b0d12);color:var(--fg);font:500 15px/1.55 system-ui,Segoe UI,Inter,Arial}
+  :root{--bg:#0f1115;--card:#171922;--fg:#e8eefc;--muted:#9aa7c7;--line:#23283a;--accent2:#4da3ff}
+  *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#0f1115,#0b0d12);color:var(--fg);font:500 15px/1.55 system-ui,Segoe UI,Inter,Arial}
   .wrap{max-width:1200px;margin:auto;padding:22px}
-  h1{font:800 20px/1.2 system-ui;margin:0 0 14px}
-  .card{background:#171922;border:1px solid var(--line);border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,.35);padding:8px 12px}
+  h1{font:800 20px/1.2;margin:0 0 14px}
+  .card{background:#171922;border:1px solid var(--line);border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,.35);padding:10px 12px}
 
-  /* TABLE (desktop) */
+  /* table desktop */
   .table{width:100%;border-collapse:separate;border-spacing:0}
-  .th,.td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top}
+  .th,.td{padding:12px;border-bottom:1px solid var(--line);vertical-align:middle}
   .th{color:#aab6da;text-transform:uppercase;font-size:12px;letter-spacing:.04em}
   .row:last-child .td{border-bottom:none}
-  .no{width:56px;text-align:center;white-space:nowrap}
-  .pick{text-align:center;width:110px}
+  .no{width:56px;text-align:center}
   .title{font-weight:800}
   .muted{color:var(--muted);font-size:12px}
-  .chip{display:inline-flex;align-items:center;gap:6px;background:#101422;border:1px solid var(--line);color:#cfe1ff;padding:3px 8px;border-radius:999px;font-size:11px}
-
-  /* Gambar (besar & jejer) */
-  .imgs{display:flex;justify-content:flex-start;gap:14px;flex-wrap:wrap}
-  .fig{width:120px}
-  .thumb{width:120px;height:120px;border-radius:12px;overflow:hidden;background:#0e1018;border:1px solid var(--line);display:grid;place-items:center}
+  .thumb{width:140px;height:140px;border-radius:12px;overflow:hidden;background:#0e1018;border:1px solid var(--line);display:grid;place-items:center}
   .thumb img{width:100%;height:100%;object-fit:cover;cursor:pointer}
-  .cap{margin-top:6px;text-align:center;font-size:12px;color:#cfe1ff}
-  .note{margin-top:6px;text-align:right}
+  .tools{display:flex;gap:8px;margin:10px 0}
+  .search{flex:1;background:#0f1320;border:1px solid #26304f;color:var(--fg);padding:10px 12px;border-radius:10px}
+  .btn{border:1px solid #26304f;background:#0f1320;color:#dce6ff;border-radius:10px;padding:10px 14px;cursor:pointer}
 
-  /* ====== MOBILE / SMALL SCREEN ====== */
-  @media (max-width: 760px){
+  /* mobile: card rows */
+  @media (max-width:760px){
     .wrap{padding:14px}
-    h1{font-size:18px}
-
-    thead {display:none}
-    .table, tbody, .row, .td {display:block;width:100%}
-    .row{border:1px solid var(--line);border-radius:12px;margin:10px 0;overflow:hidden}
-    .td{border-bottom:1px solid var(--line);padding:12px 14px}
+    thead{display:none}
+    .table, tbody, .row, .td{display:block;width:100%}
+    .row{border:1px solid var(--line);border-radius:12px;margin:10px 0}
+    .td{border-bottom:1px solid var(--line)}
     .td:last-child{border-bottom:none}
-
     .td[data-label]::before{
-      content: attr(data-label);
-      display:block;
-      color:#aab6da;
-      font-size:12px;
-      letter-spacing:.03em;
-      margin-bottom:6px;
-      text-transform:uppercase;
+      content:attr(data-label);display:block;color:#aab6da;font-size:12px;letter-spacing:.03em;margin-bottom:6px;text-transform:uppercase
     }
-
-    .td.no{display:flex;align-items:center;gap:8px;justify-content:flex-start}
-    .td.no .chip{font-weight:700}
-    .td.pick{display:flex;align-items:center;justify-content:flex-start}
-
-    /* grid auto-fit agar rapi */
-    .imgs{
-      display:grid !important;
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) !important;
-      gap:14px !important;
-      justify-content:unset !important;
-    }
-    .fig{width:auto}
-    .thumb{width:100%;height:0;padding-bottom:100%; position:relative}
+    .thumb{width:100%;height:0;padding-bottom:60%;position:relative}
     .thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-    .cap{font-size:12px}
-  }
-
-  /* layar sangat kecil: 110px min */
-  @media (max-width:420px){
-    .imgs{ grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)) !important; }
   }
 </style>
 </head>
@@ -81,14 +45,18 @@
 <div class="wrap">
   <h1>Order Desain Kaos</h1>
 
+  <div class="tools">
+    <input id="search" class="search" placeholder="Cari judul… (mis. Nothing, Logo, dsb)" />
+    <button id="reset" class="btn">Reset</button>
+  </div>
+
   <section class="card">
-    <table class="table" id="table">
+    <table class="table">
       <thead>
         <tr>
           <th class="th no">No</th>
           <th class="th">Judul</th>
-          <th class="th">Gambar</th>
-          <th class="th pick">Pilih</th>
+          <th class="th">Gambar Belakang</th>
         </tr>
       </thead>
       <tbody id="tbody"></tbody>
@@ -97,65 +65,53 @@
 </div>
 
 <script>
-/* ====== DATA: sesuaikan nama file di /design/gambar/ ====== */
+/* ====== DATA LIST: tambah set sesukamu ====== */
 const SETS = [
   {
     id: "set-nothing",
     title: "Nothing is Imposible",
-    images: [
-      { label: "Logo",     src: "./gambar/Nothing_Logo.png" },
-      { label: "Belakang", src: "./gambar/Nothing_Back.png" },
-      { label: "Mockup",   src: "./gambar/Nothing_Mockup.png" }
-    ]
+    logo:   "./gambar/Nothing_Logo.png",
+    back:   "./gambar/Nothing_Back.png",     // <- hanya ini yang tampil di list
+    mockup: "./gambar/Nothing_Mockup.png"
   }
-  // Tambah set lain di sini bila perlu:
-  // { id:"set-xxx", title:"Judul Lain", images:[ {label:"Logo",src:"./gambar/Judul_Lain_Logo.png"}, ... ] }
+  // contoh menambah:
+  // { id:"set-xyz", title:"Judul XYZ", logo:"./gambar/XYZ_Logo.png", back:"./gambar/XYZ_Back.png", mockup:"./gambar/XYZ_Mockup.png" }
 ];
 
-/* ====== RENDER TABLE ====== */
+/* ====== RENDER LIST ====== */
 const tbody = document.getElementById("tbody");
-
-function renderTable(){
+function render(filter=""){
   tbody.innerHTML = "";
-  SETS.forEach((set, idx) => {
-    const tr = document.createElement("tr");
-    tr.className = "row";
-    tr.innerHTML = `
-      <td class="td no" data-label="No"><span class="chip">${idx+1}</span></td>
-      <td class="td" data-label="Judul">
-        <div class="title">${set.title}</div>
-        <div class="muted">ID: ${set.id}</div>
-      </td>
-      <td class="td" data-label="Gambar">
-        <div class="imgs">
-          ${set.images.map(img => `
-            <figure class="fig">
+  const q = filter.trim().toLowerCase();
+  SETS.filter(s => !q || s.title.toLowerCase().includes(q) || s.id.toLowerCase().includes(q))
+      .forEach((s, i) => {
+        const tr = document.createElement("tr");
+        tr.className = "row";
+        tr.innerHTML = `
+          <td class="td no" data-label="No"><strong>${i+1}</strong></td>
+          <td class="td" data-label="Judul">
+            <div class="title">${s.title}</div>
+            <div class="muted">ID: ${s.id}</div>
+          </td>
+          <td class="td" data-label="Gambar Belakang">
+            <a href="order_detail.html?id=${encodeURIComponent(s.id)}" title="Buka detail">
               <div class="thumb">
-                <img loading="lazy" src="${img.src}" alt="${img.label}" data-open="${img.src}">
+                <img loading="lazy" src="${s.back}" alt="${s.title} • Back">
               </div>
-              <figcaption class="cap">${img.label}</figcaption>
-            </figure>
-          `).join("")}
-        </div>
-        <div class="note muted">Klik gambar untuk memperbesar</div>
-      </td>
-      <td class="td pick" data-label="Pilih">
-        <label style="display:inline-flex;align-items:center;gap:8px">
-          <input type="checkbox" data-pick="${set.id}"> <span>Pilih</span>
-        </label>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-
-  // klik gambar -> buka besar
-  tbody.querySelectorAll("[data-open]").forEach(el=>{
-    el.addEventListener("click", ()=> window.open(el.dataset.open, "_blank"));
-  });
+            </a>
+            <div class="muted" style="margin-top:6px">Tap gambar untuk lihat 3 gambar</div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
 }
+/* search */
+const s = document.getElementById("search");
+document.getElementById("reset").onclick = () => { s.value=""; render(); };
+s.oninput = () => render(s.value);
 
-/* INIT */
-renderTable();
+/* init */
+render();
 </script>
 </body>
 </html>
