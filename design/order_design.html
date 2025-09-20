@@ -3,252 +3,201 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Order Desain Kaos • Zenius Supply Co</title>
+<title>Order Desain Kaos • Tabel Pilih</title>
 <style>
   :root{
-    --bg:#0f1115; --card:#171922; --fg:#e8eefc; --muted:#9aa7c7;
+    --bg:#0f1115; --card:#171922; --fg:#e8eefc; --muted:#9aa7c7; --line:#23283a;
     --accent:#28d89b; --accent2:#4da3ff;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:linear-gradient(180deg,#0f1115,#0b0d12);color:var(--fg);font:500 15px/1.5 system-ui,Segoe UI,Inter,Arial}
+  body{margin:0;background:linear-gradient(180deg,#0f1115,#0b0d12);color:var(--fg);font:500 15px/1.55 system-ui,Segoe UI,Inter,Arial}
   a{color:var(--accent2)}
-  .wrap{max-width:1200px;margin:auto;padding:24px}
-  header{display:flex;align-items:center;gap:14px;margin-bottom:18px}
-  header h1{font:800 20px/1.2 system-ui;margin:0}
+  .wrap{max-width:1100px;margin:auto;padding:22px}
+  h1{font:800 20px/1.2 system-ui;margin:0 0 14px}
+  .layout{display:grid;grid-template-columns:1fr 320px;gap:16px}
+  @media (max-width: 980px){ .layout{grid-template-columns:1fr} .summary{position:relative;top:auto} }
 
-  .layout{display:grid;grid-template-columns:1fr 340px;gap:16px}
-  @media (max-width: 980px){ .layout{grid-template-columns:1fr} .summary{position:relative; top:auto} }
-
-  .card{background:var(--card);border:1px solid #23283a;border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,.35)}
-  .list{padding:8px}
-  .row{display:grid;grid-template-columns:96px 1fr 140px 110px;gap:12px;align-items:center;padding:12px;border-bottom:1px solid #22283b}
-  .row:last-child{border-bottom:none}
-  .thumb{width:96px;height:96px;border-radius:10px;background:#0e1018;display:grid;place-items:center;overflow:hidden;border:1px solid #22283b}
-  .thumb img{width:100%;height:100%;object-fit:cover}
-  .title{font-weight:700}
-  .muted{color:var(--muted);font-size:13px}
-  .chip{display:inline-flex;align-items:center;gap:6px;background:#101422;border:1px solid #22283b;color:#cfe1ff;padding:4px 10px;border-radius:999px;font-size:12px}
-  .qty{display:flex;align-items:center;gap:8px}
-  .qty input{width:48px;text-align:center;background:#0f1320;border:1px solid #26304f;border-radius:8px;color:var(--fg);padding:6px}
-  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid #26304f;background:#0f1320;color:#dce6ff;border-radius:10px;padding:10px 14px;cursor:pointer}
-  .btn:hover{border-color:#3454ff;color:white}
-  .btn-primary{background:linear-gradient(135deg,#3b82f6,#22c55e);border:none;color:white}
+  .card{background:#171922;border:1px solid var(--line);border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+  .table{width:100%;border-collapse:separate;border-spacing:0}
+  .th, .td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top}
+  .th{color:#aab6da;text-transform:uppercase;font-size:12px;letter-spacing:.04em}
+  .row:last-child .td{border-bottom:none}
+  .no{width:56px;text-align:center}
+  .pick{text-align:center;width:110px}
+  .title{font-weight:800}
+  .muted{color:var(--muted);font-size:12px}
+  .imgs{display:grid;gap:8px}
+  .img-line{display:grid;grid-template-columns:88px 1fr;gap:10px;align-items:center}
+  .thumb{width:88px;height:88px;border-radius:10px;overflow:hidden;background:#0e1018;border:1px solid var(--line);display:grid;place-items:center}
+  .thumb img{width:100%;height:100%;object-fit:cover;cursor:pointer}
+  .note{margin-top:6px}
+  .chip{display:inline-flex;align-items:center;gap:6px;background:#101422;border:1px solid var(--line);color:#cfe1ff;padding:3px 8px;border-radius:999px;font-size:11px}
 
   .summary{position:sticky;top:16px;padding:14px}
   .sum-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
   .sum-items{max-height:360px;overflow:auto;border-top:1px dashed #2b3350;margin-top:10px}
-  .sum-row{display:grid;grid-template-columns:54px 1fr 66px;gap:10px;align-items:center;padding:10px 0;border-bottom:1px dashed #2b3350}
-  .sum-thumb{width:54px;height:54px;border-radius:8px;overflow:hidden;border:1px solid #22283b}
+  .sum-row{display:grid;grid-template-columns:54px 1fr;gap:10px;align-items:center;padding:10px 0;border-bottom:1px dashed #2b3350}
+  .sum-thumb{width:54px;height:54px;border-radius:8px;overflow:hidden;border:1px solid var(--line);background:#0e1018}
   .sum-thumb img{width:100%;height:100%;object-fit:cover}
   .sum-title{font-weight:700;font-size:14px}
-  .sum-meta{color:var(--muted);font-size:12px}
-
   .tools{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
-  .search{display:flex;gap:8px;margin:10px 0 6px}
-  .search input{flex:1;background:#0f1320;border:1px solid #26304f;border-radius:10px;color:var(--fg);padding:10px 12px}
-  .table-head{display:grid;grid-template-columns:96px 1fr 140px 110px;gap:12px;padding:10px 12px;color:#aab6da;border-bottom:1px solid #22283b;font-size:13px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid #26304f;background:#0f1320;color:#dce6ff;border-radius:10px;padding:10px 14px;cursor:pointer}
+  .btn:hover{border-color:#3454ff}
 </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h16M4 17h10" stroke="#28d89b" stroke-width="2" stroke-linecap="round"/></svg>
-      <h1>Order Desain & Mockup</h1>
-    </header>
+<div class="wrap">
+  <h1>Order Desain Kaos</h1>
 
-    <div class="layout">
-      <!-- LEFT: LIST -->
-      <section class="card">
-        <div class="search">
-          <input id="search" placeholder="Cari nama / kategori… (mis. logo, belakang, mockup)" />
-          <button class="btn" id="clearSearch">Reset</button>
-        </div>
-        <div class="table-head">
-          <div>Preview</div><div>Info</div><div>Aksi</div><div>Qty</div>
-        </div>
-        <div id="list" class="list"></div>
-      </section>
+  <div class="layout">
+    <!-- LEFT: TABLE -->
+    <section class="card" style="padding:8px 12px">
+      <table class="table" id="table">
+        <thead>
+          <tr>
+            <th class="th no">No</th>
+            <th class="th">Judul</th>
+            <th class="th">Gambar</th>
+            <th class="th pick">Pilih</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </section>
 
-      <!-- RIGHT: SUMMARY -->
-      <aside class="card summary">
-        <div class="sum-head">
-          <strong>🧾 Lihat Pesanan</strong>
-          <span class="muted" id="countSel">0 item</span>
-        </div>
-        <div id="sumItems" class="sum-items"></div>
-
-        <div class="tools">
-          <button class="btn" id="clearAll">Hapus Semua</button>
-          <button class="btn btn-primary" id="printBtn">Print</button>
-          <button class="btn" id="downloadBtn">Download JSON</button>
-        </div>
-        <p class="muted" style="margin-top:8px">
-          Catatan: ukuran logo kiri-dada default 6×8cm, desain belakang full back.
-        </p>
-      </aside>
-    </div>
+    <!-- RIGHT: SUMMARY -->
+    <aside class="card summary">
+      <div class="sum-head">
+        <strong>🧾 Lihat Pesanan</strong>
+        <span class="muted" id="countSel">0 dipilih</span>
+      </div>
+      <div id="sumItems" class="sum-items"></div>
+      <div class="tools">
+        <button class="btn" id="clearAll">Hapus Semua</button>
+        <button class="btn" id="downloadBtn">Download JSON</button>
+        <button class="btn" id="printBtn">Print</button>
+      </div>
+      <p class="muted" style="margin-top:8px">
+        Catatan: klik gambar untuk memperbesar. Logo default ukuran 6×8 cm (kiri dada), desain belakang full back.
+      </p>
+    </aside>
   </div>
+</div>
 
 <script>
-/** ====== DATA (SESUAIKAN NAMA FILE DI /design/gambar/) ====== */
-const ITEMS = [
+/* ====== DATA SET KOLEKSI (bisa ditambah lebih banyak) ====== */
+const SETS = [
   {
-    id: "logo-zenius",
-    name: "Logo ZENIUS SUPPLY Co",
-    category: "logo dada kiri",
-    size: "6×8 cm",
-    src: "./gambar/Nothing_Logo.png",
-    note: "Minimal, cocok untuk kiri dada"
-  },
-  {
-    id: "back-nothing",
-    name: "Nothing is Impossible (Full Back)",
-    category: "desain belakang",
-    size: "lebar punggung",
-    src: "./gambar/Nothing_Back.png",
-    note: "Poster tipografi warna-warni"
-  },
-  {
-    id: "mockup-couple",
-    name: "Mockup Kaos Cewek & Cowok",
-    category: "mockup",
-    size: "preview",
-    src: "./gambar/Nothing_Mockup.png",
-    note: "Back male + left-chest female"
+    id: "set-nothing",
+    title: "Nothing is Imposible",
+    images: [
+      { label: "Logo",    src: "./gambar/Nothing_Logo.png" },
+      { label: "Belakang",src: "./gambar/Nothing_Back.png" },
+      { label: "Mockup",  src: "./gambar/Nothing_Mockup.png" }
+    ]
   }
+  // tambahkan set lain di sini dengan struktur sama
 ];
 
-/** ====== STATE ====== */
-const state = {
-  selected: new Map(), // id -> {qty, item}
-  filter: ""
-};
+/* ====== STATE ====== */
+const state = { picked: new Set() };
 
-/** ====== RENDER LIST ====== */
-const listEl = document.getElementById("list");
+const tbody = document.getElementById("tbody");
 const sumItemsEl = document.getElementById("sumItems");
 const countSelEl = document.getElementById("countSel");
 
-function renderList(){
-  listEl.innerHTML = "";
-  const q = state.filter.toLowerCase();
-
-  ITEMS.filter(it => {
-    return !q || [it.name, it.category].join(" ").toLowerCase().includes(q);
-  }).forEach(it => {
-    const row = document.createElement("div");
-    row.className = "row";
-
-    row.innerHTML = `
-      <div class="thumb"><img src="${it.src}" alt="${it.name}"></div>
-      <div>
-        <div class="title">${it.name}</div>
-        <div class="muted">${it.category} • ${it.size}</div>
-        <div style="margin-top:6px"><span class="chip">ID: ${it.id}</span></div>
-      </div>
-      <div>
-        <label style="display:flex;align-items:center;gap:8px">
-          <input type="checkbox" data-id="${it.id}">
-          <span>Pilih</span>
+/* ====== RENDER TABLE ====== */
+function renderTable(){
+  tbody.innerHTML = "";
+  SETS.forEach((set, idx) => {
+    const tr = document.createElement("tr");
+    tr.className = "row";
+    tr.innerHTML = `
+      <td class="td no"><span class="chip">${idx+1}</span></td>
+      <td class="td">
+        <div class="title">${set.title}</div>
+        <div class="muted">ID: ${set.id}</div>
+      </td>
+      <td class="td">
+        <div class="imgs">
+          ${set.images.map(img => `
+            <div class="img-line">
+              <div class="thumb">
+                <img src="${img.src}" alt="${img.label}" data-open="${img.src}">
+              </div>
+              <div>
+                <div><strong>${img.label}</strong></div>
+                <div class="muted">${img.src.split('/').pop()}</div>
+              </div>
+            </div>
+          `).join("")}
+          <div class="note muted">Klik gambar untuk memperbesar</div>
+        </div>
+      </td>
+      <td class="td pick">
+        <label style="display:inline-flex;align-items:center;gap:8px">
+          <input type="checkbox" data-pick="${set.id}"> <span>Pilih</span>
         </label>
-        <button class="btn" style="margin-top:8px" data-preview="${it.id}">Preview</button>
-      </div>
-      <div class="qty">
-        <button class="btn" data-dec="${it.id}" title="Kurangi">−</button>
-        <input type="number" min="1" value="1" data-qty="${it.id}">
-        <button class="btn" data-inc="${it.id}" title="Tambah">+</button>
-      </div>
+      </td>
     `;
+    tbody.appendChild(tr);
+  });
 
-    // Bind
-    row.querySelector(`[data-preview="${it.id}"]`).onclick = () => window.open(it.src, "_blank");
-    row.querySelector(`[data-inc="${it.id}"]`).onclick = () => changeQty(it.id, +1);
-    row.querySelector(`[data-dec="${it.id}"]`).onclick = () => changeQty(it.id, -1);
-    row.querySelector(`[data-qty="${it.id}"]`).oninput = (e)=>setQty(it.id, parseInt(e.target.value||"1",10));
-    row.querySelector(`[data-id="${it.id}"]`).onchange = (e)=>toggleSelect(it, e.target.checked);
-
-    // reflect selected
-    if(state.selected.has(it.id)){
-      row.querySelector(`[data-id="${it.id}"]`).checked = true;
-      row.querySelector(`[data-qty="${it.id}"]`).value = state.selected.get(it.id).qty;
-    }
-
-    listEl.appendChild(row);
+  // bind preview click
+  tbody.querySelectorAll("[data-open]").forEach(el=>{
+    el.addEventListener("click", ()=> window.open(el.dataset.open, "_blank"));
+  });
+  // bind pick checkbox
+  tbody.querySelectorAll("[data-pick]").forEach(cb=>{
+    cb.addEventListener("change", (e)=>{
+      const id = e.target.dataset.pick;
+      if(e.target.checked) state.picked.add(id);
+      else state.picked.delete(id);
+      renderSummary();
+    });
   });
 }
 
-/** ====== SELECTION ====== */
-function toggleSelect(item, checked){
-  if(checked){
-    const cur = state.selected.get(item.id);
-    state.selected.set(item.id, {qty: cur?.qty || 1, item});
-  }else{
-    state.selected.delete(item.id);
-  }
-  renderSummary();
-}
-
-function setQty(id, qty){
-  qty = Math.max(1, isNaN(qty)?1:qty);
-  if(state.selected.has(id)){
-    state.selected.get(id).qty = qty;
-    renderSummary();
-  }
-}
-
-function changeQty(id, delta){
-  const input = document.querySelector(`[data-qty="${id}"]`);
-  const next = Math.max(1, parseInt(input.value||"1",10) + delta);
-  input.value = next;
-  setQty(id, next);
-}
-
-/** ====== SUMMARY ====== */
+/* ====== SUMMARY ====== */
 function renderSummary(){
   sumItemsEl.innerHTML = "";
-  let total = 0;
-
-  [...state.selected.values()].forEach(({item, qty})=>{
-    total += qty;
+  const pickedArr = SETS.filter(s=>state.picked.has(s.id));
+  pickedArr.forEach(set=>{
     const row = document.createElement("div");
     row.className = "sum-row";
     row.innerHTML = `
-      <div class="sum-thumb"><img src="${item.src}" alt="${item.name}"></div>
+      <div class="sum-thumb"><img src="${set.images[0].src}" alt="${set.title}"></div>
       <div>
-        <div class="sum-title">${item.name}</div>
-        <div class="sum-meta">${item.category} • ${item.size}</div>
+        <div class="sum-title">${set.title}</div>
+        <div class="muted">${set.images.length} gambar: ${set.images.map(i=>i.label).join(", ")}</div>
       </div>
-      <div class="sum-meta">x${qty}</div>
     `;
     sumItemsEl.appendChild(row);
   });
-
-  countSelEl.textContent = `${state.selected.size} item • qty ${total}`;
+  countSelEl.textContent = `${pickedArr.length} dipilih`;
 }
 
-/** ====== SEARCH / TOOLS ====== */
-document.getElementById("search").oninput = (e)=>{ state.filter = e.target.value; renderList(); };
-document.getElementById("clearSearch").onclick = ()=>{ state.filter=""; document.getElementById("search").value=""; renderList(); };
-
+/* ====== TOOLS ====== */
 document.getElementById("clearAll").onclick = ()=>{
-  state.selected.clear();
-  renderList(); renderSummary();
+  state.picked.clear();
+  document.querySelectorAll('input[type="checkbox"][data-pick]').forEach(c=>c.checked=false);
+  renderSummary();
+};
+
+document.getElementById("downloadBtn").onclick = ()=>{
+  const order = SETS.filter(s=>state.picked.has(s.id)).map(s=>({
+    id:s.id, title:s.title, files:s.images
+  }));
+  const blob = new Blob([JSON.stringify({createdAt:new Date().toISOString(), order}, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = Object.assign(document.createElement("a"), {href:url, download:"order-desain.json"});
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
 };
 
 document.getElementById("printBtn").onclick = ()=>window.print();
 
-document.getElementById("downloadBtn").onclick = ()=>{
-  const order = [...state.selected.values()].map(({item, qty})=>({
-    id:item.id, name:item.name, category:item.category, size:item.size, qty
-  }));
-  const blob = new Blob([JSON.stringify({createdAt:new Date().toISOString(), order}, null, 2)], {type:"application/json"});
-  const url = URL.createObjectURL(blob);
-  const a = Object.assign(document.createElement("a"), {href:url, download:"order-kaos.json"});
-  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-};
-
-/** INIT */
-renderList(); renderSummary();
+/* INIT */
+renderTable(); renderSummary();
 </script>
 </body>
 </html>
