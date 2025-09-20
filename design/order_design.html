@@ -18,6 +18,8 @@
   .hint{font-size:12px;color:#9aa7c7;margin-top:-6px}
   .error{font-size:12px;color:#ff8a8a;margin-top:-6px;display:none}
   .oktag{display:none;align-items:center;gap:6px;background:#0c1f12;border:1px solid #1f5f3a;color:#b7ffd2;padding:6px 10px;border-radius:999px}
+  .cartBtn{position:relative}
+  .badge{display:none;position:absolute;top:-8px;right:-8px;background:#ef4444;color:#fff;border:2px solid #0f1320;border-radius:999px;font:700 11px/1 system-ui;padding:2px 6px}
 
   /* tabel */
   .card{background:#171922;border:1px solid var(--line);border-radius:14px;padding:10px 12px}
@@ -27,12 +29,14 @@
   .row:last-child .td{border-bottom:none}
   .no{width:56px;text-align:center}
   .title{font-weight:800}
-  .thumb{width:120px;height:120px;border-radius:10px;overflow:hidden;background:#0e1018;border:1px solid var(--line);display:grid;place-items:center}
+  .thumb{width:120px;height:120px;border-radius:10px;overflow:hidden;background:#0e1018;border:1px solid #26304f;display:grid;place-items:center;cursor:pointer}
   .thumb img{width:100%;height:100%;object-fit:cover}
   .pick{text-align:center;width:90px}
   .disabled-note{font-size:12px;color:#ff9b9b;margin-top:6px}
 
-  /* keranjang */
+  /* keranjang + backdrop */
+  .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;z-index:49}
+  .backdrop.show{display:block}
   .cart-panel{position:fixed;inset:0 0 0 auto;max-width:420px;transform:translateX(110%);transition:.25s ease;background:#0f1115;border-left:1px solid #26304f;box-shadow:-10px 0 30px rgba(0,0,0,.5);z-index:50;display:flex;flex-direction:column}
   .cart-panel.open{transform:translateX(0)}
   .cart-head{display:flex;align-items:center;justify-content:space-between;padding:14px;border-bottom:1px solid #26304f}
@@ -45,8 +49,14 @@
   .btn-primary{background:linear-gradient(135deg,#3b82f6,#22c55e);border:none;color:#fff;width:100%}
   .xbtn{cursor:pointer;color:#ff9b9b;border:1px solid #5b2b2b;background:#1a0d0d;border-radius:8px;padding:6px 8px;width:100%}
 
+  /* lightbox */
+  .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:70}
+  .lightbox.show{display:flex}
+  .lightbox img{max-width:92vw;max-height:88vh;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+  .lightbox .close{position:absolute;top:16px;right:16px;background:#1b2339;color:#eaf2ff;border:1px solid #2b3a66;border-radius:10px;padding:8px 12px;cursor:pointer}
+
   /* toast */
-  .toast{position:fixed;top:14px;right:14px;background:#1b2339;color:#eaf2ff;border:1px solid #2b3a66;padding:10px 14px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);opacity:0;transform:translateY(-10px);transition:.2s;z-index:60}
+  .toast{position:fixed;top:14px;right:14px;background:#1b2339;color:#eaf2ff;border:1px solid #2b3a66;padding:10px 14px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);opacity:0;transform:translateY(-10px);transition:.2s;z-index:80}
   .toast.show{opacity:1;transform:translateY(0)}
 
   @media (max-width:760px){
@@ -79,7 +89,7 @@
       <button id="okBtn" class="btn">OK</button>
       <div id="okTag" class="oktag">✔️ Terverifikasi</div>
     </div>
-    <button id="cartBtn" class="btn" style="margin-left:auto">🧺 Keranjang</button>
+    <button id="cartBtn" class="btn cartBtn" style="margin-left:auto">🧺 Keranjang <span id="cartBadge" class="badge">0</span></button>
   </div>
 
   <section class="card">
@@ -97,8 +107,9 @@
   </section>
 </div>
 
-<!-- panel keranjang -->
-<aside id="cartPanel" class="cart-panel">
+<!-- backdrop & panel keranjang -->
+<div id="backdrop" class="backdrop"></div>
+<aside id="cartPanel" class="cart-panel" aria-hidden="true">
   <div class="cart-head">
     <strong>Pesanan</strong>
     <button id="closeCart" class="btn">Tutup</button>
@@ -110,6 +121,12 @@
   </div>
 </aside>
 
+<!-- lightbox -->
+<div id="lightbox" class="lightbox" aria-hidden="true">
+  <button class="close" id="lbClose">Tutup ✕</button>
+  <img id="lbImg" alt="preview">
+</div>
+
 <!-- toast -->
 <div id="toast" class="toast"></div>
 
@@ -120,8 +137,8 @@ const SETS = [
   {id:"set-zenius", title:"Zenius Street Logo", back:"./gambar/Zenius_Back.png"}
 ];
 const PRICE = 30000;
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby20E4jQz5pGqSn0atadu1QGSVaUVXStt8GYiNnBlKvr-eyU-fz7cJJXRxxQqKkMLDSLw/exec"; // <-- GANTI: URL Apps Script kamu
-const WA_NUMBER = "6281219929245"; // <-- GANTI: nomor WhatsApp penjual (tanpa +)
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby20E4jQz5pGqSn0atadu1QGSVaUVXStt8GYiNnBlKvr-eyU-fz7cJJXRxxQqKkMLDSLw/exec"; // <-- GANTI
+const WA_NUMBER = "6281219929245"; // <-- GANTI (tanpa +)
 
 /* ====== STATE ====== */
 let USER_KEY = null;     // namespace keranjang
@@ -133,33 +150,59 @@ const loadCart = ()=> JSON.parse(localStorage.getItem(lsKey())||"{}");
 const saveCart = (c)=> localStorage.setItem(lsKey(), JSON.stringify(c));
 const formatIDR = n => new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n);
 const validTelp = t => /^\d{10,15}$/.test(t);
-function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000); }
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1800); }
+function updateBadge(){
+  const badge=document.getElementById('cartBadge');
+  const count=(USER_KEY&&CONFIRMED)?Object.values(loadCart()).reduce((a,c)=>a+(c.qty||0),0):0;
+  if(count>0){badge.style.display='inline-block';badge.textContent=count;} else {badge.style.display='none';}
+}
+
+/* ====== LIGHTBOX ====== */
+const lb=document.getElementById('lightbox'), lbImg=document.getElementById('lbImg'), lbClose=document.getElementById('lbClose');
+function showLightbox(src){ lbImg.src=src; lb.classList.add('show'); lb.setAttribute('aria-hidden','false'); }
+function hideLightbox(){ lb.classList.remove('show'); lb.setAttribute('aria-hidden','true'); lbImg.src=""; }
+lb.addEventListener('click', (e)=>{ if(e.target===lb) hideLightbox(); });
+lbClose.addEventListener('click', hideLightbox);
+document.addEventListener('keydown', (e)=>{ if(e.key==='Escape'){ hideLightbox(); closeCart(); }});
 
 /* ====== RENDER LIST ====== */
 const tbody = document.getElementById("tbody");
 function render(){
   const cart = (USER_KEY && CONFIRMED) ? loadCart() : {};
   tbody.innerHTML = "";
+  let rowNo=0;
   SETS.forEach((s,i)=>{
     if(cart[s.id]) return; // sembunyikan yang sudah dipilih
+    rowNo++;
     const disabled = !(USER_KEY && CONFIRMED);
     const tr = document.createElement("tr");
     tr.className = "row";
     tr.innerHTML = `
-      <td class="td no">${i+1}</td>
+      <td class="td no">${rowNo}</td>
       <td class="td"><div class="title">${s.title}</div><div style="color:#9aa7c7">ID: ${s.id}</div></td>
-      <td class="td"><div class="thumb"><img src="${s.back}" alt="${s.title}"></div></td>
+      <td class="td">
+        <div class="thumb" data-preview="${s.back}" title="Klik untuk memperbesar">
+          <img src="${s.back}" alt="${s.title}">
+        </div>
+      </td>
       <td class="td pick">
         <input type="checkbox" data-id="${s.id}" ${disabled?"disabled":""}>
         ${disabled?`<div class="disabled-note">Klik OK dulu</div>`:""}
       </td>`;
     tbody.appendChild(tr);
   });
+
+  // perbesar gambar
+  tbody.querySelectorAll("[data-preview]").forEach(div=>{
+    div.addEventListener('click', ()=> showLightbox(div.dataset.preview));
+  });
+
+  // pilih item
   tbody.querySelectorAll("input[type=checkbox]").forEach(cb=>{
     cb.onchange = ()=>{
       const id = cb.dataset.id;
       const cart = loadCart();
-      if(cb.checked){ cart[id] = {qty:1, price:PRICE}; saveCart(cart); render(); toast('Ditambahkan ke keranjang'); }
+      if(cb.checked){ cart[id] = {qty:1, price:PRICE}; saveCart(cart); render(); renderCart(); updateBadge(); toast('Ditambahkan ke keranjang'); }
     };
   });
 }
@@ -181,16 +224,19 @@ okBtn.onclick = ()=>{
   CONFIRMED = true;
   okTag.style.display="inline-flex";
   toast("Identitas OK. Silakan pilih barang.");
-  render();
+  render(); updateBadge();
 };
-
 telpEl.addEventListener("input", ()=>{ errEl.style.display = validTelp(telpEl.value.trim()) ? "none":"block"; });
-namaEl.addEventListener("input", ()=>{ if(CONFIRMED){CONFIRMED=false; okTag.style.display="none"; render();} });
+namaEl.addEventListener("input", ()=>{ if(CONFIRMED){CONFIRMED=false; okTag.style.display="none"; render(); updateBadge();} });
 
-/* ====== KERANJANG ====== */
+/* ====== KERANJANG + BACKDROP ====== */
 const cartPanel = document.getElementById("cartPanel");
-document.getElementById("cartBtn").onclick = ()=>{ renderCart(); cartPanel.classList.add("open"); };
-document.getElementById("closeCart").onclick = ()=> cartPanel.classList.remove("open");
+const backdrop  = document.getElementById("backdrop");
+function openCart(){ renderCart(); cartPanel.classList.add("open"); cartPanel.setAttribute('aria-hidden','false'); backdrop.classList.add('show'); }
+function closeCart(){ cartPanel.classList.remove("open"); cartPanel.setAttribute('aria-hidden','true'); backdrop.classList.remove('show'); }
+document.getElementById("cartBtn").onclick = openCart;
+document.getElementById("closeCart").onclick = closeCart;
+backdrop.addEventListener('click', closeCart);
 
 function renderCart(){
   const cart = (USER_KEY)? loadCart() : {};
@@ -206,7 +252,7 @@ function renderCart(){
   });
   if(!Object.keys(cart).length) body.innerHTML = "<p style='color:#9aa7c7'>Keranjang kosong</p>";
   document.getElementById("grand").textContent = formatIDR(total);
-  body.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{ const id=b.dataset.del; const c=loadCart(); delete c[id]; saveCart(c); render(); renderCart(); });
+  body.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{ const id=b.dataset.del; const c=loadCart(); delete c[id]; saveCart(c); render(); renderCart(); updateBadge(); });
 }
 
 /* ====== SUBMIT ====== */
@@ -256,13 +302,14 @@ document.getElementById("submitBtn").onclick = ()=>{
     body:JSON.stringify({noBon,nama,telp,items,total:grand,source:"order_design.html"})
   }).catch(err=>console.warn("GAS error",err));
 
-  // reset
-  localStorage.removeItem(lsKey()); render(); renderCart(); cartPanel.classList.remove("open");
+  // reset UI
+  localStorage.removeItem(lsKey());
+  render(); renderCart(); updateBadge(); closeCart();
   toast("Pesanan dikirim. Terima kasih!");
 };
 
 /* INIT */
-render();
+render(); updateBadge();
 </script>
 </body>
 </html>
