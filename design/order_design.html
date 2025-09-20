@@ -48,7 +48,7 @@ h1{font:800 20px;margin:0}
 .btn-primary{background:linear-gradient(135deg,#3b82f6,#22c55e);border:none;color:#fff;width:100%}
 .xbtn{cursor:pointer;color:#ff9b9b;border:1px solid #5b2b2b;background:#1a0d0d;border-radius:8px;padding:6px 8px;width:100%}
 
-/* lightbox carousel */
+/* lightbox */
 .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;z-index:9500}
 .lightbox.show{display:flex}
 .lb-inner{position:relative;max-width:94vw}
@@ -131,10 +131,22 @@ h1{font:800 20px;margin:0}
   </div>
 </div>
 
+<!-- Fallback bar kalau WA tidak auto-terbuka -->
+<div id="waFallback" style="
+  position:fixed;left:12px;right:12px;bottom:12px;z-index:9600;
+  display:none;gap:10px;align-items:center;justify-content:space-between;
+  background:#0f1320;border:1px solid #2b3a66;color:#eaf2ff;border-radius:12px;
+  padding:10px 12px;box-shadow:0 10px 30px rgba(0,0,0,.4);">
+  <div>WhatsApp tidak terbuka otomatis. Tap tombol ini:</div>
+  <a id="waFallbackBtn" href="#" target="_blank" rel="noopener" style="
+     background:#22c55e;color:#fff;font-weight:700;
+     padding:10px 14px;border-radius:10px;text-decoration:none;">Buka WhatsApp</a>
+</div>
+
 <div id="toast" class="toast"></div>
 
 <script>
-/* =================== KONFIG =================== */
+/* ========= KONFIG ========= */
 const SETS = [
   {
     id:"set-nothing",
@@ -143,13 +155,13 @@ const SETS = [
     back:"./gambar/Nothing_Back.png",
     mockup:"./gambar/Nothing_Mockup.png"
   }
-  // tambahkan set lain di sini...
+  // tambah set lain di sini…
 ];
-const PRICE = 30000;
+const PRICE      = 30000;
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby20E4jQz5pGqSn0atadu1QGSVaUVXStt8GYiNnBlKvr-eyU-fz7cJJXRxxQqKkMLDSLw/exec"; // ganti
 const WA_NUMBER  = "6281219929245"; // ganti (tanpa +)
 
-/* =================== STATE & HELPERS =================== */
+/* ========= STATE & UTILS ========= */
 let USER_KEY=null, CONFIRMED=false;
 const lsKey=()=>`orderCart_${USER_KEY}`;
 const loadCart=()=>JSON.parse(localStorage.getItem(lsKey())||"{}");
@@ -159,7 +171,7 @@ const validTelp=t=>/^\d{10,15}$/.test(t);
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800);}
 function updateBadge(){const b=document.getElementById('cartBadge');const c=(USER_KEY&&CONFIRMED)?Object.values(loadCart()).reduce((a,v)=>a+(v.qty||0),0):0;b.style.display=c>0?'inline-block':'none';b.textContent=c;}
 
-/* =================== LIGHTBOX =================== */
+/* ========= LIGHTBOX ========= */
 const lb=document.getElementById('lightbox'), lbImg=document.getElementById('lbImg'),
       lbThumbs=document.getElementById('lbThumbs'), lbPrev=document.getElementById('lbPrev'),
       lbNext=document.getElementById('lbNext'), lbClose=document.getElementById('lbClose');
@@ -174,7 +186,7 @@ lbNext.onclick=()=>{if(!lbList.length)return;lbIndex=(lbIndex+1)%lbList.length;s
 lbClose.onclick=closeLightbox; lb.addEventListener('click',e=>{if(e.target===lb)closeLightbox();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeLightbox(); closeCart();}});
 
-/* =================== LIST RENDER =================== */
+/* ========= RENDER LIST ========= */
 const tbody=document.getElementById('tbody');
 function render(){
   const cart=(USER_KEY&&CONFIRMED)?loadCart():{};
@@ -202,7 +214,7 @@ function render(){
   });
 }
 
-/* =================== IDENTITAS =================== */
+/* ========= IDENTITAS ========= */
 const namaEl=document.getElementById('nama'), telpEl=document.getElementById('telp'), errEl=document.getElementById('telpErr'), okTag=document.getElementById('okTag');
 document.getElementById('okBtn').onclick=()=>{
   const n=namaEl.value.trim(), t=telpEl.value.trim();
@@ -212,7 +224,7 @@ document.getElementById('okBtn').onclick=()=>{
   render(); updateBadge(); toast('Identitas OK. Pilih barang.');
 };
 
-/* =================== KERANJANG =================== */
+/* ========= KERANJANG ========= */
 const cartPanel=document.getElementById('cartPanel'), backdrop=document.getElementById('backdrop');
 function openCart(){renderCart();cartPanel.classList.add('open');backdrop.classList.add('show');}
 function closeCart(){cartPanel.classList.remove('open');backdrop.classList.remove('show');}
@@ -236,16 +248,15 @@ function renderCart(){
   body.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{const cc=loadCart(); delete cc[b.dataset.del]; saveCart(cc); render(); renderCart(); updateBadge();});
 }
 
-/* =================== KIRIM KE SHEET =================== */
+/* ========= SEND TO SHEET ========= */
 function sendToSheet(url, payload){
-  // kirim header + detail (items) sekaligus
   const blob=new Blob([JSON.stringify(payload)],{type:'text/plain'});
   if(navigator.sendBeacon){ if(navigator.sendBeacon(url,blob)) return; }
   fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)})
     .catch(()=>{ const q=encodeURIComponent(JSON.stringify(payload)); new Image().src=`${url}?q=${q}`; });
 }
 
-/* =================== OPEN WHATSAPP (multi-strategy) =================== */
+/* ========= OPEN WHATSAPP (auto + fallback) ========= */
 function openWhatsApp(phone, textPlain){
   const num=String(phone||'').replace(/\D/g,'');
   const txt=encodeURIComponent(textPlain||'');
@@ -253,13 +264,16 @@ function openWhatsApp(phone, textPlain){
   const intent=`intent://send/?phone=${num}&text=${txt}#Intent;scheme=whatsapp;package=com.whatsapp;end`;
   const wa1=`https://wa.me/${num}?text=${txt}`;
   const wa2=`https://api.whatsapp.com/send?phone=${num}&text=${txt}`;
+  const btn=document.getElementById('waFallbackBtn'); if(btn) btn.href=wa2;
+
   try{ window.location.assign(scheme); }catch(e){}
-  setTimeout(()=>{ if(document.visibilityState==='visible'){ try{window.location.assign(intent);}catch(e){} }},400);
-  setTimeout(()=>{ if(document.visibilityState==='visible'){ try{window.location.assign(wa1);}catch(e){window.location.assign(wa2);} }},800);
+  setTimeout(()=>{ if(document.visibilityState==='visible'){ try{window.location.assign(intent);}catch(e){} }},350);
+  setTimeout(()=>{ if(document.visibilityState==='visible'){ try{window.location.assign(wa1);}catch(e){window.location.assign(wa2);} }},700);
+  setTimeout(()=>{ if(document.visibilityState==='visible'){ const bar=document.getElementById('waFallback'); if(bar) bar.style.display='flex'; }},1200);
   return true;
 }
 
-/* =================== SUBMIT =================== */
+/* ========= SUBMIT ========= */
 document.getElementById('submitBtn').onclick=()=>{
   if(!(USER_KEY&&CONFIRMED)){toast('Klik OK pada identitas dulu');return;}
   const cart=loadCart(); if(!Object.keys(cart).length){toast('Keranjang kosong');return;}
@@ -276,10 +290,10 @@ document.getElementById('submitBtn').onclick=()=>{
     return {no:i+1,id,title:s.title,qty,price,subtotal:qty*price};
   });
 
-  // kirim ke Google Sheet (detail ikut)
+  // kirim ke Google Sheet (header + detail)
   sendToSheet(SCRIPT_URL,{noBon,nama,telp,timestamp:new Date().toISOString(),items,total,source:"order_design.html"});
 
-  // message WA (plain)
+  // pesan WA (plain)
   let msg=`Pesanan Baru 🚨
 Nama: ${nama}
 Telp: ${telp}
@@ -289,7 +303,7 @@ Tanggal: ${now.toLocaleString('id-ID')}
   items.forEach(it=>{ msg+=`${it.no}. ${it.title} – ${it.qty} x ${formatIDR(it.price)}\n`; });
   msg+=`\nTotal: ${formatIDR(total)}`;
 
-  // siapkan BON (PDF print)
+  // bon (PDF)
   const rows=items.map(it=>`<tr><td>${it.no}</td><td>${it.title}</td><td>${it.qty}</td><td>${formatIDR(it.price)}</td><td>${formatIDR(it.subtotal)}</td></tr>`).join("");
   const bonHTML=`<!doctype html><html><head><meta charset="utf-8"><title>${noBon}</title>
   <style>body{font-family:Arial;margin:24px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:6px}</style></head>
@@ -298,7 +312,7 @@ Tanggal: ${now.toLocaleString('id-ID')}
   <tr><td colspan="4" style="text-align:right"><b>Total</b></td><td><b>${formatIDR(total)}</b></td></tr></table>
   <script>window.print();<\/script></body></html>`;
 
-  // buka WA (app>intent>web). lalu 700ms kemudian buka bon (hindari popup block)
+  // buka WA (auto + fallback). Setelah itu buka bon sedikit terlambat
   openWhatsApp(WA_NUMBER, msg);
   setTimeout(()=>{ const w=window.open("","_blank"); if(w){ w.document.write(bonHTML); w.document.close(); }},700);
 
@@ -308,28 +322,8 @@ Tanggal: ${now.toLocaleString('id-ID')}
   toast('Pesanan diproses. Terima kasih!');
 };
 
-/* =================== INIT =================== */
+/* ========= INIT ========= */
 render(); updateBadge();
 </script>
-
-<!--
-Contoh Apps Script (Google Sheet) ringkas:
-------------------------------------------
-function doPost(e){
-  const body = e.postData ? e.postData.contents : (e.parameter.q || "");
-  const data = JSON.parse(body);
-  const ss = SpreadsheetApp.openById('SPREADSHEET_ID');   // ganti
-  const head = ss.getSheetByName('Orders') || ss.insertSheet('Orders');
-  const det  = ss.getSheetByName('Items')  || ss.insertSheet('Items');
-  if (head.getLastRow()==0) head.appendRow(['Time','NoBon','Nama','Telp','Total','Source']);
-  if (det.getLastRow()==0)  det.appendRow(['Time','NoBon','No','ID','Title','Qty','Price','Subtotal']);
-
-  head.appendRow([new Date(), data.noBon, data.nama, data.telp, data.total, data.source]);
-  (data.items||[]).forEach(it=>{
-    det.appendRow([new Date(), data.noBon, it.no, it.id||'', it.title, it.qty, it.price, it.subtotal]);
-  });
-  return ContentService.createTextOutput('OK').setMimeType(ContentService.MimeType.TEXT);
-}
--->
 </body>
 </html>
