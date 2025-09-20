@@ -23,6 +23,7 @@
   .thumb{width:120px;height:120px;border-radius:10px;overflow:hidden;background:#0e1018;border:1px solid var(--line);display:grid;place-items:center}
   .thumb img{width:100%;height:100%;object-fit:cover}
   .pick{text-align:center;width:90px}
+  .disabled-note{font-size:12px;color:#ff9b9b;margin-top:6px}
   /* keranjang */
   .cart-panel{position:fixed;inset:0 0 0 auto;max-width:420px;transform:translateX(110%);transition:.25s ease;background:#0f1115;border-left:1px solid #26304f;box-shadow:-10px 0 30px rgba(0,0,0,.5);z-index:50;display:flex;flex-direction:column}
   .cart-panel.open{transform:translateX(0)}
@@ -55,7 +56,6 @@
   <div class="formbox">
     <input id="nama" placeholder="Nama Pemesan" />
     <input id="telp" placeholder="No. Telp / WA" />
-    <button id="startBtn" class="btn">Mulai Order</button>
     <button id="cartBtn" class="btn" style="margin-left:auto">🧺 Keranjang</button>
   </div>
 
@@ -88,48 +88,54 @@
 </aside>
 
 <script>
-const SETS = [
+const SETS=[
   {id:"set-nothing", title:"Nothing is Imposible", back:"./gambar/Nothing_Back.png"},
   {id:"set-zenius", title:"Zenius Street Logo", back:"./gambar/Zenius_Back.png"}
 ];
 const PRICE=30000;
+const SCRIPT_URL="https://script.google.com/macros/s/XXXX/exec"; // ganti URL Apps Script kamu
 let USER_KEY=null;
 
 const lsKey=()=>`orderCart_${USER_KEY}`;
-const loadCart=()=> JSON.parse(localStorage.getItem(lsKey())||"{}");
-const saveCart=(c)=> localStorage.setItem(lsKey(),JSON.stringify(c));
+const loadCart=()=>JSON.parse(localStorage.getItem(lsKey())||"{}");
+const saveCart=(c)=>localStorage.setItem(lsKey(),JSON.stringify(c));
 const formatIDR=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n);
 
 /* render list */
 const tbody=document.getElementById("tbody");
 function render(){
-  if(!USER_KEY){tbody.innerHTML="<tr><td colspan=4 style='padding:20px;text-align:center;color:#9aa7c7'>Isi Nama & Telp dulu</td></tr>";return;}
-  const cart=loadCart(); tbody.innerHTML=""; let n=0;
-  SETS.forEach(s=>{
-    if(cart[s.id]) return; n++;
+  const cart=USER_KEY?loadCart():{};
+  tbody.innerHTML="";
+  SETS.forEach((s,i)=>{
+    if(cart[s.id]) return;
     const tr=document.createElement("tr");
     tr.innerHTML=`
-      <td class="td no">${n}</td>
+      <td class="td no">${i+1}</td>
       <td class="td"><div class="title">${s.title}</div><div style="color:#9aa7c7">ID: ${s.id}</div></td>
       <td class="td"><div class="thumb"><img src="${s.back}"></div></td>
-      <td class="td pick"><input type="checkbox" data-id="${s.id}"></td>`;
+      <td class="td pick">
+        <input type="checkbox" data-id="${s.id}" ${USER_KEY?"":"disabled"}>
+        ${USER_KEY?"":"<div class='disabled-note'>Isi identitas dulu</div>"}
+      </td>`;
     tbody.appendChild(tr);
   });
-  if(!n) tbody.innerHTML="<tr><td colspan=4 style='padding:20px;text-align:center;color:#9aa7c7'>Semua item sudah diorder</td></tr>";
   tbody.querySelectorAll("input[type=checkbox]").forEach(cb=>{
     cb.onchange=()=>{
-      const id=cb.dataset.id; const cart=loadCart();
-      if(cb.checked){ cart[id]={qty:1,price:PRICE}; saveCart(cart); render(); }
+      const id=cb.dataset.id;
+      const cart=loadCart();
+      if(cb.checked){cart[id]={qty:1,price:PRICE};saveCart(cart);render();}
     };
   });
 }
 
-/* form identitas */
-document.getElementById("startBtn").onclick=()=>{
+/* validasi identitas */
+function validTelp(t){return /^\d{10,15}$/.test(t);}
+document.getElementById("nama").oninput=document.getElementById("telp").oninput=()=>{
   const nama=document.getElementById("nama").value.trim();
   const telp=document.getElementById("telp").value.trim();
-  if(!nama||!telp){alert("Isi Nama & Telp dulu!");return;}
-  USER_KEY=nama.replace(/\s+/g,"_")+"_"+telp;
+  if(nama && validTelp(telp)){
+    USER_KEY=nama.replace(/\s+/g,"_")+"_"+telp;
+  }else{USER_KEY=null;}
   render();
 };
 
@@ -139,7 +145,8 @@ document.getElementById("cartBtn").onclick=()=>{renderCart();cartPanel.classList
 document.getElementById("closeCart").onclick=()=>cartPanel.classList.remove("open");
 
 function renderCart(){
-  const cart=loadCart(); const body=document.getElementById("cartBody"); body.innerHTML=""; let total=0;
+  const cart=USER_KEY?loadCart():{};
+  const body=document.getElementById("cartBody"); body.innerHTML=""; let total=0;
   Object.entries(cart).forEach(([id,{qty,price}])=>{
     const s=SETS.find(x=>x.id===id); total+=qty*price;
     const div=document.createElement("div"); div.className="cart-row";
@@ -156,34 +163,52 @@ function renderCart(){
 
 /* submit */
 document.getElementById("submitBtn").onclick=()=>{
+  if(!USER_KEY){alert("Isi identitas dulu!");return;}
   const cart=loadCart(); if(!Object.keys(cart).length){alert("Keranjang kosong");return;}
-  const nama=document.getElementById("nama").value.trim(); const telp=document.getElementById("telp").value.trim();
-  const now=new Date(); const grand=Object.values(cart).reduce((a,c)=>a+c.qty*c.price,0);
+  const [nama,telp]=USER_KEY.split("_");
+  const now=new Date();
+  const grand=Object.values(cart).reduce((a,c)=>a+c.qty*c.price,0);
+  const noBon="BON-"+now.getFullYear().toString().slice(-2)+(now.getMonth()+1).toString().padStart(2,"0")+now.getDate().toString().padStart(2,"0")+"-"+Math.random().toString(36).slice(2,7).toUpperCase();
 
-  // isi WA
-  let pesan=`Pesanan Baru 🚨%0AAtas nama: ${nama}%0ATelp: ${telp}%0ATanggal: ${now.toLocaleString('id-ID')}%0A%0A`;
+  // 1) WA message
+  let pesan=`Pesanan Baru 🚨%0ANama: ${nama}%0ATelp: ${telp}%0ATanggal: ${now.toLocaleString('id-ID')}%0A%0A`;
   Object.entries(cart).forEach(([id,{qty,price}],i)=>{
     const s=SETS.find(x=>x.id===id);
     pesan+=`${i+1}. ${s.title} – ${qty} x ${formatIDR(price)}%0A`;
   });
   pesan+=`%0ATotal: ${formatIDR(grand)}`;
-  window.open(`https://wa.me/6281219929245?text=${pesan}`,"_blank"); // ganti nomor WA lo
+  window.open(`https://wa.me/6281234567890?text=${pesan}`,"_blank"); // ganti nomor WA kamu
 
-  // bon PDF
+  // 2) Bon PDF
   let rows=Object.entries(cart).map(([id,{qty,price}],i)=>{
     const s=SETS.find(x=>x.id===id);
     return `<tr><td>${i+1}</td><td>${s.title}</td><td>${qty}</td><td>${formatIDR(price)}</td><td>${formatIDR(qty*price)}</td></tr>`;
   }).join("");
-  const html=`<!doctype html><html><head><meta charset="utf-8"><title>Bon</title>
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>${noBon}</title>
   <style>body{font-family:Arial;margin:24px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:6px}</style>
-  </head><body><h2>Bon Pesanan</h2><p>Nama: ${nama}<br>Telp: ${telp}<br>Tanggal: ${now.toLocaleString('id-ID')}</p>
+  </head><body><h2>Bon Pesanan</h2><p>No: ${noBon}<br>Nama: ${nama}<br>Telp: ${telp}<br>Tanggal: ${now.toLocaleString('id-ID')}</p>
   <table><tr><th>No</th><th>Judul</th><th>Qty</th><th>Harga</th><th>Subtotal</th></tr>${rows}
   <tr><td colspan=4 style="text-align:right"><b>Total</b></td><td><b>${formatIDR(grand)}</b></td></tr></table>
   <script>window.print();<\/script></body></html>`;
   const w=window.open("","_blank"); w.document.write(html); w.document.close();
 
-  localStorage.removeItem(lsKey()); render(); renderCart();
+  // 3) Save ke Google Sheet
+  const items=Object.entries(cart).map(([id,{qty,price}])=>{
+    const s=SETS.find(x=>x.id===id);
+    return {id,title:s.title,qty,price,subtotal:qty*price};
+  });
+  fetch(SCRIPT_URL,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({noBon,nama,telp,items,total:grand,source:"order_design.html"})
+  }).then(r=>r.json()).then(res=>{if(!res.ok)console.warn("GAS save fail",res);})
+  .catch(err=>console.warn("GAS error",err))
+  .finally(()=>{
+    localStorage.removeItem(lsKey()); render(); renderCart();
+  });
 };
+
+render();
 </script>
 </body>
 </html>
