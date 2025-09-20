@@ -1,118 +1,335 @@
 <!doctype html>
 <html lang="id">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Order Desain Kaos • List</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Order Desain Kaos</title>
 <style>
-  :root{--bg:#0f1115;--card:#171922;--fg:#e8eefc;--muted:#9aa7c7;--line:#23283a}
-  *{box-sizing:border-box} body{margin:0;background:#0f1115;color:var(--fg);font:500 15px/1.55 system-ui,Segoe UI,Inter,Arial}
-  .wrap{max-width:1200px;margin:auto;padding:22px}
-  h1{font:800 20px/1.2;margin:0}
-  .formbox{background:#171922;border:1px solid var(--line);border-radius:12px;padding:12px;margin:16px 0;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start}
-  .formbox input{flex:1;min-width:180px;padding:10px 12px;border-radius:8px;border:1px solid #26304f;background:#0f1320;color:var(--fg)}
-  .btn{border:1px solid #26304f;background:#0f1320;color:#dce6ff;border-radius:10px;padding:10px 14px;cursor:pointer}
-  .hint{font-size:12px;color:#9aa7c7;margin-top:-6px}
-  .error{font-size:12px;color:#ff8a8a;margin-top:-6px;display:none}
-  .oktag{display:none;align-items:center;gap:6px;background:#0c1f12;border:1px solid #1f5f3a;color:#b7ffd2;padding:6px 10px;border-radius:999px}
-  .cartBtn{position:relative}
-  .badge{display:none;position:absolute;top:-8px;right:-8px;background:#ef4444;color:#fff;border:2px solid #0f1320;border-radius:999px;font:700 11px/1 system-ui;padding:2px 6px}
-  .card{background:#171922;border:1px solid var(--line);border-radius:14px;padding:10px 12px}
-  .table{width:100%;border-collapse:collapse}
-  .th,.td{padding:12px;border-bottom:1px solid var(--line);vertical-align:middle}
-  .th{color:#aab6da;text-transform:uppercase;font-size:12px}
-  .row:last-child .td{border-bottom:none}
-  .no{width:56px;text-align:center}
-  .title{font-weight:800}
-  .thumb{width:120px;height:120px;border-radius:10px;overflow:hidden;background:#0e1018;border:1px solid #26304f;display:grid;place-items:center;cursor:pointer}
-  .thumb img{width:100%;height:100%;object-fit:cover}
-  .pick{text-align:center;width:90px}
-  .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;z-index:9000}
-  .backdrop.show{display:block}
-  .cart-panel{position:fixed;inset:0 0 0 auto;max-width:420px;transform:translateX(110%);transition:.25s;background:#0f1115;border-left:1px solid #26304f;z-index:9010;display:flex;flex-direction:column}
-  .cart-panel.open{transform:translateX(0)}
-  .cart-head{display:flex;align-items:center;justify-content:space-between;padding:14px;border-bottom:1px solid #26304f}
-  .cart-body{padding:12px;overflow:auto;flex:1}
-  .cart-row{display:grid;grid-template-columns:64px 1fr 70px;gap:10px;align-items:center;padding:10px 0;border-bottom:1px dashed #2b3350}
-  .cart-thumb{width:64px;height:64px;border-radius:10px;overflow:hidden;border:1px solid #26304f;background:#101422}
-  .cart-thumb img{width:100%;height:100%;object-fit:cover}
-  .cart-foot{padding:12px;border-top:1px solid #26304f}
-  .total{display:flex;align-items:center;justify-content:space-between;font-weight:800;margin-bottom:10px}
-  .btn-primary{background:linear-gradient(135deg,#3b82f6,#22c55e);border:none;color:#fff;width:100%}
-  .xbtn{cursor:pointer;color:#ff9b9b;border:1px solid #5b2b2b;background:#1a0d0d;border-radius:8px;padding:6px 8px;width:100%}
-  .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;z-index:9500}
-  .lightbox.show{display:flex}
-  .lb-inner{position:relative;max-width:94vw}
-  .lightbox .close{position:absolute;top:-48px;right:0;background:#1b2339;color:#eaf2ff;border:1px solid #2b3a66;border-radius:10px;padding:8px 12px;cursor:pointer}
-  .lb-main{display:flex;align-items:center;gap:10px}
-  .lb-main img{max-width:86vw;max-height:70vh;border-radius:12px}
-  .nav{width:42px;height:42px;border-radius:999px;background:#1b2339;color:#eaf2ff;display:grid;place-items:center;cursor:pointer}
-  .thumbs{display:flex;gap:8px;justify-content:center;margin-top:12px}
-  .thumbs img{width:72px;height:72px;object-fit:cover;border-radius:8px;opacity:.7;cursor:pointer;border:2px solid transparent}
-  .thumbs img.active{opacity:1;border-color:#3b82f6}
-  .toast{position:fixed;top:14px;right:14px;background:#1b2339;color:#eaf2ff;padding:10px 14px;border-radius:10px;z-index:9600;opacity:0;transform:translateY(-10px);transition:.2s}
-  .toast.show{opacity:1;transform:translateY(0)}
+:root{--bg:#0f1115;--card:#171922;--fg:#e8eefc;--muted:#9aa7c7;--line:#23283a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:500 15px/1.55 system-ui,Segoe UI,Inter,Arial}
+.wrap{max-width:1200px;margin:auto;padding:22px}
+h1{font:800 20px;margin:0}
+
+/* form */
+.formbox{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin:16px 0;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start}
+.formbox input{flex:1;min-width:180px;padding:10px 12px;border-radius:8px;border:1px solid #26304f;background:#0f1320;color:var(--fg)}
+.btn{border:1px solid #26304f;background:#0f1320;color:#dce6ff;border-radius:10px;padding:10px 14px;cursor:pointer}
+.hint{font-size:12px;color:#9aa7c7;margin-top:-6px}
+.error{font-size:12px;color:#ff8a8a;margin-top:-6px;display:none}
+.oktag{display:none;align-items:center;gap:6px;background:#0c1f12;border:1px solid #1f5f3a;color:#b7ffd2;padding:6px 10px;border-radius:999px}
+.cartBtn{position:relative}
+.badge{display:none;position:absolute;top:-8px;right:-8px;background:#ef4444;color:#fff;border:2px solid #0f1320;border-radius:999px;font:700 11px/1 system-ui;padding:2px 6px}
+
+/* tabel */
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.table{width:100%;border-collapse:collapse}
+.th,.td{padding:12px;border-bottom:1px solid var(--line);vertical-align:middle}
+.th{color:#aab6da;text-transform:uppercase;font-size:12px}
+.no{width:56px;text-align:center}
+.title{font-weight:800}
+.thumb{width:120px;height:120px;border-radius:10px;overflow:hidden;background:#0e1018;border:1px solid #26304f;display:grid;place-items:center;cursor:pointer}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.pick{text-align:center;width:90px}
+.disabled-note{font-size:12px;color:#ff9b9b;margin-top:6px}
+
+/* panel keranjang + backdrop */
+.backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;z-index:9000}
+.backdrop.show{display:block}
+.cart-panel{position:fixed;inset:0 0 0 auto;max-width:420px;transform:translateX(110%);transition:.25s;background:#0f1115;border-left:1px solid #26304f;z-index:9010;display:flex;flex-direction:column}
+.cart-panel.open{transform:translateX(0)}
+.cart-head{display:flex;align-items:center;justify-content:space-between;padding:14px;border-bottom:1px solid #26304f}
+.cart-body{padding:12px;overflow:auto;flex:1}
+.cart-row{display:grid;grid-template-columns:64px 1fr 70px;gap:10px;align-items:center;padding:10px 0;border-bottom:1px dashed #2b3350}
+.cart-thumb{width:64px;height:64px;border-radius:10px;overflow:hidden;border:1px solid #26304f;background:#101422}
+.cart-thumb img{width:100%;height:100%;object-fit:cover}
+.cart-foot{padding:12px;border-top:1px solid #26304f}
+.total{display:flex;align-items:center;justify-content:space-between;font-weight:800;margin-bottom:10px}
+.btn-primary{background:linear-gradient(135deg,#3b82f6,#22c55e);border:none;color:#fff;width:100%}
+.xbtn{cursor:pointer;color:#ff9b9b;border:1px solid #5b2b2b;background:#1a0d0d;border-radius:8px;padding:6px 8px;width:100%}
+
+/* lightbox carousel */
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;z-index:9500}
+.lightbox.show{display:flex}
+.lb-inner{position:relative;max-width:94vw}
+.lightbox .close{position:absolute;top:-48px;right:0;background:#1b2339;color:#eaf2ff;border:1px solid #2b3a66;border-radius:10px;padding:8px 12px;cursor:pointer}
+.lb-main{display:flex;align-items:center;gap:10px}
+.lb-main img{max-width:86vw;max-height:70vh;border-radius:12px}
+.nav{width:42px;height:42px;border-radius:999px;background:#1b2339;color:#eaf2ff;display:grid;place-items:center;cursor:pointer}
+.thumbs{display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+.thumbs img{width:72px;height:72px;object-fit:cover;border-radius:8px;opacity:.7;cursor:pointer;border:2px solid transparent}
+.thumbs img.active{opacity:1;border-color:#3b82f6}
+
+/* toast */
+.toast{position:fixed;top:14px;right:14px;background:#1b2339;color:#eaf2ff;padding:10px 14px;border-radius:10px;z-index:9600;opacity:0;transform:translateY(-10px);transition:.2s}
+.toast.show{opacity:1;transform:translateY(0)}
+
+@media (max-width:760px){
+  thead{display:none}
+  .table, tbody, .row, .td{display:block;width:100%}
+  .row{border:1px solid var(--line);border-radius:12px;margin:10px 0}
+  .td{border-bottom:1px solid var(--line)}
+  .td:last-child{border-bottom:none}
+  .thumb{width:100%;height:0;padding-bottom:60%;position:relative}
+  .thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>Order Desain Kaos</h1>
+
+  <!-- identitas -->
   <div class="formbox">
-    <input id="nama" placeholder="Nama Pemesan"/>
-    <input id="telp" placeholder="No. Telp / WA (10–15 digit angka)" inputmode="numeric"/>
-    <div id="telpErr" class="error">No. telp salah</div>
-    <button id="okBtn" type="button" class="btn">OK</button>
-    <div id="okTag" class="oktag">✔️ Terverifikasi</div>
-    <button id="cartBtn" type="button" class="btn cartBtn" style="margin-left:auto">🧺 Keranjang <span id="cartBadge" class="badge">0</span></button>
+    <div style="flex:1;min-width:220px">
+      <input id="nama" placeholder="Nama Pemesan" autocomplete="name"/>
+      <div class="hint">Isi nama lengkap</div>
+    </div>
+    <div style="flex:1;min-width:220px">
+      <input id="telp" placeholder="No. Telp / WA (10–15 digit angka)" inputmode="numeric"/>
+      <div id="telpErr" class="error">No. telp salah (10–15 digit angka)</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button id="okBtn" type="button" class="btn">OK</button>
+      <div id="okTag" class="oktag">✔️ Terverifikasi</div>
+    </div>
+    <button id="cartBtn" type="button" class="btn cartBtn" style="margin-left:auto">
+      🧺 Keranjang <span id="cartBadge" class="badge">0</span>
+    </button>
   </div>
+
+  <!-- list -->
   <section class="card">
-    <table class="table"><thead><tr><th>No</th><th>Judul</th><th>Gambar Belakang</th><th>Pilih</th></tr></thead><tbody id="tbody"></tbody></table>
+    <table class="table">
+      <thead><tr><th class="th no">No</th><th class="th">Judul</th><th class="th">Gambar Belakang</th><th class="th pick">Pilih</th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
   </section>
 </div>
 
+<!-- keranjang -->
 <div id="backdrop" class="backdrop"></div>
-<aside id="cartPanel" class="cart-panel">
+<aside id="cartPanel" class="cart-panel" aria-hidden="true">
   <div class="cart-head"><strong>Pesanan</strong><button id="closeCart" type="button" class="btn">Tutup</button></div>
   <div id="cartBody" class="cart-body"></div>
-  <div class="cart-foot"><div class="total"><span>Total</span><span id="grand">Rp 0</span></div><button id="submitBtn" type="button" class="btn btn-primary">Submit</button></div>
+  <div class="cart-foot">
+    <div class="total"><span>Total</span><span id="grand">Rp 0</span></div>
+    <button id="submitBtn" type="button" class="btn btn-primary">Submit & Cetak PDF + WA</button>
+  </div>
 </aside>
 
-<div id="lightbox" class="lightbox"><div class="lb-inner"><button class="close" id="lbClose">Tutup ✕</button><div class="lb-main"><div id="lbPrev" class="nav">⟨</div><img id="lbImg"><div id="lbNext" class="nav">⟩</div></div><div id="lbThumbs" class="thumbs"></div></div></div>
+<!-- lightbox -->
+<div id="lightbox" class="lightbox" aria-hidden="true">
+  <div class="lb-inner">
+    <button class="close" id="lbClose" type="button">Tutup ✕</button>
+    <div class="lb-main">
+      <div id="lbPrev" class="nav">⟨</div>
+      <img id="lbImg" alt="preview">
+      <div id="lbNext" class="nav">⟩</div>
+    </div>
+    <div id="lbThumbs" class="thumbs"></div>
+  </div>
+</div>
+
 <div id="toast" class="toast"></div>
 
 <script>
-const SETS=[{id:"set-nothing",title:"Nothing is Imposible",logo:"./gambar/Nothing_Logo.png",back:"./gambar/Nothing_Back.png",mockup:"./gambar/Nothing_Mockup.png"}];
-const PRICE=30000;
-const SCRIPT_URL="https://script.google.com/macros/s/AKfycby20E4jQz5pGqSn0atadu1QGSVaUVXStt8GYiNnBlKvr-eyU-fz7cJJXRxxQqKkMLDSLw/exec"; // ganti
-const WA_NUMBER="6281219929245"; // ganti
+/* =================== KONFIG =================== */
+const SETS = [
+  {
+    id:"set-nothing",
+    title:"Nothing is Imposible",
+    logo:"./gambar/Nothing_Logo.png",
+    back:"./gambar/Nothing_Back.png",
+    mockup:"./gambar/Nothing_Mockup.png"
+  }
+  // tambahkan set lain di sini...
+];
+const PRICE = 30000;
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby20E4jQz5pGqSn0atadu1QGSVaUVXStt8GYiNnBlKvr-eyU-fz7cJJXRxxQqKkMLDSLw/exec"; // ganti
+const WA_NUMBER  = "6281219929245"; // ganti (tanpa +)
 
-let USER_KEY=null,CONFIRMED=false;
-const lsKey=()=>`orderCart_${USER_KEY}`,loadCart=()=>JSON.parse(localStorage.getItem(lsKey())||"{}"),saveCart=c=>localStorage.setItem(lsKey(),JSON.stringify(c));
+/* =================== STATE & HELPERS =================== */
+let USER_KEY=null, CONFIRMED=false;
+const lsKey=()=>`orderCart_${USER_KEY}`;
+const loadCart=()=>JSON.parse(localStorage.getItem(lsKey())||"{}");
+const saveCart=c=>localStorage.setItem(lsKey(),JSON.stringify(c));
 const formatIDR=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n);
 const validTelp=t=>/^\d{10,15}$/.test(t);
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800);}
-function updateBadge(){const b=document.getElementById('cartBadge');const c=(USER_KEY&&CONFIRMED)?Object.values(loadCart()).reduce((a,v)=>a+v.qty,0):0;b.style.display=c>0?'inline-block':'none';b.textContent=c;}
+function updateBadge(){const b=document.getElementById('cartBadge');const c=(USER_KEY&&CONFIRMED)?Object.values(loadCart()).reduce((a,v)=>a+(v.qty||0),0):0;b.style.display=c>0?'inline-block':'none';b.textContent=c;}
 
-function imgsFor(s){const arr=[s.back];if(s.logo)arr.unshift(s.logo);if(s.mockup)arr.push(s.mockup);return arr.filter(Boolean);}
-const tbody=document.getElementById("tbody");
-function render(){const cart=(USER_KEY&&CONFIRMED)?loadCart():{};tbody.innerHTML="";let n=0;SETS.forEach(s=>{if(cart[s.id])return;n++;const d=!(USER_KEY&&CONFIRMED);const tr=document.createElement("tr");const imgs=imgsFor(s);tr.innerHTML=`<td>${n}</td><td>${s.title}</td><td><div class="thumb"><img src="${s.back}"></div></td><td><input type="checkbox" data-id="${s.id}" ${d?"disabled":""}></td>`;tbody.appendChild(tr);tr.querySelector(".thumb").onclick=()=>openLightbox(imgs,0);});tbody.querySelectorAll("input[type=checkbox]").forEach(cb=>cb.onchange=()=>{const id=cb.dataset.id;const c=loadCart();c[id]={qty:1,price:PRICE};saveCart(c);render();renderCart();updateBadge();toast("Ditambahkan");});}
+/* =================== LIGHTBOX =================== */
+const lb=document.getElementById('lightbox'), lbImg=document.getElementById('lbImg'),
+      lbThumbs=document.getElementById('lbThumbs'), lbPrev=document.getElementById('lbPrev'),
+      lbNext=document.getElementById('lbNext'), lbClose=document.getElementById('lbClose');
+let lbList=[], lbIndex=0;
+function imgsFor(s){const a=[s.back]; if(s.logo) a.unshift(s.logo); if(s.mockup) a.push(s.mockup); return [...new Set(a.filter(Boolean))];}
+function openLightbox(list,start=0){lbList=list;lbIndex=start;setLb();thumbs();lb.classList.add('show');}
+function closeLightbox(){lb.classList.remove('show');lbList=[];lbIndex=0;lbImg.src="";}
+function setLb(){lbImg.src=lbList[lbIndex];}
+function thumbs(){lbThumbs.innerHTML="";lbList.forEach((src,i)=>{const im=new Image();im.src=src;if(i===lbIndex)im.classList.add('active');im.onclick=()=>{lbIndex=i;setLb();thumbs();};lbThumbs.appendChild(im);});}
+lbPrev.onclick=()=>{if(!lbList.length)return;lbIndex=(lbIndex-1+lbList.length)%lbList.length;setLb();thumbs();};
+lbNext.onclick=()=>{if(!lbList.length)return;lbIndex=(lbIndex+1)%lbList.length;setLb();thumbs();};
+lbClose.onclick=closeLightbox; lb.addEventListener('click',e=>{if(e.target===lb)closeLightbox();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeLightbox(); closeCart();}});
 
-const namaEl=document.getElementById("nama"),telpEl=document.getElementById("telp"),errEl=document.getElementById("telpErr");
-okBtn.onclick=()=>{const n=namaEl.value.trim(),t=telpEl.value.trim();if(!n){toast("Isi nama");return;}if(!validTelp(t)){errEl.style.display="block";toast("Telp salah");return;}errEl.style.display="none";USER_KEY=n+"_"+t;CONFIRMED=true;okTag.style.display="inline-flex";render();updateBadge();};
+/* =================== LIST RENDER =================== */
+const tbody=document.getElementById('tbody');
+function render(){
+  const cart=(USER_KEY&&CONFIRMED)?loadCart():{};
+  tbody.innerHTML=""; let no=0;
+  SETS.forEach(s=>{
+    if(cart[s.id]) return; no++;
+    const disabled=!(USER_KEY&&CONFIRMED);
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td class="td no">${no}</td>
+      <td class="td"><div class="title">${s.title}</div><div style="color:#9aa7c7">ID: ${s.id}</div></td>
+      <td class="td"><div class="thumb"><img src="${s.back}" alt="${s.title}"/></div></td>
+      <td class="td pick">
+        <input type="checkbox" data-id="${s.id}" ${disabled?'disabled':''}>
+        ${disabled?'<div class="disabled-note">Klik OK dulu</div>':''}
+      </td>`;
+    tbody.appendChild(tr);
+    tr.querySelector('.thumb').onclick=()=>openLightbox(imgsFor(s),0);
+  });
+  tbody.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    cb.onchange=()=>{
+      const id=cb.dataset.id; const c=loadCart(); c[id]={qty:1,price:PRICE}; saveCart(c);
+      render(); renderCart(); updateBadge(); toast('Ditambahkan ke keranjang');
+    };
+  });
+}
 
-const cartPanel=document.getElementById("cartPanel"),backdrop=document.getElementById("backdrop");
-function openCart(){renderCart();cartPanel.classList.add("open");backdrop.classList.add("show");}
-function closeCart(){cartPanel.classList.remove("open");backdrop.classList.remove("show");}
-cartBtn.onclick=openCart;closeCartBtn=document.getElementById("closeCart");closeCartBtn.onclick=closeCart;backdrop.onclick=closeCart;
+/* =================== IDENTITAS =================== */
+const namaEl=document.getElementById('nama'), telpEl=document.getElementById('telp'), errEl=document.getElementById('telpErr'), okTag=document.getElementById('okTag');
+document.getElementById('okBtn').onclick=()=>{
+  const n=namaEl.value.trim(), t=telpEl.value.trim();
+  if(!n){toast('Nama belum diisi');return;}
+  if(!validTelp(t)){errEl.style.display='block';toast('No. telp salah');return;}
+  errEl.style.display='none'; USER_KEY=n.replace(/\s+/g,'_')+'_'+t; CONFIRMED=true; okTag.style.display='inline-flex';
+  render(); updateBadge(); toast('Identitas OK. Pilih barang.');
+};
 
-function renderCart(){const c=(USER_KEY)?loadCart():{};const body=document.getElementById("cartBody");body.innerHTML="";let tot=0;Object.entries(c).forEach(([id,v])=>{const s=SETS.find(x=>x.id===id);tot+=v.qty*v.price;body.innerHTML+=`<div class="cart-row"><div class="cart-thumb"><img src="${s.back}"></div><div>${s.title}<br>Qty: ${v.qty}</div><div><button class="xbtn" data-del="${id}">Hapus</button></div></div>`});document.getElementById("grand").textContent=formatIDR(tot);body.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{const c=loadCart();delete c[b.dataset.del];saveCart(c);render();renderCart();updateBadge();});}
+/* =================== KERANJANG =================== */
+const cartPanel=document.getElementById('cartPanel'), backdrop=document.getElementById('backdrop');
+function openCart(){renderCart();cartPanel.classList.add('open');backdrop.classList.add('show');}
+function closeCart(){cartPanel.classList.remove('open');backdrop.classList.remove('show');}
+document.getElementById('cartBtn').onclick=openCart;
+document.getElementById('closeCart').onclick=closeCart;
+backdrop.onclick=closeCart;
 
-function sendToSheet(u,p){const blob=new Blob([JSON.stringify(p)],{type:'text/plain'});if(navigator.sendBeacon){navigator.sendBeacon(u,blob);return;}fetch(u,{method:'POST',mode:'no-cors',body:JSON.stringify(p)});}
-function openWhatsApp(p,t){const num=String(p).replace(/\D/g,'');const urls=[`https://wa.me/${num}?text=${t}`,`https://api.whatsapp.com/send?phone=${num}&text=${t}`];for(const u of urls){const w=window.open(u,'_blank');if(w)return;}window.location.assign(urls[1]);}
+function renderCart(){
+  const c=(USER_KEY)?loadCart():{}; const body=document.getElementById('cartBody'); body.innerHTML=""; let total=0;
+  Object.entries(c).forEach(([id,{qty,price}])=>{
+    const s=SETS.find(x=>x.id===id); total+=qty*price;
+    body.insertAdjacentHTML('beforeend',`
+      <div class="cart-row">
+        <div class="cart-thumb"><img src="${s.back}" alt="${s.title}"/></div>
+        <div><div style="font-weight:800">${s.title}</div><div style="color:#9aa7c7">Qty: ${qty} × ${formatIDR(price)}</div></div>
+        <div><button class="xbtn" data-del="${id}">Hapus</button></div>
+      </div>`);
+  });
+  if(!Object.keys(c).length) body.innerHTML="<p style='color:#9aa7c7'>Keranjang kosong</p>";
+  document.getElementById('grand').textContent=formatIDR(total);
+  body.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{const cc=loadCart(); delete cc[b.dataset.del]; saveCart(cc); render(); renderCart(); updateBadge();});
+}
 
-submitBtn.onclick=()=>{if(!(USER_KEY&&CONFIRMED)){toast("Isi identitas");return;}const cart=loadCart();if(!Object.keys(cart).length){toast("Kosong");return;}const [n,t]=USER_KEY.split("_");const now=new Date();const tot=Object.values(cart).reduce((a,v)=>a+v.qty*v.price,0);const noBon="BON-"+Date.now();const items=Object.entries(cart).map(([id,v])=>{const s=SETS.find(x=>x.id===id);return {title:s.title,qty:v.qty,price:v.price,subtotal:v.qty*v.price};});sendToSheet(SCRIPT_URL,{noBon,nama:n,telp:t,items,total:tot});let msg=`Pesanan Baru🚨%0ANama:${n}%0ATelp:${t}%0A`;items.forEach((it,i)=>msg+=`${i+1}. ${it.title} ${it.qty}x${formatIDR(it.price)}%0A`);msg+=`Total:${formatIDR(tot)}`;openWhatsApp(WA_NUMBER,encodeURIComponent(msg));setTimeout(()=>{const w=window.open("","_blank");if(w){w.document.write(`<h2>Bon Pesanan</h2><p>No:${noBon}</p>`);w.document.close();}},700);localStorage.removeItem(lsKey());render();renderCart();updateBadge();closeCart();};
+/* =================== KIRIM KE SHEET =================== */
+function sendToSheet(url, payload){
+  // kirim header + detail (items) sekaligus
+  const blob=new Blob([JSON.stringify(payload)],{type:'text/plain'});
+  if(navigator.sendBeacon){ if(navigator.sendBeacon(url,blob)) return; }
+  fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)})
+    .catch(()=>{ const q=encodeURIComponent(JSON.stringify(payload)); new Image().src=`${url}?q=${q}`; });
+}
 
-render();updateBadge();
+/* =================== OPEN WHATSAPP (multi-strategy) =================== */
+function openWhatsApp(phone, textPlain){
+  const num=String(phone||'').replace(/\D/g,'');
+  const txt=encodeURIComponent(textPlain||'');
+  const scheme=`whatsapp://send?phone=${num}&text=${txt}`;
+  const intent=`intent://send/?phone=${num}&text=${txt}#Intent;scheme=whatsapp;package=com.whatsapp;end`;
+  const wa1=`https://wa.me/${num}?text=${txt}`;
+  const wa2=`https://api.whatsapp.com/send?phone=${num}&text=${txt}`;
+  try{ window.location.assign(scheme); }catch(e){}
+  setTimeout(()=>{ if(document.visibilityState==='visible'){ try{window.location.assign(intent);}catch(e){} }},400);
+  setTimeout(()=>{ if(document.visibilityState==='visible'){ try{window.location.assign(wa1);}catch(e){window.location.assign(wa2);} }},800);
+  return true;
+}
+
+/* =================== SUBMIT =================== */
+document.getElementById('submitBtn').onclick=()=>{
+  if(!(USER_KEY&&CONFIRMED)){toast('Klik OK pada identitas dulu');return;}
+  const cart=loadCart(); if(!Object.keys(cart).length){toast('Keranjang kosong');return;}
+
+  const idx=USER_KEY.lastIndexOf('_');
+  const nama=USER_KEY.slice(0,idx).replaceAll('_',' ');
+  const telp=USER_KEY.slice(idx+1);
+  const now=new Date();
+  const total=Object.values(cart).reduce((a,v)=>a+v.qty*v.price,0);
+  const noBon="BON-"+now.getFullYear().toString().slice(-2)+(now.getMonth()+1+"").padStart(2,'0')+now.getDate().toString().padStart(2,'0')+"-"+Math.random().toString(36).slice(2,7).toUpperCase();
+
+  const items=Object.entries(cart).map(([id,{qty,price}],i)=>{
+    const s=SETS.find(x=>x.id===id);
+    return {no:i+1,id,title:s.title,qty,price,subtotal:qty*price};
+  });
+
+  // kirim ke Google Sheet (detail ikut)
+  sendToSheet(SCRIPT_URL,{noBon,nama,telp,timestamp:new Date().toISOString(),items,total,source:"order_design.html"});
+
+  // message WA (plain)
+  let msg=`Pesanan Baru 🚨
+Nama: ${nama}
+Telp: ${telp}
+Tanggal: ${now.toLocaleString('id-ID')}
+
+`;
+  items.forEach(it=>{ msg+=`${it.no}. ${it.title} – ${it.qty} x ${formatIDR(it.price)}\n`; });
+  msg+=`\nTotal: ${formatIDR(total)}`;
+
+  // siapkan BON (PDF print)
+  const rows=items.map(it=>`<tr><td>${it.no}</td><td>${it.title}</td><td>${it.qty}</td><td>${formatIDR(it.price)}</td><td>${formatIDR(it.subtotal)}</td></tr>`).join("");
+  const bonHTML=`<!doctype html><html><head><meta charset="utf-8"><title>${noBon}</title>
+  <style>body{font-family:Arial;margin:24px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:6px}</style></head>
+  <body><h2>Bon Pesanan</h2><p>No: ${noBon}<br>Nama: ${nama}<br>Telp: ${telp}<br>Tanggal: ${now.toLocaleString('id-ID')}</p>
+  <table><tr><th>No</th><th>Judul</th><th>Qty</th><th>Harga</th><th>Subtotal</th></tr>${rows}
+  <tr><td colspan="4" style="text-align:right"><b>Total</b></td><td><b>${formatIDR(total)}</b></td></tr></table>
+  <script>window.print();<\/script></body></html>`;
+
+  // buka WA (app>intent>web). lalu 700ms kemudian buka bon (hindari popup block)
+  openWhatsApp(WA_NUMBER, msg);
+  setTimeout(()=>{ const w=window.open("","_blank"); if(w){ w.document.write(bonHTML); w.document.close(); }},700);
+
+  // reset UI
+  localStorage.removeItem(lsKey());
+  render(); renderCart(); updateBadge(); closeCart();
+  toast('Pesanan diproses. Terima kasih!');
+};
+
+/* =================== INIT =================== */
+render(); updateBadge();
 </script>
+
+<!--
+Contoh Apps Script (Google Sheet) ringkas:
+------------------------------------------
+function doPost(e){
+  const body = e.postData ? e.postData.contents : (e.parameter.q || "");
+  const data = JSON.parse(body);
+  const ss = SpreadsheetApp.openById('SPREADSHEET_ID');   // ganti
+  const head = ss.getSheetByName('Orders') || ss.insertSheet('Orders');
+  const det  = ss.getSheetByName('Items')  || ss.insertSheet('Items');
+  if (head.getLastRow()==0) head.appendRow(['Time','NoBon','Nama','Telp','Total','Source']);
+  if (det.getLastRow()==0)  det.appendRow(['Time','NoBon','No','ID','Title','Qty','Price','Subtotal']);
+
+  head.appendRow([new Date(), data.noBon, data.nama, data.telp, data.total, data.source]);
+  (data.items||[]).forEach(it=>{
+    det.appendRow([new Date(), data.noBon, it.no, it.id||'', it.title, it.qty, it.price, it.subtotal]);
+  });
+  return ContentService.createTextOutput('OK').setMimeType(ContentService.MimeType.TEXT);
+}
+-->
 </body>
 </html>
