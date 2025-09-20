@@ -34,7 +34,7 @@
   .pick{text-align:center;width:90px}
   .disabled-note{font-size:12px;color:#ff9b9b;margin-top:6px}
 
-  /* backdrop + keranjang (z-index tinggi + pointer events) */
+  /* backdrop + keranjang (z-index tinggi) */
   .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;z-index:9000}
   .backdrop.show{display:block}
   .cart-panel{position:fixed;inset:0 0 0 auto;max-width:420px;transform:translateX(110%);transition:.25s ease;background:#0f1115;border-left:1px solid #26304f;box-shadow:-10px 0 30px rgba(0,0,0,.5);z-index:9010;display:flex;flex-direction:column;pointer-events:auto}
@@ -162,7 +162,7 @@ const SETS = [
   }
 ];
 const PRICE = 30000;
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby20E4jQz5pGqSn0atadu1QGSVaUVXStt8GYiNnBlKvr-eyU-fz7cJJXRxxQqKkMLDSLw/exec"; // <-- GANTI
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby20E4jQz5pGqSn0atadu1QGSVaUVXStt8GYiNnBlKvr-eyU-fz7cJJXRxxQqKkMLDSLw/exec"; // <-- GANTI dgn Web App URL (/exec)
 const WA_NUMBER = "6281219929245"; // <-- GANTI (tanpa +)
 
 /* ====== STATE ====== */
@@ -229,7 +229,7 @@ function render(){
   tbody.innerHTML = "";
   let rowNo=0;
   SETS.forEach((s)=>{
-    if(cart[s.id]) return;
+    if(cart[s.id]) return; // sembunyikan yang sudah dipilih
     rowNo++;
     const disabled = !(USER_KEY && CONFIRMED);
     const tr = document.createElement("tr");
@@ -251,6 +251,7 @@ function render(){
     tr.querySelector(".thumb").onclick = ()=> openLightbox(allImgs, 0);
   });
 
+  // pilih item
   tbody.querySelectorAll("input[type=checkbox]").forEach(cb=>{
     cb.onchange = ()=>{
       const id = cb.dataset.id;
@@ -321,8 +322,28 @@ function renderCart(){
   body.querySelectorAll("[data-del]").forEach(b=>b.onclick=(e)=>{ e.preventDefault(); const id=b.dataset.del; const c=loadCart(); delete c[id]; saveCart(c); render(); renderCart(); updateBadge(); });
 }
 
-/* ====== SUBMIT ====== */
-document.getElementById("submitBtn").onclick = (e)=>{
+/* ====== KIRIM KE SHEET: sendBeacon/fetch fallback ====== */
+function sendToSheet(url, payload){
+  const blob = new Blob([JSON.stringify(payload)], {type:'text/plain'});
+  if (navigator.sendBeacon) {
+    const ok = navigator.sendBeacon(url, blob);
+    if (ok) return Promise.resolve(true);
+  }
+  return fetch(url, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: {'Content-Type':'text/plain'},
+    body: JSON.stringify(payload)
+  }).then(()=>true).catch(()=>{
+    const q = encodeURIComponent(JSON.stringify(payload));
+    const img = new Image();
+    img.src = `${url}?q=${q}`;
+    return true;
+  });
+}
+
+/* ====== SUBMIT (WA + PDF + Sheet) ====== */
+document.getElementById("submitBtn").onclick = async (e)=>{
   e.preventDefault();
   if(!(USER_KEY && CONFIRMED)){ toast("Klik OK pada identitas dulu"); return; }
   const cart = loadCart(); if(!Object.keys(cart).length){ toast("Keranjang kosong"); return; }
@@ -334,46 +355,46 @@ document.getElementById("submitBtn").onclick = (e)=>{
 
   const now = new Date();
   const grand = Object.values(cart).reduce((a,c)=>a+c.qty*c.price,0);
-  const noBon = "BON-"+now.getFullYear().toString().slice(-2)+(now.getMonth()+1).toString().padStart(2,"0")+now.getDate().toString().padStart(2,"0")+"-"+Math.random().toString(36).slice(2,7).toUpperCase();
+  const noBon = "BON-"+now.getFullYear().toString().slice(-2)
+              +(now.getMonth()+1).toString().padStart(2,"0")
+              +now.getDate().toString().padStart(2,"0")
+              +"-"+Math.random().toString(36).slice(2,7).toUpperCase();
 
-  // 1) WA
-  let pesan=`Pesanan Baru 🚨%0ANama: ${encodeURIComponent(nama)}%0ATelp: ${telp}%0ATanggal: ${encodeURIComponent(now.toLocaleString('id-ID'))}%0A%0A`;
-  Object.entries(cart).forEach(([id,{qty,price}],i)=>{
+  const items = Object.entries(cart).map(([id,{qty,price}])=>{
     const s=SETS.find(x=>x.id===id);
-    pesan+=`${i+1}. ${encodeURIComponent(s.title)} – ${qty} x ${encodeURIComponent(formatIDR(price))}%0A`;
+    return {id:titleCase(id), title:s.title, qty, price, subtotal:qty*price};
+  });
+
+  // kirim ke Google Sheet (non-blocking)
+  try{ await sendToSheet(SCRIPT_URL, {noBon,nama,telp,items,total:grand,source:"order_design.html"});}catch(e){console.warn(e);}
+
+  // pesan WA
+  let pesan=`Pesanan Baru 🚨%0ANama: ${encodeURIComponent(nama)}%0ATelp: ${telp}%0ATanggal: ${encodeURIComponent(now.toLocaleString('id-ID'))}%0A%0A`;
+  items.forEach((it,i)=>{
+    pesan+=`${i+1}. ${encodeURIComponent(it.title)} – ${it.qty} x ${encodeURIComponent(formatIDR(it.price))}%0A`;
   });
   pesan+=`%0ATotal: ${encodeURIComponent(formatIDR(grand))}`;
-  window.open(`https://wa.me/${WA_NUMBER}?text=${pesan}`,"_blank");
 
-  // 2) PDF
-  let rows=Object.entries(cart).map(([id,{qty,price}],i)=>{
-    const s=SETS.find(x=>x.id===id);
-    return `<tr><td>${i+1}</td><td>${s.title}</td><td>${qty}</td><td>${formatIDR(price)}</td><td>${formatIDR(qty*price)}</td></tr>`;
-  }).join("");
-  const html=`<!doctype html><html><head><meta charset="utf-8"><title>${noBon}</title>
+  // siapkan HTML bon (print)
+  let rows=items.map((it,i)=>`<tr><td>${i+1}</td><td>${it.title}</td><td>${it.qty}</td><td>${formatIDR(it.price)}</td><td>${formatIDR(it.subtotal)}</td></tr>`).join("");
+  const bonHTML=`<!doctype html><html><head><meta charset="utf-8"><title>${noBon}</title>
   <style>body{font-family:Arial;margin:24px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:6px}</style>
   </head><body><h2>Bon Pesanan</h2><p>No: ${noBon}<br>Nama: ${nama}<br>Telp: ${telp}<br>Tanggal: ${now.toLocaleString('id-ID')}</p>
   <table><tr><th>No</th><th>Judul</th><th>Qty</th><th>Harga</th><th>Subtotal</th></tr>${rows}
   <tr><td colspan="4" style="text-align:right"><b>Total</b></td><td><b>${formatIDR(grand)}</b></td></tr></table>
   <script>window.print();<\/script></body></html>`;
-  const w=window.open("","_blank"); w.document.write(html); w.document.close();
 
-  // 3) Save ke Google Sheet
-  const items = Object.entries(cart).map(([id,{qty,price}])=>{
-    const s=SETS.find(x=>x.id===id);
-    return {id,title:s.title,qty,price,subtotal:qty*price};
-  });
-  fetch(SCRIPT_URL,{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({noBon,nama,telp,items,total:grand,source:"order_design.html"})
-  }).catch(err=>console.warn("GAS error",err));
+  // buka WA di tab ini (1 aksi user), lalu buka bon setelah jeda kecil
+  setTimeout(()=>{ const w=window.open("","_blank"); if(w){w.document.write(bonHTML); w.document.close();}},700);
+  window.location.href = `https://wa.me/${WA_NUMBER}?text=${pesan}`;
 
-  // reset UI
+  // bereskan UI lokal
   localStorage.removeItem(lsKey());
   render(); renderCart(); updateBadge(); closeCart();
-  toast("Pesanan dikirim. Terima kasih!");
+  toast("Pesanan diproses. Terima kasih!");
 };
+
+function titleCase(s){ return s.replace(/[-_]/g,' ').replace(/\b\w/g,m=>m.toUpperCase()); }
 
 /* INIT */
 render(); updateBadge();
