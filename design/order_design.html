@@ -93,7 +93,7 @@ const SETS=[
   {id:"set-zenius", title:"Zenius Street Logo", back:"./gambar/Zenius_Back.png"}
 ];
 const PRICE=30000;
-const SCRIPT_URL="https://script.google.com/macros/s/XXXX/exec"; // ganti URL Apps Script kamu
+const SCRIPT_URL="https://script.google.com/macros/s/AKfycby20E4jQz5pGqSn0atadu1QGSVaUVXStt8GYiNnBlKvr-eyU-fz7cJJXRxxQqKkMLDSLw/exec"; // ganti URL Apps Script kamu
 let USER_KEY=null;
 
 const lsKey=()=>`orderCart_${USER_KEY}`;
@@ -177,7 +177,7 @@ document.getElementById("submitBtn").onclick=()=>{
     pesan+=`${i+1}. ${s.title} – ${qty} x ${formatIDR(price)}%0A`;
   });
   pesan+=`%0ATotal: ${formatIDR(grand)}`;
-  window.open(`https://wa.me/6281234567890?text=${pesan}`,"_blank"); // ganti nomor WA kamu
+  window.open(`https://wa.me/6281219929245?text=${pesan}`,"_blank"); // ganti nomor WA kamu
 
   // 2) Bon PDF
   let rows=Object.entries(cart).map(([id,{qty,price}],i)=>{
