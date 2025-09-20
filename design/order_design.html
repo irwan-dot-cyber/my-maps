@@ -3,15 +3,11 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Order Desain Kaos • Tabel Pilih (Full Width)</title>
+<title>Order Desain Kaos • Tabel Pilih</title>
 <style>
-  :root{
-    --bg:#0f1115; --card:#171922; --fg:#e8eefc; --muted:#9aa7c7; --line:#23283a;
-    --accent2:#4da3ff;
-  }
+  :root{--bg:#0f1115;--card:#171922;--fg:#e8eefc;--muted:#9aa7c7;--line:#23283a;--accent2:#4da3ff}
   *{box-sizing:border-box}
   body{margin:0;background:linear-gradient(180deg,#0f1115,#0b0d12);color:var(--fg);font:500 15px/1.55 system-ui,Segoe UI,Inter,Arial}
-  a{color:var(--accent2)}
   .wrap{max-width:1200px;margin:auto;padding:22px}
   h1{font:800 20px/1.2 system-ui;margin:0 0 14px}
   .card{background:#171922;border:1px solid var(--line);border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,.35);padding:8px 12px}
@@ -25,15 +21,16 @@
   .pick{text-align:center;width:110px}
   .title{font-weight:800}
   .muted{color:var(--muted);font-size:12px}
-
-  /* Gambar lebih lebar */
-  .imgs{display:grid;gap:12px}
-  .img-line{display:grid;grid-template-columns:160px 1fr;gap:14px;align-items:center}
-  @media (max-width:720px){ .img-line{grid-template-columns:110px 1fr} }
-  .thumb{width:160px;height:160px;border-radius:12px;overflow:hidden;background:#0e1018;border:1px solid var(--line);display:grid;place-items:center}
-  .thumb img{width:100%;height:100%;object-fit:cover;cursor:pointer}
-  .note{margin-top:6px}
   .chip{display:inline-flex;align-items:center;gap:6px;background:#101422;border:1px solid var(--line);color:#cfe1ff;padding:3px 8px;border-radius:999px;font-size:11px}
+
+  /* Gambar kecil & jejer ke kanan */
+  .imgs{display:flex;justify-content:flex-end;gap:12px;flex-wrap:wrap}
+  .fig{width:100px}
+  .thumb{width:100px;height:100px;border-radius:10px;overflow:hidden;background:#0e1018;border:1px solid var(--line);display:grid;place-items:center}
+  .thumb img{width:100%;height:100%;object-fit:cover;cursor:pointer}
+  .cap{margin-top:6px;text-align:center;font-size:12px;color:#cfe1ff}
+  .note{margin-top:6px;text-align:right}
+  @media (max-width:740px){ .pick{width:90px} .fig,.thumb{width:90px;height:90px} }
 </style>
 </head>
 <body>
@@ -67,7 +64,7 @@ const SETS = [
       { label: "Mockup",   src: "./gambar/Nothing_Mockup.png" }
     ]
   }
-  // Tambah set lain di sini kalau perlu
+  // Tambah set lain di sini bila perlu
 ];
 
 /* ====== RENDER TABLE ====== */
@@ -87,18 +84,15 @@ function renderTable(){
       <td class="td">
         <div class="imgs">
           ${set.images.map(img => `
-            <div class="img-line">
+            <figure class="fig">
               <div class="thumb">
                 <img src="${img.src}" alt="${img.label}" data-open="${img.src}">
               </div>
-              <div>
-                <div><strong>${img.label}</strong></div>
-                <div class="muted">${img.src.split('/').pop()}</div>
-              </div>
-            </div>
+              <figcaption class="cap">${img.label}</figcaption>
+            </figure>
           `).join("")}
-          <div class="note muted">Klik gambar untuk memperbesar</div>
         </div>
+        <div class="note muted">Klik gambar untuk memperbesar</div>
       </td>
       <td class="td pick">
         <label style="display:inline-flex;align-items:center;gap:8px">
