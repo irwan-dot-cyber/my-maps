@@ -5,58 +5,34 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Order Desain Kaos • List</title>
 <style>
-  :root{--bg:#0f1115;--card:#171922;--fg:#e8eefc;--muted:#9aa7c7;--line:#23283a;--accent:#28d89b;--accent2:#4da3ff}
-  *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#0f1115,#0b0d12);color:var(--fg);font:500 15px/1.55 system-ui,Segoe UI,Inter,Arial}
+  :root{--bg:#0f1115;--card:#171922;--fg:#e8eefc;--muted:#9aa7c7;--line:#23283a;--accent:#28d89b}
+  *{box-sizing:border-box} body{margin:0;background:#0f1115;color:var(--fg);font:500 15px/1.55 system-ui,Segoe UI,Inter,Arial}
   .wrap{max-width:1200px;margin:auto;padding:22px}
   h1{font:800 20px/1.2;margin:0}
-  header{display:flex;align-items:center;gap:14px;margin-bottom:12px}
-  .spacer{flex:1}
+  header{margin-bottom:16px}
+  .formbox{background:#171922;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:16px;display:flex;flex-wrap:wrap;gap:12px}
+  .formbox input{flex:1;min-width:180px;padding:10px 12px;border-radius:8px;border:1px solid #26304f;background:#0f1320;color:var(--fg)}
   .btn{border:1px solid #26304f;background:#0f1320;color:#dce6ff;border-radius:10px;padding:10px 14px;cursor:pointer}
-  .btn:hover{border-color:#3454ff}
-  .cart-btn{display:inline-flex;align-items:center;gap:8px;position:relative}
-  .badge{position:absolute;top:-8px;right:-8px;background:#ef4444;border-radius:999px;padding:2px 7px;font:700 11px/1 system-ui;color:#fff;border:2px solid #0f1320}
-  .tools{display:flex;gap:8px;margin:8px 0 12px}
-  .search{flex:1;background:#0f1320;border:1px solid #26304f;color:var(--fg);padding:10px 12px;border-radius:10px}
-
-  .card{background:#171922;border:1px solid var(--line);border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,.35);padding:10px 12px}
-  .table{width:100%;border-collapse:separate;border-spacing:0}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .card{background:#171922;border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+  .table{width:100%;border-collapse:collapse}
   .th,.td{padding:12px;border-bottom:1px solid var(--line);vertical-align:middle}
-  .th{color:#aab6da;text-transform:uppercase;font-size:12px;letter-spacing:.04em}
+  .th{color:#aab6da;text-transform:uppercase;font-size:12px}
   .row:last-child .td{border-bottom:none}
-  .no{width:56px;text-align:center;white-space:nowrap}
+  .no{width:56px;text-align:center}
   .title{font-weight:800}
-  .muted{color:var(--muted);font-size:12px}
-  .thumb{width:140px;height:140px;border-radius:12px;overflow:hidden;background:#0e1018;border:1px solid var(--line);display:grid;place-items:center}
-  .thumb img{width:100%;height:100%;object-fit:cover;cursor:pointer}
-  .pick{width:110px;text-align:center}
-
-  /* Cart panel */
-  .cart-panel{position:fixed;inset:0 0 0 auto;max-width:440px;transform:translateX(110%);transition:.25s ease; background:#0f1115;border-left:1px solid #26304f;box-shadow:-10px 0 30px rgba(0,0,0,.5);z-index:50;display:flex;flex-direction:column}
-  .cart-panel.open{transform:translateX(0)}
-  .cart-head{display:flex;align-items:center;justify-content:space-between;padding:14px;border-bottom:1px solid #26304f}
-  .cart-body{padding:12px;overflow:auto;flex:1}
-  .cart-row{display:grid;grid-template-columns:64px 1fr 70px;gap:10px;align-items:center;padding:10px 0;border-bottom:1px dashed #2b3350}
-  .cart-thumb{width:64px;height:64px;border-radius:10px;overflow:hidden;border:1px solid #26304f;background:#101422}
-  .cart-thumb img{width:100%;height:100%;object-fit:cover}
-  .cart-foot{padding:12px;border-top:1px solid #26304f}
-  .total{display:flex;align-items:center;justify-content:space-between;font-weight:800;margin-bottom:10px}
-  .btn-primary{background:linear-gradient(135deg,#3b82f6,#22c55e);border:none;color:#fff}
-  .xbtn{cursor:pointer;color:#ff9b9b;border:1px solid #5b2b2b;background:#1a0d0d;border-radius:8px;padding:6px 8px;width:100%}
-
-  /* mobile cards */
+  .thumb{width:120px;height:120px;border-radius:10px;overflow:hidden;background:#0e1018;border:1px solid var(--line);display:grid;place-items:center}
+  .thumb img{width:100%;height:100%;object-fit:cover}
+  .pick{text-align:center;width:90px}
   @media (max-width:760px){
-    .wrap{padding:14px}
     thead{display:none}
     .table, tbody, .row, .td{display:block;width:100%}
     .row{border:1px solid var(--line);border-radius:12px;margin:10px 0}
     .td{border-bottom:1px solid var(--line)}
     .td:last-child{border-bottom:none}
-    .td[data-label]::before{
-      content:attr(data-label);display:block;color:#aab6da;font-size:12px;letter-spacing:.03em;margin-bottom:6px;text-transform:uppercase
-    }
+    .td[data-label]::before{content:attr(data-label);display:block;color:#aab6da;font-size:12px;margin-bottom:6px}
     .thumb{width:100%;height:0;padding-bottom:60%;position:relative}
     .thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-    .pick{text-align:left}
   }
 </style>
 </head>
@@ -64,16 +40,13 @@
 <div class="wrap">
   <header>
     <h1>Order Desain Kaos</h1>
-    <div class="spacer"></div>
-    <button id="cartBtn" class="btn cart-btn" title="Lihat keranjang">
-      🧺 Keranjang
-      <span id="cartBadge" class="badge" style="display:none">0</span>
-    </button>
   </header>
 
-  <div class="tools">
-    <input id="search" class="search" placeholder="Cari judul… (mis. Nothing, dsb)" />
-    <button id="reset" class="btn">Reset</button>
+  <!-- Form identitas -->
+  <div class="formbox">
+    <input id="nama" placeholder="Nama Pemesan" />
+    <input id="telp" placeholder="No. Telp / WA" />
+    <button id="startBtn" class="btn">Mulai Order</button>
   </div>
 
   <section class="card">
@@ -91,218 +64,59 @@
   </section>
 </div>
 
-<!-- CART PANEL -->
-<aside id="cartPanel" class="cart-panel" aria-hidden="true">
-  <div class="cart-head">
-    <strong>🧺 Pesanan</strong>
-    <button id="closeCart" class="btn">Tutup</button>
-  </div>
-  <div id="cartBody" class="cart-body"></div>
-  <div class="cart-foot">
-    <div class="total"><span>Total</span><span id="grand">Rp 0</span></div>
-    <button id="submitBtn" class="btn btn-primary" style="width:100%">Submit & Cetak PDF</button>
-  </div>
-</aside>
-
 <script>
-/* ====== DATA LIST ====== */
+/* ====== DATA ====== */
 const SETS = [
-  {
-    id: "set-nothing",
-    title: "Nothing is Imposible",
-    logo:   "./gambar/Nothing_Logo.png",
-    back:   "./gambar/Nothing_Back.png",
-    mockup: "./gambar/Nothing_Mockup.png"
-  }
-  // Tambah set lain di sini
+  {id:"set-nothing", title:"Nothing is Imposible", back:"./gambar/Nothing_Back.png"},
+  {id:"set-zenius", title:"Zenius Street Logo", back:"./gambar/Zenius_Back.png"}
 ];
+const PRICE = 30000;
+let USER_KEY = null; // namespace cart untuk tiap orang
 
-const PRICE = 30000; // Rp 30.000 per set
-const LS_KEY = "orderCart";
+/* ====== Helpers ====== */
+const lsKey = ()=> `orderCart_${USER_KEY}`;
+const loadCart = ()=> JSON.parse(localStorage.getItem(lsKey())||"{}");
+const saveCart = (c)=> localStorage.setItem(lsKey(),JSON.stringify(c));
 
-/* ====== LS helpers ====== */
-const loadCart = () => JSON.parse(localStorage.getItem(LS_KEY) || "{}");
-const saveCart = (cart) => localStorage.setItem(LS_KEY, JSON.stringify(cart));
-const formatIDR = n => new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n);
-
-/* ====== RENDER LIST ====== */
+/* ====== Render List ====== */
 const tbody = document.getElementById("tbody");
-function render(filter=""){
+function render(){
+  if(!USER_KEY){ tbody.innerHTML="<tr><td colspan=4 style='padding:20px;text-align:center;color:#9aa7c7'>Isi Nama & No Telp dulu untuk memulai order.</td></tr>"; return;}
   const cart = loadCart();
-  tbody.innerHTML = "";
-  const q = filter.trim().toLowerCase();
-  SETS.filter(s => !q || s.title.toLowerCase().includes(q) || s.id.toLowerCase().includes(q))
-      .forEach((s, i) => {
-        const tr = document.createElement("tr");
-        tr.className = "row";
-        const checked = cart[s.id]?.qty > 0 ? "checked" : "";
-        tr.innerHTML = `
-          <td class="td no" data-label="No"><strong>${i+1}</strong></td>
-          <td class="td" data-label="Judul">
-            <div class="title"><a class="link" href="order_detail.html?id=${encodeURIComponent(s.id)}" style="color:#9cd1ff;text-decoration:none">${s.title}</a></div>
-            <div class="muted">ID: ${s.id}</div>
-          </td>
-          <td class="td" data-label="Gambar Belakang">
-            <a href="order_detail.html?id=${encodeURIComponent(s.id)}" title="Buka detail">
-              <div class="thumb"><img loading="lazy" src="${s.back}" alt="${s.title} • Back"></div>
-            </a>
-            <div class="muted" style="margin-top:6px">Tap untuk lihat 3 gambar</div>
-          </td>
-          <td class="td pick" data-label="Pilih">
-            <label style="display:inline-flex;align-items:center;gap:8px">
-              <input type="checkbox" data-pick="${s.id}" ${checked}> <span>Pilih</span>
-            </label>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-  // bind picks
-  tbody.querySelectorAll("[data-pick]").forEach(cb=>{
-    cb.addEventListener("change",(e)=>{
-      const id = e.target.dataset.pick;
-      const cart = loadCart();
-      if(e.target.checked){ cart[id] = { qty: (cart[id]?.qty||0) + 1, price: PRICE }; }
-      else { delete cart[id]; }
-      saveCart(cart);
-      updateBadge(); 
-    });
+  tbody.innerHTML="";
+  let n=0;
+  SETS.forEach(s=>{
+    if(cart[s.id]) return; // hide sudah diorder
+    n++;
+    const tr=document.createElement("tr"); tr.className="row";
+    tr.innerHTML=`
+      <td class="td no" data-label="No">${n}</td>
+      <td class="td" data-label="Judul"><div class="title">${s.title}</div><div style="color:#9aa7c7">ID: ${s.id}</div></td>
+      <td class="td" data-label="Gambar Belakang"><div class="thumb"><img src="${s.back}"></div></td>
+      <td class="td pick" data-label="Pilih">
+        <input type="checkbox" data-id="${s.id}" ${!USER_KEY?"disabled":""}>
+      </td>`;
+    tbody.appendChild(tr);
   });
-}
-
-function updateBadge(){
-  const cart = loadCart();
-  const count = Object.values(cart).reduce((a,c)=>a+(c.qty||0),0);
-  const badge = document.getElementById("cartBadge");
-  badge.style.display = count ? "inline-block" : "none";
-  badge.textContent = count;
-}
-
-/* ====== CART PANEL ====== */
-const cartPanel = document.getElementById("cartPanel");
-document.getElementById("cartBtn").onclick = ()=>{ renderCart(); cartPanel.classList.add("open"); cartPanel.setAttribute("aria-hidden","false"); };
-document.getElementById("closeCart").onclick = ()=>{ cartPanel.classList.remove("open"); cartPanel.setAttribute("aria-hidden","true"); };
-
-function renderCart(){
-  const cart = loadCart();
-  const body = document.getElementById("cartBody");
-  body.innerHTML = "";
-  let total = 0;
-
-  const id2set = Object.fromEntries(SETS.map(s=>[s.id,s]));
-  Object.entries(cart).forEach(([id, {qty, price}])=>{
-    const s = id2set[id]; if(!s) return;
-    const row = document.createElement("div");
-    row.className = "cart-row";
-    total += qty*price;
-    row.innerHTML = `
-      <div class="cart-thumb"><img src="${s.back}" alt="${s.title}"></div>
-      <div>
-        <div style="font-weight:800">${s.title}</div>
-        <div class="muted">Qty: ${qty} × ${formatIDR(price)}</div>
-      </div>
-      <div style="text-align:right">
-        <button class="xbtn" data-del="${id}">Hapus</button>
-      </div>
-    `;
-    body.appendChild(row);
-  });
-
-  if(!Object.keys(cart).length){
-    body.innerHTML = `<p class="muted">Keranjang kosong. Centang “Pilih” pada list untuk menambahkan.</p>`;
-  }
-  document.getElementById("grand").textContent = formatIDR(total);
-
-  // hapus item
-  body.querySelectorAll("[data-del]").forEach(btn=>{
-    btn.onclick = ()=>{
-      const id = btn.dataset.del;
-      const cart = loadCart(); delete cart[id]; saveCart(cart);
-      // uncheck di list jika ada
-      const cb = document.querySelector(`input[type="checkbox"][data-pick="${id}"]`);
-      if(cb) cb.checked = false;
-      renderCart(); updateBadge();
+  if(!n){ tbody.innerHTML="<tr><td colspan=4 style='padding:20px;text-align:center;color:#9aa7c7'>Semua item sudah diorder.</td></tr>";}
+  // bind
+  tbody.querySelectorAll("input[type=checkbox]").forEach(cb=>{
+    cb.onchange=()=>{
+      const id=cb.dataset.id; const cart=loadCart();
+      if(cb.checked){ cart[id]={qty:1,price:PRICE}; saveCart(cart); render(); }
     };
   });
 }
 
-/* ====== SUBMIT -> CETAK PDF ====== */
-document.getElementById("submitBtn").onclick = ()=>{
-  const cart = loadCart();
-  const entries = Object.entries(cart);
-  if(!entries.length){ alert("Keranjang masih kosong."); return; }
-
-  const id2set = Object.fromEntries(SETS.map(s=>[s.id,s]));
-  const now = new Date();
-  const noBon = "BON-" + now.getFullYear().toString().slice(-2)
-              + (now.getMonth()+1).toString().padStart(2,"0")
-              + now.getDate().toString().padStart(2,"0")
-              + "-" + Math.random().toString(36).slice(2,7).toUpperCase();
-
-  const rows = entries.map(([id, {qty, price}], i)=>{
-    const s = id2set[id];
-    const sub = qty*price;
-    return `
-      <tr>
-        <td style="padding:8px;border:1px solid #ddd;text-align:center">${i+1}</td>
-        <td style="padding:8px;border:1px solid #ddd">${s?.title||id}</td>
-        <td style="padding:8px;border:1px solid #ddd;text-align:center">${qty}</td>
-        <td style="padding:8px;border:1px solid #ddd;text-align:right">${formatIDR(price)}</td>
-        <td style="padding:8px;border:1px solid #ddd;text-align:right">${formatIDR(sub)}</td>
-      </tr>`;
-  }).join("");
-
-  const grand = entries.reduce((a,[,v])=>a+v.qty*v.price,0);
-
-  const html = `
-  <!doctype html><html><head><meta charset="utf-8">
-  <title>${noBon}</title>
-  <style>
-    body{font-family:system-ui,Segoe UI,Inter,Arial; margin:24px; color:#111}
-    h1{font-size:20px;margin:0 0 6px}
-    .muted{color:#555}
-    table{border-collapse:collapse;width:100%;margin-top:12px}
-    th,td{font-size:14px}
-    th{background:#f3f5f8}
-    .tot{font-weight:800}
-    @media print{@page{size:A4;margin:16mm}}
-  </style>
-  </head><body>
-    <h1>Zenius Supply Co — Bon Pesanan</h1>
-    <div class="muted">No: ${noBon}<br>Tanggal: ${now.toLocaleString('id-ID')}</div>
-    <table>
-      <thead>
-        <tr>
-          <th style="padding:8px;border:1px solid #ddd;width:48px">No</th>
-          <th style="padding:8px;border:1px solid #ddd">Judul</th>
-          <th style="padding:8px;border:1px solid #ddd;width:70px">Qty</th>
-          <th style="padding:8px;border:1px solid #ddd;width:120px">Harga</th>
-          <th style="padding:8px;border:1px solid #ddd;width:140px">Subtotal</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows}
-        <tr>
-          <td colspan="4" class="tot" style="padding:10px;border:1px solid #ddd;text-align:right">TOTAL</td>
-          <td class="tot" style="padding:10px;border:1px solid #ddd;text-align:right">${formatIDR(grand)}</td>
-        </tr>
-      </tbody>
-    </table>
-    <p class="muted" style="margin-top:16px">Catatan: Simpan file ini sebagai PDF melalui dialog cetak.</p>
-    <script>window.print();<\/script>
-  </body></html>`;
-
-  const w = window.open("", "_blank");
-  w.document.open(); w.document.write(html); w.document.close();
+/* ====== Form Identitas ====== */
+document.getElementById("startBtn").onclick=()=>{
+  const nama=document.getElementById("nama").value.trim();
+  const telp=document.getElementById("telp").value.trim();
+  if(!nama||!telp){ alert("Isi nama & no telp dulu!"); return;}
+  USER_KEY = nama.replace(/\s+/g,"_")+"_"+telp;
+  render();
 };
-
-/* SEARCH */
-const s = document.getElementById("search");
-document.getElementById("reset").onclick = () => { s.value=""; render(); };
-s.oninput = () => render(s.value);
-
-/* INIT */
-render(); updateBadge();
+render();
 </script>
 </body>
 </html>
