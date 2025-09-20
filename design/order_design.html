@@ -3,110 +3,76 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Order Desain Kaos • Tabel Pilih</title>
+<title>Order Desain Kaos • Tabel Pilih (Full Width)</title>
 <style>
   :root{
     --bg:#0f1115; --card:#171922; --fg:#e8eefc; --muted:#9aa7c7; --line:#23283a;
-    --accent:#28d89b; --accent2:#4da3ff;
+    --accent2:#4da3ff;
   }
   *{box-sizing:border-box}
   body{margin:0;background:linear-gradient(180deg,#0f1115,#0b0d12);color:var(--fg);font:500 15px/1.55 system-ui,Segoe UI,Inter,Arial}
   a{color:var(--accent2)}
-  .wrap{max-width:1100px;margin:auto;padding:22px}
+  .wrap{max-width:1200px;margin:auto;padding:22px}
   h1{font:800 20px/1.2 system-ui;margin:0 0 14px}
-  .layout{display:grid;grid-template-columns:1fr 320px;gap:16px}
-  @media (max-width: 980px){ .layout{grid-template-columns:1fr} .summary{position:relative;top:auto} }
+  .card{background:#171922;border:1px solid var(--line);border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,.35);padding:8px 12px}
 
-  .card{background:#171922;border:1px solid var(--line);border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,.35)}
+  /* TABLE */
   .table{width:100%;border-collapse:separate;border-spacing:0}
-  .th, .td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top}
+  .th,.td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top}
   .th{color:#aab6da;text-transform:uppercase;font-size:12px;letter-spacing:.04em}
   .row:last-child .td{border-bottom:none}
   .no{width:56px;text-align:center}
   .pick{text-align:center;width:110px}
   .title{font-weight:800}
   .muted{color:var(--muted);font-size:12px}
-  .imgs{display:grid;gap:8px}
-  .img-line{display:grid;grid-template-columns:88px 1fr;gap:10px;align-items:center}
-  .thumb{width:88px;height:88px;border-radius:10px;overflow:hidden;background:#0e1018;border:1px solid var(--line);display:grid;place-items:center}
+
+  /* Gambar lebih lebar */
+  .imgs{display:grid;gap:12px}
+  .img-line{display:grid;grid-template-columns:160px 1fr;gap:14px;align-items:center}
+  @media (max-width:720px){ .img-line{grid-template-columns:110px 1fr} }
+  .thumb{width:160px;height:160px;border-radius:12px;overflow:hidden;background:#0e1018;border:1px solid var(--line);display:grid;place-items:center}
   .thumb img{width:100%;height:100%;object-fit:cover;cursor:pointer}
   .note{margin-top:6px}
   .chip{display:inline-flex;align-items:center;gap:6px;background:#101422;border:1px solid var(--line);color:#cfe1ff;padding:3px 8px;border-radius:999px;font-size:11px}
-
-  .summary{position:sticky;top:16px;padding:14px}
-  .sum-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-  .sum-items{max-height:360px;overflow:auto;border-top:1px dashed #2b3350;margin-top:10px}
-  .sum-row{display:grid;grid-template-columns:54px 1fr;gap:10px;align-items:center;padding:10px 0;border-bottom:1px dashed #2b3350}
-  .sum-thumb{width:54px;height:54px;border-radius:8px;overflow:hidden;border:1px solid var(--line);background:#0e1018}
-  .sum-thumb img{width:100%;height:100%;object-fit:cover}
-  .sum-title{font-weight:700;font-size:14px}
-  .tools{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
-  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid #26304f;background:#0f1320;color:#dce6ff;border-radius:10px;padding:10px 14px;cursor:pointer}
-  .btn:hover{border-color:#3454ff}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>Order Desain Kaos</h1>
 
-  <div class="layout">
-    <!-- LEFT: TABLE -->
-    <section class="card" style="padding:8px 12px">
-      <table class="table" id="table">
-        <thead>
-          <tr>
-            <th class="th no">No</th>
-            <th class="th">Judul</th>
-            <th class="th">Gambar</th>
-            <th class="th pick">Pilih</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
-    </section>
-
-    <!-- RIGHT: SUMMARY -->
-    <aside class="card summary">
-      <div class="sum-head">
-        <strong>🧾 Lihat Pesanan</strong>
-        <span class="muted" id="countSel">0 dipilih</span>
-      </div>
-      <div id="sumItems" class="sum-items"></div>
-      <div class="tools">
-        <button class="btn" id="clearAll">Hapus Semua</button>
-        <button class="btn" id="downloadBtn">Download JSON</button>
-        <button class="btn" id="printBtn">Print</button>
-      </div>
-      <p class="muted" style="margin-top:8px">
-        Catatan: klik gambar untuk memperbesar. Logo default ukuran 6×8 cm (kiri dada), desain belakang full back.
-      </p>
-    </aside>
-  </div>
+  <section class="card">
+    <table class="table" id="table">
+      <thead>
+        <tr>
+          <th class="th no">No</th>
+          <th class="th">Judul</th>
+          <th class="th">Gambar</th>
+          <th class="th pick">Pilih</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </section>
 </div>
 
 <script>
-/* ====== DATA SET KOLEKSI (bisa ditambah lebih banyak) ====== */
+/* ====== DATA: sesuaikan nama file di /design/gambar/ ====== */
 const SETS = [
   {
     id: "set-nothing",
     title: "Nothing is Imposible",
     images: [
-      { label: "Logo",    src: "./gambar/Nothing_Logo.png" },
-      { label: "Belakang",src: "./gambar/Nothing_Back.png" },
-      { label: "Mockup",  src: "./gambar/Nothing_Mockup.png" }
+      { label: "Logo",     src: "./gambar/Nothing_Logo.png" },
+      { label: "Belakang", src: "./gambar/Nothing_Back.png" },
+      { label: "Mockup",   src: "./gambar/Nothing_Mockup.png" }
     ]
   }
-  // tambahkan set lain di sini dengan struktur sama
+  // Tambah set lain di sini kalau perlu
 ];
 
-/* ====== STATE ====== */
-const state = { picked: new Set() };
-
-const tbody = document.getElementById("tbody");
-const sumItemsEl = document.getElementById("sumItems");
-const countSelEl = document.getElementById("countSel");
-
 /* ====== RENDER TABLE ====== */
+const tbody = document.getElementById("tbody");
+
 function renderTable(){
   tbody.innerHTML = "";
   SETS.forEach((set, idx) => {
@@ -143,61 +109,14 @@ function renderTable(){
     tbody.appendChild(tr);
   });
 
-  // bind preview click
+  // klik gambar -> buka besar
   tbody.querySelectorAll("[data-open]").forEach(el=>{
     el.addEventListener("click", ()=> window.open(el.dataset.open, "_blank"));
   });
-  // bind pick checkbox
-  tbody.querySelectorAll("[data-pick]").forEach(cb=>{
-    cb.addEventListener("change", (e)=>{
-      const id = e.target.dataset.pick;
-      if(e.target.checked) state.picked.add(id);
-      else state.picked.delete(id);
-      renderSummary();
-    });
-  });
 }
-
-/* ====== SUMMARY ====== */
-function renderSummary(){
-  sumItemsEl.innerHTML = "";
-  const pickedArr = SETS.filter(s=>state.picked.has(s.id));
-  pickedArr.forEach(set=>{
-    const row = document.createElement("div");
-    row.className = "sum-row";
-    row.innerHTML = `
-      <div class="sum-thumb"><img src="${set.images[0].src}" alt="${set.title}"></div>
-      <div>
-        <div class="sum-title">${set.title}</div>
-        <div class="muted">${set.images.length} gambar: ${set.images.map(i=>i.label).join(", ")}</div>
-      </div>
-    `;
-    sumItemsEl.appendChild(row);
-  });
-  countSelEl.textContent = `${pickedArr.length} dipilih`;
-}
-
-/* ====== TOOLS ====== */
-document.getElementById("clearAll").onclick = ()=>{
-  state.picked.clear();
-  document.querySelectorAll('input[type="checkbox"][data-pick]').forEach(c=>c.checked=false);
-  renderSummary();
-};
-
-document.getElementById("downloadBtn").onclick = ()=>{
-  const order = SETS.filter(s=>state.picked.has(s.id)).map(s=>({
-    id:s.id, title:s.title, files:s.images
-  }));
-  const blob = new Blob([JSON.stringify({createdAt:new Date().toISOString(), order}, null, 2)], {type:"application/json"});
-  const url = URL.createObjectURL(blob);
-  const a = Object.assign(document.createElement("a"), {href:url, download:"order-desain.json"});
-  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-};
-
-document.getElementById("printBtn").onclick = ()=>window.print();
 
 /* INIT */
-renderTable(); renderSummary();
+renderTable();
 </script>
 </body>
 </html>
