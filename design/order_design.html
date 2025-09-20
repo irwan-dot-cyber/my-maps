@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Order Desain Kaos • List</title>
 <style>
-  :root{--bg:#0f1115;--card:#171922;--fg:#e8eefc;--muted:#9aa7c7;--line:#23283a;--accent:#28d89b;--accent2:#4da3ff;--warn:#ffcc66}
+  :root{--bg:#0f1115;--card:#171922;--fg:#e8eefc;--muted:#9aa7c7;--line:#23283a;--accent:#28d89b;--accent2:#4da3ff}
   *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#0f1115,#0b0d12);color:var(--fg);font:500 15px/1.55 system-ui,Segoe UI,Inter,Arial}
   .wrap{max-width:1200px;margin:auto;padding:22px}
   h1{font:800 20px/1.2;margin:0}
@@ -31,7 +31,7 @@
   .pick{width:110px;text-align:center}
 
   /* Cart panel */
-  .cart-panel{position:fixed;inset:0 0 0 auto;max-width:420px;transform:translateX(110%);transition:.25s ease; background:#0f1115;border-left:1px solid #26304f;box-shadow:-10px 0 30px rgba(0,0,0,.5);z-index:50;display:flex;flex-direction:column}
+  .cart-panel{position:fixed;inset:0 0 0 auto;max-width:440px;transform:translateX(110%);transition:.25s ease; background:#0f1115;border-left:1px solid #26304f;box-shadow:-10px 0 30px rgba(0,0,0,.5);z-index:50;display:flex;flex-direction:column}
   .cart-panel.open{transform:translateX(0)}
   .cart-head{display:flex;align-items:center;justify-content:space-between;padding:14px;border-bottom:1px solid #26304f}
   .cart-body{padding:12px;overflow:auto;flex:1}
@@ -39,9 +39,9 @@
   .cart-thumb{width:64px;height:64px;border-radius:10px;overflow:hidden;border:1px solid #26304f;background:#101422}
   .cart-thumb img{width:100%;height:100%;object-fit:cover}
   .cart-foot{padding:12px;border-top:1px solid #26304f}
-  .total{display:flex;align-items:center;justify-content:space-between;font-weight:800}
-  .link{color:#9cd1ff;text-decoration:none}
-  .xbtn{cursor:pointer;color:#ff9b9b;border:1px solid #5b2b2b;background:#1a0d0d;border-radius:8px;padding:6px 8px}
+  .total{display:flex;align-items:center;justify-content:space-between;font-weight:800;margin-bottom:10px}
+  .btn-primary{background:linear-gradient(135deg,#3b82f6,#22c55e);border:none;color:#fff}
+  .xbtn{cursor:pointer;color:#ff9b9b;border:1px solid #5b2b2b;background:#1a0d0d;border-radius:8px;padding:6px 8px;width:100%}
 
   /* mobile cards */
   @media (max-width:760px){
@@ -100,6 +100,7 @@
   <div id="cartBody" class="cart-body"></div>
   <div class="cart-foot">
     <div class="total"><span>Total</span><span id="grand">Rp 0</span></div>
+    <button id="submitBtn" class="btn btn-primary" style="width:100%">Submit & Cetak PDF</button>
   </div>
 </aside>
 
@@ -138,7 +139,7 @@ function render(filter=""){
         tr.innerHTML = `
           <td class="td no" data-label="No"><strong>${i+1}</strong></td>
           <td class="td" data-label="Judul">
-            <div class="title"><a class="link" href="order_detail.html?id=${encodeURIComponent(s.id)}">${s.title}</a></div>
+            <div class="title"><a class="link" href="order_detail.html?id=${encodeURIComponent(s.id)}" style="color:#9cd1ff;text-decoration:none">${s.title}</a></div>
             <div class="muted">ID: ${s.id}</div>
           </td>
           <td class="td" data-label="Gambar Belakang">
@@ -224,6 +225,76 @@ function renderCart(){
     };
   });
 }
+
+/* ====== SUBMIT -> CETAK PDF ====== */
+document.getElementById("submitBtn").onclick = ()=>{
+  const cart = loadCart();
+  const entries = Object.entries(cart);
+  if(!entries.length){ alert("Keranjang masih kosong."); return; }
+
+  const id2set = Object.fromEntries(SETS.map(s=>[s.id,s]));
+  const now = new Date();
+  const noBon = "BON-" + now.getFullYear().toString().slice(-2)
+              + (now.getMonth()+1).toString().padStart(2,"0")
+              + now.getDate().toString().padStart(2,"0")
+              + "-" + Math.random().toString(36).slice(2,7).toUpperCase();
+
+  const rows = entries.map(([id, {qty, price}], i)=>{
+    const s = id2set[id];
+    const sub = qty*price;
+    return `
+      <tr>
+        <td style="padding:8px;border:1px solid #ddd;text-align:center">${i+1}</td>
+        <td style="padding:8px;border:1px solid #ddd">${s?.title||id}</td>
+        <td style="padding:8px;border:1px solid #ddd;text-align:center">${qty}</td>
+        <td style="padding:8px;border:1px solid #ddd;text-align:right">${formatIDR(price)}</td>
+        <td style="padding:8px;border:1px solid #ddd;text-align:right">${formatIDR(sub)}</td>
+      </tr>`;
+  }).join("");
+
+  const grand = entries.reduce((a,[,v])=>a+v.qty*v.price,0);
+
+  const html = `
+  <!doctype html><html><head><meta charset="utf-8">
+  <title>${noBon}</title>
+  <style>
+    body{font-family:system-ui,Segoe UI,Inter,Arial; margin:24px; color:#111}
+    h1{font-size:20px;margin:0 0 6px}
+    .muted{color:#555}
+    table{border-collapse:collapse;width:100%;margin-top:12px}
+    th,td{font-size:14px}
+    th{background:#f3f5f8}
+    .tot{font-weight:800}
+    @media print{@page{size:A4;margin:16mm}}
+  </style>
+  </head><body>
+    <h1>Zenius Supply Co — Bon Pesanan</h1>
+    <div class="muted">No: ${noBon}<br>Tanggal: ${now.toLocaleString('id-ID')}</div>
+    <table>
+      <thead>
+        <tr>
+          <th style="padding:8px;border:1px solid #ddd;width:48px">No</th>
+          <th style="padding:8px;border:1px solid #ddd">Judul</th>
+          <th style="padding:8px;border:1px solid #ddd;width:70px">Qty</th>
+          <th style="padding:8px;border:1px solid #ddd;width:120px">Harga</th>
+          <th style="padding:8px;border:1px solid #ddd;width:140px">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+        <tr>
+          <td colspan="4" class="tot" style="padding:10px;border:1px solid #ddd;text-align:right">TOTAL</td>
+          <td class="tot" style="padding:10px;border:1px solid #ddd;text-align:right">${formatIDR(grand)}</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="muted" style="margin-top:16px">Catatan: Simpan file ini sebagai PDF melalui dialog cetak.</p>
+    <script>window.print();<\/script>
+  </body></html>`;
+
+  const w = window.open("", "_blank");
+  w.document.open(); w.document.write(html); w.document.close();
+};
 
 /* SEARCH */
 const s = document.getElementById("search");
