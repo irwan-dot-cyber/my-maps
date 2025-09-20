@@ -25,10 +25,10 @@
   .muted{color:var(--muted);font-size:12px}
   .chip{display:inline-flex;align-items:center;gap:6px;background:#101422;border:1px solid var(--line);color:#cfe1ff;padding:3px 8px;border-radius:999px;font-size:11px}
 
-  /* Gambar (flex untuk desktop) */
-  .imgs{display:flex;justify-content:flex-end;gap:12px;flex-wrap:wrap}
-  .fig{width:100px}
-  .thumb{width:100px;height:100px;border-radius:10px;overflow:hidden;background:#0e1018;border:1px solid var(--line);display:grid;place-items:center}
+  /* Gambar (besar & jejer) */
+  .imgs{display:flex;justify-content:flex-start;gap:14px;flex-wrap:wrap}
+  .fig{width:120px}
+  .thumb{width:120px;height:120px;border-radius:12px;overflow:hidden;background:#0e1018;border:1px solid var(--line);display:grid;place-items:center}
   .thumb img{width:100%;height:100%;object-fit:cover;cursor:pointer}
   .cap{margin-top:6px;text-align:center;font-size:12px;color:#cfe1ff}
   .note{margin-top:6px;text-align:right}
@@ -38,14 +38,12 @@
     .wrap{padding:14px}
     h1{font-size:18px}
 
-    /* sembunyikan header tabel, jadikan card */
     thead {display:none}
     .table, tbody, .row, .td {display:block;width:100%}
     .row{border:1px solid var(--line);border-radius:12px;margin:10px 0;overflow:hidden}
     .td{border-bottom:1px solid var(--line);padding:12px 14px}
     .td:last-child{border-bottom:none}
 
-    /* label kolom via ::before */
     .td[data-label]::before{
       content: attr(data-label);
       display:block;
@@ -56,27 +54,26 @@
       text-transform:uppercase;
     }
 
-    /* nomor & pilih tampil horizontal di atas/bawah */
     .td.no{display:flex;align-items:center;gap:8px;justify-content:flex-start}
     .td.no .chip{font-weight:700}
     .td.pick{display:flex;align-items:center;justify-content:flex-start}
 
-    /* gambar jadi grid auto-fit */
+    /* grid auto-fit agar rapi */
     .imgs{
-      display:grid;
-      grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
-      gap:10px;
-      justify-content:unset;
+      display:grid !important;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) !important;
+      gap:14px !important;
+      justify-content:unset !important;
     }
     .fig{width:auto}
     .thumb{width:100%;height:0;padding-bottom:100%; position:relative}
     .thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-    .cap{font-size:11px}
+    .cap{font-size:12px}
+  }
 
-    /* ukuran lebih kecil utk sangat sempit */
-    @media (max-width:420px){
-      .thumb{padding-bottom:90%}
-    }
+  /* layar sangat kecil: 110px min */
+  @media (max-width:420px){
+    .imgs{ grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)) !important; }
   }
 </style>
 </head>
@@ -111,7 +108,8 @@ const SETS = [
       { label: "Mockup",   src: "./gambar/Nothing_Mockup.png" }
     ]
   }
-  // Tambah set lain bila perlu
+  // Tambah set lain di sini bila perlu:
+  // { id:"set-xxx", title:"Judul Lain", images:[ {label:"Logo",src:"./gambar/Judul_Lain_Logo.png"}, ... ] }
 ];
 
 /* ====== RENDER TABLE ====== */
@@ -133,7 +131,7 @@ function renderTable(){
           ${set.images.map(img => `
             <figure class="fig">
               <div class="thumb">
-                <img src="${img.src}" alt="${img.label}" data-open="${img.src}">
+                <img loading="lazy" src="${img.src}" alt="${img.label}" data-open="${img.src}">
               </div>
               <figcaption class="cap">${img.label}</figcaption>
             </figure>
