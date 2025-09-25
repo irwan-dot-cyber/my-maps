@@ -12,7 +12,6 @@
   #map {height:calc(100% - 110px)}
   #route-info { background:#f9f9f9; padding:8px; font-size:14px; border-top:1px solid #ccc }
 
-  /* Geser search ke kanan biar gak nabrak tombol zoom */
   .top-controls { position:absolute; top:60px; left:60px; right:10px; display:flex; gap:10px; z-index:1000 }
   .search-box { background:#fff; padding:6px 36px 6px 6px; border-radius:6px; box-shadow:0 0 6px rgba(0,0,0,.25); position:relative }
   .search-box input { width:300px; padding:6px 8px; border:1px solid #ddd; border-radius:4px }
@@ -29,7 +28,6 @@
   .legend { background:white; padding:8px 10px; line-height:1.6; font-size:12px; border-radius:6px; box-shadow:0 0 6px rgba(0,0,0,.2)}
   .swatch { display:inline-block; width:18px; height:0; margin-right:6px; vertical-align:middle; border-bottom: 4px solid #e53935; }
 
-  /* Label nama jalan */
   .leaflet-tooltip.feature-label{
     font-weight:700; color:#111; background:rgba(255,255,255,.85);
     border:1px solid #ddd; padding:2px 4px;
@@ -37,7 +35,6 @@
   .label-hidden{ opacity:0; pointer-events:none }
   .label-visible{ opacity:1 }
 
-  /* geser control layers turun biar gak tabrakan dgn search */
   .leaflet-top.leaflet-right .leaflet-control-layers { margin-top: 70px; }
 </style>
 </head>
@@ -66,22 +63,21 @@ const GEOJSON_URL = "https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/m
 const DEFAULT_VIEW = [-1.5, 120.5];
 const DEFAULT_ZOOM = 8;
 
-// Label strategy:
-// - zoom < SHOW_SOME_ZOOM  : hide all
-// - SHOW_SOME_ZOOM..SHOW_ALL_ZOOM-1 : show subset (top N longest within view)
-// - zoom >= SHOW_ALL_ZOOM : show all
-const SHOW_SOME_ZOOM = 14;
+// Label strategy
+const SHOW_SOME_ZOOM = 13;
 const SHOW_ALL_ZOOM  = 17;
-const MAX_LABELS     = 10; // berapa label yang tampil saat zoom menengah
+const MAX_LABELS     = 12;
+const MIN_LABEL_DIST_PX = 80;   // min jarak antar label
+const MIN_SCREEN_LEN_PX = 120;  // min panjang ruas di layar
 
 // ===== PETA =====
 const map = L.map('map', { zoomControl:true }).setView(DEFAULT_VIEW, DEFAULT_ZOOM);
 
 // Basemaps
 const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:20, attribution:'&copy; OpenStreetMap' }).addTo(map);
-const esriImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom:20, attribution:'Tiles &copy; Esri — Esri, Maxar, Earthstar Geographics' });
-const esriTopo    = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom:20, attribution:'Tiles &copy; Esri — World Topo Map' });
-const esriLabels  = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom:20, attribution:'Labels &copy; Esri — Boundaries & Places' });
+const esriImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom:20, attribution:'&copy; Esri, Maxar' });
+const esriTopo    = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom:20, attribution:'&copy; Esri' });
+const esriLabels  = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom:20, attribution:'&copy; Esri' });
 
 L.control.layers(
   { "OSM Standard": osm, "Esri World Imagery (Citra)": esriImagery, "Esri Topographic": esriTopo },
@@ -128,17 +124,16 @@ const lines = L.geoJSON(null, {
   style: f => styleLine(f.properties||{}),
   onEachFeature: (feature, layer) => {
     const p = feature.properties || {};
-    // Nama + prefix "Jl."
     let nama = prop(p,"Nm_Ruas") || prop(p,"Nama") || prop(p,"name") || "Tanpa Nama";
     if(!/^(\s*Jl\.|\s*Jalan)/i.test(nama)) nama = "Jl. " + nama;
 
     const propinsi = prop(p,"Propinsi") || prop(p,"Provinsi") || "-";
-    const status = prop(p,"Status") || "-";
-    const fungsi = prop(p,"Fungsi") || "-";
-    const panjang = prop(p,"Panjang") || prop(p,"Panjang_Km") || "";
-    const thn = prop(p,"Thn_Data") || "-";
-    const mendukung = prop(p,"Mendukung") || "-";
-    const ura = prop(p,"Ura_Dukung") || "-";
+    const status   = prop(p,"Status") || "-";
+    const fungsi   = prop(p,"Fungsi") || "-";
+    const panjang  = prop(p,"Panjang") || prop(p,"Panjang_Km") || "";
+    const thn      = prop(p,"Thn_Data") || "-";
+    const mendukung= prop(p,"Mendukung") || "-";
+    const ura      = prop(p,"Ura_Dukung") || "-";
 
     const popup = `
       <b>${nama}</b><br>
@@ -155,7 +150,7 @@ const lines = L.geoJSON(null, {
     // Tooltip label permanent (awal disembunyikan)
     const tt = layer.bindTooltip(nama, {direction:"center", permanent:true, className:"feature-label label-hidden"}).getTooltip();
 
-    // Hitung panjang meter kasar (untuk prioritas saat menengah)
+    // Panjang meter untuk prioritas
     const coords = (feature.geometry && feature.geometry.coordinates) || [];
     let len = 0;
     function sumLine(arr){
@@ -170,7 +165,7 @@ const lines = L.geoJSON(null, {
       coords.forEach(sumLine);
     }
 
-    labelMeta.push({ layer, name: nama, tooltip: tt, lengthM: len });
+    labelMeta.push({ layer, name:nama, tooltip:tt, lengthM:len });
 
     layer.on({
       mouseover: highlight,
@@ -178,7 +173,7 @@ const lines = L.geoJSON(null, {
       click: () => { try{ map.fitBounds(layer.getBounds(), {padding:[20,20]}); }catch(e){} }
     });
 
-    index.push({ name: nama, layer });
+    index.push({ name:nama, layer });
   }
 }).addTo(map);
 
@@ -204,39 +199,86 @@ fetch(GEOJSON_URL)
   })
   .catch(err => { console.error(err); alert("Gagal memuat GeoJSON. Cek URL/format file."); });
 
-// ===== LABEL VISIBILITY (tidak numpuk) =====
+// ===== LABEL VISIBILITY (declutter kuat) =====
 map.on('zoomend moveend', updateLabelVisibility);
 
 function updateLabelVisibility(){
   const z = map.getZoom();
   const bounds = map.getBounds();
 
-  // helper show/hide
   const hideAll = () => labelMeta.forEach(m=>{
     const el = m.tooltip && m.tooltip.getElement(); if(el){ el.classList.add('label-hidden'); el.classList.remove('label-visible'); }
   });
-  const showSet = (subset) => subset.forEach(m=>{
+  const showOne = (m) => {
     const el = m.tooltip && m.tooltip.getElement(); if(el){ el.classList.remove('label-hidden'); el.classList.add('label-visible'); }
+  };
+
+  hideAll();
+  if(z < SHOW_SOME_ZOOM) return;
+
+  // Kandidat: hanya yang onscreen & cukup panjang di layar
+  const candidates = labelMeta.filter(m=>{
+    if(!m.layer.getBounds || !bounds.intersects(m.layer.getBounds())) return false;
+    const screenLen = estimateScreenLengthPx(m.layer);
+    return screenLen >= MIN_SCREEN_LEN_PX;
   });
 
-  if(z < SHOW_SOME_ZOOM){
-    hideAll(); // terlalu jauh
-    return;
+  // Urutkan dari terpanjang (agar prioritas label ruas panjang)
+  candidates.sort((a,b)=> b.lengthM - a.lengthM);
+
+  // Seleksi dengan jarak piksel minimum (greedy)
+  const chosen = [];
+  const occupied = []; // simpan titik label (px)
+  const limit = (z >= SHOW_ALL_ZOOM) ? Infinity : MAX_LABELS;
+
+  for(const m of candidates){
+    if(chosen.length >= limit) break;
+    const pt = labelAnchorPx(m.layer);
+    if(!pt) continue;
+    let ok = true;
+    for(const p of occupied){
+      const dx = pt.x - p.x, dy = pt.y - p.y;
+      if(Math.sqrt(dx*dx + dy*dy) < MIN_LABEL_DIST_PX){ ok = false; break; }
+    }
+    if(ok){ occupied.push(pt); chosen.push(m); }
   }
 
-  if(z >= SHOW_ALL_ZOOM){
-    // tampilkan semua yang onscreen; yang di luar layar biarin hidden
-    hideAll();
-    const onscreen = labelMeta.filter(m=> m.layer.getBounds && bounds.intersects(m.layer.getBounds()));
-    showSet(onscreen);
-    return;
-  }
+  chosen.forEach(showOne);
+}
 
-  // zoom menengah: tampilkan sebagian (top N panjang dalam layar)
-  hideAll();
-  const onscreen = labelMeta.filter(m=> m.layer.getBounds && bounds.intersects(m.layer.getBounds()));
-  onscreen.sort((a,b)=> b.lengthM - a.lengthM);
-  showSet(onscreen.slice(0, MAX_LABELS));
+// Estimasi panjang ruas dalam piksel di layar (pakai polyline latlngs)
+function estimateScreenLengthPx(layer){
+  const latlngs = layer.getLatLngs();
+  if(!latlngs || !latlngs.length) return 0;
+
+  // flatten (MultiPolyline bisa nested)
+  const flat = flattenLatLngs(latlngs);
+  let pxLen = 0;
+  for(let i=1;i<flat.length;i++){
+    const p1 = map.latLngToLayerPoint(flat[i-1]);
+    const p2 = map.latLngToLayerPoint(flat[i]);
+    pxLen += Math.hypot(p2.x - p1.x, p2.y - p1.y);
+  }
+  return pxLen;
+}
+function flattenLatLngs(arr){
+  const out = [];
+  (function walk(a){
+    if(!a) return;
+    if(Array.isArray(a) && a.length && 'lat' in a[0]){ // array of LatLng
+      a.forEach(v=> out.push(v));
+    } else if(Array.isArray(a)){
+      a.forEach(walk);
+    }
+  })(arr);
+  return out;
+}
+// Titik jangkar label (pakai centroid bounds)
+function labelAnchorPx(layer){
+  try{
+    const c = layer.getBounds().getCenter();
+    return map.latLngToLayerPoint(c);
+  }catch(e){ return null; }
 }
 
 // ===== LEGEND (tebal garis per Fungsi, semua merah) =====
@@ -257,21 +299,16 @@ function buildLegend(lineFeats){
 
 // ===== SEARCH (dengan tombol clear) =====
 function onSearchInput(q){
-  const clearBtn = document.getElementById('clearBtn');
-  clearBtn.style.display = q && q.length ? 'block' : 'none';
+  document.getElementById('clearBtn').style.display = q && q.length ? 'block' : 'none';
   showSuggestions(q);
 }
-
 function clearSearch(){
   const inp = document.getElementById('search');
   const box = document.getElementById('suggestions');
-  inp.value = "";
-  box.innerHTML = "";
-  box.style.display = "none";
+  inp.value = ""; box.innerHTML = ""; box.style.display = "none";
   document.getElementById('clearBtn').style.display = 'none';
   if(fullBounds){ map.fitBounds(fullBounds, {padding:[20,20]}); }
 }
-
 function showSuggestions(q){
   const box=document.getElementById('suggestions');
   box.innerHTML="";
@@ -279,7 +316,6 @@ function showSuggestions(q){
   const hits=index
     .filter(it => it.name && it.name.toLowerCase().includes(q.toLowerCase()))
     .slice(0,100);
-
   hits.forEach(it=>{
     const d=document.createElement('div'); d.textContent=it.name;
     d.onclick=()=>{ 
