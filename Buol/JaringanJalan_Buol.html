@@ -70,9 +70,9 @@ const DEFAULT_ZOOM = 8;
 // - zoom < SHOW_SOME_ZOOM  : hide all
 // - SHOW_SOME_ZOOM..SHOW_ALL_ZOOM-1 : show subset (top N longest within view)
 // - zoom >= SHOW_ALL_ZOOM : show all
-const SHOW_SOME_ZOOM = 12;
-const SHOW_ALL_ZOOM  = 16;
-const MAX_LABELS     = 25; // berapa label yang tampil saat zoom menengah
+const SHOW_SOME_ZOOM = 14;
+const SHOW_ALL_ZOOM  = 17;
+const MAX_LABELS     = 10; // berapa label yang tampil saat zoom menengah
 
 // ===== PETA =====
 const map = L.map('map', { zoomControl:true }).setView(DEFAULT_VIEW, DEFAULT_ZOOM);
