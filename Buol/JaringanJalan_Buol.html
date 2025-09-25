@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8" />
-<title>PDinas Pekerjaan Umum Kabupaten Buol</title>
+<title>Dinas Pekerjaan Umum Kabupaten Buol — Jaringan Jalan</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <style>
@@ -21,20 +21,16 @@
 
   .legend { background:white; padding:8px 10px; line-height:1.4; font-size:12px; border-radius:6px; box-shadow:0 0 6px rgba(0,0,0,.2)}
   .legend i { width:14px; height:14px; float:left; margin-right:6px; opacity:0.9; border-radius:2px }
+  .leaflet-tooltip.feature-label{ font-weight:700; color:#222; background:rgba(255,255,255,.85); border:1px solid #ddd }
 
-  /* Tooltip untuk label fitur */
-  .leaflet-tooltip.feature-label{
-    font-weight:700; color:#222; background:rgba(255,255,255,.85); border:1px solid #ddd
-  }
-
-  /* Pindahkan control layers sedikit turun biar gak nabrak search */
+  /* geser kontrol layer turun biar gak tabrakan dgn search */
   .leaflet-top.leaflet-right .leaflet-control-layers { margin-top: 70px; }
 </style>
 </head>
 <body>
 <div id="header">
   <img src="https://iconape.com/wp-content/png_logo_vector/pu-logo.png" alt="Logo PU">
-  Dinas Pekerjaan Umum Kabupaten Buol
+  DINAS PEKERJAAN UMUM KABUPATEN BUOL — JARINGAN JALAN
 </div>
 
 <div class="top-controls">
@@ -51,46 +47,36 @@
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
 // ===== KONFIG =====
-const GEOJSON_URL = "https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/buol/Buol_JSon.geojson"; // ganti jika perlu
+const GEOJSON_URL = "https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/Buol/Buol_JSon.geojson";
 const DEFAULT_VIEW = [-1.5, 120.5];
 const DEFAULT_ZOOM = 8;
 
 // ===== PETA & BASEMAPS =====
 const map = L.map('map', { zoomControl:true }).setView(DEFAULT_VIEW, DEFAULT_ZOOM);
 
-// Basemaps
 const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 20, attribution: '&copy; OpenStreetMap'
-}).addTo(map); // default on
+}).addTo(map); // default
 
-const esriImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-  maxZoom: 20,
-  attribution: 'Tiles &copy; Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community'
-});
+const esriImagery = L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  { maxZoom: 20, attribution: 'Tiles &copy; Esri — Esri, Maxar, Earthstar Geographics' }
+);
+const esriTopo = L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+  { maxZoom: 20, attribution: 'Tiles &copy; Esri — World Topo Map' }
+);
+// overlay label (opsional, cocok ditumpuk di imagery)
+const esriLabels = L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+  { maxZoom: 20, attribution: 'Labels &copy; Esri — Boundaries & Places' }
+);
 
-const esriTopo = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
-  maxZoom: 20,
-  attribution: 'Tiles &copy; Esri — World Topo Map'
-});
-
-// Overlay label (opsional, bisa ditumpuk di atas imagery)
-const esriLabels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
-  maxZoom: 20,
-  attribution: 'Labels &copy; Esri — World Boundaries and Places'
-});
-
-// Layers control
-const baseLayers = {
-  "OSM Standard": osm,
-  "Esri World Imagery (Citra)": esriImagery,
-  "Esri Topographic": esriTopo
-};
-const overlays = {
-  "Esri Labels (nama tempat)": esriLabels
-};
-L.control.layers(baseLayers, overlays, { position:'topright', collapsed:false }).addTo(map);
-
-function resetRoute(){ document.getElementById('route-info').innerHTML="Jarak &amp; Waktu tempuh akan muncul di sini"; }
+L.control.layers(
+  { "OSM Standard": osm, "Esri World Imagery (Citra)": esriImagery, "Esri Topographic": esriTopo },
+  { "Esri Labels (nama tempat)": esriLabels },
+  { position:'topright', collapsed:false }
+).addTo(map);
 
 // ===== UTIL =====
 const prop = (o,k)=> (o&&o[k]!=null&&String(o[k]).trim()!=="")? String(o[k]).trim() : "";
