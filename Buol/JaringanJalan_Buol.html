@@ -32,9 +32,6 @@
     font-weight:700; color:#111; background:rgba(255,255,255,.85);
     border:1px solid #ddd; padding:2px 4px;
   }
-  .label-hidden{ opacity:0; pointer-events:none }
-  .label-visible{ opacity:1 }
-
   .leaflet-top.leaflet-right .leaflet-control-layers { margin-top: 70px; }
 </style>
 </head>
@@ -63,12 +60,12 @@ const GEOJSON_URL = "https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/m
 const DEFAULT_VIEW = [-1.5, 120.5];
 const DEFAULT_ZOOM = 8;
 
-// Label strategy
-const SHOW_SOME_ZOOM = 13;
-const SHOW_ALL_ZOOM  = 17;
-const MAX_LABELS     = 12;
-const MIN_LABEL_DIST_PX = 80;   // min jarak antar label
-const MIN_SCREEN_LEN_PX = 120;  // min panjang ruas di layar
+// Label strategy (KETAT)
+const SHOW_SOME_ZOOM = 14;    // < ini = 0 label
+const SHOW_ALL_ZOOM  = 18;    // >= ini = lebih banyak (tetap declutter)
+const MAX_LABELS     = 8;     // jumlah label saat zoom menengah
+const MIN_LABEL_DIST_PX = 140; // jarak min antar label
+const MIN_SCREEN_LEN_PX = 180; // ruas min panjang (px) agar layak dilabeli
 
 // ===== PETA =====
 const map = L.map('map', { zoomControl:true }).setView(DEFAULT_VIEW, DEFAULT_ZOOM);
@@ -118,7 +115,9 @@ function haversine(lat1, lon1, lat2, lon2){
 // ===== LAYERS & INDEX =====
 const index = [];
 let fullBounds = null;
-const labelMeta = []; // {layer, name, tooltip, lengthM}
+
+// metadata tiap ruas
+const metas = []; // { layer, name, lengthM, tooltipCreated:false }
 
 const lines = L.geoJSON(null, {
   style: f => styleLine(f.properties||{}),
@@ -128,11 +127,11 @@ const lines = L.geoJSON(null, {
     if(!/^(\s*Jl\.|\s*Jalan)/i.test(nama)) nama = "Jl. " + nama;
 
     const propinsi = prop(p,"Propinsi") || prop(p,"Provinsi") || "-";
-    const status   = prop(p,"Status") || "-";
-    const fungsi   = prop(p,"Fungsi") || "-";
-    const panjang  = prop(p,"Panjang") || prop(p,"Panjang_Km") || "";
+    const status   = prop(p,"Status")   || "-";
+    const fungsi   = prop(p,"Fungsi")   || "-";
+    const panjang  = prop(p,"Panjang")  || prop(p,"Panjang_Km") || "";
     const thn      = prop(p,"Thn_Data") || "-";
-    const mendukung= prop(p,"Mendukung") || "-";
+    const mendukung= prop(p,"Mendukung")|| "-";
     const ura      = prop(p,"Ura_Dukung") || "-";
 
     const popup = `
@@ -147,10 +146,7 @@ const lines = L.geoJSON(null, {
     `;
     layer.bindPopup(popup, {maxWidth: 360});
 
-    // Tooltip label permanent (awal disembunyikan)
-    const tt = layer.bindTooltip(nama, {direction:"center", permanent:true, className:"feature-label label-hidden"}).getTooltip();
-
-    // Panjang meter untuk prioritas
+    // hitung panjang (prioritas)
     const coords = (feature.geometry && feature.geometry.coordinates) || [];
     let len = 0;
     function sumLine(arr){
@@ -159,13 +155,10 @@ const lines = L.geoJSON(null, {
         len += haversine(lat1,lon1,lat2,lon2);
       }
     }
-    if(feature.geometry.type === "LineString"){
-      sumLine(coords);
-    } else if(feature.geometry.type === "MultiLineString"){
-      coords.forEach(sumLine);
-    }
+    if(feature.geometry.type === "LineString"){ sumLine(coords); }
+    else if(feature.geometry.type === "MultiLineString"){ coords.forEach(sumLine); }
 
-    labelMeta.push({ layer, name:nama, tooltip:tt, lengthM:len });
+    metas.push({ layer, name:nama, lengthM:len, tooltipCreated:false });
 
     layer.on({
       mouseover: highlight,
@@ -195,40 +188,36 @@ fetch(GEOJSON_URL)
     catch(e){ map.setView(DEFAULT_VIEW, DEFAULT_ZOOM); }
 
     buildLegend(lineFeats);
-    updateLabelVisibility();
+    updateLabels(); // init
   })
   .catch(err => { console.error(err); alert("Gagal memuat GeoJSON. Cek URL/format file."); });
 
-// ===== LABEL VISIBILITY (declutter kuat) =====
-map.on('zoomend moveend', updateLabelVisibility);
+// ===== LABELS: CREATE/REMOVE DYNAMIC =====
+map.on('zoomend moveend', updateLabels);
+map.on('zoomstart', removeAllLabels);
 
-function updateLabelVisibility(){
+function removeAllLabels(){
+  metas.forEach(m => {
+    if(m.tooltipCreated){ m.layer.unbindTooltip(); m.tooltipCreated = false; }
+  });
+}
+
+function updateLabels(){
   const z = map.getZoom();
   const bounds = map.getBounds();
 
-  const hideAll = () => labelMeta.forEach(m=>{
-    const el = m.tooltip && m.tooltip.getElement(); if(el){ el.classList.add('label-hidden'); el.classList.remove('label-visible'); }
-  });
-  const showOne = (m) => {
-    const el = m.tooltip && m.tooltip.getElement(); if(el){ el.classList.remove('label-hidden'); el.classList.add('label-visible'); }
-  };
+  // tak ada label di zoom kecil
+  if(z < SHOW_SOME_ZOOM){ removeAllLabels(); return; }
 
-  hideAll();
-  if(z < SHOW_SOME_ZOOM) return;
-
-  // Kandidat: hanya yang onscreen & cukup panjang di layar
-  const candidates = labelMeta.filter(m=>{
+  // kandidat: on screen + cukup panjang di layar
+  const candidates = metas.filter(m => {
     if(!m.layer.getBounds || !bounds.intersects(m.layer.getBounds())) return false;
-    const screenLen = estimateScreenLengthPx(m.layer);
-    return screenLen >= MIN_SCREEN_LEN_PX;
-  });
+    const pxLen = estimateScreenLengthPx(m.layer);
+    return pxLen >= MIN_SCREEN_LEN_PX;
+  }).sort((a,b)=> b.lengthM - a.lengthM);
 
-  // Urutkan dari terpanjang (agar prioritas label ruas panjang)
-  candidates.sort((a,b)=> b.lengthM - a.lengthM);
-
-  // Seleksi dengan jarak piksel minimum (greedy)
   const chosen = [];
-  const occupied = []; // simpan titik label (px)
+  const occupied = [];
   const limit = (z >= SHOW_ALL_ZOOM) ? Infinity : MAX_LABELS;
 
   for(const m of candidates){
@@ -238,20 +227,29 @@ function updateLabelVisibility(){
     let ok = true;
     for(const p of occupied){
       const dx = pt.x - p.x, dy = pt.y - p.y;
-      if(Math.sqrt(dx*dx + dy*dy) < MIN_LABEL_DIST_PX){ ok = false; break; }
+      if(Math.hypot(dx,dy) < MIN_LABEL_DIST_PX){ ok = false; break; }
     }
     if(ok){ occupied.push(pt); chosen.push(m); }
   }
 
-  chosen.forEach(showOne);
+  // apply: create for chosen, remove for others
+  const chosenSet = new Set(chosen);
+  metas.forEach(m => {
+    const shouldShow = chosenSet.has(m);
+    if(shouldShow && !m.tooltipCreated){
+      m.layer.bindTooltip(m.name, {direction:"center", permanent:true, className:"feature-label"}); 
+      m.tooltipCreated = true;
+    } else if(!shouldShow && m.tooltipCreated){
+      m.layer.unbindTooltip(); 
+      m.tooltipCreated = false;
+    }
+  });
 }
 
-// Estimasi panjang ruas dalam piksel di layar (pakai polyline latlngs)
+// Estimasi panjang ruas (px) di layar
 function estimateScreenLengthPx(layer){
   const latlngs = layer.getLatLngs();
   if(!latlngs || !latlngs.length) return 0;
-
-  // flatten (MultiPolyline bisa nested)
   const flat = flattenLatLngs(latlngs);
   let pxLen = 0;
   for(let i=1;i<flat.length;i++){
@@ -265,15 +263,11 @@ function flattenLatLngs(arr){
   const out = [];
   (function walk(a){
     if(!a) return;
-    if(Array.isArray(a) && a.length && 'lat' in a[0]){ // array of LatLng
-      a.forEach(v=> out.push(v));
-    } else if(Array.isArray(a)){
-      a.forEach(walk);
-    }
+    if(Array.isArray(a) && a.length && 'lat' in a[0]){ a.forEach(v=> out.push(v)); }
+    else if(Array.isArray(a)){ a.forEach(walk); }
   })(arr);
   return out;
 }
-// Titik jangkar label (pakai centroid bounds)
 function labelAnchorPx(layer){
   try{
     const c = layer.getBounds().getCenter();
