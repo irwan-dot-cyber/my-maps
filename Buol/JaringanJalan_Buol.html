@@ -12,20 +12,29 @@
   #map {height:calc(100% - 110px)}
   #route-info { background:#f9f9f9; padding:8px; font-size:14px; border-top:1px solid #ccc }
 
-  /* Geser search ke kanan supaya tidak nabrak zoom (+/-) di kiri */
+  /* Geser search ke kanan biar gak nabrak tombol zoom */
   .top-controls { position:absolute; top:60px; left:60px; right:10px; display:flex; gap:10px; z-index:1000 }
-  .search-box { background:#fff; padding:6px; border-radius:6px; box-shadow:0 0 6px rgba(0,0,0,.25); position:relative }
+  .search-box { background:#fff; padding:6px 36px 6px 6px; border-radius:6px; box-shadow:0 0 6px rgba(0,0,0,.25); position:relative }
   .search-box input { width:280px; padding:6px 8px; border:1px solid #ddd; border-radius:4px }
+  .search-box button.clear-btn{
+    position:absolute; right:8px; top:50%; transform:translateY(-50%);
+    width:22px; height:22px; border:none; border-radius:999px; cursor:pointer;
+    background:#eee; font-weight:700; line-height:1; display:none;
+  }
+  .search-box button.clear-btn:hover{ background:#e2e2e2 }
   #suggestions { position:absolute; top:46px; left:0; right:0; background:#fff; border:1px solid #ddd; max-height:240px; overflow-y:auto; display:none; z-index:2000 }
   #suggestions div { padding:6px 8px; cursor:pointer }
   #suggestions div:hover { background:#eee }
 
   .legend { background:white; padding:8px 10px; line-height:1.6; font-size:12px; border-radius:6px; box-shadow:0 0 6px rgba(0,0,0,.2)}
-  /* contoh garis di legenda (pakai border-bottom) */
   .swatch { display:inline-block; width:18px; height:0; margin-right:6px; vertical-align:middle; border-bottom: 4px solid #e53935; }
 
-  .leaflet-tooltip.feature-label{ font-weight:700; color:#222; background:rgba(255,255,255,.85); border:1px solid #ddd }
-
+  /* Label nama jalan */
+  .leaflet-tooltip.feature-label{
+    font-weight:700; color:#111; background:rgba(255,255,255,.8); border:1px solid #ddd; padding:2px 4px;
+  }
+  .label-hidden{ opacity:0; pointer-events:none }
+  .label-visible{ opacity:1 }
   /* geser control layers turun biar gak tabrakan dgn search */
   .leaflet-top.leaflet-right .leaflet-control-layers { margin-top: 70px; }
 </style>
@@ -38,7 +47,8 @@
 
 <div class="top-controls">
   <div class="search-box">
-    <input id="search" placeholder="Cari ruas (Nm_Ruas)..." oninput="showSuggestions(this.value)"/>
+    <input id="search" placeholder="Cari ruas (Nm_Ruas)..." oninput="onSearchInput(this.value)"/>
+    <button id="clearBtn" class="clear-btn" title="Clear" onclick="clearSearch()">×</button>
     <div id="suggestions"></div>
   </div>
 </div>
@@ -53,26 +63,17 @@
 const GEOJSON_URL = "https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/Buol/Buol_JSon.geojson";
 const DEFAULT_VIEW = [-1.5, 120.5];
 const DEFAULT_ZOOM = 8;
+// label hanya tampil jika zoom >= nilai ini
+const SHOW_LABEL_ZOOM = 16;
 
-// ===== PETA & BASEMAPS =====
+// ===== PETA =====
 const map = L.map('map', { zoomControl:true }).setView(DEFAULT_VIEW, DEFAULT_ZOOM);
 
-const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 20, attribution: '&copy; OpenStreetMap'
-}).addTo(map); // default
-
-const esriImagery = L.tileLayer(
-  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-  { maxZoom: 20, attribution: 'Tiles &copy; Esri — Esri, Maxar, Earthstar Geographics' }
-);
-const esriTopo = L.tileLayer(
-  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
-  { maxZoom: 20, attribution: 'Tiles &copy; Esri — World Topo Map' }
-);
-const esriLabels = L.tileLayer(
-  'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-  { maxZoom: 20, attribution: 'Labels &copy; Esri — Boundaries & Places' }
-);
+// Basemaps
+const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:20, attribution:'&copy; OpenStreetMap' }).addTo(map);
+const esriImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom:20, attribution:'Tiles &copy; Esri — Esri, Maxar, Earthstar Geographics' });
+const esriTopo    = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom:20, attribution:'Tiles &copy; Esri — World Topo Map' });
+const esriLabels  = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom:20, attribution:'Labels &copy; Esri — Boundaries & Places' });
 
 L.control.layers(
   { "OSM Standard": osm, "Esri World Imagery (Citra)": esriImagery, "Esri Topographic": esriTopo },
@@ -80,29 +81,30 @@ L.control.layers(
   { position:'topright', collapsed:false }
 ).addTo(map);
 
-// ===== UTIL =====
+// ===== UTIL & STYLE =====
 const prop = (o,k)=> (o&&o[k]!=null&&String(o[k]).trim()!=="")? String(o[k]).trim() : "";
 
 /* Semua garis merah, ketebalan beda per Fungsi */
 function weightByFungsi(f){
   if(!f) return 3.5;
   const s = f.toLowerCase();
-  if(/arteri\s*primer/.test(s)) return 6;          // paling tebal
-  if(/kolektor/.test(s))        return 4.5;
-  if(/lingkungan\s*primer/.test(s)) return 4;
-  if(/lokal\s*sekunder/.test(s)) return 3.5;
-  if(/lingkungan\s*sekunder/.test(s)) return 2.8;  // paling tipis
+  if(/arteri\s*primer/.test(s))      return 6;
+  if(/kolektor/.test(s))             return 4.5;
+  if(/lingkungan\s*primer/.test(s))  return 4;
+  if(/lokal\s*sekunder/.test(s))     return 3.5;
+  if(/lingkungan\s*sekunder/.test(s))return 2.8;
   return 3.5;
 }
 function styleLine(p){
   const fg = (p.Fungsi ?? p.fungsi ?? "").toString();
-  return { color: "#e53935", weight: weightByFungsi(fg), opacity: 0.95 };
+  return { color:"#e53935", weight: weightByFungsi(fg), opacity:0.95 };
 }
 function highlight(e){ const l=e.target; l.setStyle({weight: Math.max((l.options.weight||3.5)+2, 6.5), opacity:1}); l.bringToFront(); }
 function resetHighlight(e){ const l=e.target; lines.resetStyle(l); }
 
 // ===== LAYERS & INDEX =====
 const index = [];
+let fullBounds = null;
 
 const lines = L.geoJSON(null, {
   style: f => styleLine(f.properties||{}),
@@ -128,7 +130,9 @@ const lines = L.geoJSON(null, {
       Uraian: ${ura}
     `;
     layer.bindPopup(popup, {maxWidth: 360});
-    layer.bindTooltip(nama, {direction:"center", permanent:false, className:"feature-label"});
+
+    // Label nama jalan (permanent), tapi disembunyikan saat zoom kecil
+    layer.bindTooltip(nama, {direction:"center", permanent:true, className:"feature-label label-hidden"});
 
     layer.on({
       mouseover: highlight,
@@ -140,45 +144,46 @@ const lines = L.geoJSON(null, {
   }
 }).addTo(map);
 
-const points = L.geoJSON(null, {
-  pointToLayer: (feat, latlng) => L.circleMarker(latlng, {radius:6, color:"#b71c1c", fillColor:"#ef5350", fillOpacity:.85, weight:2}),
-  onEachFeature: (feature, layer) => {
-    const p = feature.properties || {};
-    const nm = prop(p,"nama_di") || prop(p,"Nama") || prop(p,"name") || "Lokasi";
-    layer.bindPopup(`<b>${nm}</b>`);
-    index.push({ name: nm, layer });
-  }
-}).addTo(map);
+const points = L.geoJSON(null).addTo(map);
 
 // ===== LOAD GEOJSON =====
 fetch(GEOJSON_URL)
   .then(r => { if(!r.ok) throw new Error("Gagal memuat GeoJSON"); return r.json(); })
   .then(gj => {
     const feats = (gj && gj.features) ? gj.features : [];
-    const lineFeats = feats.filter(f => {
-      const t = (f.geometry||{}).type;
-      return t==="LineString" || t==="MultiLineString";
-    });
+    const lineFeats  = feats.filter(f => ["LineString","MultiLineString"].includes((f.geometry||{}).type));
     const pointFeats = feats.filter(f => (f.geometry||{}).type==="Point");
 
     lines.addData({type:"FeatureCollection", features: lineFeats});
     points.addData({type:"FeatureCollection", features: pointFeats});
 
     const group = L.featureGroup([lines, points]);
-    try { map.fitBounds(group.getBounds(), {padding:[20,20]}); }
+    try { fullBounds = group.getBounds(); map.fitBounds(fullBounds, {padding:[20,20]}); }
     catch(e){ map.setView(DEFAULT_VIEW, DEFAULT_ZOOM); }
 
-    buildLegendFromData(lineFeats);
+    buildLegend(lineFeats);
+    updateLabelVisibility();
   })
   .catch(err => { console.error(err); alert("Gagal memuat GeoJSON. Cek URL/format file."); });
 
-// ===== LEGEND: tetap merah, ketebalan contoh sesuai Fungsi =====
-function buildLegendFromData(lineFeats){
-  const list = Array.from(new Set(
-    lineFeats.map(f => (f.properties||{}).Fungsi).filter(Boolean)
-  ));
-  if(!list.length) return;
+// ===== LABEL VISIBILITY (anti numpuk di zoom kecil) =====
+map.on('zoomend moveend', updateLabelVisibility);
+function updateLabelVisibility(){
+  const visible = map.getZoom() >= SHOW_LABEL_ZOOM;
+  lines.eachLayer(l=>{
+    const tt = l.getTooltip && l.getTooltip();
+    if(!tt) return;
+    const el = tt.getElement();
+    if(!el) return;
+    el.classList.toggle('label-visible', visible);
+    el.classList.toggle('label-hidden', !visible);
+  });
+}
 
+// ===== LEGEND (contoh tebal garis per Fungsi, semua merah) =====
+function buildLegend(lineFeats){
+  const list = Array.from(new Set(lineFeats.map(f => (f.properties||{}).Fungsi).filter(Boolean)));
+  if(!list.length) return;
   const legend = L.control({position:"bottomright"});
   legend.onAdd = function(){
     const div = L.DomUtil.create('div','legend');
@@ -191,20 +196,37 @@ function buildLegendFromData(lineFeats){
   legend.addTo(map);
 }
 
-// ===== SEARCH =====
-function showSuggestions(q){
+// ===== SEARCH (dengan tombol clear) =====
+function onSearchInput(q){
+  const clearBtn = document.getElementById('clearBtn');
+  clearBtn.style.display = q && q.length ? 'block' : 'none';
+  showSuggestions(q);
+}
+
+function clearSearch(){
+  const inp = document.getElementById('search');
   const box = document.getElementById('suggestions');
+  inp.value = "";
   box.innerHTML = "";
+  box.style.display = "none";
+  document.getElementById('clearBtn').style.display = 'none';
+  // zoom balik ke seluruh data
+  if(fullBounds){ map.fitBounds(fullBounds, {padding:[20,20]}); }
+}
+
+function showSuggestions(q){
+  const box=document.getElementById('suggestions');
+  box.innerHTML="";
   if(!q){ box.style.display="none"; return; }
-  const hits = index
-    .filter(it => it.name && it.name.toLowerCase().includes(q.toLowerCase()))
+  const hits=index
+    .filter(it=> it.name && it.name.toLowerCase().includes(q.toLowerCase()))
     .slice(0,100);
 
-  hits.forEach(it => {
-    const d = document.createElement('div');
-    d.textContent = it.name;
-    d.onclick = () => {
-      document.getElementById('search').value = it.name;
+  hits.forEach(it=>{
+    const d=document.createElement('div'); d.textContent=it.name;
+    d.onclick=()=>{ 
+      document.getElementById('search').value=it.name; 
+      document.getElementById('clearBtn').style.display='block';
       box.style.display="none";
       try { map.fitBounds(it.layer.getBounds(), {padding:[20,20]}); }
       catch(e){ if(it.layer.getLatLng) map.setView(it.layer.getLatLng(), 14); }
