@@ -115,6 +115,7 @@ h1{font:800 20px;margin:0}
   <div class="cart-foot">
     <div class="total"><span>Total</span><span id="grand">Rp 0</span></div>
     <button id="submitBtn" type="button" class="btn btn-primary">Submit & Cetak PDF + WA</button>
+    <div class="hint" style="margin-top:8px;text-align:center">Maksimum 12 gambar per pesanan</div>
   </div>
 </aside>
 
@@ -162,14 +163,23 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby20E4jQz5pGqSn0atad
 const WA_NUMBER  = "6281219929245"; // ganti (tanpa +)
 
 /* ========= STATE & UTILS ========= */
+// MAX 12: batas pilihan
+const MAX_PICK = 12;
+
 let USER_KEY=null, CONFIRMED=false;
 const lsKey=()=>`orderCart_${USER_KEY}`;
 const loadCart=()=>JSON.parse(localStorage.getItem(lsKey())||"{}");
 const saveCart=c=>localStorage.setItem(lsKey(),JSON.stringify(c));
+const cartCount=()=>Object.values(loadCart()).reduce((a,v)=>a+(v.qty||0),0); // MAX 12
 const formatIDR=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n);
 const validTelp=t=>/^\d{10,15}$/.test(t);
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800);}
-function updateBadge(){const b=document.getElementById('cartBadge');const c=(USER_KEY&&CONFIRMED)?Object.values(loadCart()).reduce((a,v)=>a+(v.qty||0),0):0;b.style.display=c>0?'inline-block':'none';b.textContent=c;}
+function updateBadge(){
+  const b=document.getElementById('cartBadge');
+  const c=(USER_KEY&&CONFIRMED)?cartCount():0;
+  b.style.display=c>0?'inline-block':'none';
+  b.textContent=c;
+}
 
 /* ========= LIGHTBOX ========= */
 const lb=document.getElementById('lightbox'), lbImg=document.getElementById('lbImg'),
@@ -191,9 +201,16 @@ const tbody=document.getElementById('tbody');
 function render(){
   const cart=(USER_KEY&&CONFIRMED)?loadCart():{};
   tbody.innerHTML=""; let no=0;
+
+  // MAX 12: cek apakah sudah mencapai batas
+  const pickedCount = (USER_KEY&&CONFIRMED)?cartCount():0;
+  const maxReached  = pickedCount >= MAX_PICK;
+
   SETS.forEach(s=>{
     if(cart[s.id]) return; no++;
-    const disabled=!(USER_KEY&&CONFIRMED);
+    // disabled jika: belum konfirmasi ATAU sudah mencapai MAX
+    const disabled=!(USER_KEY&&CONFIRMED) || maxReached;
+
     const tr=document.createElement('tr');
     tr.innerHTML=`
       <td class="td no">${no}</td>
@@ -201,14 +218,28 @@ function render(){
       <td class="td"><div class="thumb"><img src="${s.back}" alt="${s.title}"/></div></td>
       <td class="td pick">
         <input type="checkbox" data-id="${s.id}" ${disabled?'disabled':''}>
-        ${disabled?'<div class="disabled-note">Klik OK dulu</div>':''}
+        ${disabled
+          ? `<div class="disabled-note">${!(USER_KEY&&CONFIRMED) ? 'Klik OK dulu' : 'Maksimal 12 gambar telah tercapai'}</div>`
+          : `<div class="hint">Sisa bisa pilih: ${MAX_PICK - pickedCount}</div>`
+        }
       </td>`;
     tbody.appendChild(tr);
     tr.querySelector('.thumb').onclick=()=>openLightbox(imgsFor(s),0);
   });
+
   tbody.querySelectorAll('input[type=checkbox]').forEach(cb=>{
     cb.onchange=()=>{
-      const id=cb.dataset.id; const c=loadCart(); c[id]={qty:1,price:PRICE}; saveCart(c);
+      // MAX 12: blok jika sudah penuh
+      if(cartCount() >= MAX_PICK){
+        cb.checked = false;
+        toast('Maksimal 12 gambar per pesanan.');
+        render(); // refresh sisa
+        return;
+      }
+      const id=cb.dataset.id;
+      const c=loadCart();
+      c[id]={qty:1,price:PRICE};
+      saveCart(c);
       render(); renderCart(); updateBadge(); toast('Ditambahkan ke keranjang');
     };
   });
@@ -245,7 +276,10 @@ function renderCart(){
   });
   if(!Object.keys(c).length) body.innerHTML="<p style='color:#9aa7c7'>Keranjang kosong</p>";
   document.getElementById('grand').textContent=formatIDR(total);
-  body.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{const cc=loadCart(); delete cc[b.dataset.del]; saveCart(cc); render(); renderCart(); updateBadge();});
+  body.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{
+    const cc=loadCart(); delete cc[b.dataset.del]; saveCart(cc);
+    render(); renderCart(); updateBadge();
+  });
 }
 
 /* ========= SEND TO SHEET ========= */
@@ -277,6 +311,8 @@ function openWhatsApp(phone, textPlain){
 document.getElementById('submitBtn').onclick=()=>{
   if(!(USER_KEY&&CONFIRMED)){toast('Klik OK pada identitas dulu');return;}
   const cart=loadCart(); if(!Object.keys(cart).length){toast('Keranjang kosong');return;}
+  // MAX 12: cegah submit jika > 12 (jaga-jaga)
+  if(cartCount() > MAX_PICK){ toast('Maksimal 12 gambar. Hapus sebagian di keranjang.'); return; }
 
   const idx=USER_KEY.lastIndexOf('_');
   const nama=USER_KEY.slice(0,idx).replaceAll('_',' ');
@@ -312,7 +348,6 @@ Tanggal: ${now.toLocaleString('id-ID')}
   <tr><td colspan="4" style="text-align:right"><b>Total</b></td><td><b>${formatIDR(total)}</b></td></tr></table>
   <script>window.print();<\/script></body></html>`;
 
-  // buka WA (auto + fallback). Setelah itu buka bon sedikit terlambat
   openWhatsApp(WA_NUMBER, msg);
   setTimeout(()=>{ const w=window.open("","_blank"); if(w){ w.document.write(bonHTML); w.document.close(); }},700);
 
