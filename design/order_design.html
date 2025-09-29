@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Order Desain Kaos</title>
+<title>Tuic Order Desain Kaos</title>
 <style>
 :root{--bg:#0f1115;--card:#171922;--fg:#e8eefc;--muted:#9aa7c7;--line:#23283a}
 *{box-sizing:border-box}
@@ -90,19 +90,12 @@ body{margin:0;background:var(--bg);color:var(--fg);font:500 15px/1.55 system-ui,
   <!-- header brand -->
   <div class="brand">
     <div class="logo">
-      <!-- ganti path sesuai lokasi file logo kamu -->
-      <img src="./assets/Tuic_Design%20Kaos.png" alt="Tuic Design — Design Kaos Siap Cetak">
+      <img src="./assets/tuic-design-badge.png" alt="Tuic Design — Design Kaos Siap Cetak">
     </div>
     <div class="text">
       <h1>Tuic Design</h1>
       <div class="tagline">Design Kaos Siap Cetak · <span style="opacity:.8">Order Desain Kaos</span></div>
     </div>
-  </div>
-
-  <!-- bar kontak -->
-  <div class="contactbar">
-    <a id="ctaWA" href="https://wa.me/628161472405" target="_blank" rel="noopener" aria-label="Chat via WhatsApp 0816-1472-405">💬 Chat via WhatsApp</a>
-    <div>WA: <span class="num">0816-1472-405</span></div>
   </div>
 
   <!-- identitas -->
@@ -169,40 +162,20 @@ body{margin:0;background:var(--bg);color:var(--fg);font:500 15px/1.55 system-ui,
   </div>
 </div>
 
-<!-- Fallback WA -->
-<div id="waFallback" style="
-  position:fixed;left:12px;right:12px;bottom:12px;z-index:9600;
-  display:none;gap:10px;align-items:center;justify-content:space-between;
-  background:#0f1320;border:1px solid #2b3a66;color:#eaf2ff;border-radius:12px;
-  padding:10px 12px;box-shadow:0 10px 30px rgba(0,0,0,.4);">
-  <div>WhatsApp tidak terbuka otomatis. Tap tombol ini:</div>
-  <a id="waFallbackBtn" href="#" target="_blank" rel="noopener" style="
-     background:#22c55e;color:#fff;font-weight:700;
-     padding:10px 14px;border-radius:10px;text-decoration:none;">Buka WhatsApp</a>
-</div>
-
 <div id="toast" class="toast"></div>
 
 <script>
 /* ========= KONFIG ========= */
-const SETS = [
-  {
-    id:"set-nothing",
-    title:"Nothing is Imposible",
-    logo:"./gambar/Nothing_Logo.png",
-    back:"./gambar/Nothing_Back.png",
-    mockup:"./gambar/Nothing_Mockup.png"
-  }
-  // tambah set lain di sini…
-];
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbyI0VlKIVZtWM02pXhfDW4srbZMW8whQ9iCz49AsZ74XT9JC_Wd0fx9WByJto4GosUehg/exec"; // <-- GANTI dgn URL Web App dari Apps Script
 const PRICE      = 30000;
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby20E4jQz5pGqSn0atadu1QGSVaUVXStt8GYiNnBlKvr-eyU-fz7cJJXRxxQqKkMLDSLw/exec"; // ganti
-const WA_NUMBER  = "628161472405"; // nomor admin (tanpa +)
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby20E4jQz5pGqSn0atadu1QGSVaUVXStt8GYiNnBlKvr-eyU-fz7cJJXRxxQqKkMLDSLw/exec";
+const WA_NUMBER  = "628161472405";
+const MAX_PICK   = 12;
 
 /* ========= STATE & UTILS ========= */
-const MAX_PICK = 12;
-
+let SETS = [];
 let USER_KEY=null, CONFIRMED=false;
+
 const lsKey=()=>`orderCart_${USER_KEY}`;
 const loadCart=()=>JSON.parse(localStorage.getItem(lsKey())||"{}");
 const saveCart=c=>localStorage.setItem(lsKey(),JSON.stringify(c));
@@ -213,6 +186,21 @@ function toast(m){const t=document.getElementById('toast');t.textContent=m;t.cla
 function updateBadge(){const b=document.getElementById('cartBadge');const c=(USER_KEY&&CONFIRMED)?cartCount():0;b.style.display=c>0?'inline-block':'none';b.textContent=c;}
 const capInfo = document.getElementById('capInfo');
 function updateCapInfo(){const picked=(USER_KEY&&CONFIRMED)?cartCount():0;if(capInfo) capInfo.textContent=`${picked}/${MAX_PICK} dipilih`;}
+
+/* ========= LOAD SETS DARI GOOGLE SHEET ========= */
+async function loadSets() {
+  try {
+    const res = await fetch(SHEET_URL, { cache: 'no-store' });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
+    if(!Array.isArray(data)) throw new Error('Format JSON tidak valid');
+    SETS = data;
+  } catch(e){
+    console.error('Gagal load katalog dari Sheet', e);
+    SETS=[];
+    toast('Gagal memuat katalog dari Google Sheet');
+  }
+}
 
 /* ========= LIGHTBOX ========= */
 const lb=document.getElementById('lightbox'), lbImg=document.getElementById('lbImg'),
@@ -241,15 +229,14 @@ function render(){
   const pickedCount=(USER_KEY&&CONFIRMED)?cartCount():0;
   const maxReached=pickedCount>=MAX_PICK;
 
-  // Toggle section saat cap penuh
   if(maxReached){
-    if(listTableSection) listTableSection.style.display='none';
-    if(limitMsg) limitMsg.style.display='block';
+    listTableSection.style.display='none';
+    limitMsg.style.display='block';
     updateCapInfo();
     return;
-  }else{
-    if(listTableSection) listTableSection.style.display='block';
-    if(limitMsg) limitMsg.style.display='none';
+  } else {
+    listTableSection.style.display='block';
+    limitMsg.style.display='none';
   }
 
   SETS.forEach(s=>{
@@ -335,12 +322,9 @@ function openWhatsApp(phone, textPlain){
   const intent=`intent://send/?phone=${num}&text=${txt}#Intent;scheme=whatsapp;package=com.whatsapp;end`;
   const wa1=`https://wa.me/${num}?text=${txt}`;
   const wa2=`https://api.whatsapp.com/send?phone=${num}&text=${txt}`;
-  const btn=document.getElementById('waFallbackBtn'); if(btn) btn.href=wa2;
-
   try{ window.location.assign(scheme); }catch(e){}
   setTimeout(()=>{ if(document.visibilityState==='visible'){ try{window.location.assign(intent);}catch(e){} }},350);
   setTimeout(()=>{ if(document.visibilityState==='visible'){ try{window.location.assign(wa1);}catch(e){window.location.assign(wa2);} }},700);
-  setTimeout(()=>{ if(document.visibilityState==='visible'){ const bar=document.getElementById('waFallback'); if(bar) bar.style.display='flex'; }},1200);
   return true;
 }
 
@@ -362,7 +346,7 @@ document.getElementById('submitBtn').onclick=()=>{
     return {no:i+1,id,title:s.title,qty,price,subtotal:qty*price};
   });
 
-  // kirim ke Google Sheet
+  // kirim ke Google Sheet (pencatatan pesanan)
   sendToSheet(SCRIPT_URL,{noBon,nama,telp,timestamp:new Date().toISOString(),items,total,source:"order_design.html"});
 
   // pesan WA
@@ -385,4 +369,19 @@ Tanggal: ${now.toLocaleString('id-ID')}
   <script>window.print();<\/script></body></html>`;
 
   openWhatsApp(WA_NUMBER, msg);
-  setTimeout(()=>{ const w=window.open("","_blank"); if(w){ w.document.write(b_
+  setTimeout(()=>{ const w=window.open("","_blank"); if(w){ w.document.write(bonHTML); w.document.close(); }},700);
+
+  // reset UI
+  localStorage.removeItem(lsKey());
+  render(); renderCart(); updateBadge(); updateCapInfo(); closeCart();
+  toast('Pesanan diproses. Terima kasih!');
+};
+
+/* ========= INIT ========= */
+(async () => {
+  await loadSets();
+  render(); updateBadge(); updateCapInfo();
+})();
+</script>
+</body>
+</html>
