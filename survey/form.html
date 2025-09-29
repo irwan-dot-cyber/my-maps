@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Form Survey AIR — BALAI→SNVT→PAKET + Peta</title>
+  <title>Form Survey AIR — GAS Web App</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" referrerpolicy="no-referrer" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js" referrerpolicy="no-referrer"></script>
   <style>
@@ -38,7 +38,7 @@
 <body>
   <header>
     <strong>Form Survey AIR</strong>
-    <span class="hint"> • Pilih BALAI → SNVT → PAKET, Provinsi & Kabupaten otomatis. Ambil koordinat dari peta.</span>
+    <span class="hint"> • BALAI → SNVT → PAKET (auto Prov/Kab), peta untuk koordinat.</span>
   </header>
 
   <main>
@@ -46,7 +46,7 @@
       <h2>Data Survei</h2>
       <div id="toast" class="toast"></div>
       <form id="surveyForm">
-        <!-- 1) BALAI → SNVT -->
+        <!-- Balai → SNVT -->
         <div class="row">
           <div>
             <label>BALAI</label>
@@ -58,13 +58,13 @@
           </div>
         </div>
 
-        <!-- 2) PAKET -->
+        <!-- Paket -->
         <div>
           <label>PAKET</label>
           <select id="paket" name="paket" required disabled></select>
         </div>
 
-        <!-- 3) PROVINSI (auto) → 4) KABUPATEN/KOTA (auto dropdown) -->
+        <!-- Provinsi (auto) + Kabupaten (auto dropdown) -->
         <div class="row">
           <div>
             <label>Provinsi (otomatis dari Paket)</label>
@@ -75,11 +75,10 @@
             <select id="kabupaten" name="kabupaten" disabled>
               <option value="">-- pilih Kabupaten/Kota --</option>
             </select>
-            <div class="hint">Terisi setelah memilih Paket.</div>
           </div>
         </div>
 
-        <!-- 5) Kecamatan (input) → 6) Desa/Kelurahan (input) -->
+        <!-- Kecamatan + Desa -->
         <div class="row">
           <div>
             <label>Kecamatan</label>
@@ -91,7 +90,7 @@
           </div>
         </div>
 
-        <!-- 7) Peta -->
+        <!-- Peta -->
         <div>
           <label>Peta Lokasi</label>
           <div class="mapwrap">
@@ -105,7 +104,7 @@
           </div>
         </div>
 
-        <!-- 8) Latitude → 9) Longitude -->
+        <!-- Latitude & Longitude -->
         <div class="row">
           <div>
             <label>Latitude</label>
@@ -120,14 +119,14 @@
           <button type="button" id="btnPan" class="ghost">🧭 Pan ke koordinat</button>
         </div>
 
-        <!-- 10) Foto lokasi -->
+        <!-- Foto -->
         <div>
           <label>Foto Lokasi</label>
           <input type="file" accept="image/*" capture="environment" id="foto" name="foto" />
           <div class="hint">Bisa ambil kamera langsung atau pilih dari galeri.</div>
         </div>
 
-        <!-- 11) Nama Pengirim → 12) Nomor WA -->
+        <!-- Nama & WA -->
         <div class="row">
           <div>
             <label>Nama Pengirim</label>
@@ -148,7 +147,10 @@
   </main>
 
   <script>
-  // ====== UTIL ======
+  /* ====== KONFIGURASI GAS ENDPOINT ====== */
+  const ENDPOINT = 'PASTE_GAS_WEB_APP_URL_EXEC'; // << ganti
+
+  /* ====== UTIL ====== */
   function fillSelect(el, items, placeholder='-- pilih --'){
     el.innerHTML = '';
     if (placeholder && !el.multiple) {
@@ -159,21 +161,17 @@
   }
   const toast = (msg)=>{ const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block'; setTimeout(()=>t.style.display='none',4000); };
 
-  // ====== DOM FIELDS ======
+  /* ====== DOM ====== */
   const $balai = document.getElementById('balai');
   const $snvt  = document.getElementById('snvt');
   const $paket = document.getElementById('paket');
   const $prov  = document.getElementById('provinsi');
   const $kab   = document.getElementById('kabupaten');
-  const $kec   = document.getElementById('kecamatan');
-  const $desa  = document.getElementById('desa');
   const $lat   = document.getElementById('lat');
   const $lng   = document.getElementById('lng');
-  const $foto  = document.getElementById('foto');
 
-  // ====== DATA: BALAI → SNVT → [{paket,provinsi,kabupaten(multiline)}] ======
+  /* ====== DATA: BALAI→SNVT→[{paket,provinsi,kabupaten}] ====== */
   let BBWS_MAP = {};
-  // Ganti path ini jika file diletakkan di lokasi lain
   fetch('./balai_snvt_paket+wilayah.json')
     .then(r => r.json())
     .then(data => {
@@ -210,13 +208,10 @@
     const s = $snvt.value;
     const list = (BBWS_MAP[b] || {})[s] || [];
     const chosen = list.find(o => o.paket === $paket.value);
-
     if (chosen){
       $prov.value = chosen.provinsi || '';
       const kabList = (chosen.kabupaten || '')
-        .split(/\r?\n/)
-        .map(s => s.replace(/^\s*-\s*/,'').trim())
-        .filter(Boolean);
+        .split(/\r?\n/).map(s => s.replace(/^\s*-\s*/,'').trim()).filter(Boolean);
       fillSelect($kab, kabList, '-- pilih Kabupaten/Kota --');
       $kab.disabled = kabList.length === 0;
     } else {
@@ -224,80 +219,48 @@
     }
   });
 
-  // ====== PETA (Leaflet) ======
-  const baseOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20, attribution:'© OpenStreetMap contributors'});
+  /* ====== PETA ====== */
+  const baseOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20, attribution:'© OpenStreetMap'});
   const baseCarto = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',{maxZoom:20, attribution:'© OpenStreetMap, © CARTO'});
-  const baseImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20, attribution:'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community'});
-
+  const baseImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20, attribution:'Tiles © Esri/Maxar'});
   const map = L.map('map', { zoomControl:true, layers:[baseOSM] });
-  map.createPane('labels');
-  map.getPane('labels').style.zIndex = 650;
-  map.getPane('labels').style.pointerEvents = 'none';
-  const labels = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png',{pane:'labels', attribution:'© CARTO'});
-
-  L.control.layers(
-    { 'OSM Standard': baseOSM, 'Carto Light': baseCarto, 'Esri Imagery': baseImagery },
-    { 'Labels (CARTO)': labels },
-    { position:'topright', collapsed:false }
-  ).addTo(map);
-  labels.addTo(map);
-  map.setView([-2.5,118], 5);
+  map.createPane('labels'); map.getPane('labels').style.zIndex=650; map.getPane('labels').style.pointerEvents='none';
+  const labels = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png',{pane:'labels'});
+  L.control.layers({ 'OSM': baseOSM, 'Carto': baseCarto, 'Imagery': baseImagery }, { 'Labels': labels }, { position:'topright', collapsed:false }).addTo(map);
+  labels.addTo(map); map.setView([-2.5,118], 5);
 
   const $coords = document.getElementById('coords');
-  function updateCenterLabel(){
-    const c = map.getCenter();
-    $coords.textContent = `Lat: ${c.lat.toFixed(6)}, Lng: ${c.lng.toFixed(6)}`;
-  }
-  map.on('move', updateCenterLabel);
-  map.whenReady(updateCenterLabel);
+  function updateCenterLabel(){ const c = map.getCenter(); $coords.textContent = `Lat: ${c.lat.toFixed(6)}, Lng: ${c.lng.toFixed(6)}`; }
+  map.on('move', updateCenterLabel); map.whenReady(updateCenterLabel);
 
-  document.getElementById('btnLocate').addEventListener('click', ()=>{
-    map.locate({setView:true, maxZoom:17, enableHighAccuracy:true});
-  });
+  document.getElementById('btnLocate').addEventListener('click', ()=> map.locate({setView:true,maxZoom:17,enableHighAccuracy:true}));
   map.on('locationerror', ()=> alert('Izin lokasi ditolak. Geser peta manual.'));
+  document.getElementById('btnPick').addEventListener('click', ()=>{ const c=map.getCenter(); $lat.value=c.lat.toFixed(6); $lng.value=c.lng.toFixed(6); });
+  document.getElementById('btnPan').addEventListener('click', ()=>{ const la=parseFloat($lat.value),lo=parseFloat($lng.value); if(!Number.isNaN(la)&&!Number.isNaN(lo)) map.setView([la,lo], Math.max(map.getZoom(),16)); });
 
-  document.getElementById('btnPick').addEventListener('click', ()=>{
-    const c = map.getCenter();
-    $lat.value = c.lat.toFixed(6);
-    $lng.value = c.lng.toFixed(6);
-  });
-
-  function panIfValid(){
-    const la = parseFloat($lat.value), lo = parseFloat($lng.value);
-    if(!Number.isNaN(la) && !Number.isNaN(lo)) map.setView([la,lo], Math.max(map.getZoom(), 16));
-  }
-  document.getElementById('btnPan').addEventListener('click', panIfValid);
-  $lat.addEventListener('change', panIfValid);
-  $lng.addEventListener('change', panIfValid);
-
-  // ====== SUBMIT (DEMO) ======
+  /* ====== SUBMIT → GAS ====== */
   const form = document.getElementById('surveyForm');
   form.addEventListener('submit', async (e)=>{
     e.preventDefault();
-
     if(!$balai.value || !$snvt.value || !$paket.value){ toast('Lengkapi BALAI, SNVT, dan PAKET.'); return; }
-    if(!$lat.value || !$lng.value){ toast('Koordinat belum diisi. Klik "Pilih lokasi".'); return; }
+    if(!$lat.value || !$lng.value){ toast('Koordinat belum diisi.'); return; }
 
-    const fd = new FormData(form);
-    const payload = Object.fromEntries(fd.entries());
-    payload.hasFoto = !!(fd.get('foto') && fd.get('foto').name);
-
-    console.log('Payload terkirim (demo):', payload);
-    toast('✅ Data siap kirim (demo). Lihat console.');
-
-    // --- Kalau mau kirim ke Power Automate (Flow), ganti blok ini:
-    // const FLOW_URL = 'PASTE_FLOW_URL';
-    // const foto = fd.get('foto');
-    // const fotoBase64 = await (async f=>{ if(!f) return ''; const buf=await f.arrayBuffer(); let bin=''; const bytes=new Uint8Array(buf); for(let i=0;i<bytes.length;i+=0x8000){bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+0x8000));} return btoa(bin); })(foto && foto.size ? foto : null);
-    // const body = { ...payload, foto_filename: foto?.name||'', foto_mime: foto?.type||'', foto_base64: fotoBase64 };
-    // const res = await fetch(FLOW_URL,{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-    // const data = await res.json().catch(()=>({}));
-    // if(res.ok){ toast('✅ Terkirim ke OneDrive/Excel!'); form.reset(); } else { toast('❌ Gagal kirim (Flow).'); }
-
-    form.reset();
-    fillSelect($snvt,[], '-- pilih SNVT --'); $snvt.disabled=true;
-    fillSelect($paket,[], '-- pilih PAKET --'); $paket.disabled=true;
-    $prov.value=''; fillSelect($kab,[], '-- pilih Kabupaten/Kota --'); $kab.disabled=true;
+    const fd = new FormData(form); // kirim multipart langsung (GAS doPost tangkap e.parameter & e.files)
+    try{
+      const res = await fetch(ENDPOINT, { method:'POST', body: fd });
+      const data = await res.json().catch(()=>({}));
+      if (res.ok && data.ok){
+        toast('✅ Terkirim ke Google Sheet!'); form.reset();
+        // reset dependent selects
+        fillSelect($snvt,[], '-- pilih SNVT --'); $snvt.disabled=true;
+        fillSelect($paket,[], '-- pilih PAKET --'); $paket.disabled=true;
+        document.getElementById('provinsi').value=''; fillSelect($kab,[], '-- pilih Kabupaten/Kota --'); $kab.disabled=true;
+      } else {
+        toast('❌ Gagal kirim (server).'); console.error('GAS error:', data);
+      }
+    }catch(err){
+      toast('❌ Gagal kirim (jaringan).'); console.error(err);
+    }
   });
   </script>
 </body>
