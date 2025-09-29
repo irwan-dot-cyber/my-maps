@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Form Survey AIR — GAS Web App</title>
+  <title>Form Survey AIR — GAS</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" referrerpolicy="no-referrer" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js" referrerpolicy="no-referrer"></script>
   <style>
@@ -38,7 +38,7 @@
 <body>
   <header>
     <strong>Form Survey AIR</strong>
-    <span class="hint"> • BALAI → SNVT → PAKET (auto Prov/Kab), peta untuk koordinat.</span>
+    <span class="hint"> • BALAI → SNVT → PAKET, Prov/Kab otomatis dari BALAI, peta untuk koordinat.</span>
   </header>
 
   <main>
@@ -46,7 +46,7 @@
       <h2>Data Survei</h2>
       <div id="toast" class="toast"></div>
       <form id="surveyForm">
-        <!-- Balai → SNVT -->
+        <!-- BALAI → SNVT -->
         <div class="row">
           <div>
             <label>BALAI</label>
@@ -58,27 +58,27 @@
           </div>
         </div>
 
-        <!-- Paket -->
+        <!-- PAKET -->
         <div>
           <label>PAKET</label>
           <select id="paket" name="paket" required disabled></select>
         </div>
 
-        <!-- Provinsi (auto) + Kabupaten (auto dropdown) -->
+        <!-- Prov/Kab (auto) -->
         <div class="row">
           <div>
-            <label>Provinsi (otomatis dari Paket)</label>
-            <input id="provinsi" name="provinsi" readonly placeholder="— otomatis —" />
+            <label>Provinsi (otomatis)</label>
+            <input id="provinsi" name="provinsi" readonly placeholder="— otomatis dari BALAI —" />
           </div>
           <div>
-            <label>Kabupaten/Kota (otomatis dari Paket)</label>
+            <label>Kabupaten/Kota (otomatis)</label>
             <select id="kabupaten" name="kabupaten" disabled>
               <option value="">-- pilih Kabupaten/Kota --</option>
             </select>
           </div>
         </div>
 
-        <!-- Kecamatan + Desa -->
+        <!-- Kecamatan & Desa -->
         <div class="row">
           <div>
             <label>Kecamatan</label>
@@ -104,7 +104,7 @@
           </div>
         </div>
 
-        <!-- Latitude & Longitude -->
+        <!-- Lat/Lng -->
         <div class="row">
           <div>
             <label>Latitude</label>
@@ -126,7 +126,7 @@
           <div class="hint">Bisa ambil kamera langsung atau pilih dari galeri.</div>
         </div>
 
-        <!-- Nama & WA -->
+        <!-- Identitas -->
         <div class="row">
           <div>
             <label>Nama Pengirim</label>
@@ -147,10 +147,11 @@
   </main>
 
   <script>
-  /* ====== KONFIGURASI GAS ENDPOINT ====== */
-  const ENDPOINT = 'https://script.google.com/macros/s/AKfycbzPxSKr9-sZYi0kHrVbJ1pRNYUsh4dy8xPj39NzaAXQUerAaJZuWahbs8mwl8O6P4_c4g/exec'; // << ganti
+  /* ====== KONFIGURASI GAS ====== */
+  const ENDPOINT = 'PASTE_GAS_WEB_APP_URL_EXEC'; // <— ganti dgn URL /exec
 
   /* ====== UTIL ====== */
+  const toast = (msg)=>{ const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block'; setTimeout(()=>t.style.display='none',4000); };
   function fillSelect(el, items, placeholder='-- pilih --'){
     el.innerHTML = '';
     if (placeholder && !el.multiple) {
@@ -159,102 +160,157 @@
     }
     items.forEach(v=>{ const o=document.createElement('option'); o.value=o.textContent=v; el.appendChild(o); });
   }
-  const toast = (msg)=>{ const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block'; setTimeout(()=>t.style.display='none',4000); };
+  const uniq = arr => [...new Set(arr.filter(Boolean))];
 
   /* ====== DOM ====== */
-  const $balai = document.getElementById('balai');
-  const $snvt  = document.getElementById('snvt');
-  const $paket = document.getElementById('paket');
-  const $prov  = document.getElementById('provinsi');
-  const $kab   = document.getElementById('kabupaten');
-  const $lat   = document.getElementById('lat');
-  const $lng   = document.getElementById('lng');
+  const balai = document.getElementById('balai');
+  const snvt  = document.getElementById('snvt');
+  const paket = document.getElementById('paket');
+  const prov  = document.getElementById('provinsi');
+  const kab   = document.getElementById('kabupaten');
+  const lat   = document.getElementById('lat');
+  const lng   = document.getElementById('lng');
 
-  /* ====== DATA: BALAI→SNVT→[{paket,provinsi,kabupaten}] ====== */
-  let BBWS_MAP = {};
-  fetch('./balai_snvt_paket.json')
-    .then(r => r.json())
-    .then(data => {
-      BBWS_MAP = data;
-      fillSelect($balai, Object.keys(BBWS_MAP).sort(), '-- pilih BALAI --');
-    })
-    .catch(err => {
-      console.error('Gagal load JSON:', err);
-      alert('Gagal memuat data BALAI/SNVT/PAKET.');
-    });
+  /* ====== DATA LOADER (fallback 2 nama file + 2 skema) ====== */
+  let BBWS = {};
+  (async function loadJSON(){
+    const candidates = ['./balai_snvt_paket+wilayah.json','./balai_snvt_paket.json'];
+    let data=null, lastErr=null;
+    for (const url of candidates){
+      try{
+        const r = await fetch(url, {cache:'no-store'});
+        if(!r.ok) throw new Error(r.status+' '+url);
+        data = await r.json();
+        console.log('Loaded:', url);
+        break;
+      }catch(e){ lastErr=e; }
+    }
+    if(!data){ alert('Gagal memuat data BALAI/SNVT/PAKET.'); console.error(lastErr); return; }
+    BBWS = data;
+    fillSelect(balai, Object.keys(BBWS).sort(), '-- pilih BALAI --');
+  })();
 
-  $balai.addEventListener('change', ()=>{
-    const b = $balai.value;
-    if(!b){ $snvt.innerHTML=''; $snvt.disabled=true; $paket.innerHTML=''; $paket.disabled=true; $prov.value=''; fillSelect($kab,[], '-- pilih Kabupaten/Kota --'); $kab.disabled=true; return; }
-    const snvts = Object.keys(BBWS_MAP[b] || {});
-    fillSelect($snvt, snvts.sort(), '-- pilih SNVT --');
-    $snvt.disabled = false;
-    $paket.innerHTML=''; $paket.disabled=true;
-    $prov.value=''; fillSelect($kab,[], '-- pilih Kabupaten/Kota --'); $kab.disabled=true;
-  });
+  /* ====== LOGIC: Prov/Kab otomatis dari BALAI (refine di SNVT/PAKET bila ada) ====== */
+  function parseKabText(txt){
+    // konversi teks multi-line dengan bullet "- " → array
+    return (txt||'').split(/\r?\n/).map(s=>s.replace(/^\s*-\s*/,'').trim()).filter(Boolean);
+  }
 
-  $snvt.addEventListener('change', ()=>{
-    const b = $balai.value;
-    const s = $snvt.value;
-    if(!s){ $paket.innerHTML=''; $paket.disabled=true; $prov.value=''; fillSelect($kab,[], '-- pilih Kabupaten/Kota --'); $kab.disabled=true; return; }
-    const list = (BBWS_MAP[b] || {})[s] || [];
-    fillSelect($paket, list.map(o=>o.paket), '-- pilih PAKET --');
-    $paket.disabled = false;
-    $prov.value=''; fillSelect($kab,[], '-- pilih Kabupaten/Kota --'); $kab.disabled=true;
-  });
+  function collectMeta({b=null,s=null,p=null}){
+    // kumpulkan provinsi/kabupaten dari level balai/snvt/paket (skema lama/baru)
+    let entries=[];
+    if (!b || !BBWS[b]) return {provinsi:'', kabList:[]};
 
-  $paket.addEventListener('change', ()=>{
-    const b = $balai.value;
-    const s = $snvt.value;
-    const list = (BBWS_MAP[b] || {})[s] || [];
-    const chosen = list.find(o => o.paket === $paket.value);
-    if (chosen){
-      $prov.value = chosen.provinsi || '';
-      const kabList = (chosen.kabupaten || '')
-        .split(/\r?\n/).map(s => s.replace(/^\s*-\s*/,'').trim()).filter(Boolean);
-      fillSelect($kab, kabList, '-- pilih Kabupaten/Kota --');
-      $kab.disabled = kabList.length === 0;
+    if (s && BBWS[b][s]) {
+      const arr = BBWS[b][s] || [];
+      if (p){
+        const chosen = arr.find(x => (typeof x==='string'? x : x.paket) === p);
+        entries = chosen ? [chosen] : arr;
+      } else {
+        entries = arr;
+      }
     } else {
-      $prov.value=''; fillSelect($kab,[], '-- pilih Kabupaten/Kota --'); $kab.disabled=true;
+      // ambil semua SNVT di balai tsb
+      Object.values(BBWS[b]).forEach(arr => entries = entries.concat(arr||[]));
+    }
+
+    // skema lama: entries = ["paket",...]; tidak ada prov/kab
+    // skema baru: entries = [{paket,provinsi,kabupaten},...]
+    const provs = uniq(entries.map(e => typeof e==='object' ? (e.provinsi||'') : '').filter(Boolean));
+    const kabAll = uniq(entries.flatMap(e => typeof e==='object' ? parseKabText(e.kabupaten||'') : []));
+
+    return {
+      provinsi: provs.length === 0 ? '' : (provs.length === 1 ? provs[0] : '(beragam)'),
+      kabList: kabAll
+    };
+  }
+
+  balai.addEventListener('change', ()=>{
+    const b = balai.value;
+    if(!b){
+      fillSelect(snvt,[], '-- pilih SNVT --'); snvt.disabled=true;
+      fillSelect(paket,[], '-- pilih PAKET --'); paket.disabled=true;
+      prov.value=''; fillSelect(kab,[], '-- pilih Kabupaten/Kota --'); kab.disabled=true;
+      return;
+    }
+    // isi SNVT
+    fillSelect(snvt, Object.keys(BBWS[b]||{}).sort(), '-- pilih SNVT --');
+    snvt.disabled = false;
+
+    // auto Prov/Kab dari BALAI
+    const meta = collectMeta({b});
+    prov.value = meta.provinsi || '';
+    fillSelect(kab, meta.kabList, '-- pilih Kabupaten/Kota --');
+    kab.disabled = meta.kabList.length===0;
+
+    // reset paket
+    fillSelect(paket,[], '-- pilih PAKET --'); paket.disabled=true;
+  });
+
+  snvt.addEventListener('change', ()=>{
+    const b = balai.value, s = snvt.value;
+    if(!s){
+      fillSelect(paket,[], '-- pilih PAKET --'); paket.disabled=true;
+      const meta = collectMeta({b}); // kembali ke level BALAI
+      prov.value = meta.provinsi || '';
+      fillSelect(kab, meta.kabList, '-- pilih Kabupaten/Kota --'); kab.disabled = meta.kabList.length===0;
+      return;
+    }
+    // isi paket (mendukung skema lama/baru)
+    const arr = (BBWS[b]||{})[s] || [];
+    const paketNames = arr.map(x => typeof x==='string' ? x : (x.paket||'')).filter(Boolean);
+    fillSelect(paket, paketNames, '-- pilih PAKET --');
+    paket.disabled = paketNames.length===0;
+
+    // refine Prov/Kab berdasarkan SNVT
+    const meta = collectMeta({b, s});
+    prov.value = meta.provinsi || '';
+    fillSelect(kab, meta.kabList, '-- pilih Kabupaten/Kota --'); kab.disabled = meta.kabList.length===0;
+  });
+
+  paket.addEventListener('change', ()=>{
+    const b = balai.value, s = snvt.value, p = paket.value;
+    // jika skema baru ada meta spesifik paket, gunakan; kalau tidak, tetap pakai meta dari SNVT/BALAI
+    const meta = collectMeta({b, s, p});
+    if (meta.provinsi || meta.kabList.length){
+      prov.value = meta.provinsi || prov.value;
+      fillSelect(kab, meta.kabList, '-- pilih Kabupaten/Kota --');
+      kab.disabled = meta.kabList.length===0;
     }
   });
 
-  /* ====== PETA ====== */
+  /* ====== PETA (tanpa Carto) ====== */
   const baseOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20, attribution:'© OpenStreetMap'});
-  const baseCarto = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',{maxZoom:20, attribution:'© OpenStreetMap, © CARTO'});
   const baseImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20, attribution:'Tiles © Esri/Maxar'});
   const map = L.map('map', { zoomControl:true, layers:[baseOSM] });
-  map.createPane('labels'); map.getPane('labels').style.zIndex=650; map.getPane('labels').style.pointerEvents='none';
-  const labels = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png',{pane:'labels'});
-  L.control.layers({ 'OSM': baseOSM, 'Carto': baseCarto, 'Imagery': baseImagery }, { 'Labels': labels }, { position:'topright', collapsed:false }).addTo(map);
-  labels.addTo(map); map.setView([-2.5,118], 5);
-
-  const $coords = document.getElementById('coords');
-  function updateCenterLabel(){ const c = map.getCenter(); $coords.textContent = `Lat: ${c.lat.toFixed(6)}, Lng: ${c.lng.toFixed(6)}`; }
-  map.on('move', updateCenterLabel); map.whenReady(updateCenterLabel);
-
+  L.control.layers({ 'OSM': baseOSM, 'Esri Imagery': baseImagery }, {}, { position:'topright', collapsed:false }).addTo(map);
+  map.setView([-2.5,118], 5);
+  const coords = document.getElementById('coords');
+  function updateCenter(){ const c=map.getCenter(); coords.textContent=`Lat: ${c.lat.toFixed(6)}, Lng: ${c.lng.toFixed(6)}`; }
+  map.on('move', updateCenter); map.whenReady(updateCenter);
   document.getElementById('btnLocate').addEventListener('click', ()=> map.locate({setView:true,maxZoom:17,enableHighAccuracy:true}));
   map.on('locationerror', ()=> alert('Izin lokasi ditolak. Geser peta manual.'));
-  document.getElementById('btnPick').addEventListener('click', ()=>{ const c=map.getCenter(); $lat.value=c.lat.toFixed(6); $lng.value=c.lng.toFixed(6); });
-  document.getElementById('btnPan').addEventListener('click', ()=>{ const la=parseFloat($lat.value),lo=parseFloat($lng.value); if(!Number.isNaN(la)&&!Number.isNaN(lo)) map.setView([la,lo], Math.max(map.getZoom(),16)); });
+  document.getElementById('btnPick').addEventListener('click', ()=>{ const c=map.getCenter(); lat.value=c.lat.toFixed(6); lng.value=c.lng.toFixed(6); });
+  document.getElementById('btnPan').addEventListener('click', ()=>{ const la=parseFloat(lat.value), lo=parseFloat(lng.value); if(!Number.isNaN(la)&&!Number.isNaN(lo)) map.setView([la,lo], Math.max(map.getZoom(),16)); });
 
-  /* ====== SUBMIT → GAS ====== */
+  /* ====== SUBMIT → GAS (multipart, simpan foto, balikin URL) ====== */
   const form = document.getElementById('surveyForm');
   form.addEventListener('submit', async (e)=>{
     e.preventDefault();
-    if(!$balai.value || !$snvt.value || !$paket.value){ toast('Lengkapi BALAI, SNVT, dan PAKET.'); return; }
-    if(!$lat.value || !$lng.value){ toast('Koordinat belum diisi.'); return; }
+    if(!balai.value || !snvt.value || !paket.value){ toast('Lengkapi BALAI, SNVT, PAKET.'); return; }
+    if(!lat.value || !lng.value){ toast('Koordinat belum diisi.'); return; }
 
-    const fd = new FormData(form); // kirim multipart langsung (GAS doPost tangkap e.parameter & e.files)
+    const fd = new FormData(form); // termasuk file 'foto' jika ada
     try{
       const res = await fetch(ENDPOINT, { method:'POST', body: fd });
       const data = await res.json().catch(()=>({}));
       if (res.ok && data.ok){
-        toast('✅ Terkirim ke Google Sheet!'); form.reset();
-        // reset dependent selects
-        fillSelect($snvt,[], '-- pilih SNVT --'); $snvt.disabled=true;
-        fillSelect($paket,[], '-- pilih PAKET --'); $paket.disabled=true;
-        document.getElementById('provinsi').value=''; fillSelect($kab,[], '-- pilih Kabupaten/Kota --'); $kab.disabled=true;
+        toast('✅ Terkirim!'); 
+        console.log('GAS response:', data); // data.fileUrl tersedia jika ada foto
+        form.reset();
+        fillSelect(snvt,[], '-- pilih SNVT --'); snvt.disabled=true;
+        fillSelect(paket,[], '-- pilih PAKET --'); paket.disabled=true;
+        prov.value=''; fillSelect(kab,[], '-- pilih Kabupaten/Kota --'); kab.disabled=true;
       } else {
         toast('❌ Gagal kirim (server).'); console.error('GAS error:', data);
       }
