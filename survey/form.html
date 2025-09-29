@@ -172,7 +172,7 @@
 
   /* ====== DATA: BALAI→SNVT→[{paket,provinsi,kabupaten}] ====== */
   let BBWS_MAP = {};
-  fetch('./balai_snvt_paket+wilayah.json')
+  fetch('./balai_snvt_paket.json')
     .then(r => r.json())
     .then(data => {
       BBWS_MAP = data;
