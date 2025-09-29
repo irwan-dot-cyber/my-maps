@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Form Survey — BALAI → SNVT → PAKET + Peta</title>
+  <title>Form Survey AIR — BALAI→SNVT→PAKET + Peta</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" referrerpolicy="no-referrer" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js" referrerpolicy="no-referrer"></script>
   <style>
@@ -11,18 +11,18 @@
     *{box-sizing:border-box}
     body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;background:var(--bg);color:#e5e7eb}
     header{padding:14px 18px;border-bottom:1px solid #1f2937;background:#0c1326;position:sticky;top:0;z-index:10}
-    main{display:grid;grid-template-columns:1.1fr 1fr;gap:14px;padding:14px}
+    main{max-width:1100px;margin:0 auto;padding:14px}
     .card{background:var(--card);border:1px solid #1f2937;border-radius:14px;overflow:hidden}
     .card h2{margin:0;padding:12px 14px;border-bottom:1px solid #1f2937;font-size:16px}
-    form{padding:12px 14px;display:grid;gap:10px}
+    form{padding:12px 14px;display:grid;gap:12px}
     label{font-size:12px;color:var(--mut)}
     select,input,textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #334155;background:#0b1224;color:#e5e7eb}
     .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .col3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
     .actions{display:flex;flex-wrap:wrap;gap:8px}
     button{cursor:pointer;border:0;padding:10px 14px;border-radius:10px}
     .primary{background:var(--accent);color:#01250f;font-weight:600}
     .ghost{background:#0b1224;color:#e5e7eb;border:1px solid #334155}
+    .hint{font-size:12px;color:var(--mut)}
     #map{height:60vh}
     .mapwrap{position:relative}
     .crosshair{position:absolute;inset:0;pointer-events:none;display:grid;place-items:center;z-index:1000}
@@ -31,38 +31,22 @@
     .crosshair .reticle .h,.crosshair .reticle .v{position:absolute;background:#e5e7ebaa;box-shadow:0 0 6px #0008}
     .crosshair .reticle .h{width:14px;height:2px;left:50%;top:50%;transform:translate(-50%,-50%)}
     .crosshair .reticle .v{width:2px;height:14px;left:50%;top:50%;transform:translate(-50%,-50%)}
-    .hint{font-size:12px;color:var(--mut)}
     .toast{margin:10px 14px;padding:10px 12px;border-radius:10px;background:#052e1a;border:1px solid #14532d;color:#bbf7d0;display:none}
-    @media (max-width:980px){main{grid-template-columns:1fr}.col3{grid-template-columns:1fr 1fr}.row{grid-template-columns:1fr}}
+    @media (max-width:820px){.row{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
   <header>
-    <strong>Form Survey</strong>
-    <span class="hint"> &nbsp;• Pilih <b>BALAI → SNVT → PAKET</b>, isi data, pilih koordinat dari peta.</span>
+    <strong>Form Survey AIR</strong>
+    <span class="hint"> • Pilih BALAI → SNVT → PAKET, Provinsi & Kabupaten otomatis. Ambil koordinat dari peta.</span>
   </header>
 
   <main>
-    <!-- PETA -->
-    <div class="card">
-      <h2>Peta Lokasi</h2>
-      <div class="mapwrap">
-        <div id="map"></div>
-        <div class="crosshair"><div class="reticle"><span class="h"></span><span class="v"></span></div></div>
-      </div>
-      <div style="padding:10px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <button id="btnLocate" class="ghost">📍 Lokasi saya</button>
-        <button id="btnPick" class="primary">✅ Pilih lokasi (ambil dari tanda ＋)</button>
-        <span class="hint" id="coords">Lat: -, Lng: -</span>
-      </div>
-    </div>
-
-    <!-- FORM -->
     <div class="card">
       <h2>Data Survei</h2>
       <div id="toast" class="toast"></div>
       <form id="surveyForm">
-        <!-- BALAI → SNVT → PAKET -->
+        <!-- 1) BALAI → SNVT -->
         <div class="row">
           <div>
             <label>BALAI</label>
@@ -73,24 +57,55 @@
             <select id="snvt" name="snvt" required disabled></select>
           </div>
         </div>
+
+        <!-- 2) PAKET -->
         <div>
           <label>PAKET</label>
           <select id="paket" name="paket" required disabled></select>
         </div>
 
-        <!-- Info lokasi administratif tambahan (opsional) -->
+        <!-- 3) PROVINSI (auto) → 4) KABUPATEN/KOTA (auto dropdown) -->
         <div class="row">
           <div>
-            <label>Kecamatan</label>
-            <input name="kecamatan" placeholder="Nama kecamatan" />
+            <label>Provinsi (otomatis dari Paket)</label>
+            <input id="provinsi" name="provinsi" readonly placeholder="— otomatis —" />
           </div>
           <div>
-            <label>Desa/Kelurahan</label>
-            <input name="desa" placeholder="Nama desa/kelurahan" />
+            <label>Kabupaten/Kota (otomatis dari Paket)</label>
+            <select id="kabupaten" name="kabupaten" disabled>
+              <option value="">-- pilih Kabupaten/Kota --</option>
+            </select>
+            <div class="hint">Terisi setelah memilih Paket.</div>
           </div>
         </div>
 
-        <!-- Koordinat -->
+        <!-- 5) Kecamatan (input) → 6) Desa/Kelurahan (input) -->
+        <div class="row">
+          <div>
+            <label>Kecamatan</label>
+            <input id="kecamatan" name="kecamatan" placeholder="Nama kecamatan" required />
+          </div>
+          <div>
+            <label>Desa/Kelurahan</label>
+            <input id="desa" name="desa" placeholder="Nama desa/kelurahan" required />
+          </div>
+        </div>
+
+        <!-- 7) Peta -->
+        <div>
+          <label>Peta Lokasi</label>
+          <div class="mapwrap">
+            <div id="map"></div>
+            <div class="crosshair"><div class="reticle"><span class="h"></span><span class="v"></span></div></div>
+          </div>
+          <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button id="btnLocate" type="button" class="ghost">📍 Lokasi saya</button>
+            <button id="btnPick" type="button" class="primary">✅ Pilih lokasi (ambil dari tanda ＋)</button>
+            <span class="hint" id="coords">Lat: -, Lng: -</span>
+          </div>
+        </div>
+
+        <!-- 8) Latitude → 9) Longitude -->
         <div class="row">
           <div>
             <label>Latitude</label>
@@ -105,26 +120,25 @@
           <button type="button" id="btnPan" class="ghost">🧭 Pan ke koordinat</button>
         </div>
 
-        <!-- Foto -->
+        <!-- 10) Foto lokasi -->
         <div>
           <label>Foto Lokasi</label>
-          <input type="file" accept="image/*" capture="environment" name="foto" />
-          <div class="hint">Bisa ambil kamera langsung atau pilih dari gallery.</div>
+          <input type="file" accept="image/*" capture="environment" id="foto" name="foto" />
+          <div class="hint">Bisa ambil kamera langsung atau pilih dari galeri.</div>
         </div>
 
-        <!-- Identitas -->
+        <!-- 11) Nama Pengirim → 12) Nomor WA -->
         <div class="row">
           <div>
             <label>Nama Pengirim</label>
-            <input name="nama" placeholder="Nama lengkap" required />
+            <input id="nama" name="nama" placeholder="Nama lengkap" required />
           </div>
           <div>
             <label>Nomor WA/HP</label>
-            <input name="telepon" placeholder="08xxxxxxxxxx / 628xxxxxxxxx" pattern="[0-9+]{8,15}" required />
+            <input id="telepon" name="telepon" placeholder="08xxxxxxxxxx / 628xxxxxxxxx" pattern="[0-9+]{8,15}" required />
           </div>
         </div>
 
-        <!-- Aksi -->
         <div class="actions">
           <button type="submit" class="primary">Kirim</button>
           <button type="reset" class="ghost">Reset</button>
@@ -134,7 +148,83 @@
   </main>
 
   <script>
-  // ======== PETA + CROSSHAIR ========
+  // ====== UTIL ======
+  function fillSelect(el, items, placeholder='-- pilih --'){
+    el.innerHTML = '';
+    if (placeholder && !el.multiple) {
+      const opt = document.createElement('option');
+      opt.value = ''; opt.textContent = placeholder; el.appendChild(opt);
+    }
+    items.forEach(v=>{ const o=document.createElement('option'); o.value=o.textContent=v; el.appendChild(o); });
+  }
+  const toast = (msg)=>{ const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block'; setTimeout(()=>t.style.display='none',4000); };
+
+  // ====== DOM FIELDS ======
+  const $balai = document.getElementById('balai');
+  const $snvt  = document.getElementById('snvt');
+  const $paket = document.getElementById('paket');
+  const $prov  = document.getElementById('provinsi');
+  const $kab   = document.getElementById('kabupaten');
+  const $kec   = document.getElementById('kecamatan');
+  const $desa  = document.getElementById('desa');
+  const $lat   = document.getElementById('lat');
+  const $lng   = document.getElementById('lng');
+  const $foto  = document.getElementById('foto');
+
+  // ====== DATA: BALAI → SNVT → [{paket,provinsi,kabupaten(multiline)}] ======
+  let BBWS_MAP = {};
+  // Ganti path ini jika file diletakkan di lokasi lain
+  fetch('./balai_snvt_paket+wilayah.json')
+    .then(r => r.json())
+    .then(data => {
+      BBWS_MAP = data;
+      fillSelect($balai, Object.keys(BBWS_MAP).sort(), '-- pilih BALAI --');
+    })
+    .catch(err => {
+      console.error('Gagal load JSON:', err);
+      alert('Gagal memuat data BALAI/SNVT/PAKET.');
+    });
+
+  $balai.addEventListener('change', ()=>{
+    const b = $balai.value;
+    if(!b){ $snvt.innerHTML=''; $snvt.disabled=true; $paket.innerHTML=''; $paket.disabled=true; $prov.value=''; fillSelect($kab,[], '-- pilih Kabupaten/Kota --'); $kab.disabled=true; return; }
+    const snvts = Object.keys(BBWS_MAP[b] || {});
+    fillSelect($snvt, snvts.sort(), '-- pilih SNVT --');
+    $snvt.disabled = false;
+    $paket.innerHTML=''; $paket.disabled=true;
+    $prov.value=''; fillSelect($kab,[], '-- pilih Kabupaten/Kota --'); $kab.disabled=true;
+  });
+
+  $snvt.addEventListener('change', ()=>{
+    const b = $balai.value;
+    const s = $snvt.value;
+    if(!s){ $paket.innerHTML=''; $paket.disabled=true; $prov.value=''; fillSelect($kab,[], '-- pilih Kabupaten/Kota --'); $kab.disabled=true; return; }
+    const list = (BBWS_MAP[b] || {})[s] || [];
+    fillSelect($paket, list.map(o=>o.paket), '-- pilih PAKET --');
+    $paket.disabled = false;
+    $prov.value=''; fillSelect($kab,[], '-- pilih Kabupaten/Kota --'); $kab.disabled=true;
+  });
+
+  $paket.addEventListener('change', ()=>{
+    const b = $balai.value;
+    const s = $snvt.value;
+    const list = (BBWS_MAP[b] || {})[s] || [];
+    const chosen = list.find(o => o.paket === $paket.value);
+
+    if (chosen){
+      $prov.value = chosen.provinsi || '';
+      const kabList = (chosen.kabupaten || '')
+        .split(/\r?\n/)
+        .map(s => s.replace(/^\s*-\s*/,'').trim())
+        .filter(Boolean);
+      fillSelect($kab, kabList, '-- pilih Kabupaten/Kota --');
+      $kab.disabled = kabList.length === 0;
+    } else {
+      $prov.value=''; fillSelect($kab,[], '-- pilih Kabupaten/Kota --'); $kab.disabled=true;
+    }
+  });
+
+  // ====== PETA (Leaflet) ======
   const baseOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20, attribution:'© OpenStreetMap contributors'});
   const baseCarto = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',{maxZoom:20, attribution:'© OpenStreetMap, © CARTO'});
   const baseImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20, attribution:'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community'});
@@ -154,9 +244,6 @@
   map.setView([-2.5,118], 5);
 
   const $coords = document.getElementById('coords');
-  const $lat = document.getElementById('lat');
-  const $lng = document.getElementById('lng');
-
   function updateCenterLabel(){
     const c = map.getCenter();
     $coords.textContent = `Lat: ${c.lat.toFixed(6)}, Lng: ${c.lng.toFixed(6)}`;
@@ -179,74 +266,38 @@
     const la = parseFloat($lat.value), lo = parseFloat($lng.value);
     if(!Number.isNaN(la) && !Number.isNaN(lo)) map.setView([la,lo], Math.max(map.getZoom(), 16));
   }
+  document.getElementById('btnPan').addEventListener('click', panIfValid);
   $lat.addEventListener('change', panIfValid);
   $lng.addEventListener('change', panIfValid);
-  document.getElementById('btnPan').addEventListener('click', panIfValid);
 
-  // ======== BALAI → SNVT → PAKET (dari JSON) ========
-  const $balai = document.getElementById('balai');
-  const $snvt  = document.getElementById('snvt');
-  const $paket = document.getElementById('paket');
-
-  function fillSelect(el, items, placeholder='-- pilih --'){
-    el.innerHTML = '';
-    const opt = document.createElement('option');
-    opt.value = ''; opt.textContent = placeholder; el.appendChild(opt);
-    items.forEach(v=>{ const o=document.createElement('option'); o.value=o.textContent=v; el.appendChild(o); });
-  }
-
-  let BBWS_MAP = {}; // { BALAI: { SNVT: [PAKET, ...] } }
-
-  // Ganti path ini jika file JSON disimpan di lokasi lain:
-  fetch('./balai_snvt_paket.json')
-    .then(r => r.json())
-    .then(data => {
-      BBWS_MAP = data;
-      fillSelect($balai, Object.keys(BBWS_MAP).sort(), '-- pilih BALAI --');
-    })
-    .catch(err => {
-      console.error('Gagal load balai_snvt_paket.json:', err);
-      alert('Gagal memuat data BALAI. Pastikan file balai_snvt_paket.json tersedia.');
-    });
-
-  $balai.addEventListener('change', ()=>{
-    const b = $balai.value;
-    if(!b){ $snvt.innerHTML=''; $snvt.disabled=true; $paket.innerHTML=''; $paket.disabled=true; return; }
-    const snvts = Object.keys(BBWS_MAP[b] || {});
-    fillSelect($snvt, snvts.sort(), '-- pilih SNVT --');
-    $snvt.disabled = false;
-    $paket.innerHTML=''; $paket.disabled=true;
-  });
-
-  $snvt.addEventListener('change', ()=>{
-    const b = $balai.value;
-    const s = $snvt.value;
-    if(!s){ $paket.innerHTML=''; $paket.disabled=true; return; }
-    const pakets = (BBWS_MAP[b] || {})[s] || [];
-    fillSelect($paket, pakets, '-- pilih PAKET --'); // kalau cuma 1 paket, tetap tampil satu pilihan
-    $paket.disabled = false;
-  });
-
-  // ======== SUBMIT (DEMO) ========
+  // ====== SUBMIT (DEMO) ======
   const form = document.getElementById('surveyForm');
-  const toast = (msg)=>{ const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block'; setTimeout(()=>t.style.display='none',4000); };
-  form.addEventListener('submit', (e)=>{
+  form.addEventListener('submit', async (e)=>{
     e.preventDefault();
-    if(!$lat.value || !$lng.value){ toast('Koordinat belum diisi. Klik "Pilih lokasi" atau isi manual.'); return; }
-    if(!$balai.value || !$snvt.value || !$paket.value){ toast('Lengkapi pilihan BALAI, SNVT, dan PAKET.'); return; }
+
+    if(!$balai.value || !$snvt.value || !$paket.value){ toast('Lengkapi BALAI, SNVT, dan PAKET.'); return; }
+    if(!$lat.value || !$lng.value){ toast('Koordinat belum diisi. Klik "Pilih lokasi".'); return; }
 
     const fd = new FormData(form);
     const payload = Object.fromEntries(fd.entries());
-    payload.hasFoto = !!fd.get('foto') && fd.get('foto').name;
+    payload.hasFoto = !!(fd.get('foto') && fd.get('foto').name);
 
     console.log('Payload terkirim (demo):', payload);
     toast('✅ Data siap kirim (demo). Lihat console.');
 
-    // TODO: kirim ke Google Apps Script / API kamu
-    // fetch('URL_SCRIPT_APP', { method:'POST', body: fd })
-    //  .then(r => r.json()).then(resp => toast('✅ Terkirim')).catch(()=>toast('❌ Gagal kirim'));
+    // --- Kalau mau kirim ke Power Automate (Flow), ganti blok ini:
+    // const FLOW_URL = 'PASTE_FLOW_URL';
+    // const foto = fd.get('foto');
+    // const fotoBase64 = await (async f=>{ if(!f) return ''; const buf=await f.arrayBuffer(); let bin=''; const bytes=new Uint8Array(buf); for(let i=0;i<bytes.length;i+=0x8000){bin+=String.fromCharCode.apply(null,bytes.subarray(i,i+0x8000));} return btoa(bin); })(foto && foto.size ? foto : null);
+    // const body = { ...payload, foto_filename: foto?.name||'', foto_mime: foto?.type||'', foto_base64: fotoBase64 };
+    // const res = await fetch(FLOW_URL,{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    // const data = await res.json().catch(()=>({}));
+    // if(res.ok){ toast('✅ Terkirim ke OneDrive/Excel!'); form.reset(); } else { toast('❌ Gagal kirim (Flow).'); }
 
     form.reset();
+    fillSelect($snvt,[], '-- pilih SNVT --'); $snvt.disabled=true;
+    fillSelect($paket,[], '-- pilih PAKET --'); $paket.disabled=true;
+    $prov.value=''; fillSelect($kab,[], '-- pilih Kabupaten/Kota --'); $kab.disabled=true;
   });
   </script>
 </body>
