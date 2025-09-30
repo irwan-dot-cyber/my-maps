@@ -1,0 +1,417 @@
+{
+  "BBWS BENGAWAN SOLO": {
+    "SNVT PJPA BENGAWAN SOLO": [
+      {
+        "paket": "Rehabilitasi Jaringan Utama Irigasi DI kewenangan Pemerintah Daerah di BBWS Bengawan Solo Paket 1",
+        "provinsi": "Jawa Tengah",
+        "kabupaten": "- Klaten\n- Boyolali\n- Sukoharjo\n- Wonogiri\n- Sragen\n- Karanganyar\n- Ngawi\n- Madiun\n- Ponorogo\n- Magetan\n- Pacitan"
+      },
+      {
+        "paket": "Rehabilitasi Jaringan Utama Irigasi DI kewenangan Pemerintah Daerah di BBWS Bengawan Solo Paket 2",
+        "provinsi": "Jawa Timur",
+        "kabupaten": "- Lamongan\n- Gresik"
+      }
+    ]
+  },
+  "BBWS BRANTAS": {
+    "SNVT PJPA BRANTAS": [
+      {
+        "paket": "Rehabilitasi Jaringan Utama DI Kewenangan Pemerintah Daerah di Wilayah BBWS  Brantas",
+        "provinsi": "Jawa TImur",
+        "kabupaten": "- Bondowoso\n- Jombang\n- Banyuwangi\n- Blitar\n- Situbondo\n- Bangkalan\n- Sumenep\n- Trenggalek\n- Tulungagung\n- Kediri\n- Jember\n- Lumajang\n- Pasuruan\n- Mojokerto"
+      }
+    ]
+  },
+  "BBWS CIDANAU CIUJUNG CIDURIAN": {
+    "SNVT PJPA CIDANAU CIUJUNG CIDURIAN": [
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di  Provinsi Banten (Paket I)",
+        "provinsi": "Banten",
+        "kabupaten": "- Kota Serang\n- Kab Serang\n- Lebak\n- Pandeglang"
+      },
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di  Provinsi Banten (Paket II)",
+        "provinsi": "Banten",
+        "kabupaten": "- Lebak\n- Pandeglang"
+      },
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di  Provinsi Banten (Paket III)",
+        "provinsi": "Banten",
+        "kabupaten": "- Lebak\n- Serang"
+      }
+    ]
+  },
+  "BBWS CILIWUNG CISADANE": {
+    "SNVT PJPA CILIWUNG CISADANE": [
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I. Kewenangan Daerah di BBWS CIliwung Cisadane",
+        "provinsi": "Jawa Barat",
+        "kabupaten": "- Bogor"
+      }
+    ]
+  },
+  "BBWS CIMANUK CISANGGARUNG": {
+    "SNVT PJPA CIMANUK CISANGGARUNG": [
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I. Kewenangan Daerah di BBWS Cimanuk Cisanggarung",
+        "provinsi": "Jawa Barat dan Jawa Tengah",
+        "kabupaten": "- Majalengka\n- Indramayu\n- Garut\n- Cirebon\n- Kuningan\n- Brebes"
+      }
+    ]
+  },
+  "BBWS CITANDUY": {
+    "SNVT PJPA CITANDUY": [
+      {
+        "paket": "Rehabilitasi dan Peningkatan Jaringan Utama DI Kewenangan Daerah di BBWS Citanduy",
+        "provinsi": "Jawa Barat dan Jawa Tengah",
+        "kabupaten": "- Kab. Tasikmalaya\n- Kota Tasikmalaya\n- Kab. Cilacap"
+      }
+    ]
+  },
+  "BBWS CITARUM": {
+    "SNVT PJPA CITARUM": [
+      {
+        "paket": "Peningkatan dan Rehabilitasi Jaringan Utama Pemerintah Daerah pada BBWS Citarum",
+        "provinsi": "Jawa Barat",
+        "kabupaten": "- Sukabumi\n- Purwakarta\n- Subang\n- Cianjur\n- Bogor\n- Bandung barat"
+      }
+    ]
+  },
+  "BBWS Mesuji Sekampung": {
+    "SNVT PJPA Mesuji Sekampung": [
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di Provinsi Lampung (Paket I)",
+        "provinsi": "Lampung",
+        "kabupaten": "- Kab Lampung Barat\n- Lampung Selatan\n- Lampung Tengah\n- Lampung Timur\n- Lampung Utara\n- Pringsewu"
+      },
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di Provinsi Lampung (Paket II)",
+        "provinsi": "Lampung",
+        "kabupaten": "- Kab. Lampung Barat\n- Lampung Barat"
+      }
+    ]
+  },
+  "BBWS NUSA TENGGARA I": {
+    "SNVT PJPA NUSA TENGGARA I": [
+      {
+        "paket": "Rehabilitasi dan Peningkatan Jaringan Utama DI. Kewenangan Pemerintah Daerah di BBWS Nusa Tenggara I",
+        "provinsi": "NTB",
+        "kabupaten": "- Lombok Barat\n- Lombok Tengah\n- Lombok Timur\n- Dompu\n- Bima"
+      }
+    ]
+  },
+  "BBWS NUSA TENGGARA II": {
+    "SNVT PJPA NUSA TENGGARA II": [
+      {
+        "paket": "Rehabilitasi dan Peningkatan Jaringan Irigasi Utama Kewenangan Pemerintah Daerah pada BBWS Nusa Tenggara II (Paket 1)",
+        "provinsi": "NTT",
+        "kabupaten": "- Ende\n- Manggarai\n- Nagekeo\n- Sumba Barat\n- Sumba Barat Daya\n- Sumba Tengah\n- Sumba Timur\n- Belu\n- Rote Ndao\n- Timor Tengah Selatan\n- Ngada"
+      },
+      {
+        "paket": "Rehabilitasi dan Peningkatan Jaringan Irigasi Utama Kewenangan Pemerintah Daerah pada BBWS Nusa Tenggara II (Paket 2)",
+        "provinsi": "NTT",
+        "kabupaten": "- Nagekeo\n- Sikka\n- Manggarai\n- Manggarai Barat\n- Rote Ndao\n- Sumba Barat\n- Sumba Barat Daya\n- Sumba Tengah\n- Alor\n- Belu\n- Kab. Kupang\n- Timor Tengah Selatan\n- Flores Timur\n- Manggarai Timur"
+      }
+    ]
+  },
+  "BBWS PEMALI JUANA": {
+    "SNVT PJPA PEMALI JUANA": [
+      {
+        "paket": "Peningkatan dan Rehabilitasi Jaringan Utama Daerah Irigasi kewenangan Pemerintah Daerah pada BBWS Pemali Juana  (Paket 1)",
+        "provinsi": "Jawa Tengah",
+        "kabupaten": "- Batang\n- Pekalongan\n- Tegal\n- Semarang\n- Grobogan\n- Blora\n- Jepara"
+      },
+      {
+        "paket": "Peningkatan dan Rehabilitasi Jaringan Utama Daerah Irigasi kewenangan Pemerintah Daerah pada BBWS Pemali Juana  (Paket 2)",
+        "provinsi": "Jawa Tengah",
+        "kabupaten": "- Kendal\n- Pati\n- Pekalongan\n- Jepara\n- Semarang\n- Batang\n- Blora\n- Pemalang\n- Tegal"
+      }
+    ]
+  },
+  "BBWS Pompengan Jeneberang": {
+    "SNVT PJPA Pompengan Jenebrang": [
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di  Provinsi Sulawesi Selatan (Paket I)",
+        "provinsi": "Sulawesi Selatan",
+        "kabupaten": "- Luwu\n- Enrekang\n- Kab. Sidenreng Rappang\n- Wajo\n- Barru\n- Soppeng\n- Pangkajene Kepulauan\n- Bone"
+      },
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di  Provinsi Sulawesi Selatan (Paket II)",
+        "provinsi": "Sulawesi Selatan",
+        "kabupaten": "- Bantaeng\n- Maros\n- Bulukumba\n- Sinjai\n- Gowa\n- Bone"
+      },
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di  Provinsi Sulawesi Selatan (Paket III)",
+        "provinsi": "Sulawesi Selatan",
+        "kabupaten": "- Luwu\n- Luwu Utara\n- Bulukumba\n- Luwu Timur\n- Pangkajene Kepulauan\n- Pinrang"
+      }
+    ]
+  },
+  "BBWS SERAYU OPAK": {
+    "SNVT PJPA SERAYU OPAK": [
+      {
+        "paket": "Rehabilitasi Jaringan Utama DI Kewenangan Pemerintah Daerah di BBWS Serayu Opak Paket I",
+        "provinsi": "DI Yogyakarta dan Jawa Tengah",
+        "kabupaten": "- Bantul\n- Kulon Progo\n- Sleman\n- Purbalingga\n- Kebumen\n- Purworejo"
+      },
+      {
+        "paket": "Rehabilitasi Jaringan Utama DI Kewenangan Pemerintah Daerah di BBWS Serayu Opak Paket II",
+        "provinsi": "DI Yogyakarta dan Jawa Tengah",
+        "kabupaten": "- Kulon Progo\n- Purbalingga\n- Purworejo\n- Kebumen"
+      }
+    ]
+  },
+  "BBWS Sumatera II": {
+    "SNVT PJPA Sumatera II": [
+      {
+        "paket": "Peningkatan dan Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di Provinsi Sumatera Utara",
+        "provinsi": "Sumatera Utara",
+        "kabupaten": "- Karo\n- Toba Samosir\n- Tapanuli Utara\n- Kota  Tebing Tinggi\n- Kab. Batu Bara\n- Dairi\n- Kab  Humbang Hasundutan\n- Kab Labuhanbatu\n- Kab Langkat\n- Kab Nias\n- Kab Pakpak Bharat\n- Kab Padang Lawas"
+      }
+    ]
+  },
+  "BBWS Sumatera VIII": {
+    "SNVT PJPA Sumatera VIII": [
+      {
+        "paket": "Peningkatan dan Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di Provinsi Sumatera Selatan (Paket II)",
+        "provinsi": "Sumatera Selatan",
+        "kabupaten": "- OKU Timur\n- Muara Enim"
+      },
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di Provinsi Sumatera Selatan (Paket I)",
+        "provinsi": "Sumatera Selatan",
+        "kabupaten": "- Banyuasin\n- Musi Banyuasin\n- Musi Rawas\n- OKU Selatan"
+      }
+    ]
+  },
+  "BWS BALI PENIDA": {
+    "SNVT PJPA BALI PENIDA": [
+      {
+        "paket": "Rehabilitasi Jaringan Utama DI Kewenangan Pemerintah Daerah di Wilayah BWS Bali Penida Paket 1",
+        "provinsi": "Bali",
+        "kabupaten": "- Jembrana\n- Tabanan\n- Bangli\n- Badung\n- Gianyar\n- Buleleng\n- Klungkung"
+      },
+      {
+        "paket": "Rehabilitasi Jaringan Utama DI Kewenangan Pemerintah Daerah di Wilayah BWS Bali Penida Paket 2",
+        "provinsi": "Bali",
+        "kabupaten": "- Jembrana\n- Bangli\n- Buleleng\n- Karangasem"
+      }
+    ]
+  },
+  "BWS Bangka Belitung": {
+    "SNVT PJPA Bangka Belitung": [
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di Provinsi Bangka Belitung",
+        "provinsi": "Bangka Belitung",
+        "kabupaten": "- Kab Bangka Selatan\n- Bangka Belitung"
+      }
+    ]
+  },
+  "BWS Kalimantan I": {
+    "SNVT PJPA Kalimantan I": [
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di Provinsi Kalimantan Barat (Paket I)",
+        "provinsi": "Kalimantan Barat",
+        "kabupaten": "- Ketapang\n- Kayong Utara\n- Kubu Raya\n- Sambas\n- Sekadau"
+      },
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di Provinsi Kalimantan Barat (Paket II)",
+        "provinsi": "Kalimantan Barat",
+        "kabupaten": "- Kayong Utara\n- Melawi"
+      }
+    ]
+  },
+  "BWS Kalimantan II": {
+    "SNVT PJPA I Kalimantan II": [
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di Provinsi Kalimantan Tengah (Paket I)",
+        "provinsi": "Kalimantan Tengah",
+        "kabupaten": "- Barito Selatan\n- katingan\n- Pulang Pisau\n- Barito Timur\n- Kotawaringin Timur\n- Seruyan\n- Kotawaringin Barat\n- Sukamara"
+      },
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di Provinsi Kalimantan Tengah (Paket II)",
+        "provinsi": "Kalimantan Tengah",
+        "kabupaten": "- Kotawaringin Barat"
+      }
+    ]
+  },
+  "BWS Kalimantan III": {
+    "SNVT PJPA Kalimantan III": [
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di Provinsi Kalimantan Selatan",
+        "provinsi": "Kalimantan Selatan",
+        "kabupaten": "- Hulu Sungai Tengah\n- Balangan\n- Barito Kuala\n- Hulu Sungai Selatan\n- Hulu Sungai Utara\n- Kotabaru\n- Tanah Bumbu\n- Tanah Laut\n- Tapin"
+      }
+    ]
+  },
+  "BWS Kalimantan V": {
+    "SNVT PJPA Kalimantan V": [
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di Provinsi Kalimantan Utara (Paket I)",
+        "provinsi": "Kalimantan Utara",
+        "kabupaten": "- Nunukan\n- Bulungan"
+      },
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di Provinsi Kalimantan Utara (Paket II)",
+        "provinsi": "Kalimantan Utara",
+        "kabupaten": "- Nunukan\n- Bulungan"
+      }
+    ]
+  },
+  "BWS MALUKU": {
+    "SNVT PJPA Maluku": [
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di  Provinsi Maluku",
+        "provinsi": "Maluku",
+        "kabupaten": "- Buru\n- Seram bagian Barat\n- Maluku Tengah"
+      }
+    ]
+  },
+  "BWS MALUKU UTARA": {
+    "SNVT PJPA Maluku Utara": [
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di  Provinsi Maluku Utara",
+        "provinsi": "Maluku Utara",
+        "kabupaten": "- Halmahera Utara\n- Pulau Morotai"
+      }
+    ]
+  },
+  "BWS PAPUA": {
+    "SNVT PJPA PAPUA": [
+      {
+        "paket": "Peningkatan Jaringan Utama D.I Kewenangan Daerah di Provinsi Papua Tengah",
+        "provinsi": "Papua Tengah",
+        "kabupaten": "- Nabire"
+      }
+    ]
+  },
+  "BWS PAPUA Barat": {
+    "SNVT PJPA PAPUA Barat": [
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di  Provinsi Papua Barat dan Papua Barat Daya",
+        "provinsi": "Papua Barat dan Papua Barat Daya",
+        "kabupaten": "- Sorong\n- Teluk Wondama"
+      }
+    ]
+  },
+  "BWS PAPUA MERAUKE": {
+    "SNVT PJPA PAPUA Merauke": [
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di  Provinsi Papua Selatan",
+        "provinsi": "Papua Selatan",
+        "kabupaten": "- Merauke"
+      }
+    ]
+  },
+  "BWS Sulawesi I": {
+    "SNVT PJPA Sulawesi I": [
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di  Provinsi Sulawesi Utara",
+        "provinsi": "Sulawesi Utara",
+        "kabupaten": "- Bolaang Mongondow Selatan\n- Bolaang Mongondow Timur\n- Kotamobagu\n- Minahasa\n- Minahasa Selatan"
+      }
+    ]
+  },
+  "BWS Sulawesi II": {
+    "SNVT PJPA Sulawesi II": [
+      {
+        "paket": "Rehabilitasi  Jaringan Utama D.I Kewenangan Daerah di  Provinsi Gorontalo (Paket II)",
+        "provinsi": "Gorontalo",
+        "kabupaten": "- Boalemo\n- Gorontalo\n- Pohuwato\n- Bone Bolango"
+      },
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di  Provinsi Gorontalo (Paket I)",
+        "provinsi": "Gorontalo",
+        "kabupaten": "- Gorontalo\n- Gorontalo Utara"
+      }
+    ]
+  },
+  "BWS Sulawesi III": {
+    "SNVT PJPA Sulawesi III": [
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di  Provinsi Sulawesi Tengah (Paket I)",
+        "provinsi": "Sulawesi Tengah",
+        "kabupaten": "- Tojo Una - Una\n- Donggala\n- Sigi\n- Banggai\n- Parigi Moutong\n- Toli - Toli\n- Poso"
+      },
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di  Provinsi Sulawesi Tengah (Paket II)",
+        "provinsi": "Sulawesi Tengah",
+        "kabupaten": "- Poso\n- Parigi Moutong"
+      }
+    ]
+  },
+  "BWS Sulawesi IV": {
+    "SNVT PJPA Sulawesi IV": [
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di  Provinsi Sulawesi Tenggara",
+        "provinsi": "Sulawesi Tenggara",
+        "kabupaten": "- Buton\n- Buton Utara\n- Muna Barat\n- Konawe\n- Konawe Selatan\n- Kendari\n- Bombana\n- Kolaka\n- Kolaka Utara\n- Kolaka Timur"
+      }
+    ]
+  },
+  "BWS Sumatera I": {
+    "SNVT PJPA Sumatera I": [
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di  Provinsi Aceh (Paket I)",
+        "provinsi": "Aceh",
+        "kabupaten": "- Aceh Barat\n- Aceh Besar\n- Aceh Jaya\n- Aceh Selatan\n- Aceh Tamiang\n- Aceh Tengah\n- Aceh Utara\n- Gayo Lues\n- Bireuen\n- Nagan Raya\n- Simeulue\n- Pidie"
+      },
+      {
+        "paket": "Rehabilitasi dan Peningkatan Jaringan Utama D.I Kewenangan Daerah di Provinsi Aceh (Paket II)",
+        "provinsi": "Aceh",
+        "kabupaten": "- Aceh Barat Daya\n- Aceh Tenggara\n- Aceh Jaya"
+      }
+    ]
+  },
+  "BWS Sumatera III": {
+    "SNVT PJPA Sumatera III": [
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di Provinsi Riau (Paket I)",
+        "provinsi": "Riau",
+        "kabupaten": "- Kepulauan Meranti\n- Indragiri Hilir"
+      },
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di Provinsi Riau (Paket II)",
+        "provinsi": "Riau",
+        "kabupaten": "- Kampar\n- Siak\n- Kepulauan Meranti"
+      }
+    ]
+  },
+  "BWS Sumatera V": {
+    "SNVT PJPA IAKR Provinsi Sumatera Barat": [
+      {
+        "paket": "Rehabilitasi  Jaringan Utama D.I Kewenangan Daerah di Provinsi Sumatera Barat (Paket II)",
+        "provinsi": "Sumatera Barat",
+        "kabupaten": "- Padang Pariaman\n- Pesisir Selatan\n- Solok\n- Pasaman\n- Agam\n- Solok Selatan\n- Kota Bukittinggi\n- Kota Padang\n- Lima Puluh Kota\n- Tanah Datar\n- Kota Payakumbuh\n- Padang Pariaman"
+      },
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I Kewenangan Daerah di Provinsi Sumatera Barat (Paket I)",
+        "provinsi": "Sumatera Barat",
+        "kabupaten": "- Solok\n- Agam\n- Dharmasraya"
+      }
+    ]
+  },
+  "BWS Sumatera VI": {
+    "SNVT PJPA Sumatera VI": [
+      {
+        "paket": "Peningkatan Jaringan Utama D.I Kewenangan Daerah pada BWS Sumatera VI di Provinsi Jambi (Paket II)",
+        "provinsi": "Jambi",
+        "kabupaten": "- Tebo\n- Bungo"
+      },
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I Kewenangan Daerah pada BWS Sumatera VI di Provinsi Jambi (Paket I)",
+        "provinsi": "Jambi",
+        "kabupaten": "- Bungo\n- Tanjung Jabung Barat\n- Sungai Penuh\n- Kab Muaro Jambi\n- Kerinci\n- Sarolangun\n- Tanjung Jabung Timur\n- Tebo"
+      }
+    ]
+  },
+  "BWS Sumatera VII": {
+    "SNVT PJPA Sumatera VII": [
+      {
+        "paket": "Rehabilitasi Jaringan Utama D.I Kewenangan Daerah pada BWS Sumatera VII di Provinsi Bengkulu",
+        "provinsi": "Bengkulu",
+        "kabupaten": "- Muko Muko\n- Lebong\n- Kepahiang\n- Kaur\n- Bengkulu Selatan\n- Seluma"
+      }
+    ]
+  }
+}
