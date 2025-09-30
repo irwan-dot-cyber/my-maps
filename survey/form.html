@@ -175,59 +175,85 @@
   /* ====== KONFIGURASI GAS ====== */
   const ENDPOINT = 'https://script.google.com/macros/s/AKfycbwNJ2SAnWRdRNdZCYiB5lpt9k7Tz3Y4KwDuXnNrzGx3NThX_F8l5bcHEa03JR42VJ5e5A/exec'; // ganti ke /exec
 
-  /* ====== UTIL ====== */
-  const toast = (msg)=>{ const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block'; clearTimeout(window.__t); window.__t=setTimeout(()=>t.style.display='none',4000); };
-  function fillSelect(el, items, placeholder='-- pilih --'){
-    el.innerHTML = '';
-    if (placeholder && !el.multiple) {
-      const opt = document.createElement('option');
-      opt.value = ''; opt.textContent = placeholder; el.appendChild(opt);
+
+/* ====== UTIL ====== */
+const toast = (msg)=>{ const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block'; clearTimeout(window.__t); window.__t=setTimeout(()=>t.style.display='none',4000); };
+function fillSelect(el, items, placeholder='-- pilih --'){
+  el.innerHTML = '';
+  if (placeholder && !el.multiple) {
+    const opt = document.createElement('option');
+    opt.value = ''; opt.textContent = placeholder; el.appendChild(opt);
+  }
+  (items||[]).forEach(v=>{ const o=document.createElement('option'); o.value=o.textContent=v; el.appendChild(o); });
+  el.disabled = !(items && items.length);
+}
+const uniq = arr => [...new Set((arr||[]).filter(Boolean))];
+
+/* ====== DOM ====== */
+const balai = document.getElementById('balai');
+const snvt  = document.getElementById('snvt');
+const paket = document.getElementById('paket');
+const prov  = document.getElementById('provinsi');
+const kab   = document.getElementById('kabupaten');
+const lat   = document.getElementById('lat');
+const lng   = document.getElementById('lng');
+const form  = document.getElementById('surveyForm');
+
+/* ====== 1) INISIALISASI PETA DULU (agar basemap pasti tampil) ====== */
+const baseOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20, attribution:'© OpenStreetMap'});
+const baseImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20, attribution:'Tiles © Esri/Maxar'});
+const map = L.map('map', { zoomControl:true, layers:[baseOSM] });
+L.control.layers({ 'OSM': baseOSM, 'Esri Imagery': baseImagery }, {}, { position:'topright', collapsed:false }).addTo(map);
+map.setView([-2.5,118], 5);
+const coords = document.getElementById('coords');
+function updateCenter(){ const c=map.getCenter(); coords.textContent=`Lat: ${c.lat.toFixed(6)}, Lng: ${c.lng.toFixed(6)}`; }
+map.on('move', updateCenter); map.whenReady(updateCenter);
+document.getElementById('btnLocate').addEventListener('click', ()=> map.locate({setView:true,maxZoom:17,enableHighAccuracy:true}));
+map.on('locationerror', ()=> alert('Izin lokasi ditolak. Geser peta manual.'));
+document.getElementById('btnPick').addEventListener('click', ()=>{ const c=map.getCenter(); lat.value=c.lat.toFixed(6); lng.value=c.lng.toFixed(6); });
+document.getElementById('btnPan').addEventListener('click', ()=>{ const la=parseFloat(lat.value), lo=parseFloat(lng.value); if(!Number.isNaN(la)&&!Number.isNaN(lo)) map.setView([la,lo], Math.max(map.getZoom(),16)); });
+
+/* ====== Upload Notifier (overlay + progress) ====== */
+const $overlay = document.getElementById('uploadOverlay');
+const $utitle  = document.getElementById('uploadTitle');
+const $umsg    = document.getElementById('uploadMsg');
+const $uhint   = document.getElementById('uploadHint');
+const $ubar    = document.getElementById('progressBar');
+function setUploadingUI({show, title, msg, percent, hint}){
+  if (typeof title==='string') $utitle.textContent = title;
+  if (typeof msg==='string')   $umsg.textContent   = msg;
+  if (typeof hint==='string')  $uhint.textContent  = hint;
+  if (typeof percent==='number'){
+    const p = Math.max(0, Math.min(100, Math.round(percent)));
+    $ubar.style.width = p + '%';
+  }
+  $overlay.style.display = show ? 'flex' : 'none';
+}
+function disableForm(disabled){
+  document.querySelectorAll('#surveyForm input, #surveyForm select, #surveyForm button')
+    .forEach(el => el.disabled = !!disabled);
+}
+
+/* ====== 2) LOADER JSON YANG KUAT (support '+' & file://) ====== */
+let BBWS = {};
+(async function loadJSON(){
+  try{
+    // 2a. dukung inline JSON (kalau dibuka via file:// tanpa server)
+    const inline = document.getElementById('bbwsData');
+    if (inline?.textContent?.trim()){
+      BBWS = JSON.parse(inline.textContent);
+      fillSelect(balai, Object.keys(BBWS).sort(), '-- pilih BALAI --');
+      return;
     }
-    (items||[]).forEach(v=>{ const o=document.createElement('option'); o.value=o.textContent=v; el.appendChild(o); });
-    el.disabled = !(items && items.length);
-  }
-  const uniq = arr => [...new Set((arr||[]).filter(Boolean))];
 
-  /* ====== DOM ====== */
-  const balai = document.getElementById('balai');
-  const snvt  = document.getElementById('snvt');
-  const paket = document.getElementById('paket');
-  const prov  = document.getElementById('provinsi');
-  const kab   = document.getElementById('kabupaten');
-  const lat   = document.getElementById('lat');
-  const lng   = document.getElementById('lng');
-  const form  = document.getElementById('surveyForm');
-
-  /* ====== Upload Notifier (overlay + progress) ====== */
-  const $overlay = document.getElementById('uploadOverlay');
-  const $utitle  = document.getElementById('uploadTitle');
-  const $umsg    = document.getElementById('uploadMsg');
-  const $uhint   = document.getElementById('uploadHint');
-  const $ubar    = document.getElementById('progressBar');
-
-  function setUploadingUI({show, title, msg, percent, hint}){
-    if (typeof title==='string') $utitle.textContent = title;
-    if (typeof msg==='string')   $umsg.textContent   = msg;
-    if (typeof hint==='string')  $uhint.textContent  = hint;
-    if (typeof percent==='number'){
-      const p = Math.max(0, Math.min(100, Math.round(percent)));
-      $ubar.style.width = p + '%';
-    }
-    $overlay.style.display = show ? 'flex' : 'none';
-  }
-  function disableForm(disabled){
-    document.querySelectorAll('#surveyForm input, #surveyForm select, #surveyForm button')
-      .forEach(el => el.disabled = !!disabled);
-  }
-
-  /* ====== DATA LOADER (prioritas file JSON lo) ====== */
-  let BBWS = {};
-  (async function loadJSON(){
-    const candidates = [
-      './balai_snvt_paket+wilayah.kab_array.json', // file lo
+    // 2b. fetch dari file (pastikan dibuka via http/https agar tidak diblok)
+    const candidatesRaw = [
+      './balai_snvt_paket+wilayah.kab_array.json',
       './balai_snvt_paket+wilayah.json',
       './balai_snvt_paket.json'
     ];
+    const candidates = candidatesRaw.map(u => encodeURI(u)); // penting untuk nama ber-+
+
     let data=null, lastErr=null;
     for (const url of candidates){
       try{
@@ -238,200 +264,178 @@
         break;
       }catch(e){ lastErr=e; }
     }
-    if(!data){ alert('Gagal memuat data BALAI/SNVT/PAKET.'); console.error(lastErr); return; }
+    if(!data){
+      toast('⚠️ Data BALAI tidak bisa dimuat. Cek path/hosting.');
+      console.error(lastErr);
+      // Isi placeholder supaya form tetap bisa dipakai manual
+      fillSelect(balai, [], '-- gagal memuat BALAI --');
+      return;
+    }
     BBWS = data;
     fillSelect(balai, Object.keys(BBWS).sort(), '-- pilih BALAI --');
-  })();
-
-  /* ====== LOGIC: Prov/Kab otomatis (support kab_array & string) ====== */
-  function parseKabFlexible(kabField){
-    if (!kabField) return [];
-    if (Array.isArray(kabField)) return uniq(kabField.map(s=>String(s).trim()).filter(Boolean));
-    return uniq(String(kabField).split(/\r?\n/).map(s=>s.replace(/^\s*-\s*/,'').trim()).filter(Boolean));
+  }catch(err){
+    toast('⚠️ Error parsing JSON. Cek console.');
+    console.error('JSON error:', err);
+    fillSelect(balai, [], '-- gagal memuat BALAI --');
   }
+})();
 
-  function collectMeta({b=null,s=null,p=null}){
-    if (!b || !BBWS[b]) return {provinsi:'', kabList:[]};
-    let entries=[];
-    if (s && BBWS[b][s]) {
-      const arr = BBWS[b][s] || [];
-      if (p){
-        const chosen = arr.find(x => (typeof x==='string'? x : x.paket) === p);
-        entries = chosen ? [chosen] : arr;
-      } else {
-        entries = arr;
-      }
-    } else {
-      Object.values(BBWS[b]).forEach(arr => entries = entries.concat(arr||[]));
-    }
-
-    const provs = uniq(entries.map(e => typeof e==='object' ? (e.provinsi||'') : '').filter(Boolean));
-    const kabAll = uniq(entries.flatMap(e => typeof e==='object' ? parseKabFlexible(e.kabupaten||e.kab||[]) : []));
-
-    return {
-      provinsi: provs.length === 0 ? '' : (provs.length === 1 ? provs[0] : '(beragam)'),
-      kabList: kabAll
-    };
+/* ====== AUTO Prov/Kab (support kab_array & string) ====== */
+function parseKabFlexible(kabField){
+  if (!kabField) return [];
+  if (Array.isArray(kabField)) return uniq(kabField.map(s=>String(s).trim()).filter(Boolean));
+  return uniq(String(kabField).split(/\r?\n/).map(s=>s.replace(/^\s*-\s*/,'').trim()).filter(Boolean));
+}
+function collectMeta({b=null,s=null,p=null}){
+  if (!b || !BBWS[b]) return {provinsi:'', kabList:[]};
+  let entries=[];
+  if (s && BBWS[b][s]) {
+    const arr = BBWS[b][s] || [];
+    if (p){
+      const chosen = arr.find(x => (typeof x==='string'? x : x.paket) === p);
+      entries = chosen ? [chosen] : arr;
+    } else entries = arr;
+  } else {
+    Object.values(BBWS[b]).forEach(arr => entries = entries.concat(arr||[]));
   }
+  const provs = uniq(entries.map(e => typeof e==='object' ? (e.provinsi||'') : '').filter(Boolean));
+  const kabAll = uniq(entries.flatMap(e => typeof e==='object' ? parseKabFlexible(e.kabupaten||e.kab||[]) : []));
+  return { provinsi: provs.length===0 ? '' : (provs.length===1 ? provs[0] : '(beragam)'), kabList: kabAll };
+}
 
-  balai.addEventListener('change', ()=>{
-    const b = balai.value;
-    if(!b){
-      fillSelect(snvt,[], '-- pilih SNVT --'); fillSelect(paket,[], '-- pilih PAKET --');
-      snvt.disabled = paket.disabled = true;
-      prov.value=''; fillSelect(kab,[], '-- pilih Kabupaten/Kota --'); kab.disabled=true;
-      return;
-    }
-    fillSelect(snvt, Object.keys(BBWS[b]||{}).sort(), '-- pilih SNVT --');
-    snvt.disabled = true; paket.disabled = true;
-    // auto Prov/Kab dari BALAI
+/* ====== Cascading ====== */
+balai.addEventListener('change', ()=>{
+  const b = balai.value;
+  if(!b){
+    fillSelect(snvt,[], '-- pilih SNVT --'); fillSelect(paket,[], '-- pilih PAKET --');
+    snvt.disabled = paket.disabled = true;
+    prov.value=''; fillSelect(kab,[], '-- pilih Kabupaten/Kota --'); kab.disabled=true;
+    return;
+  }
+  fillSelect(snvt, Object.keys(BBWS[b]||{}).sort(), '-- pilih SNVT --');
+  snvt.disabled = false;
+  const meta = collectMeta({b});
+  prov.value = meta.provinsi || '';
+  fillSelect(kab, meta.kabList, '-- pilih Kabupaten/Kota --');
+  kab.disabled = meta.kabList.length===0;
+  fillSelect(paket,[], '-- pilih PAKET --'); paket.disabled=true;
+});
+snvt.addEventListener('change', ()=>{
+  const b = balai.value, s = snvt.value;
+  if(!s){
+    fillSelect(paket,[], '-- pilih PAKET --'); paket.disabled=true;
     const meta = collectMeta({b});
     prov.value = meta.provinsi || '';
+    fillSelect(kab, meta.kabList, '-- pilih Kabupaten/Kota --'); kab.disabled = meta.kabList.length===0;
+    return;
+  }
+  const arr = (BBWS[b]||{})[s] || [];
+  const paketNames = arr.map(x => typeof x==='string' ? x : (x.paket||'')).filter(Boolean);
+  fillSelect(paket, paketNames, '-- pilih PAKET --'); paket.disabled = paketNames.length===0;
+  const meta = collectMeta({b, s});
+  prov.value = meta.provinsi || '';
+  fillSelect(kab, meta.kabList, '-- pilih Kabupaten/Kota --'); kab.disabled = meta.kabList.length===0;
+});
+paket.addEventListener('change', ()=>{
+  const b = balai.value, s = snvt.value, p = paket.value;
+  const meta = collectMeta({b, s, p});
+  if (meta.provinsi || meta.kabList.length){
+    prov.value = meta.provinsi || prov.value;
     fillSelect(kab, meta.kabList, '-- pilih Kabupaten/Kota --');
     kab.disabled = meta.kabList.length===0;
-    // kosongkan paket
-    fillSelect(paket,[], '-- pilih PAKET --');
-    snvt.disabled = false;
-  });
-
-  snvt.addEventListener('change', ()=>{
-    const b = balai.value, s = snvt.value;
-    if(!s){
-      fillSelect(paket,[], '-- pilih PAKET --'); paket.disabled=true;
-      const meta = collectMeta({b});
-      prov.value = meta.provinsi || '';
-      fillSelect(kab, meta.kabList, '-- pilih Kabupaten/Kota --'); kab.disabled = meta.kabList.length===0;
-      return;
-    }
-    const arr = (BBWS[b]||{})[s] || [];
-    const paketNames = arr.map(x => typeof x==='string' ? x : (x.paket||'')).filter(Boolean);
-    fillSelect(paket, paketNames, '-- pilih PAKET --');
-    paket.disabled = paketNames.length===0;
-
-    const meta = collectMeta({b, s});
-    prov.value = meta.provinsi || '';
-    fillSelect(kab, meta.kabList, '-- pilih Kabupaten/Kota --'); kab.disabled = meta.kabList.length===0;
-  });
-
-  paket.addEventListener('change', ()=>{
-    const b = balai.value, s = snvt.value, p = paket.value;
-    const meta = collectMeta({b, s, p});
-    if (meta.provinsi || meta.kabList.length){
-      prov.value = meta.provinsi || prov.value;
-      fillSelect(kab, meta.kabList, '-- pilih Kabupaten/Kota --');
-      kab.disabled = meta.kabList.length===0;
-    }
-  });
-
-  /* ====== PETA ====== */
-  const baseOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20, attribution:'© OpenStreetMap'});
-  const baseImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20, attribution:'Tiles © Esri/Maxar'});
-  const map = L.map('map', { zoomControl:true, layers:[baseOSM] });
-  L.control.layers({ 'OSM': baseOSM, 'Esri Imagery': baseImagery }, {}, { position:'topright', collapsed:false }).addTo(map);
-  map.setView([-2.5,118], 5);
-  const coords = document.getElementById('coords');
-  function updateCenter(){ const c=map.getCenter(); coords.textContent=`Lat: ${c.lat.toFixed(6)}, Lng: ${c.lng.toFixed(6)}`; }
-  map.on('move', updateCenter); map.whenReady(updateCenter);
-  document.getElementById('btnLocate').addEventListener('click', ()=> map.locate({setView:true,maxZoom:17,enableHighAccuracy:true}));
-  map.on('locationerror', ()=> alert('Izin lokasi ditolak. Geser peta manual.'));
-  document.getElementById('btnPick').addEventListener('click', ()=>{ const c=map.getCenter(); lat.value=c.lat.toFixed(6); lng.value=c.lng.toFixed(6); });
-  document.getElementById('btnPan').addEventListener('click', ()=>{ const la=parseFloat(lat.value), lo=parseFloat(lng.value); if(!Number.isNaN(la)&&!Number.isNaN(lo)) map.setView([la,lo], Math.max(map.getZoom(),16)); });
-
-  /* ====== Kamera/Galeri (mobile safe) ====== */
-  let selectedFile = null;
-  const fileCam = document.getElementById('fileCamera');
-  const fileGal = document.getElementById('fileGallery');
-  const metaEl  = document.getElementById('photoMeta');
-
-  document.getElementById('btnCamera').addEventListener('click', ()=> fileCam.click());
-  document.getElementById('btnGallery').addEventListener('click', ()=> fileGal.click());
-
-  function showMeta(file){
-    if(!file){ metaEl.textContent = ''; return; }
-    const kb = (file.size/1024).toFixed(1);
-    metaEl.textContent = `Dipilih: ${file.name} • ${kb} KB`;
   }
-  fileCam.addEventListener('change', ()=>{ selectedFile = fileCam.files?.[0]||null; showMeta(selectedFile); });
-  fileGal.addEventListener('change', ()=>{ selectedFile = fileGal.files?.[0]||null; showMeta(selectedFile); });
+});
 
-  /* ====== Reset ====== */
-  document.getElementById('btnReset').addEventListener('click', ()=>{
-    selectedFile = null; showMeta(null);
-    fillSelect(snvt,[], '-- pilih SNVT --'); snvt.disabled=true;
-    fillSelect(paket,[], '-- pilih PAKET --'); paket.disabled=true;
-    prov.value=''; fillSelect(kab,[], '-- pilih Kabupaten/Kota --'); kab.disabled=true;
-  });
+/* ====== Kamera/Galeri ====== */
+let selectedFile = null;
+const fileCam = document.getElementById('fileCamera');
+const fileGal = document.getElementById('fileGallery');
+const metaEl  = document.getElementById('photoMeta');
+document.getElementById('btnCamera').addEventListener('click', ()=> fileCam.click());
+document.getElementById('btnGallery').addEventListener('click', ()=> fileGal.click());
+function showMeta(file){
+  if(!file){ metaEl.textContent = ''; return; }
+  const kb = (file.size/1024).toFixed(1);
+  metaEl.textContent = `Dipilih: ${file.name} • ${kb} KB`;
+}
+fileCam.addEventListener('change', ()=>{ selectedFile = fileCam.files?.[0]||null; showMeta(selectedFile); });
+fileGal.addEventListener('change', ()=>{ selectedFile = fileGal.files?.[0]||null; showMeta(selectedFile); });
 
-  /* ====== SUBMIT → GAS dgn XHR + overlay progress ====== */
-  form.addEventListener('submit', (e)=>{
-    e.preventDefault();
+/* ====== Reset ====== */
+document.getElementById('btnReset').addEventListener('click', ()=>{
+  selectedFile = null; showMeta(null);
+  fillSelect(snvt,[], '-- pilih SNVT --'); snvt.disabled=true;
+  fillSelect(paket,[], '-- pilih PAKET --'); paket.disabled=true;
+  prov.value=''; fillSelect(kab,[], '-- pilih Kabupaten/Kota --'); kab.disabled=true;
+});
 
-    if(!balai.value || !snvt.value || !paket.value){ toast('Lengkapi BALAI, SNVT, PAKET.'); return; }
-    if(!lat.value || !lng.value){ toast('Koordinat belum diisi.'); return; }
+/* ====== SUBMIT → GAS dgn XHR + overlay progress ====== */
+form.addEventListener('submit', (e)=>{
+  e.preventDefault();
+  if(!balai.value || !snvt.value || !paket.value){ toast('Lengkapi BALAI, SNVT, PAKET.'); return; }
+  if(!lat.value || !lng.value){ toast('Koordinat belum diisi.'); return; }
 
-    const fd = new FormData();
-    fd.append('balai', balai.value);
-    fd.append('snvt', snvt.value);
-    fd.append('paket', paket.value);
-    fd.append('provinsi', prov.value);
-    fd.append('kabupaten', kab.value || '');
-    fd.append('kecamatan', document.getElementById('kecamatan').value || '');
-    fd.append('desa', document.getElementById('desa').value || '');
-    fd.append('lat', lat.value);
-    fd.append('lng', lng.value);
-    fd.append('nama', document.getElementById('nama').value);
-    fd.append('telepon', document.getElementById('telepon').value);
-    if (selectedFile) fd.append('foto', selectedFile, selectedFile.name);
+  const fd = new FormData();
+  fd.append('balai', balai.value);
+  fd.append('snvt', snvt.value);
+  fd.append('paket', paket.value);
+  fd.append('provinsi', prov.value);
+  fd.append('kabupaten', kab.value || '');
+  fd.append('kecamatan', document.getElementById('kecamatan').value || '');
+  fd.append('desa', document.getElementById('desa').value || '');
+  fd.append('lat', lat.value);
+  fd.append('lng', lng.value);
+  fd.append('nama', document.getElementById('nama').value);
+  fd.append('telepon', document.getElementById('telepon').value);
+  if (selectedFile) fd.append('foto', selectedFile, selectedFile.name);
 
-    disableForm(true);
-    setUploadingUI({show:true, title:'Mengunggah data…', msg:'Menyiapkan berkas…', percent:3, hint:'Jangan tutup halaman ini.'});
+  disableForm(true);
+  setUploadingUI({show:true, title:'Mengunggah data…', msg:'Menyiapkan berkas…', percent:3, hint:'Jangan tutup halaman ini.'});
 
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', ENDPOINT, true);
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', ENDPOINT, true);
 
-    xhr.upload.onprogress = (ev)=>{
-      if (ev.lengthComputable){
-        const percent = (ev.loaded / ev.total) * 100;
-        setUploadingUI({show:true, msg:'Mengunggah ke server…', percent});
-      } else {
-        const cur = parseInt($ubar.style.width||'0',10) || 0;
-        if (cur < 90) setUploadingUI({show:true, percent: cur+1});
-      }
-    };
-    xhr.onloadstart = ()=> setUploadingUI({show:true, msg:'Mengunggah dimulai…', percent:5});
-    xhr.onreadystatechange = ()=>{
-      if (xhr.readyState === XMLHttpRequest.HEADERS_RECEIVED) setUploadingUI({show:true, msg:'Diproses server…', percent:95});
-    };
-    xhr.onerror = ()=>{
+  xhr.upload.onprogress = (ev)=>{
+    if (ev.lengthComputable){
+      const percent = (ev.loaded / ev.total) * 100;
+      setUploadingUI({show:true, msg:'Mengunggah ke server…', percent});
+    } else {
+      const cur = parseInt($ubar.style.width||'0',10) || 0;
+      if (cur < 90) setUploadingUI({show:true, percent: cur+1});
+    }
+  };
+  xhr.onloadstart = ()=> setUploadingUI({show:true, msg:'Mengunggah dimulai…', percent:5});
+  xhr.onreadystatechange = ()=>{
+    if (xhr.readyState === XMLHttpRequest.HEADERS_RECEIVED) setUploadingUI({show:true, msg:'Diproses server…', percent:95});
+  };
+  xhr.onerror = ()=>{
+    setUploadingUI({show:false}); disableForm(false);
+    toast('❌ Gagal kirim (jaringan).');
+  };
+  xhr.onload = ()=>{
+    let data = {};
+    try { data = JSON.parse(xhr.responseText||'{}'); } catch(e){}
+    if (xhr.status >= 200 && xhr.status < 300 && (data.ok===true || data.status==='ok')){
+      setUploadingUI({show:true, title:'Berhasil terkirim!', msg: data.fileUrl ? 'URL foto tersimpan.' : 'Data tersimpan.', percent:100, hint:'Kamu bisa menutup dialog ini.'});
+      toast('✅ Terkirim!');
+      setTimeout(()=>{
+        setUploadingUI({show:false});
+        form.reset(); selectedFile = null; showMeta(null);
+        fillSelect(snvt,[], '-- pilih SNVT --'); snvt.disabled=true;
+        fillSelect(paket,[], '-- pilih PAKET --'); paket.disabled=true;
+        prov.value=''; fillSelect(kab,[], '-- pilih Kabupaten/Kota --'); kab.disabled=true;
+        disableForm(false);
+      }, 700);
+      console.log('GAS response:', data);
+    } else {
       setUploadingUI({show:false}); disableForm(false);
-      toast('❌ Gagal kirim (jaringan).');
-    };
-    xhr.onload = ()=>{
-      let data = {};
-      try { data = JSON.parse(xhr.responseText||'{}'); } catch(e){}
-      if (xhr.status >= 200 && xhr.status < 300 && (data.ok===true || data.status==='ok')){
-        setUploadingUI({show:true, title:'Berhasil terkirim!', msg: data.fileUrl ? 'URL foto tersimpan.' : 'Data tersimpan.', percent:100, hint:'Kamu bisa menutup dialog ini.'});
-        toast('✅ Terkirim!');
-        setTimeout(()=>{
-          setUploadingUI({show:false});
-          form.reset(); selectedFile = null; showMeta(null);
-          fillSelect(snvt,[], '-- pilih SNVT --'); snvt.disabled=true;
-          fillSelect(paket,[], '-- pilih PAKET --'); paket.disabled=true;
-          prov.value=''; fillSelect(kab,[], '-- pilih Kabupaten/Kota --'); kab.disabled=true;
-          disableForm(false);
-        }, 700);
-        console.log('GAS response:', data);
-      } else {
-        setUploadingUI({show:false}); disableForm(false);
-        toast('❌ Gagal kirim (server). Cek console.');
-        console.error('GAS error:', xhr.status, xhr.responseText);
-      }
-    };
-    xhr.send(fd);
-  });
+      toast('❌ Gagal kirim (server). Cek console.');
+      console.error('GAS error:', xhr.status, xhr.responseText);
+    }
+  };
+  xhr.send(fd);
+});
+</script>
 
-  /* ====== PETA (init) ====== */
-  const baseOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20, attribution:'© OpenStreetMap'});
-  </script>
 </body>
 </html>
