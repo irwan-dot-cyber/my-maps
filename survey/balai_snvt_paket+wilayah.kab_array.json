@@ -1,0 +1,64 @@
+{
+  "BBWS BRANTAS": {
+    "SNVT PJPA BRANTAS": [
+      {
+        "paket": "Rehabilitasi Bendung Kali Konto",
+        "provinsi": "Jawa Timur",
+        "kabupaten": [
+          "Malang",
+          "Blitar"
+        ]
+      },
+      {
+        "paket": "Normalisasi Sungai Brantas Segmen Krian",
+        "provinsi": "Jawa Timur",
+        "kabupaten": [
+          "Sidoarjo"
+        ]
+      }
+    ],
+    "SNVT OP SDA BRANTAS": [
+      {
+        "paket": "Operasi & Pemeliharaan Jaringan Irigasi Brantas 2025",
+        "provinsi": "Jawa Timur",
+        "kabupaten": [
+          "Kediri",
+          "Tulungagung"
+        ]
+      }
+    ]
+  },
+  "BBWS CITARUM": {
+    "SNVT PJSA CITARUM": [
+      {
+        "paket": "Peningkatan Tanggul Sungai Citarum Hulu",
+        "provinsi": "Jawa Barat",
+        "kabupaten": [
+          "Bandung",
+          "Bandung Barat"
+        ]
+      }
+    ],
+    "SNVT OP SDA CITARUM": [
+      {
+        "paket": "OP Irigasi Daerah Aliran Sungai Citarum 2025",
+        "provinsi": "Jawa Barat",
+        "kabupaten": [
+          "Purwakarta",
+          "Karawang"
+        ]
+      }
+    ]
+  },
+  "BWS NT I": {
+    "SNVT PJSA NUSA TENGGARA I": [
+      {
+        "paket": "Pembangunan Embung Lontar",
+        "provinsi": "Nusa Tenggara Barat",
+        "kabupaten": [
+          "Lombok Tengah"
+        ]
+      }
+    ]
+  }
+}
