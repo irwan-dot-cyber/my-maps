@@ -4,121 +4,83 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Monitoring Survey AIR</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" referrerpolicy="no-referrer"/>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js" referrerpolicy="no-referrer"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
   <style>
-    body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;background:#0b1224;color:#e5e7eb}
-    header{padding:14px 18px;background:#0c1326;border-bottom:1px solid #1f2937;position:sticky;top:0;z-index:10}
-    #map{height:calc(100vh - 52px)}
+    html,body{height:100%;margin:0}
+    #header{background:#FFD700;color:#000;padding:10px;font-weight:700;display:flex;align-items:center;gap:10px}
+    #header img{height:36px}
+    #map{height:calc(100% - 60px)}
+    .btn-refresh{position:absolute;top:70px;right:14px;z-index:1000;background:#22c55e;color:#01250f;
+                 padding:8px 12px;border:0;border-radius:8px;cursor:pointer;font-weight:700}
     .leaflet-popup-content table{border-collapse:collapse;font-size:13px}
     .leaflet-popup-content td{padding:2px 4px;vertical-align:top}
-    .leaflet-popup-content td:first-child{color:#9aa3b2;white-space:nowrap}
-    .btn-refresh{position:absolute;top:64px;right:14px;z-index:1000;background:#22c55e;color:#01250f;
-                 padding:8px 12px;border:0;border-radius:8px;cursor:pointer;font-weight:600}
-    /* pane khusus label supaya di atas peta & klik tembus */
+    .leaflet-popup-content td:first-child{color:#555;white-space:nowrap}
     .labels-pane { z-index: 650; pointer-events: none; }
   </style>
 </head>
 <body>
-  <header><strong>Monitoring Survey AIR</strong></header>
+  <div id="header">
+    <img src="https://iconape.com/wp-content/png_logo_vector/pu-logo.png" alt="PU"/>
+    KEMENTERIAN PEKERJAAN UMUM — DIREKTORAT JENDERAL SUMBER DAYA AIR — DIREKTORAT IRIGASI & RAWA
+  </div>
   <div id="map"></div>
   <button id="btnRefresh" class="btn-refresh">🔄 Refresh Data</button>
 
 <script>
-/* ===== CONFIG ===== */
-const ENDPOINT = 'https://gas-proxy.tuic1677.workers.dev';  // worker proxy ke GAS (ikutkan query ?mode=data)
+const ENDPOINT = 'https://gas-proxy.tuic1677.workers.dev'; // Worker proxy ke GAS ?mode=data
 
-/* ===== MAP INIT ===== */
+// Map init
 const map = L.map('map', { zoomControl:true }).setView([-2.5,118],5);
+map.createPane('labels'); map.getPane('labels').classList.add('labels-pane');
 
-// buat pane khusus label agar di atas imagery & klik marker tetap bisa
-map.createPane('labels');        // id pane
-map.getPane('labels').classList.add('labels-pane');
-
-// Basemap
-const baseOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-  maxZoom: 20, attribution:'© OpenStreetMap'
-});
-const baseImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
-  maxZoom: 20, attribution:'Tiles © Esri/Maxar'
+const baseOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20, attribution:'© OpenStreetMap'});
+const baseImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20, attribution:'Tiles © Esri/Maxar'});
+const labelsCARTO = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png',{
+  maxZoom:20, pane:'labels', attribution:'© CARTO, © OpenStreetMap'
 });
 
-// Overlay labels (CARTO light labels)
-const labelsCARTO = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png', {
-  maxZoom: 20,
-  pane: 'labels',
-  attribution: '© CARTO, © OpenStreetMap'
-});
+L.control.layers({"OSM Standard":baseOSM,"Esri Imagery":baseImagery},{"Labels (CARTO)":labelsCARTO}).addTo(map);
+baseImagery.addTo(map); labelsCARTO.addTo(map);
 
-// tambahkan layer control
-const baseLayers = {
-  'OSM Standard': baseOSM,
-  'Esri Imagery': baseImagery
-};
-const overlays = {
-  'Labels (CARTO)': labelsCARTO
-};
-L.control.layers(baseLayers, overlays, { position:'topright', collapsed:false }).addTo(map);
-
-// start dengan Imagery + Labels
-baseImagery.addTo(map);
-labelsCARTO.addTo(map);
-
-// layer untuk titik
 const markersLayer = L.layerGroup().addTo(map);
 
-/* ===== POPUP MAKER ===== */
 function popupHTML(p) {
   const rows = [
     ['BALAI', p.balai], ['SNVT', p.snvt], ['PAKET', p.paket],
     ['Provinsi', p.provinsi], ['Kab/Kota', p.kabupaten],
     ['Kecamatan', p.kecamatan], ['Desa', p.desa],
-    ['Nama', p.nama], ['Telepon', p.telepon],
     ['Koordinat', `${p.lat}, ${p.lng}`],
     ['Waktu', new Date(p.timestamp).toLocaleString('id-ID')]
   ].filter(([,v]) => v && String(v).trim().length);
 
   const table = rows.map(([k,v])=>`<tr><td>${k}</td><td>${String(v).replace(/</g,'&lt;')}</td></tr>`).join('');
-  const img = p.fotoUrl ? `<div style="margin-top:8px"><a href="${p.fotoUrl}" target="_blank" rel="noopener"><img src="${p.fotoUrl}" alt="foto" style="max-width:240px;max-height:160px;border-radius:8px;border:1px solid #334155"/></a></div>` : '';
-  const gmaps = `<div style="margin-top:8px">
-    <a href="https://www.google.com/maps?q=${encodeURIComponent(p.lat)},${encodeURIComponent(p.lng)}" target="_blank" rel="noopener"
-       style="background:#22c55e;color:#01250f;padding:6px 10px;border-radius:8px;text-decoration:none;font-weight:700;display:inline-block">
-      📍 Lihat di Google Maps
-    </a>
-  </div>`;
+  const img = p.fotoUrl ? `<div style="margin-top:8px"><a href="${p.fotoUrl}" target="_blank"><img src="${p.fotoUrl}" style="max-width:240px;max-height:160px;border-radius:8px;border:1px solid #ddd"/></a></div>` : '';
+  const gmaps = `<div style="margin-top:8px"><a href="https://www.google.com/maps?q=${p.lat},${p.lng}" target="_blank" style="background:#22c55e;color:#01250f;padding:6px 10px;border-radius:8px;text-decoration:none;font-weight:700;display:inline-block">📍 Lihat di Google Maps</a></div>`;
   return `<div style="min-width:240px"><table>${table}</table>${img}${gmaps}</div>`;
 }
 
-/* ===== LOAD DATA ===== */
-async function loadPoints() {
-  try {
+async function loadPoints(){
+  try{
     const url = ENDPOINT + (ENDPOINT.includes('?') ? '&' : '?') + 'mode=data';
-    const res = await fetch(url, {cache:'no-store'});
+    const res = await fetch(url,{cache:'no-store'});
     if(!res.ok) throw new Error('HTTP '+res.status);
     const geo = await res.json();
-
     markersLayer.clearLayers();
     const feats = Array.isArray(geo.features)?geo.features:[];
     const latlngs=[];
     feats.forEach(f=>{
-      if(!f || !f.geometry || f.geometry.type!=='Point') return;
+      if(!f.geometry||f.geometry.type!=='Point')return;
       const [lng,lat]=f.geometry.coordinates||[];
       if(isNaN(lat)||isNaN(lng))return;
       const props=f.properties||{};
-      const m=L.marker([lat,lng]);
-      m.bindPopup(popupHTML(props));
-      m.addTo(markersLayer);
+      L.marker([lat,lng]).bindPopup(popupHTML(props)).addTo(markersLayer);
       latlngs.push([lat,lng]);
     });
-    if(latlngs.length){
-      map.fitBounds(L.latLngBounds(latlngs).pad(0.2),{maxZoom:16});
-    }
-  }catch(err){
-    console.error('loadPoints',err);
-    alert('Gagal memuat data.');
-  }
+    if(latlngs.length){ map.fitBounds(L.latLngBounds(latlngs).pad(0.2),{maxZoom:16}); }
+  }catch(e){console.error(e);alert('Gagal memuat data.');}
 }
-document.getElementById('btnRefresh').addEventListener('click', loadPoints);
+document.getElementById('btnRefresh').addEventListener('click',loadPoints);
 map.whenReady(loadPoints);
 </script>
 </body>
