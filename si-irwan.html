@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Sistem Informasi Irigasi & Rawa Nasional</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    :root{
+      --pu-gold:#FFD700;
+      --dark:#0f172a;
+      --muted:#9ca3af;
+      --accent:#2563eb;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:system-ui,Segoe UI,Roboto,Arial;background:var(--dark);color:#f1f5f9;line-height:1.5}
+    header{background:var(--pu-gold);color:#000;padding:14px 20px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:50}
+    header img{height:42px}
+    main{max-width:1200px;margin:0 auto;padding:20px}
+    h1{font-size:28px;font-weight:700;margin-bottom:8px}
+    h2{margin:40px 0 16px;font-size:22px;border-left:6px solid var(--pu-gold);padding-left:10px}
+    p{color:var(--muted);max-width:700px}
+    .hero{background:linear-gradient(to right, #1e293b, #0f172a);padding:40px 20px;border-radius:16px;margin-top:20px;text-align:center}
+    .hero h1{font-size:32px;color:var(--pu-gold)}
+    .hero p{margin-top:10px;font-size:16px}
+    .grid{display:grid;gap:20px;margin-top:20px}
+    .card{background:#1e293b;padding:20px;border-radius:14px;box-shadow:0 4px 12px #0005;transition:transform .2s}
+    .card:hover{transform:translateY(-4px)}
+    .card h3{margin-bottom:8px;font-size:18px;color:var(--pu-gold)}
+    .links a{display:inline-block;margin:4px 6px 0 0;padding:6px 10px;border-radius:6px;background:var(--accent);color:#fff;font-size:13px;text-decoration:none}
+    footer{margin-top:40px;padding:20px;text-align:center;font-size:13px;color:var(--muted)}
+    @media(min-width:720px){.grid{grid-template-columns:repeat(2,1fr)}}
+  </style>
+</head>
+<body>
+  <header>
+    <img src="https://iconape.com/wp-content/png_logo_vector/pu-logo.png" alt="PU">
+    <div>
+      <div><strong>KEMENTERIAN PEKERJAAN UMUM</strong></div>
+      <div style="font-size:13px">Direktorat Jenderal Sumber Daya Air — Direktorat Irigasi & Rawa</div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <h1>Sistem Informasi Irigasi & Rawa</h1>
+      <p>Platform digital untuk pelaksanaan Inpres 2/2025, monitoring progres infrastruktur irigasi & rawa, data curah hujan, serta sebaran produksi padi nasional.</p>
+    </section>
+
+    <h2>Pelaksanaan INPRES 2/2025</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>Tahap 1</h3>
+        <div class="links">
+          <a href="./survey_t1.html" target="_blank">📝 Form Survey</a>
+          <a href="./monitoring2_t1.html" target="_blank">📍 Monitoring</a>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Tahap 2</h3>
+        <div class="links">
+          <a href="./survey_t2.html" target="_blank">📝 Form Survey</a>
+          <a href="./monitoring2_t2.html" target="_blank">📍 Monitoring</a>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Tahap 3</h3>
+        <div class="links">
+          <a href="./survey_t3.html" target="_blank">📝 Form Survey</a>
+          <a href="./monitoring2_t3.html" target="_blank">📍 Monitoring</a>
+        </div>
+      </div>
+    </div>
+
+    <h2>Data Lainnya</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>Data Curah Hujan</h3>
+        <p>Monitoring curah hujan terkini dari pos hujan dan stasiun BMKG.</p>
+        <div class="links"><a href="./hujan.html" target="_blank">🌧️ Lihat Data</a></div>
+      </div>
+      <div class="card">
+        <h3>Sebaran Produksi Padi</h3>
+        <p>Informasi sebaran produksi padi nasional berbasis data BPS dan lapangan.</p>
+        <div class="links"><a href="./padi.html" target="_blank">🌾 Lihat Data</a></div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    © 2025 Direktorat Irigasi & Rawa — Kementerian PUPR
+  </footer>
+</body>
+</html>
