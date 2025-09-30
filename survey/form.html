@@ -157,7 +157,7 @@ document.getElementById('btnPan').addEventListener('click',()=>{const la=+lat.va
 /* ===== Load JSON (encode + dulu kalau perlu) ===== */
 let BBWS={};
 (async()=>{
-  const cands=['./balai_snvt_paket%2Bwilayah.kab_array.json','./balai_snvt_paket+wilayah.json','./balai_snvt_paket.json'];
+  const cands=['./balai_snvt_paket+wilayah.json','./balai_snvt_paket.json'];
   let data=null,last=null; for(const u of cands){ try{const r=await fetch(u,{cache:'no-store'}); if(!r.ok) throw new Error(r.status+' '+u); data=await r.json(); console.log('Loaded',u); break;}catch(e){last=e;} }
   if(!data){toast('⚠️ Data BALAI tidak bisa dimuat.'); console.error(last); fillSelect(balai,[], '-- gagal memuat BALAI --'); return;}
   BBWS=data; fillSelect(balai,Object.keys(BBWS).sort(),'-- pilih BALAI --');
