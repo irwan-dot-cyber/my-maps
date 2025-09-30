@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Form Survey Pelaksanaan Inpres 2/2025 Tahap 2</title>
+  <title>Form Survey</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" referrerpolicy="no-referrer"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js" referrerpolicy="no-referrer"></script>
   <style>
@@ -53,7 +53,6 @@
       <h2>Data Survey</h2>
       <div id="toast" class="toast"></div>
 
-      <!-- XHR submit (bukan iframe) -->
       <form id="surveyForm">
         <div class="row">
           <div><label>BALAI</label><select id="balai" name="balai" required></select></div>
@@ -100,10 +99,8 @@
             <button type="button" id="btnGallery" class="ghost">🖼️ Galeri</button>
             <span id="photoMeta" class="hint"></span>
           </div>
-          <input type="file" accept="image/*" capture="environment" id="fileCamera" style="display:none">
-          <input type="file" accept="image/*" id="fileGallery" style="display:none">
-          <!-- akan diisi file terkompres → ikut terkirim -->
-          <input type="file" id="hiddenFoto" name="foto" style="display:none">
+          <!-- HANYA 1 input file yang akan DIKIRIM -->
+          <input type="file" accept="image/*" id="fileInput" name="foto" style="display:none">
           <div class="hint">Pilih kamera/galeri. Foto dikompresi otomatis.</div>
         </div>
 
@@ -154,7 +151,7 @@ map.on('locationerror',()=>alert('Izin lokasi ditolak. Geser peta manual.'));
 document.getElementById('btnPick').addEventListener('click',()=>{const c=map.getCenter(); lat.value=c.lat.toFixed(6); lng.value=c.lng.toFixed(6);});
 document.getElementById('btnPan').addEventListener('click',()=>{const la=+lat.value,lo=+lng.value; if(!Number.isNaN(la)&&!Number.isNaN(lo)) map.setView([la,lo],Math.max(map.getZoom(),16));});
 
-/* ===== Load JSON (encode + dulu kalau perlu) ===== */
+/* ===== Load JSON ===== */
 let BBWS={};
 (async()=>{
   const cands=['./balai_snvt_paket+wilayah.json','./balai_snvt_paket.json'];
@@ -179,13 +176,27 @@ snvt.addEventListener('change',()=>{const b=balai.value,s=snvt.value; if(!s){fil
   const m=collectMeta({b,s}); prov.value=m.provinsi||''; fillSelect(kab,m.kabList,'-- pilih Kabupaten/Kota --'); kab.disabled=m.kabList.length===0;});
 paket.addEventListener('change',()=>{const m=collectMeta({b:balai.value,s:snvt.value,p:paket.value}); if(m.provinsi||m.kabList.length){prov.value=m.provinsi||prov.value; fillSelect(kab,m.kabList,'-- pilih Kabupaten/Kota --'); kab.disabled=m.kabList.length===0;}});
 
-/* ===== Foto + kompresi ===== */
-let selectedFile=null; const cam=document.getElementById('fileCamera'), gal=document.getElementById('fileGallery'), metaEl=document.getElementById('photoMeta');
-document.getElementById('btnCamera').addEventListener('click',()=>cam.click());
-document.getElementById('btnGallery').addEventListener('click',()=>gal.click());
-function showMeta(f){metaEl.textContent=f?`Dipilih: ${f.name} • ${(f.size/1024).toFixed(1)} KB`:'';}
-cam.addEventListener('change',()=>{selectedFile=cam.files?.[0]||null; showMeta(selectedFile);});
-gal.addEventListener('change',()=>{selectedFile=gal.files?.[0]||null; showMeta(selectedFile);});
+/* ===== Foto + kompresi (1 input name="foto") ===== */
+const fileInput = document.getElementById('fileInput');
+const photoMeta = document.getElementById('photoMeta');
+let selectedFile = null;
+
+// tombol kamera → tambahkan attribute capture
+document.getElementById('btnCamera').addEventListener('click',()=>{
+  fileInput.setAttribute('capture','environment');
+  fileInput.click();
+});
+// tombol galeri → hapus attribute capture
+document.getElementById('btnGallery').addEventListener('click',()=>{
+  fileInput.removeAttribute('capture');
+  fileInput.click();
+});
+
+fileInput.addEventListener('change',()=>{
+  selectedFile = fileInput.files?.[0] || null;
+  photoMeta.textContent = selectedFile ? `Dipilih: ${selectedFile.name} • ${(selectedFile.size/1024).toFixed(1)} KB` : '';
+});
+
 async function compressImage(file,{maxDim=2000,quality=0.82,mime='image/jpeg'}={}){ try{
   if(!(file&&file.type&&file.type.startsWith('image/'))) return file; let bitmap; if(window.createImageBitmap){bitmap=await createImageBitmap(file,{imageOrientation:'from-image'});}
   const dims=f=>new Promise((res,rej)=>{const i=new Image(); i.onload=()=>res({w:i.width,h:i.height}); i.onerror=rej; i.src=URL.createObjectURL(f);});
@@ -195,54 +206,38 @@ async function compressImage(file,{maxDim=2000,quality=0.82,mime='image/jpeg'}={
   const blob=await new Promise(r=>c.toBlob(r,mime,quality)); if(!blob||blob.size>=file.size) return file; const name=(file.name.replace(/\.(jpe?g|png|webp|heic|heif)$/i,'')||'foto')+'.jpg'; return new File([blob],name,{type:mime});
 }catch(e){console.warn('compress fail',e); return file;}}
 
-/* ===== Submit via XHR (progress asli) ===== */
+/* ===== Submit via XHR (progress) ===== */
 form.addEventListener('submit', async (e)=>{
   e.preventDefault();
   if(!balai.value||!snvt.value||!paket.value){toast('Lengkapi BALAI, SNVT, PAKET.'); return;}
   if(!lat.value||!lng.value){toast('Koordinat belum diisi.'); return;}
 
-  // siapkan file terkompres (jika ada)
-  const hidden = document.getElementById('hiddenFoto');
+  // jika ada foto → kompres & GANTI file pada input name="foto"
   if (selectedFile) {
     const photo = await compressImage(selectedFile,{maxDim:2000,quality:0.82});
-    const dt = new DataTransfer(); dt.items.add(photo); hidden.files = dt.files;
-  } else {
-    hidden.files = (new DataTransfer()).files;
+    const dt = new DataTransfer(); dt.items.add(photo); fileInput.files = dt.files;
+    photoMeta.textContent = `Akan dikirim: ${photo.name} • ${(photo.size/1024).toFixed(1)} KB`;
   }
 
-  // buat FormData dari form
   const fd = new FormData(form);
+  console.log('Foto di FormData:', fd.get('foto') && {name: fd.get('foto').name, size: fd.get('foto').size, type: fd.get('foto').type});
 
-  disableForm(true);
-  setUploadingUI({show:true, percent:5});
+  disableForm(true); setUploadingUI({show:true, percent:6});
 
   const xhr = new XMLHttpRequest();
   xhr.open('POST', ENDPOINT, true);
 
-  xhr.upload.onprogress = (ev) => {
-    if (ev.lengthComputable) {
-      const percent = (ev.loaded / ev.total) * 100;
-      setUploadingUI({show:true, percent});
-    }
-  };
+  xhr.upload.onprogress = (ev)=>{ if (ev.lengthComputable) setUploadingUI({show:true, percent:(ev.loaded/ev.total)*100}); };
   xhr.onloadstart = ()=> setUploadingUI({show:true, percent:5});
-  xhr.onreadystatechange = ()=> {
-    if (xhr.readyState === XMLHttpRequest.HEADERS_RECEIVED) {
-      setUploadingUI({show:true, percent:95});
-    }
-  };
-  xhr.onerror = ()=> {
-    setUploadingUI({show:false}); disableForm(false);
-    toast('❌ Gagal kirim (jaringan/proxy).');
-  };
-  xhr.onload = ()=> {
+  xhr.onreadystatechange = ()=>{ if (xhr.readyState === XMLHttpRequest.HEADERS_RECEIVED) setUploadingUI({show:true, percent:95}); };
+  xhr.onerror = ()=>{ setUploadingUI({show:false}); disableForm(false); toast('❌ Gagal kirim (jaringan/proxy).'); };
+
+  xhr.onload = ()=>{
     let data={}; try{ data = JSON.parse(xhr.responseText||'{}'); }catch(e){}
+    console.log('GAS response (via Worker):', data);
     if (xhr.status>=200 && xhr.status<300 && (data.ok===true || data.status==='ok')) {
-      setUploadingUI({show:true, percent:100});
-      toast('✅ Terkirim ke Google Sheet!');
-      console.log('GAS response (via Worker):', data); // data.fileUrl kalau ada foto
-      setTimeout(()=>{
-        setUploadingUI({show:false}); form.reset(); selectedFile=null; document.getElementById('photoMeta').textContent='';
+      setUploadingUI({show:true, percent:100}); toast('✅ Terkirim!');
+      setTimeout(()=>{ setUploadingUI({show:false}); form.reset(); selectedFile=null; photoMeta.textContent='';
         fillSelect(snvt,[], '-- pilih SNVT --'); snvt.disabled=true;
         fillSelect(paket,[], '-- pilih PAKET --'); paket.disabled=true;
         prov.value=''; fillSelect(kab,[], '-- pilih Kabupaten/Kota --'); kab.disabled=true;
@@ -250,12 +245,19 @@ form.addEventListener('submit', async (e)=>{
       }, 600);
     } else {
       setUploadingUI({show:false}); disableForm(false);
-      toast('❌ Gagal kirim (server). Cek console.');
-      console.error('Server error:', xhr.status, xhr.responseText);
+      toast('❌ Gagal kirim (server). Cek console.'); console.error('Server error:', xhr.status, xhr.responseText);
     }
   };
 
   xhr.send(fd);
+});
+
+/* ===== Reset ===== */
+document.getElementById('btnReset').addEventListener('click', ()=>{
+  selectedFile=null; photoMeta.textContent='';
+  fillSelect(snvt,[], '-- pilih SNVT --'); snvt.disabled=true;
+  fillSelect(paket,[], '-- pilih PAKET --'); paket.disabled=true;
+  prov.value=''; fillSelect(kab,[], '-- pilih Kabupaten/Kota --'); kab.disabled=true;
 });
 </script>
 </body>
