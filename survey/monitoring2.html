@@ -11,8 +11,6 @@
     #header{background:#FFD700;color:#000;padding:10px;font-weight:700;display:flex;align-items:center;gap:10px}
     #header img{height:36px}
     #map{height:calc(100% - 60px)}
-    .btn-refresh{position:absolute;top:70px;right:14px;z-index:1000;background:#22c55e;color:#01250f;
-                 padding:8px 12px;border:0;border-radius:8px;cursor:pointer;font-weight:700}
     .leaflet-popup-content table{border-collapse:collapse;font-size:13px}
     .leaflet-popup-content td{padding:2px 4px;vertical-align:top}
     .leaflet-popup-content td:first-child{color:#555;white-space:nowrap}
@@ -25,7 +23,6 @@
     KEMENTERIAN PEKERJAAN UMUM — DIREKTORAT JENDERAL SUMBER DAYA AIR — DIREKTORAT IRIGASI & RAWA
   </div>
   <div id="map"></div>
-  <button id="btnRefresh" class="btn-refresh">🔄 Refresh Data</button>
 
 <script>
 const ENDPOINT = 'https://gas-proxy.tuic1677.workers.dev'; // Worker proxy ke GAS ?mode=data
@@ -39,7 +36,6 @@ const baseImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/ser
 const labelsCARTO = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}.png',{
   maxZoom:20, pane:'labels', attribution:'© CARTO, © OpenStreetMap'
 });
-
 L.control.layers({"OSM Standard":baseOSM,"Esri Imagery":baseImagery},{"Labels (CARTO)":labelsCARTO}).addTo(map);
 baseImagery.addTo(map); labelsCARTO.addTo(map);
 
@@ -50,6 +46,7 @@ function popupHTML(p) {
     ['BALAI', p.balai], ['SNVT', p.snvt], ['PAKET', p.paket],
     ['Provinsi', p.provinsi], ['Kab/Kota', p.kabupaten],
     ['Kecamatan', p.kecamatan], ['Desa', p.desa],
+    ['Nama', p.nama], ['Telepon', p.telepon],
     ['Koordinat', `${p.lat}, ${p.lng}`],
     ['Waktu', new Date(p.timestamp).toLocaleString('id-ID')]
   ].filter(([,v]) => v && String(v).trim().length);
@@ -78,10 +75,14 @@ async function loadPoints(){
       latlngs.push([lat,lng]);
     });
     if(latlngs.length){ map.fitBounds(L.latLngBounds(latlngs).pad(0.2),{maxZoom:16}); }
-  }catch(e){console.error(e);alert('Gagal memuat data.');}
+  }catch(e){console.error(e);}
 }
-document.getElementById('btnRefresh').addEventListener('click',loadPoints);
-map.whenReady(loadPoints);
+
+// load awal + auto refresh tiap 1 menit
+map.whenReady(()=>{
+  loadPoints();
+  setInterval(loadPoints, 60000); // 60.000 ms = 1 menit
+});
 </script>
 </body>
 </html>
