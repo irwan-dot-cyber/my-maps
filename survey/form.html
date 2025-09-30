@@ -99,9 +99,9 @@
             <button type="button" id="btnGallery" class="ghost">🖼️ Galeri</button>
             <span id="photoMeta" class="hint"></span>
           </div>
-          <!-- HANYA 1 input file yang akan DIKIRIM -->
+          <!-- SATU input file yang DIKIRIM -->
           <input type="file" accept="image/*" id="fileInput" name="foto" style="display:none">
-          <div class="hint">Pilih kamera/galeri. Foto dikompresi otomatis.</div>
+          <div class="hint">Pilih kamera/galeri. Foto dikompresi otomatis & dikirim juga sebagai base64 fallback.</div>
         </div>
 
         <div class="row">
@@ -127,8 +127,8 @@
   </div>
 
 <script>
-/* ===== CONFIG: ganti dgn URL Cloudflare Worker kamu ===== */
-const ENDPOINT = 'https://gas-proxy.tuic1677.workers.dev/'; // <-- GANTI
+/* ===== CONFIG: ganti ke URL Cloudflare Worker kamu ===== */
+const ENDPOINT = 'https://gas-proxy.tuic1677.workers.dev/'; // <— GANTI kalau beda
 
 /* ===== Utils & UI ===== */
 const toast = (m)=>{const t=document.getElementById('toast');t.textContent=m;t.style.display='block';clearTimeout(window.__t);window.__t=setTimeout(()=>t.style.display='none',4000);};
@@ -151,7 +151,7 @@ map.on('locationerror',()=>alert('Izin lokasi ditolak. Geser peta manual.'));
 document.getElementById('btnPick').addEventListener('click',()=>{const c=map.getCenter(); lat.value=c.lat.toFixed(6); lng.value=c.lng.toFixed(6);});
 document.getElementById('btnPan').addEventListener('click',()=>{const la=+lat.value,lo=+lng.value; if(!Number.isNaN(la)&&!Number.isNaN(lo)) map.setView([la,lo],Math.max(map.getZoom(),16));});
 
-/* ===== Load JSON ===== */
+/* ===== Load JSON (BALAI/SNVT/PAKET) ===== */
 let BBWS={};
 (async()=>{
   const cands=['./balai_snvt_paket+wilayah.json','./balai_snvt_paket.json'];
@@ -159,8 +159,6 @@ let BBWS={};
   if(!data){toast('⚠️ Data BALAI tidak bisa dimuat.'); console.error(last); fillSelect(balai,[], '-- gagal memuat BALAI --'); return;}
   BBWS=data; fillSelect(balai,Object.keys(BBWS).sort(),'-- pilih BALAI --');
 })();
-
-/* ===== Prov/Kab Auto ===== */
 const parseKab=k=>Array.isArray(k)?uniq(k.map(s=>String(s).trim())):uniq(String(k||'').split(/\r?\n/).map(s=>s.replace(/^\s*-\s*/,'').trim()).filter(Boolean));
 function collectMeta({b=null,s=null,p=null}){ if(!b||!BBWS[b]) return{provinsi:'',kabList:[]}; let entries=[];
   if(s&&BBWS[b][s]){const arr=BBWS[b][s]||[]; if(p){const ch=arr.find(x=>(typeof x==='string'?x:(x.paket))===p); entries=ch?[ch]:arr;} else entries=arr;}
@@ -176,21 +174,13 @@ snvt.addEventListener('change',()=>{const b=balai.value,s=snvt.value; if(!s){fil
   const m=collectMeta({b,s}); prov.value=m.provinsi||''; fillSelect(kab,m.kabList,'-- pilih Kabupaten/Kota --'); kab.disabled=m.kabList.length===0;});
 paket.addEventListener('change',()=>{const m=collectMeta({b:balai.value,s:snvt.value,p:paket.value}); if(m.provinsi||m.kabList.length){prov.value=m.provinsi||prov.value; fillSelect(kab,m.kabList,'-- pilih Kabupaten/Kota --'); kab.disabled=m.kabList.length===0;}});
 
-/* ===== Foto + kompresi (1 input name="foto") ===== */
+/* ===== Foto + kompresi + base64 fallback ===== */
 const fileInput = document.getElementById('fileInput');
 const photoMeta = document.getElementById('photoMeta');
 let selectedFile = null;
 
-// tombol kamera → tambahkan attribute capture
-document.getElementById('btnCamera').addEventListener('click',()=>{
-  fileInput.setAttribute('capture','environment');
-  fileInput.click();
-});
-// tombol galeri → hapus attribute capture
-document.getElementById('btnGallery').addEventListener('click',()=>{
-  fileInput.removeAttribute('capture');
-  fileInput.click();
-});
+document.getElementById('btnCamera').addEventListener('click',()=>{ fileInput.setAttribute('capture','environment'); fileInput.click(); });
+document.getElementById('btnGallery').addEventListener('click',()=>{ fileInput.removeAttribute('capture'); fileInput.click(); });
 
 fileInput.addEventListener('change',()=>{
   selectedFile = fileInput.files?.[0] || null;
@@ -212,26 +202,29 @@ form.addEventListener('submit', async (e)=>{
   if(!balai.value||!snvt.value||!paket.value){toast('Lengkapi BALAI, SNVT, PAKET.'); return;}
   if(!lat.value||!lng.value){toast('Koordinat belum diisi.'); return;}
 
-  // jika ada foto → kompres & GANTI file pada input name="foto"
+  // kompres & siapkan fallback base64
+  let b64 = ''; let photo = null;
   if (selectedFile) {
-    const photo = await compressImage(selectedFile,{maxDim:2000,quality:0.82});
+    photo = await compressImage(selectedFile,{maxDim:2000,quality:0.82});
+    // ganti file di input (multipart)
     const dt = new DataTransfer(); dt.items.add(photo); fileInput.files = dt.files;
+    // base64 fallback
+    b64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload=()=>res(String(r.result)); r.onerror=rej; r.readAsDataURL(photo); });
     photoMeta.textContent = `Akan dikirim: ${photo.name} • ${(photo.size/1024).toFixed(1)} KB`;
   }
 
   const fd = new FormData(form);
+  if (b64) { fd.set('foto_b64', b64); fd.set('foto_name', photo.name); fd.set('foto_type', photo.type); }
   console.log('Foto di FormData:', fd.get('foto') && {name: fd.get('foto').name, size: fd.get('foto').size, type: fd.get('foto').type});
 
   disableForm(true); setUploadingUI({show:true, percent:6});
 
   const xhr = new XMLHttpRequest();
   xhr.open('POST', ENDPOINT, true);
-
   xhr.upload.onprogress = (ev)=>{ if (ev.lengthComputable) setUploadingUI({show:true, percent:(ev.loaded/ev.total)*100}); };
   xhr.onloadstart = ()=> setUploadingUI({show:true, percent:5});
   xhr.onreadystatechange = ()=>{ if (xhr.readyState === XMLHttpRequest.HEADERS_RECEIVED) setUploadingUI({show:true, percent:95}); };
   xhr.onerror = ()=>{ setUploadingUI({show:false}); disableForm(false); toast('❌ Gagal kirim (jaringan/proxy).'); };
-
   xhr.onload = ()=>{
     let data={}; try{ data = JSON.parse(xhr.responseText||'{}'); }catch(e){}
     console.log('GAS response (via Worker):', data);
@@ -248,7 +241,6 @@ form.addEventListener('submit', async (e)=>{
       toast('❌ Gagal kirim (server). Cek console.'); console.error('Server error:', xhr.status, xhr.responseText);
     }
   };
-
   xhr.send(fd);
 });
 
