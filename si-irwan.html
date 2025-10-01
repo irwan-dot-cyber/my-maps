@@ -1,81 +1,112 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Si-Irwan — Sistem Informasi Irigasi & Rawa Nasional</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sistem Informasi Irigasi dan Rawa Nasional (Si-Irwan)</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
-  :root{--gold:#FFD700;--ink:#0b1224;--glass:#0b1224cc}
-  *{box-sizing:border-box} html,body{margin:0;background:var(--ink);color:#e5e7eb;font-family:Inter,system-ui,Segoe UI,Roboto,Arial}
-  /* topbar simple */
-  .topbar{padding:14px 18px;border-bottom:1px solid #1f2937;background:#0f172a}
-  .brand{display:flex;align-items:center;gap:10px;font-weight:800}
-  .brand img{height:36px}
-  .brand small{display:block;font-size:11px;color:#9aa3af;font-weight:600}
-  /* HERO dengan background gambar */
-  .hero{position:relative;min-height:60vh;display:grid;place-items:center;overflow:hidden}
-  .hero::before{
-    content:"";position:absolute;inset:0;
-    /* ganti URL di bawah dengan path gambarmu */
-    background:
-      linear-gradient(180deg, rgba(11,18,36,.55) 0%, rgba(11,18,36,.75) 55%, rgba(11,18,36,.9) 100%),
-      url("https://irwan-dot-cyber.github.io/my-maps/assets/bg_irigasi.jpg") center/cover no-repeat;
-    filter:saturate(110%);
-  }
-  .hero .wrap{position:relative;max-width:1100px;padding:36px 18px;width:100%}
-  .badge{display:inline-block;background:#0b2a1a;border:1px solid #14532d;color:#bbf7d0;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:700}
-  h1{margin:12px 0 8px;font-size:40px;line-height:1.05}
-  .gold{color:var(--gold)}
-  .lead{max-width:720px;color:#cbd5e1}
-  .cta{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap}
-  .btn{display:inline-block;padding:12px 16px;border-radius:12px;border:1px solid #2a3648;background:#172036;color:#e5e7eb;font-weight:700;text-decoration:none}
-  .btn.primary{background:linear-gradient(90deg,#22c55e,#4ade80);color:#06280f;border-color:#1a2e22}
-  /* panel kanan opsional (mis. feed IG) */
-  .hero-grid{display:grid;gap:18px}
-  @media(min-width:980px){.hero-grid{grid-template-columns:1.25fr .9fr}}
-  .panel{background:var(--glass);backdrop-filter:blur(6px);border:1px solid #243244;border-radius:14px;padding:16px}
+:root {
+  --primary: #007bff; /* biru cerah */
+  --secondary: #ffd700; /* kuning PUPR */
+  --bg: #f4f8fb;
+  --text: #1a1a1a;
+}
+* {box-sizing:border-box;}
+body {
+  margin:0; font-family: 'Segoe UI', Arial, sans-serif;
+  background: var(--bg); color:var(--text);
+}
+header {
+  background: linear-gradient(90deg, var(--primary), #00bfff);
+  color: #fff; padding:16px 24px;
+  display:flex; align-items:center; gap:14px;
+}
+header img {height:40px;}
+header h1 {margin:0;font-size:22px;font-weight:700;}
+nav {
+  background:#fff;
+  display:flex; flex-wrap:wrap; gap:20px; padding:10px 24px;
+  box-shadow:0 2px 6px rgba(0,0,0,0.08);
+}
+nav a {
+  text-decoration:none; color:var(--primary); font-weight:600;
+}
+.hero {
+  background: url('your-background.jpg') center/cover no-repeat;
+  padding:60px 20px; text-align:center; color:#fff;
+  background-blend-mode: multiply;
+  background-color: rgba(0, 123, 255, 0.45);
+}
+.hero h2 {font-size:36px;margin-bottom:10px;font-weight:800;}
+.hero p {max-width:700px;margin:0 auto 20px;}
+.hero .btn {
+  background:var(--secondary);color:#000;padding:12px 24px;border-radius:8px;
+  font-weight:700;text-decoration:none;
+}
+section {
+  max-width:1100px;margin:40px auto;padding:0 20px;
+}
+.cards {
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:20px;
+}
+.card {
+  background:#fff; padding:20px; border-radius:12px;
+  box-shadow:0 4px 14px rgba(0,0,0,0.08);
+  transition:transform 0.2s;
+}
+.card:hover {transform:translateY(-4px);}
+.card h3 {margin-top:0;font-size:18px;color:var(--primary);}
+.card p {font-size:14px;color:#444;}
+footer {
+  text-align:center;padding:16px;background:#f1f1f1;
+  font-size:13px;color:#555;
+}
 </style>
 </head>
 <body>
 
-  <div class="topbar">
-    <div class="brand">
-      <img src="https://iconape.com/wp-content/png_logo_vector/pu-logo.png" alt="PU">
-      <div>Si-Irwan <small>Sistem Informasi Irigasi & Rawa Nasional</small></div>
+<header>
+  <img src="https://iconape.com/wp-content/png_logo_vector/pu-logo.png" alt="PU Logo">
+  <h1>Sistem Informasi Irigasi & Rawa Nasional (Si-Irwan)</h1>
+</header>
+
+<nav>
+  <a href="#">Beranda</a>
+  <a href="#">Pelaksanaan Inpres</a>
+  <a href="#">Data Curah Hujan</a>
+  <a href="#">Produksi Padi</a>
+  <a href="#">Kontak</a>
+</nav>
+
+<div class="hero" style="background-image:url('https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/design/bg-irigasi.jpg');">
+  <h2>Selamat Datang di Si-Irwan</h2>
+  <p>Sistem Informasi Irigasi dan Rawa Nasional untuk monitoring pelaksanaan Inpres, survei lapangan, data curah hujan, dan sebaran produksi padi secara real-time.</p>
+  <a class="btn" href="#pelaksanaan">Lihat Dashboard</a>
+</div>
+
+<section id="fitur">
+  <h2 style="text-align:center;color:var(--primary);margin-bottom:30px;">Fitur Utama</h2>
+  <div class="cards">
+    <div class="card">
+      <h3><i class="fas fa-map-marked-alt"></i> Pelaksanaan Inpres</h3>
+      <p>Monitoring progres pembangunan irigasi dan rawa pada Tahap 1, 2, dan 3. Dilengkapi form survei lapangan dan peta interaktif.</p>
+    </div>
+    <div class="card">
+      <h3><i class="fas fa-cloud-rain"></i> Data Curah Hujan</h3>
+      <p>Pantau data curah hujan terkini untuk mendukung analisis ketersediaan air dan perencanaan infrastruktur irigasi.</p>
+    </div>
+    <div class="card">
+      <h3><i class="fas fa-seedling"></i> Produksi Padi</h3>
+      <p>Lihat sebaran produksi padi per kabupaten untuk mendukung ketahanan pangan nasional.</p>
     </div>
   </div>
+</section>
 
-  <section class="hero">
-    <div class="wrap hero-grid">
-      <div class="panel">
-        <span class="badge">Direktorat Irigasi & Rawa — DJ SDA</span>
-        <h1>Platform <span class="gold">Operasional & Monitoring</span><br/>Infrastruktur Irigasi & Rawa</h1>
-        <p class="lead">Entri survei lapangan (foto + koordinat), pemantauan progres real-time berbasis peta, serta integrasi data hidrologi & produksi pangan.</p>
-        <div class="cta">
-          <a class="btn primary" href="./form.html">Mulai Survei Tahap 2</a>
-          <a class="btn" href="./monitoring2.html">Lihat Peta Monitoring</a>
-        </div>
-      </div>
+<footer>
+  &copy; 2025 Kementerian Pekerjaan Umum & Perumahan Rakyat — Direktorat Jenderal SDA
+</footer>
 
-      <!-- Panel kanan (opsional) untuk feed Instagram / kartu info lain -->
-      <aside class="panel">
-        <b>@pu_sda</b>
-        <div style="font-size:13px;color:#aeb6c3;margin-top:4px">Terbaru dari Instagram</div>
-        <div id="igGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px"></div>
-      </aside>
-    </div>
-  </section>
-
-  <script>
-    // Kalau sudah siap feed IG via worker, render di sini. Untuk sekarang placeholder:
-    const grid = document.getElementById('igGrid');
-    for(let i=0;i<9;i++){
-      const ph = document.createElement('div');
-      ph.style.cssText = "aspect-ratio:1/1;border-radius:8px;background:#0b1224;border:1px solid #243244";
-      grid.appendChild(ph);
-    }
-  </script>
 </body>
 </html>
