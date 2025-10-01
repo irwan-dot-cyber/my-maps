@@ -1,111 +1,134 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sistem Informasi Irigasi dan Rawa Nasional (Si-Irwan)</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sistem Informasi Irigasi & Rawa Nasional (Si-Irwan)</title>
 <style>
-:root {
-  --primary: #004080; /* biru agak gelap */
-  --secondary: #ffd700; /* kuning PUPR */
-  --bg: #f4f8fb;
-  --text: #1a1a1a;
-}
-* {box-sizing:border-box;}
-body {
-  margin:0; font-family: 'Segoe UI', Arial, sans-serif;
-  background: var(--bg); color:var(--text);
-}
-header {
-  background: linear-gradient(90deg, var(--primary), #0066cc);
-  color: #fff; padding:16px 24px;
-  display:flex; align-items:center; gap:14px;
-}
-header img {height:40px;}
-header h1 {margin:0;font-size:22px;font-weight:700;}
-nav {
-  background:#fff;
-  display:flex; flex-wrap:wrap; gap:20px; padding:10px 24px;
-  box-shadow:0 2px 6px rgba(0,0,0,0.08);
-}
-nav a {
-  text-decoration:none; color:var(--primary); font-weight:600;
-}
-.hero {
-  background: url('https://irwan-dot-cyber.github.io/my-maps/assets/bg_irigasi.jpg') center/cover no-repeat;
-  padding:60px 20px; text-align:center; color:#fff;
-  background-blend-mode: multiply;
-  background-color: rgba(0, 64, 128, 0.5);
-}
-.hero h2 {font-size:36px;margin-bottom:10px;font-weight:800;}
-.hero p {max-width:700px;margin:0 auto 20px;}
-.hero .btn {
-  background:var(--secondary);color:#000;padding:12px 24px;border-radius:8px;
-  font-weight:700;text-decoration:none;
-}
-section {
-  max-width:1100px;margin:40px auto;padding:0 20px;
-}
-.cards {
-  display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
-  gap:20px;
-}
-.card {
-  background:#fff; padding:20px; border-radius:12px;
-  box-shadow:0 4px 14px rgba(0,0,0,0.08);
-  transition:transform 0.2s;
-}
-.card:hover {transform:translateY(-4px);}
-.card h3 {margin-top:0;font-size:18px;color:var(--primary);}
-.card p {font-size:14px;color:#444;}
-footer {
-  text-align:center;padding:16px;background:#f1f1f1;
-  font-size:13px;color:#555;
-}
+  /* ---- Reset & Variabel ---- */
+  :root {
+    --blue-dark: #0f3057;
+    --blue: #005f99;
+    --blue-light: #008fc9;
+    --text-light: #f8fafc;
+  }
+  * { box-sizing: border-box; margin:0; padding:0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; color: var(--text-light); background: var(--blue-dark) url('https://irwan-dot-cyber.github.io/my-maps/img/irigasi-bg.jpg') center/cover fixed; }
+
+  /* ---- Header ---- */
+  #header {
+    background: rgba(0,0,0,.5);
+    display: flex; align-items: center; gap:10px;
+    padding:10px 20px;
+  }
+  #header img { height:48px; }
+  #header .header-text .line1 { font-size:14px; font-weight:600; }
+  #header .header-text .line2 { font-size:13px; }
+  #header .header-text .line3 { font-size:12px; opacity:0.9; }
+
+  /* ---- Navbar ---- */
+  nav {
+    background: var(--blue);
+    display:flex; justify-content:space-between; align-items:center;
+    padding: 10px 20px; position:sticky; top:0; z-index:1000;
+  }
+  .brand { font-size:18px; font-weight:700; }
+  .menu { display:flex; gap:16px; }
+  .menu a { color:#fff; text-decoration:none; font-weight:500; }
+  .menu-toggle { display:none; font-size:22px; cursor:pointer; }
+
+  /* ---- Sidebar mobile ---- */
+  #sidebar {
+    position:fixed; top:0; left:-260px; width:260px; height:100%;
+    background: var(--blue); transition: left .3s ease; padding:20px;
+    display:flex; flex-direction:column; gap:12px; z-index:9999;
+  }
+  #sidebar a { color:#fff; text-decoration:none; font-weight:500; padding:6px 0; }
+  #sidebar.show { left:0; }
+
+  /* ---- Hero ---- */
+  .hero {
+    text-align:center;
+    padding:60px 20px;
+    background: rgba(0,0,0,0.5);
+  }
+  .hero h1 { font-size:32px; margin-bottom:10px; }
+  .hero p { font-size:16px; max-width:600px; margin:0 auto; }
+
+  /* ---- Instagram Section ---- */
+  .instagram-section {
+    background: rgba(0,0,0,.45);
+    padding:40px 20px;
+  }
+  .instagram-section h2 { text-align:center; font-size:22px; margin-bottom:20px; }
+  .instagram-feed { max-width:1000px; margin:0 auto; }
+  .instagram-feed iframe { width:100%; border:none; overflow:hidden; }
+
+  /* ---- Footer ---- */
+  footer {
+    background:rgba(0,0,0,.6);
+    text-align:center; padding:16px;
+    font-size:13px;
+  }
+
+  /* ---- Responsive ---- */
+  @media (max-width:768px){
+    .menu { display:none; }
+    .menu-toggle { display:block; }
+  }
 </style>
+<script>
+function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('show'); }
+</script>
 </head>
 <body>
 
-<header>
-  <img src="https://iconape.com/wp-content/png_logo_vector/pu-logo.png" alt="PU Logo">
-  <h1>Sistem Informasi Irigasi & Rawa Nasional (Si-Irwan)</h1>
-</header>
-
-<nav>
-  <a href="#">Beranda</a>
-  <a href="#">Pelaksanaan Inpres</a>
-  <a href="#">Data Curah Hujan</a>
-  <a href="#">Produksi Padi</a>
-  <a href="#">Kontak</a>
-</nav>
-
-<div class="hero">
-  <h2>Selamat Datang di Si-Irwan</h2>
-  <p>Sistem Informasi Irigasi dan Rawa Nasional untuk monitoring pelaksanaan Inpres, survei lapangan, data curah hujan, dan sebaran produksi padi secara real-time.</p>
-  <a class="btn" href="#fitur">Lihat Dashboard</a>
+<!-- Header -->
+<div id="header">
+  <img src="https://iconape.com/wp-content/png_logo_vector/pu-logo.png" alt="Logo PU">
+  <div class="header-text">
+    <div class="line1">Kementerian Pekerjaan Umum</div>
+    <div class="line2">Direktorat Jenderal Sumber Daya Air</div>
+    <div class="line3">Direktorat Irigasi dan Rawa</div>
+  </div>
 </div>
 
-<section id="fitur">
-  <h2 style="text-align:center;color:var(--primary);margin-bottom:30px;">Fitur Utama</h2>
-  <div class="cards">
-    <div class="card">
-      <h3><i class="fas fa-map-marked-alt"></i> Pelaksanaan Inpres</h3>
-      <p>Monitoring progres pembangunan irigasi dan rawa pada Tahap 1, 2, dan 3. Dilengkapi form survei lapangan dan peta interaktif.</p>
-    </div>
-    <div class="card">
-      <h3><i class="fas fa-cloud-rain"></i> Data Curah Hujan</h3>
-      <p>Pantau data curah hujan terkini untuk mendukung analisis ketersediaan air dan perencanaan infrastruktur irigasi.</p>
-    </div>
-    <div class="card">
-      <h3><i class="fas fa-seedling"></i> Produksi Padi</h3>
-      <p>Lihat sebaran produksi padi per kabupaten untuk mendukung ketahanan pangan nasional.</p>
-    </div>
+<!-- Navbar -->
+<nav>
+  <div class="brand">Si-Irwan</div>
+  <div class="menu">
+    <a href="#inpres">Pelaksanaan Inpres</a>
+    <a href="https://irwan-dot-cyber.github.io/my-maps/hujan/index.html" target="_blank">Data Curah Hujan</a>
+    <a href="https://irwan-dot-cyber.github.io/my-maps/padi/index.html" target="_blank">Sebaran Produksi Padi</a>
+  </div>
+  <div class="menu-toggle" onclick="toggleSidebar()">☰</div>
+</nav>
+
+<!-- Sidebar Mobile -->
+<div id="sidebar">
+  <a href="javascript:toggleSidebar()">✕ Tutup</a>
+  <a href="#inpres">Pelaksanaan Inpres</a>
+  <a href="https://irwan-dot-cyber.github.io/my-maps/hujan/index.html" target="_blank">Data Curah Hujan</a>
+  <a href="https://irwan-dot-cyber.github.io/my-maps/padi/index.html" target="_blank">Sebaran Produksi Padi</a>
+</div>
+
+<!-- Hero -->
+<section class="hero">
+  <h1>Sistem Informasi Irigasi & Rawa Nasional</h1>
+  <p>Platform terpadu untuk mendukung data dan informasi pada sektor irigasi dan rawa di seluruh Indonesia.</p>
+</section>
+
+<!-- Instagram -->
+<section class="instagram-section">
+  <h2>Instagram @pu_sda</h2>
+  <div class="instagram-feed">
+    <!-- Ganti src dengan kode embed SnapWidget -->
+    <iframe src="https://snapwidget.com/embed/1070990" allowtransparency="true" scrolling="no"></iframe>
   </div>
 </section>
 
 <footer>
-  &copy; 2025 Kementerian Pekerjaan Umum & Perumahan Rakyat — Direktorat Jenderal SDA
+  &copy; 2025 Direktorat Irigasi dan Rawa — Kementerian PUPR
 </footer>
 
 </body>
