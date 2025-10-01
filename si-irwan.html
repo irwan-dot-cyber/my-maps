@@ -5,130 +5,97 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Sistem Informasi Irigasi & Rawa Nasional (Si-Irwan)</title>
 <style>
-  :root { --blue-dark:#0f3057; --blue:#005f99; --text-light:#f8fafc; }
+  :root { --blue-dark:#0f3057; --blue:#0b4e82; --text:#f8fafc; --card-bg:rgba(0,0,0,.45); }
   *{box-sizing:border-box;margin:0;padding:0}
   body{
-    font-family:'Segoe UI',Arial,sans-serif; color:var(--text-light);
-    /* pakai gradient + image supaya kalau image 404 tetap ada background */
+    font-family:'Segoe UI',Arial,sans-serif; color:var(--text);
     background:
       linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.55)),
       url('https://irwan-dot-cyber.github.io/my-maps/assets/irigasi_bg.jpg') center/cover fixed,
       #0f3057;
   }
+  /* Header PU */
   #header{background:rgba(0,0,0,.5);display:flex;align-items:center;gap:10px;padding:10px 20px}
   #header img{height:48px}
-  #header .header-text .line1{font-size:14px;font-weight:600}
-  #header .header-text .line2{font-size:13px}
-  #header .header-text .line3{font-size:12px;opacity:.9}
+  #header .line1{font-size:14px;font-weight:600}
+  #header .line2{font-size:13px}
+  #header .line3{font-size:12px;opacity:.9}
 
+  /* Nav */
   nav{background:var(--blue);display:flex;justify-content:space-between;align-items:center;padding:10px 20px;position:sticky;top:0;z-index:1000}
-  .brand{font-size:18px;font-weight:700}
+  .brand{font-size:18px;font-weight:800}
   .menu{display:flex;gap:16px}
-  .menu a{color:#fff;text-decoration:none;font-weight:500}
+  .menu a{color:#fff;text-decoration:none;font-weight:600}
   .menu-toggle{display:none;font-size:22px;cursor:pointer}
-
   .dropdown{position:relative}
-  .dropdown > a::after{content:" ▾";font-size:12px}
+  .dropdown>a::after{content:" ▾";font-size:12px}
   .dropdown-content{
-    display:none;position:absolute;background:var(--blue);top:100%;left:0;min-width:160px;z-index:1000;
-    border-radius:6px;box-shadow:0 4px 10px rgba(0,0,0,.2)
+    display:none;position:absolute;background:var(--blue);top:100%;left:0;min-width:180px;z-index:1000;
+    border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.25);overflow:hidden
   }
-  .dropdown-content a{display:block;padding:6px 12px;color:#fff;text-decoration:none}
-  .dropdown-content a:hover{background:rgba(255,255,255,.1)}
+  .dropdown-content a{display:block;padding:8px 12px;color:#fff;text-decoration:none}
   .dropdown:hover .dropdown-content{display:block}
 
+  /* Sidebar mobile */
   #sidebar{position:fixed;top:0;left:-260px;width:260px;height:100%;background:var(--blue);transition:left .3s ease;padding:20px;display:flex;flex-direction:column;gap:12px;z-index:9999}
-  #sidebar a{color:#fff;text-decoration:none;font-weight:500;padding:6px 0}
+  #sidebar a{color:#fff;text-decoration:none;font-weight:600;padding:6px 0}
   #sidebar.show{left:0}
 
-  .hero{text-align:center;padding:60px 20px;background:rgba(0,0,0,.45)}
-  .hero h1{font-size:32px;margin-bottom:10px}
-  .hero p{font-size:16px;max-width:640px;margin:0 auto}
+  /* Hero */
+  .hero{padding:64px 20px;text-align:center;background:var(--card-bg)}
+  .hero h1{font-size:34px;letter-spacing:.2px;margin-bottom:8px}
+  .hero p{max-width:760px;margin:0 auto;font-size:16px;opacity:.95}
 
-  .instagram-section{background:rgba(0,0,0,.45);padding:40px 20px}
-  .instagram-section h2{text-align:center;font-size:22px;margin-bottom:20px}
-  #instafeed{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;max-width:1000px;margin:0 auto}
-  #instafeed a img{width:100%;border-radius:8px;display:block}
+  /* Highlight cards */
+  .section{padding:28px 20px;background:var(--card-bg)}
+  .grid{max-width:1100px;margin:0 auto;display:grid;gap:14px;grid-template-columns:repeat(12,1fr)}
+  .card{
+    grid-column: span 12; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
+    border-radius:14px; padding:16px; backdrop-filter: blur(3px);
+  }
+  .card h3{margin-bottom:6px}
+  .card p{opacity:.95}
+  .card .actions{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+  .btn{background:#22c55e;color:#052e16;border:0;border-radius:10px;padding:8px 12px;font-weight:800;text-decoration:none}
+  .btn.ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.25)}
+  .mini{font-size:12px;opacity:.9}
+  .two{grid-column:span 12}
+  @media(min-width:720px){
+    .two{grid-column:span 6}
+  }
 
   footer{background:rgba(0,0,0,.6);text-align:center;padding:16px;font-size:13px}
   .counter{display:inline-flex;gap:6px;align-items:center;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);margin-left:8px}
   .counter b{font-weight:800}
-
   @media(max-width:768px){.menu{display:none}.menu-toggle{display:block}}
 </style>
 <script>
 function toggleSidebar(){document.getElementById('sidebar').classList.toggle('show');}
 
-// ====== CONFIG: ganti dgn URL Worker kamu ======
-const IG_RSS_PROXY = 'https://instagram.tuic1677.workers.dev/';   // <- ganti
-const COUNTER_URL  = 'https://counter.tuic1677.workers.dev/';     // <- ganti
-
-// ----- Load Instagram Feed via Worker (proxy RSSHub) -----
-async function loadInsta(){
-  try{
-    const res = await fetch(IG_RSS_PROXY, { cache: 'no-store' });
-    if (!res.ok) throw new Error('HTTP '+res.status);
-    const text = await res.text();
-    const xml = new DOMParser().parseFromString(text, "application/xml");
-    const items = xml.querySelectorAll("item");
-    const container = document.getElementById("instafeed");
-    if (!items.length) throw new Error('No items');
-
-    items.forEach((item,idx)=>{
-      if (idx < 12) {
-        const link = item.querySelector("link")?.textContent || '#';
-        const desc = item.querySelector("description")?.textContent || "";
-        const img = desc.match(/src="([^"]+)"/i);
-        if (img) {
-          const a = document.createElement('a');
-          a.href = link; a.target = '_blank'; a.rel='noopener';
-          const im = document.createElement('img');
-          im.src = img[1]; im.loading = 'lazy'; im.alt = 'Posting IG';
-          a.appendChild(im);
-          container.appendChild(a);
-        }
-      }
-    });
-  }catch(e){
-    console.warn('IG feed error:', e);
-    document.getElementById("instafeed").innerHTML =
-      "<p style='text-align:center;color:#ccc'>Feed sementara tidak tersedia.</p>";
-  }
-}
-
-// ----- Visitor Counter via Worker (proxy CountAPI) -----
+/** Visitor counter (pakai worker kamu; ganti URL kalau perlu) */
+const COUNTER_URL = 'https://counter.tuic1677.workers.dev/?mode=hit'; // <- ganti kalau beda
 async function updateVisitorCounter(){
   const el = document.getElementById('visitorCount');
   try{
-    const r = await fetch(COUNTER_URL + '?mode=hit', { cache: 'no-store' });
-    const data = await r.json();
-    if (data && typeof data.value === 'number'){
-      el.textContent = data.value.toLocaleString('id-ID');
-      return;
-    }
-    throw new Error('Bad response');
-  }catch(err){
-    console.warn('Counter error:', err);
+    const r = await fetch(COUNTER_URL, { cache: 'no-store' });
+    const d = await r.json();
+    if (typeof d.value === 'number'){ el.textContent = d.value.toLocaleString('id-ID'); return; }
+    throw new Error('bad response');
+  }catch(e){
     // fallback lokal
-    try{
-      const k = 'vc_fallback'; let v = parseInt(localStorage.getItem(k) || '0', 10) || 0; v += 1;
-      localStorage.setItem(k, String(v)); el.textContent = v.toLocaleString('id-ID') + ' (lokal)';
-    }catch(e2){ el.textContent = '—'; }
+    const k='vc_fallback'; let v=parseInt(localStorage.getItem(k)||'0',10)||0; v+=1;
+    localStorage.setItem(k,String(v)); el.textContent = v.toLocaleString('id-ID')+' (lokal)';
   }
 }
-
-document.addEventListener('DOMContentLoaded', ()=>{
-  loadInsta();
-  updateVisitorCounter();
-});
+document.addEventListener('DOMContentLoaded', updateVisitorCounter);
 </script>
 </head>
 <body>
 
-<!-- Header -->
+<!-- Header PU -->
 <div id="header">
   <img src="https://iconape.com/wp-content/png_logo_vector/pu-logo.png" alt="Logo PU">
-  <div class="header-text">
+  <div>
     <div class="line1">Kementerian Pekerjaan Umum</div>
     <div class="line2">Direktorat Jenderal Sumber Daya Air</div>
     <div class="line3">Direktorat Irigasi dan Rawa</div>
@@ -143,8 +110,8 @@ document.addEventListener('DOMContentLoaded', ()=>{
       <a href="#">Pelaksanaan Inpres</a>
       <div class="dropdown-content">
         <a href="https://sigi.pu.go.id/portalpu/apps/experiencebuilder/experience/?id=68016c350cad43f3af3c0a55396be7a3" target="_blank" rel="noopener">Tahap 1</a>
-        <a href="#tahap2">Tahap 2</a>
-        <a href="#tahap3">Tahap 3</a>
+        <a href="#tahap-2">Tahap 2</a>
+        <a href="#tahap-3">Tahap 3</a>
       </div>
     </div>
     <a href="https://irwan-dot-cyber.github.io/my-maps/hujan/index.html" target="_blank" rel="noopener">Data Curah Hujan</a>
@@ -158,8 +125,8 @@ document.addEventListener('DOMContentLoaded', ()=>{
   <a href="javascript:toggleSidebar()">✕ Tutup</a>
   <div><b>Pelaksanaan Inpres</b></div>
   <a href="https://sigi.pu.go.id/portalpu/apps/experiencebuilder/experience/?id=68016c350cad43f3af3c0a55396be7a3" target="_blank" rel="noopener">Tahap 1</a>
-  <a href="#tahap2">Tahap 2</a>
-  <a href="#tahap3">Tahap 3</a>
+  <a href="#tahap-2">Tahap 2</a>
+  <a href="#tahap-3">Tahap 3</a>
   <hr>
   <a href="https://irwan-dot-cyber.github.io/my-maps/hujan/index.html" target="_blank" rel="noopener">Data Curah Hujan</a>
   <a href="https://irwan-dot-cyber.github.io/my-maps/padi/index.html" target="_blank" rel="noopener">Sebaran Produksi Padi</a>
@@ -168,17 +135,53 @@ document.addEventListener('DOMContentLoaded', ()=>{
 <!-- Hero -->
 <section class="hero">
   <h1>Sistem Informasi Irigasi & Rawa Nasional</h1>
-  <p>Platform terpadu untuk mendukung pemantauan dan pelaksanaan Inpres 2/2025 pada sektor irigasi dan rawa di seluruh Indonesia.</p>
+  <p>Platform terpadu untuk pemantauan dan pelaksanaan program Inpres serta analitik pendukung sektor irigasi dan rawa di Indonesia.</p>
 </section>
 
-<!-- Instagram -->
-<section class="instagram-section">
-  <h2>Instagram @pu_sda</h2>
-  <div id="instafeed"></div>
+<!-- Highlight (ganti feed Instagram) -->
+<section class="section">
+  <div class="grid">
+    <div class="card two">
+      <h3>Pelaksanaan Inpres</h3>
+      <p class="mini">Akses cepat ke setiap tahapan pelaksanaan.</p>
+      <div class="actions">
+        <a class="btn" href="https://sigi.pu.go.id/portalpu/apps/experiencebuilder/experience/?id=68016c350cad43f3af3c0a55396be7a3" target="_blank" rel="noopener">Tahap 1</a>
+        <a class="btn ghost" href="#tahap-2">Tahap 2</a>
+        <a class="btn ghost" href="#tahap-3">Tahap 3</a>
+      </div>
+    </div>
+
+    <div class="card two">
+      <h3>Analitik Spasial</h3>
+      <p class="mini">Data tematik untuk pengambilan keputusan.</p>
+      <div class="actions">
+        <a class="btn" href="https://irwan-dot-cyber.github.io/my-maps/hujan/index.html" target="_blank" rel="noopener">Curah Hujan</a>
+        <a class="btn ghost" href="https://irwan-dot-cyber.github.io/my-maps/padi/index.html" target="_blank" rel="noopener">Produksi Padi</a>
+      </div>
+    </div>
+
+    <div class="card two">
+      <h3>Monitoring & Survey</h3>
+      <p class="mini">Kumpulkan data lapangan dan pantau progres.</p>
+      <div class="actions">
+        <a class="btn" href="monitoring2.html" target="_blank" rel="noopener">Monitoring Peta</a>
+        <a class="btn ghost" href="survey/form.html" target="_blank" rel="noopener">Form Survey</a>
+      </div>
+    </div>
+
+    <div class="card two">
+      <h3>Dokumen & Informasi</h3>
+      <p class="mini">Standar teknis, pedoman, dan rilis singkat.</p>
+      <div class="actions">
+        <a class="btn ghost" href="#" onclick="alert('Segera tersedia');return false;">Pedoman Teknis</a>
+        <a class="btn ghost" href="#" onclick="alert('Segera tersedia');return false;">Rilis & Berita</a>
+      </div>
+    </div>
+  </div>
 </section>
 
 <footer>
-  &copy; 2025 Direktorat Irigasi dan Rawa — Kementerian PUPR
+  &copy; 2025 Direktorat Irigasi & Rawa — Kementerian PU
   <span class="counter" title="Total kunjungan halaman ini">
     👀 Jumlah Pengunjung: <b id="visitorCount">…</b>
   </span>
