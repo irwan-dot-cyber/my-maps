@@ -9,7 +9,7 @@
   html, body {height:100%; margin:0}
   #header { background:#FFD700; color:#000; padding:10px; display:flex; align-items:center; font-weight:700; font-size:14px }
   #header img {height:40px; margin-right:10px}
-  #map {height:calc(100% - 110px)}
+  #map {height:calc(100% - 140px)} /* naik 30px karena ada hit counter */
   #route-info { background:#f9f9f9; padding:8px; font-size:14px; border-top:1px solid #ccc }
 
   .top-controls { position:absolute; top:60px; left:60px; right:10px; display:flex; gap:10px; z-index:1000 }
@@ -33,6 +33,12 @@
     border:1px solid #ddd; padding:2px 4px;
   }
   .leaflet-top.leaflet-right .leaflet-control-layers { margin-top: 70px; }
+
+  /* HIT COUNTER */
+  #hit-counter {
+    border-top:1px solid #e5e5e5; background:#fafafa; padding:10px 12px;
+    font: 13px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color:#333
+  }
 </style>
 </head>
 <body>
@@ -53,28 +59,34 @@
 
 <div id="route-info">Jarak &amp; Waktu tempuh akan muncul di sini</div>
 
+<!-- === HIT COUNTER: tepat di bawah route-info === -->
+<div id="hit-counter"><span>👁️ Memuat hit counter…</span></div>
+
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
-// ===== KONFIG =====
+// ================== KONFIG ==================
 const GEOJSON_URL = "https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/Konut/KonaweUtara_JalanKabupaten.geojson";
-const DEFAULT_VIEW = [-1.5, 120.5];
-const DEFAULT_ZOOM = 8;
+const DEFAULT_VIEW = [-3.5, 122.0];
+const DEFAULT_ZOOM = 9;
 
-// Label strategy (KETAT)
-const SHOW_SOME_ZOOM = 14;    // < ini = 0 label
-const SHOW_ALL_ZOOM  = 18;    // >= ini = lebih banyak (tetap declutter)
-const MAX_LABELS     = 8;     // jumlah label saat zoom menengah
-const MIN_LABEL_DIST_PX = 140; // jarak min antar label
-const MIN_SCREEN_LEN_PX = 180; // ruas min panjang (px) agar layak dilabeli
+// Label strategy
+const SHOW_SOME_ZOOM = 14;
+const SHOW_ALL_ZOOM  = 18;
+const MAX_LABELS     = 10;
+const MIN_LABEL_DIST_PX = 140;
+const MIN_SCREEN_LEN_PX = 180;
 
-// ===== PETA =====
+// ================== PETA ==================
 const map = L.map('map', { zoomControl:true }).setView(DEFAULT_VIEW, DEFAULT_ZOOM);
 
-// Basemaps
-const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:20, attribution:'&copy; OpenStreetMap' }).addTo(map);
-const esriImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom:20, attribution:'&copy; Esri, Maxar' });
-const esriTopo    = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom:20, attribution:'&copy; Esri' });
-const esriLabels  = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom:20, attribution:'&copy; Esri' });
+const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  { maxZoom:20, attribution:'&copy; OpenStreetMap' }).addTo(map);
+const esriImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  { maxZoom:20, attribution:'&copy; Esri, Maxar' });
+const esriTopo = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+  { maxZoom:20, attribution:'&copy; Esri' });
+const esriLabels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+  { maxZoom:20, attribution:'&copy; Esri' });
 
 L.control.layers(
   { "OSM Standard": osm, "Esri World Imagery (Citra)": esriImagery, "Esri Topographic": esriTopo },
@@ -82,22 +94,22 @@ L.control.layers(
   { position:'topright', collapsed:false }
 ).addTo(map);
 
-// ===== UTIL & STYLE =====
+// ================== UTIL & STYLE ==================
 const prop = (o,k)=> (o&&o[k]!=null&&String(o[k]).trim()!=="")? String(o[k]).trim() : "";
 
-/* garis merah, weight beda per Fungsi */
 function weightByFungsi(f){
   if(!f) return 3.5;
   const s = f.toLowerCase();
-  if(/arteri\s*primer/.test(s))      return 6;
-  if(/kolektor/.test(s))             return 4.5;
-  if(/lingkungan\s*primer/.test(s))  return 4;
-  if(/lokal\s*sekunder/.test(s))     return 3.5;
-  if(/lingkungan\s*sekunder/.test(s))return 2.8;
+  if(/arteri/.test(s))               return 6;
+  if(/kolektor/.test(s))             return 4.8;
+  if(/lingkungan\s*primer/.test(s))  return 4.2;
+  if(/lingkungan\s*sekunder/.test(s))return 3.8;
+  if(/lokal\s*primer/.test(s))       return 3.6;
+  if(/lokal\s*sekunder/.test(s))     return 3.2;
   return 3.5;
 }
 function styleLine(p){
-  const fg = (p.Fungsi ?? p.fungsi ?? "").toString();
+  const fg = prop(p,"Fungsi");
   return { color:"#e53935", weight: weightByFungsi(fg), opacity:0.95 };
 }
 function highlight(e){ const l=e.target; l.setStyle({weight: Math.max((l.options.weight||3.5)+2, 6.5), opacity:1}); l.bringToFront(); }
@@ -112,41 +124,33 @@ function haversine(lat1, lon1, lat2, lon2){
   return 2*R*Math.asin(Math.sqrt(a));
 }
 
-// ===== LAYERS & INDEX =====
+// ================== LAYERS & INDEX ==================
 const index = [];
 let fullBounds = null;
-
-// metadata tiap ruas
 const metas = []; // { layer, name, lengthM, tooltipCreated:false }
 
 const lines = L.geoJSON(null, {
   style: f => styleLine(f.properties||{}),
   onEachFeature: (feature, layer) => {
     const p = feature.properties || {};
-    let nama = prop(p,"Nm_Ruas") || prop(p,"Nama") || prop(p,"name") || "Tanpa Nama";
+    let nama = prop(p,"Nm_Ruas") || "Tanpa Nama";
     if(!/^(\s*Jl\.|\s*Jalan)/i.test(nama)) nama = "Jl. " + nama;
 
-    const propinsi = prop(p,"Propinsi") || prop(p,"Provinsi") || "-";
-    const status   = prop(p,"Status")   || "-";
-    const fungsi   = prop(p,"Fungsi")   || "-";
-    const panjang  = prop(p,"Panjang")  || prop(p,"Panjang_Km") || "";
-    const thn      = prop(p,"Thn_Data") || "-";
-    const mendukung= prop(p,"Mendukung")|| "-";
-    const ura      = prop(p,"Ura_Dukung") || "-";
+    const propinsi = prop(p,"Propinsi");
+    const kabkot   = prop(p,"Kab_Kot");
+    const kec      = prop(p,"Kecamatan");
+    const desa     = prop(p,"Desa_Kel");
+    const status   = prop(p,"Status");
+    const fungsi   = prop(p,"Fungsi");
+    const panjang  = prop(p,"Panjang");
+    const thn      = prop(p,"Thn_Data");
+    const mendukung= prop(p,"Mendukung");
+    const ura      = prop(p,"Ura_Dukung");
+    const tipeKeras= prop(p,"Tipe_Keras");
+    const lhrt     = prop(p,"LHRT");
+    const tipeJln  = prop(p,"Tipe_Jln");
 
-    const popup = `
-      <b>${nama}</b><br>
-      Propinsi: ${propinsi}<br>
-      Status: ${status}<br>
-      Fungsi: ${fungsi}<br>
-      Panjang: ${panjang || "-"}<br>
-      Tahun Data: ${thn}<br>
-      Mendukung: ${mendukung}<br>
-      Uraian: ${ura}
-    `;
-    layer.bindPopup(popup, {maxWidth: 360});
-
-    // hitung panjang (prioritas)
+    // Hitung panjang geodesik (fallback)
     const coords = (feature.geometry && feature.geometry.coordinates) || [];
     let len = 0;
     function sumLine(arr){
@@ -157,6 +161,27 @@ const lines = L.geoJSON(null, {
     }
     if(feature.geometry.type === "LineString"){ sumLine(coords); }
     else if(feature.geometry.type === "MultiLineString"){ coords.forEach(sumLine); }
+
+    const lenKmCalc = (len/1000).toFixed(3);
+    const panjangShow = panjang ? `${panjang} km <small style="color:#666">(≈ ${lenKmCalc} km kalkulasi)</small>` 
+                                : `${lenKmCalc} km (kalkulasi)`;
+
+    const popup = `
+      <b>${nama}</b><br>
+      Provinsi: ${propinsi || "-"}<br>
+      Kab/Kota: ${kabkot || "-"}<br>
+      Kecamatan: ${kec || "-"}<br>
+      Desa/Kel: ${desa || "-"}<br>
+      Status: ${status || "-"}<br>
+      Fungsi: ${fungsi || "-"}<br>
+      Tipe Permukaan: ${tipeKeras || "-"}<br>
+      LHRT: ${lhrt || "-"} | Tipe_Jln: ${tipeJln || "-"}<br>
+      Panjang: ${panjangShow}<br>
+      Tahun Data: ${thn || "-"}<br>
+      Mendukung: ${mendukung || "-"}<br>
+      Uraian: ${ura || "-"}
+    `;
+    layer.bindPopup(popup, {maxWidth: 380});
 
     metas.push({ layer, name:nama, lengthM:len, tooltipCreated:false });
 
@@ -170,20 +195,15 @@ const lines = L.geoJSON(null, {
   }
 }).addTo(map);
 
-const points = L.geoJSON(null).addTo(map);
-
-// ===== LOAD GEOJSON =====
+// ================== LOAD GEOJSON ==================
 fetch(GEOJSON_URL)
   .then(r => { if(!r.ok) throw new Error("Gagal memuat GeoJSON"); return r.json(); })
   .then(gj => {
     const feats = (gj && gj.features) ? gj.features : [];
     const lineFeats  = feats.filter(f => ["LineString","MultiLineString"].includes((f.geometry||{}).type));
-    const pointFeats = feats.filter(f => (f.geometry||{}).type==="Point");
-
     lines.addData({type:"FeatureCollection", features: lineFeats});
-    points.addData({type:"FeatureCollection", features: pointFeats});
 
-    const group = L.featureGroup([lines, points]);
+    const group = L.featureGroup([lines]);
     try { fullBounds = group.getBounds(); map.fitBounds(fullBounds, {padding:[20,20]}); }
     catch(e){ map.setView(DEFAULT_VIEW, DEFAULT_ZOOM); }
 
@@ -192,7 +212,7 @@ fetch(GEOJSON_URL)
   })
   .catch(err => { console.error(err); alert("Gagal memuat GeoJSON. Cek URL/format file."); });
 
-// ===== LABELS: CREATE/REMOVE DYNAMIC =====
+// ================== LABEL DINAMIS ==================
 map.on('zoomend moveend', updateLabels);
 map.on('zoomstart', removeAllLabels);
 
@@ -205,11 +225,8 @@ function removeAllLabels(){
 function updateLabels(){
   const z = map.getZoom();
   const bounds = map.getBounds();
-
-  // tak ada label di zoom kecil
   if(z < SHOW_SOME_ZOOM){ removeAllLabels(); return; }
 
-  // kandidat: on screen + cukup panjang di layar
   const candidates = metas.filter(m => {
     if(!m.layer.getBounds || !bounds.intersects(m.layer.getBounds())) return false;
     const pxLen = estimateScreenLengthPx(m.layer);
@@ -232,7 +249,6 @@ function updateLabels(){
     if(ok){ occupied.push(pt); chosen.push(m); }
   }
 
-  // apply: create for chosen, remove for others
   const chosenSet = new Set(chosen);
   metas.forEach(m => {
     const shouldShow = chosenSet.has(m);
@@ -246,7 +262,6 @@ function updateLabels(){
   });
 }
 
-// Estimasi panjang ruas (px) di layar
 function estimateScreenLengthPx(layer){
   const latlngs = layer.getLatLngs();
   if(!latlngs || !latlngs.length) return 0;
@@ -275,9 +290,13 @@ function labelAnchorPx(layer){
   }catch(e){ return null; }
 }
 
-// ===== LEGEND (tebal garis per Fungsi, semua merah) =====
+// ================== LEGENDA ==================
 function buildLegend(lineFeats){
-  const list = Array.from(new Set(lineFeats.map(f => (f.properties||{}).Fungsi).filter(Boolean)));
+  const list = Array.from(
+    new Set(
+      lineFeats.map(f => (f.properties||{}).Fungsi).filter(v => v!=null && String(v).trim()!=="")
+    )
+  ).sort();
   if(!list.length) return;
   const legend = L.control({position:"bottomright"});
   legend.onAdd = function(){
@@ -291,7 +310,7 @@ function buildLegend(lineFeats){
   legend.addTo(map);
 }
 
-// ===== SEARCH (dengan tombol clear) =====
+// ================== SEARCH ==================
 function onSearchInput(q){
   document.getElementById('clearBtn').style.display = q && q.length ? 'block' : 'none';
   showSuggestions(q);
@@ -324,6 +343,34 @@ function showSuggestions(q){
   });
   box.style.display = hits.length ? "block" : "none";
 }
+
+// ================== HIT COUNTER (CountAPI + localStorage) ==================
+(function(){
+  const el = document.getElementById('hit-counter');
+
+  const LS_KEY = 'konut_hit_local';
+  const localHits = (parseInt(localStorage.getItem(LS_KEY) || '0', 10) || 0) + 1;
+  localStorage.setItem(LS_KEY, String(localHits));
+
+  const NS  = 'konut-jaringan-jalan'; // namespace bebas
+  const KEY = encodeURIComponent(location.host + location.pathname);
+
+  el.innerHTML = `👁️ <b>Perangkat ini:</b> ${localHits.toLocaleString('id-ID')} • <span style="color:#888">Total: memuat…</span>`;
+
+  fetch(`https://api.countapi.xyz/hit/${NS}/${KEY}`)
+    .then(r => r.json())
+    .then(data => {
+      const total = (data && typeof data.value === 'number') ? data.value : null;
+      if (total !== null) {
+        el.innerHTML = `👁️ <b>Total kunjungan:</b> ${total.toLocaleString('id-ID')} • <b>Perangkat ini:</b> ${localHits.toLocaleString('id-ID')}`;
+      } else {
+        throw new Error('No value');
+      }
+    })
+    .catch(() => {
+      el.innerHTML = `👁️ <b>Perangkat ini:</b> ${localHits.toLocaleString('id-ID')} • <span style="color:#888">Total: offline</span>`;
+    });
+})();
 </script>
 </body>
 </html>
