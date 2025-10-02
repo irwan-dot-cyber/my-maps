@@ -348,21 +348,33 @@ function showSuggestions(q){
   box.style.display = hits.length ? "block" : "none";
 }
 
-// ===== HIT COUNTER (lokal/perangkat + total kasar via localStorage) =====
-(function hitCounter(){
-  const KEY_TOTAL = "jd_pergaf_hits_total";
-  const KEY_DEVICE = "jd_pergaf_hits_device";
-  // device count (persist di perangkat ini)
-  const device = Number(localStorage.getItem(KEY_DEVICE) || "0") + 1;
-  localStorage.setItem(KEY_DEVICE, String(device));
+// Total global (CountAPI) + perangkat ini (local)
+(function(){
+  const elTotal  = document.getElementById("hits-total");
+  const elDevice = document.getElementById("hits-device");
 
-  // total (kasar; per-browser). Untuk total global butuh backend.
-  const total = Number(localStorage.getItem(KEY_TOTAL) || "0") + 1;
-  localStorage.setItem(KEY_TOTAL, String(total));
+  // Hit perangkat ini (localStorage)
+  const DEV_KEY = "jd_pergaf_hits_device";
+  const deviceHits = Number(localStorage.getItem(DEV_KEY) || "0") + 1;
+  localStorage.setItem(DEV_KEY, String(deviceHits));
+  elDevice.textContent = deviceHits.toLocaleString('id-ID');
 
-  document.getElementById("hits-total").textContent = total.toLocaleString('id-ID');
-  document.getElementById("hits-device").textContent = device.toLocaleString('id-ID');
+  // Total global (CountAPI) — namespace bebas
+  const NS  = "jalan-daerah-pergaf"; // ganti kalau mau dipisah per proyek
+  const KEY = encodeURIComponent(location.host + location.pathname); // unik per halaman
+
+  fetch(`https://api.countapi.xyz/hit/${NS}/${KEY}`)
+    .then(r => r.json())
+    .then(d => {
+      const val = (d && typeof d.value === "number") ? d.value : null;
+      elTotal.textContent = (val ?? 0).toLocaleString('id-ID');
+    })
+    .catch(() => {
+      // fallback kalau offline/terblokir
+      elTotal.textContent = "offline";
+    });
 })();
+
 </script>
 </body>
 </html>
