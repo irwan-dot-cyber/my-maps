@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<title>Dashboard DI — GeoJSON × Google Sheets (SO_Integrasi)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+  html, body {height:100%; margin:0}
+  #app {display:grid; grid-template-columns: 320px 1fr; height:100%}
+  #side {padding:12px; border-right:1px solid #eee; overflow:auto}
+  #map {height:100%}
+  h1 {font:700 16px/1.3 system-ui, Arial}
+  .stat {display:grid; grid-template-columns:1fr auto; gap:6px; margin:6px 0}
+  .badge {display:inline-block; padding:2px 6px; border-radius:6px; background:#eef}
+  select, input {width:100%; padding:6px; margin:6px 0}
+  table.meta {border-collapse:collapse; width:100%; font:12px system-ui}
+  table.meta td {border-bottom:1px dashed #e5e5e5; padding:4px 2px; vertical-align:top}
+  table.meta td.key {color:#666; width:38%}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="side">
+    <h1>Dashboard Daerah Irigasi</h1>
+
+    <label>Filter Provinsi</label>
+    <select id="provSel"><option value="">— Semua —</option></select>
+
+    <label>Filter Kabupaten</label>
+    <select id="kabSel"><option value="">— Semua —</option></select>
+
+    <label>Cari Kode / Nama</label>
+    <input id="q" type="search" placeholder="ketik Kd_Inf / Nama DI"/>
+
+    <hr/>
+    <div id="stats"></div>
+  </div>
+  <div id="map"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ======== KONFIGURASI ========
+const GAS_BASE = "https://script.google.com/macros/s/AKfycbw8ebFcVOwMDSzryLRDnY-BDBC0GfHZW0d4XiBEBPCpBeO9GXXdt3yHlxxWhacf4VGRvA/exec";
+const GAS_URL  = `${GAS_BASE}?sheet=SO_Integrasi&t=${Date.now()}`; // cache-bust
+const GEOJSON_URL = "LuasBaku_SerayuOpak_1.geojson";
+
+// ======== PETA ========
+const map = L.map('map').setView([-2, 118], 5);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  attribution:'© OpenStreetMap'
+}).addTo(map);
+
+// ======== STATE ========
+let geoLayer, lookup = {}, joined = [];
+const provSel = document.getElementById('provSel');
+const kabSel  = document.getElementById('kabSel');
+const qInput  = document.getElementById('q');
+const statsEl = document.getElementById('stats');
+
+function colorByKondisi(k) {
+  k = (k || '').toString().toLowerCase();
+  if (k === 'baik') return '#2ecc71';
+  if (k === 'sedang') return '#f1c40f';
+  if (k === 'rusak') return '#e74c3c';
+  return '#95a5a6';
+}
+
+// render tabel popup dari object (otomatis semua kolom)
+function buildTable(obj) {
+  const entries = Object.entries(obj || {})
+    .filter(([k,v]) => v !== null && v !== undefined && v !== '')
+    .sort(([a],[b]) => a.localeCompare(b));
+  let rows = '';
+  for (const [k, v] of entries) {
+    rows += `<tr><td class="key">${k}</td><td>${v}</td></tr>`;
+  }
+  return `<table class="meta">${rows || '<tr><td>(tidak ada data)</td></tr>'}</table>`;
+}
+
+Promise.all([
+  fetch(GEOJSON_URL).then(r=>r.json()),
+  fetch(GAS_URL).then(r=>r.json())
+]).then(([gj, data]) => {
+  if (!data || (!data.lookup && !data.rows)) {
+    console.error('Format Apps Script tidak sesuai. Pastikan mengembalikan {rows, lookup}.', data);
+    alert('Gagal baca data dari Apps Script. Cek konsol F12.');
+    return;
+  }
+  lookup = data.lookup || {};
+
+  geoLayer = L.geoJSON(gj, {
+    style: f => {
+      const key  = (f.properties?.Kd_Inf ?? '').toString().trim();
+      const info = lookup[key];
+      const fill = colorByKondisi(info?.Kondisi || f.properties?.Kondisi);
+      return { color:'#333', weight:1, fillColor: fill, fillOpacity:0.6 };
+    },
+    onEachFeature: (f, layer) => {
+      const key  = (f.properties?.Kd_Inf ?? '').toString().trim();
+      const info = lookup[key] || {};
+      const dispTitle = info.Nama_DI || f.properties?.Nama_DI || key || '(tanpa nama)';
+
+      // gabungkan info dari sheet + geojson (sheet prioritas)
+      const merged = { ...f.properties, ...info, Kd_Inf: key };
+
+      layer.bindPopup(`<b>${dispTitle}</b>${buildTable(merged)}`);
+
+      // ambil field umum bila tersedia
+      const prov = merged.Provinsi || merged.provinsi || '';
+      const kab  = merged.Kabupaten || merged.kabupaten || '';
+      const nama = (dispTitle || '').toString().toLowerCase();
+
+      joined.push({
+        layer, key, nama, prov, kab,
+        luas: Number(merged.Luas_Ha || merged.LUAS_HA || 0) || 0,
+        kond: merged.Kondisi || merged.kondisi || '',
+        bounds: layer.getBounds()
+      });
+    }
+  }).addTo(map);
+
+  if (geoLayer.getLayers().length) map.fitBounds(geoLayer.getBounds());
+
+  // isi dropdown (kalau kolomnya ada)
+  const provs = new Set(), kabs = new Set();
+  for (const o of Object.values(lookup)) {
+    if (o.Provinsi)  provs.add(o.Provinsi);
+    if (o.Kabupaten) kabs.add(o.Kabupaten);
+  }
+  [...provs].sort().forEach(v => provSel.insertAdjacentHTML('beforeend', `<option>${v}</option>`));
+  [...kabs].sort().forEach(v => kabSel.insertAdjacentHTML('beforeend', `<option>${v}</option>`));
+
+  refreshView();
+}).catch(err => {
+  console.error(err);
+  alert('Gagal memuat GeoJSON atau data Sheets. Cek koneksi / CORS.');
+});
+
+function refreshView() {
+  const p = provSel.value;
+  const k = kabSel.value;
+  const q = qInput.value.trim().toLowerCase();
+
+  let total = 0, sumLuas = 0;
+  const byKond = {Baik:0, Sedang:0, Rusak:0, NA:0};
+
+  joined.forEach(o => {
+    const match =
+      (!p || o.prov === p) &&
+      (!k || o.kab === k) &&
+      (!q || o.nama.includes(q) || o.key.toLowerCase().includes(q));
+
+    o.layer.setStyle({opacity: match?1:0, fillOpacity: match?0.6:0});
+    if (match) {
+      total++;
+      sumLuas += o.luas;
+      const kk = (o.kond||'').toLowerCase();
+      if (kk==='baik') byKond.Baik++;
+      else if (kk==='sedang') byKond.Sedang++;
+      else if (kk==='rusak') byKond.Rusak++;
+      else byKond.NA++;
+    }
+  });
+
+  statsEl.innerHTML = `
+    <div class="stat"><span>Total DI tampil</span><b>${total}</b></div>
+    <div class="stat"><span>Luas akumulasi (Ha)</span><b>${sumLuas.toLocaleString('id-ID')}</b></div>
+    <div class="stat"><span>Baik</span><b>${byKond.Baik}</b></div>
+    <div class="stat"><span>Sedang</span><b>${byKond.Sedang}</b></div>
+    <div class="stat"><span>Rusak</span><b>${byKond.Rusak}</b></div>
+    <div class="stat"><span>Lainnya/N/A</span><b>${byKond.NA}</b></div>
+  `;
+}
+
+[provSel, kabSel].forEach(el => el.addEventListener('change', refreshView));
+qInput.addEventListener('input', refreshView);
+qInput.addEventListener('change', () => {
+  const q = qInput.value.trim().toLowerCase();
+  if (!q) return;
+  const hits = joined.filter(o => o.nama.includes(q) || o.key.toLowerCase().includes(q));
+  if (hits.length === 1) map.fitBounds(hits[0].bounds);
+});
+</script>
+</body>
+</html>
