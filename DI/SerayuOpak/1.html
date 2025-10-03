@@ -1,1 +1,181 @@
 
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<title>Dashboard Daerah Irigasi • Leaflet + Google Sheets</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+  html, body {height:100%; margin:0}
+  #app {display:grid; grid-template-columns: 340px 1fr; height:100%}
+  #sidebar {padding:12px; border-right:1px solid #eee; overflow:auto}
+  #map {height:100%}
+  h1 {font: 700 16px/1.3 system-ui, Arial}
+  .stat {display:grid; grid-template-columns: 1fr auto; gap:6px; margin:6px 0}
+  .badge {display:inline-block; padding:2px 6px; border-radius:6px; background:#eef}
+  select, input {width:100%; padding:6px; margin:6px 0}
+  .legend {font:12px system-ui; margin-top:10px}
+  .legend div {display:flex; align-items:center; gap:6px; margin:4px 0}
+  .swatch {width:16px; height:12px; border:1px solid #999}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="sidebar">
+    <h1>Dashboard Daerah Irigasi</h1>
+    <div>
+      <label>Filter Provinsi</label>
+      <select id="provSel"><option value="">— Semua —</option></select>
+
+      <label>Filter Kabupaten</label>
+      <select id="kabSel"><option value="">— Semua —</option></select>
+
+      <label>Cari Nama DI</label>
+      <input id="q" type="search" placeholder="contoh: Kalibawang"/>
+    </div>
+
+    <div class="legend">
+      <strong>Warna by Kondisi</strong>
+      <div><span class="swatch" style="background:#2ecc71"></span> Baik</div>
+      <div><span class="swatch" style="background:#f1c40f"></span> Sedang</div>
+      <div><span class="swatch" style="background:#e74c3c"></span> Rusak</div>
+      <div><span class="swatch" style="background:#95a5a6"></span> Lainnya / N/A</div>
+    </div>
+
+    <hr/>
+    <div id="stats"></div>
+  </div>
+  <div id="map"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const GAS_URL = "PASTE_WEB_APP_URL_DI_SINI"; // <-- ganti dengan URL Web App Apps Script lo
+const GEOJSON_URL = "irigasi.geojson";       // <-- ganti path geojson lo (polygon DI)
+
+const map = L.map('map').setView([-2, 118], 5);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
+
+let geoLayer, joinedFeatures = [], lookup = {};
+const provSel = document.getElementById('provSel');
+const kabSel  = document.getElementById('kabSel');
+const qInput  = document.getElementById('q');
+const statsEl = document.getElementById('stats');
+
+function colorByKondisi(k) {
+  k = (k || '').toString().toLowerCase();
+  if (k === 'baik') return '#2ecc71';
+  if (k === 'sedang') return '#f1c40f';
+  if (k === 'rusak') return '#e74c3c';
+  return '#95a5a6';
+}
+
+// load keduanya paralel
+Promise.all([
+  fetch(GEOJSON_URL).then(r=>r.json()),
+  fetch(GAS_URL).then(r=>r.json())
+]).then(([gj, data]) => {
+  lookup = data.lookup || {};
+  // join + render
+  geoLayer = L.geoJSON(gj, {
+    style: f => {
+      const id = (f.properties?.ID_DI ?? '').toString();
+      const info = lookup[id];
+      return {
+        color: '#333',
+        weight: 1,
+        fillColor: colorByKondisi(info?.Kondisi),
+        fillOpacity: 0.6
+      };
+    },
+    onEachFeature: (f, layer) => {
+      const id = (f.properties?.ID_DI ?? '').toString();
+      const info = lookup[id];
+      const nama = info?.Nama_DI ?? f.properties?.Nama_DI ?? '(tanpa nama)';
+      const luas = info?.Luas_Ha ?? f.properties?.Luas_Ha ?? '-';
+      const kondisi = info?.Kondisi ?? f.properties?.Kondisi ?? '-';
+      const prov = info?.Provinsi ?? f.properties?.Provinsi ?? '-';
+      const kab  = info?.Kabupaten ?? f.properties?.Kabupaten ?? '-';
+
+      layer.bindPopup(`
+        <b>${nama}</b><br/>
+        ID: ${id}<br/>
+        Provinsi: ${prov}<br/>
+        Kabupaten: ${kab}<br/>
+        Luas: ${luas} Ha<br/>
+        Kondisi: <span class="badge">${kondisi}</span>
+      `);
+
+      joinedFeatures.push({
+        layer, id, nama: String(nama).toLowerCase(), prov, kab, kondisi, luas: Number(luas)||0,
+        bounds: layer.getBounds()
+      });
+    }
+  }).addTo(map);
+
+  if (geoLayer.getLayers().length) map.fitBounds(geoLayer.getBounds());
+
+  // isi dropdown prov/kab dari data (prioritaskan sheet)
+  const provs = new Set(), kabs = new Set();
+  Object.values(lookup).forEach(o => {
+    if (o.Provinsi) provs.add(o.Provinsi);
+    if (o.Kabupaten) kabs.add(o.Kabupaten);
+  });
+  [...provs].sort().forEach(v => provSel.insertAdjacentHTML('beforeend', `<option>${v}</option>`));
+  [...kabs].sort().forEach(v => kabSel.insertAdjacentHTML('beforeend', `<option>${v}</option>`));
+
+  refreshView();
+});
+
+// filtering + stats
+function refreshView() {
+  const p = provSel.value;
+  const k = kabSel.value;
+  const q = qInput.value.trim().toLowerCase();
+
+  let total = 0, sumLuas = 0;
+  const byKond = {Baik:0, Sedang:0, Rusak:0, NA:0};
+
+  joinedFeatures.forEach(obj => {
+    const matchProv = !p || obj.prov === p;
+    const matchKab  = !k || obj.kab === k;
+    const matchQ    = !q || obj.nama.includes(q);
+
+    const show = matchProv && matchKab && matchQ;
+    obj.layer.setStyle({opacity: show?1:0, fillOpacity: show?0.6:0});
+    if (show) {
+      total++;
+      sumLuas += obj.luas;
+      const kk = (obj.kondisi||'').toLowerCase();
+      if (kk==='baik') byKond.Baik++;
+      else if (kk==='sedang') byKond.Sedang++;
+      else if (kk==='rusak') byKond.Rusak++;
+      else byKond.NA++;
+    }
+  });
+
+  statsEl.innerHTML = `
+    <div class="stat"><span>Total DI tampil</span><b>${total}</b></div>
+    <div class="stat"><span>Luas terakumulasi (Ha)</span><b>${sumLuas.toLocaleString('id-ID')}</b></div>
+    <div class="stat"><span>Baik</span><b>${byKond.Baik}</b></div>
+    <div class="stat"><span>Sedang</span><b>${byKond.Sedang}</b></div>
+    <div class="stat"><span>Rusak</span><b>${byKond.Rusak}</b></div>
+    <div class="stat"><span>Lainnya/N/A</span><b>${byKond.NA}</b></div>
+  `;
+}
+
+// interaksi UI
+[provSel, kabSel].forEach(el => el.addEventListener('change', refreshView));
+qInput.addEventListener('input', refreshView);
+
+// opsional: zoom ke fitur yang match tunggal
+qInput.addEventListener('change', () => {
+  const q = qInput.value.trim().toLowerCase();
+  if (!q) return;
+  const hits = joinedFeatures.filter(o => o.nama.includes(q));
+  if (hits.length === 1) map.fitBounds(hits[0].bounds);
+});
+</script>
+</body>
+</html>
