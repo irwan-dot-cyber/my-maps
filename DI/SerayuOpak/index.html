@@ -2,62 +2,97 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8" />
-<title>Dashboard DI — GeoJSON × Google Sheets (SO_Integrasi)</title>
+<title>Dashboard DI — GeoJSON × Google Sheets (Cluster Header)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
-  html, body {height:100%; margin:0}
-  #app {display:grid; grid-template-columns: 320px 1fr; height:100%}
-  #side {padding:12px; border-right:1px solid #eee; overflow:auto}
-  #map {height:100%}
-  h1 {font:700 16px/1.3 system-ui, Arial}
-  .stat {display:grid; grid-template-columns:1fr auto; gap:6px; margin:6px 0}
+  html, body {height:100%; margin:0; font-family: system-ui, Arial}
+  #map {height: 100%}
+
+  /* Bottom panel (mobile-first) */
+  .dock {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    background: #fff; border-top: 1px solid #ddd;
+    max-height: 42vh; overflow: auto; padding: 10px 12px;
+    box-shadow: 0 -8px 16px rgba(0,0,0,.06);
+  }
+  .dock h2 {font-size: 14px; margin: 0 0 6px; font-weight: 700}
+  .grid {display: grid; grid-template-columns: 1fr 1fr; gap: 8px}
+  .row {display: grid; grid-template-columns: 1fr auto; gap: 6px; font-size: 13px}
+  select, input {width:100%; padding:8px; font-size: 14px}
+  .meta {font-size: 13px; border-collapse: collapse; width: 100%}
+  .meta td {border-bottom: 1px dashed #eee; padding: 4px 2px; vertical-align: top}
+  .key {color:#666; width: 40%}
   .badge {display:inline-block; padding:2px 6px; border-radius:6px; background:#eef}
-  select, input {width:100%; padding:6px; margin:6px 0}
-  table.meta {border-collapse:collapse; width:100%; font:12px system-ui}
-  table.meta td {border-bottom:1px dashed #e5e5e5; padding:4px 2px; vertical-align:top}
-  table.meta td.key {color:#666; width:38%}
+  .legend {font-size:12px; display:flex; gap:14px; padding-top:6px}
+  .sw {width:16px; height:12px; border:1px solid #999; display:inline-block; vertical-align: -2px; margin-right:4px}
+
+  /* (Optional) Desktop: map + narrower dock */
+  @media (min-width: 1024px) {
+    .dock {max-height: 38vh}
+  }
 </style>
 </head>
 <body>
-<div id="app">
-  <div id="side">
-    <h1>Dashboard Daerah Irigasi</h1>
+<div id="map"></div>
 
-    <label>Filter Provinsi</label>
-    <select id="provSel"><option value="">— Semua —</option></select>
-
-    <label>Filter Kabupaten</label>
-    <select id="kabSel"><option value="">— Semua —</option></select>
-
-    <label>Cari Kode / Nama</label>
-    <input id="q" type="search" placeholder="ketik Kd_Inf / Nama DI"/>
-
-    <hr/>
-    <div id="stats"></div>
+<div class="dock">
+  <h2>Dashboard Daerah Irigasi</h2>
+  <div class="grid">
+    <div>
+      <label>Provinsi</label>
+      <select id="provSel"><option value="">— Semua —</option></select>
+    </div>
+    <div>
+      <label>Kabupaten</label>
+      <select id="kabSel"><option value="">— Semua —</option></select>
+    </div>
   </div>
-  <div id="map"></div>
+
+  <div class="grid" style="margin-top:8px">
+    <div>
+      <label>Cari Kode / Nama</label>
+      <input id="q" type="search" placeholder="ketik Kd_Inf / Nama_DI"/>
+    </div>
+    <div>
+      <label>Cluster Kolom</label>
+      <select id="clusterSel"><option value="__ALL__">— Semua Kolom —</option></select>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div><span class="sw" style="background:#2ecc71"></span>Baik</div>
+    <div><span class="sw" style="background:#f1c40f"></span>Sedang</div>
+    <div><span class="sw" style="background:#e74c3c"></span>Rusak</div>
+    <div><span class="sw" style="background:#95a5a6"></span>Lainnya</div>
+  </div>
+
+  <hr/>
+  <div id="stats" class="row"></div>
+  <div id="detail"></div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-// ======== KONFIGURASI ========
-const GAS_BASE = "https://script.google.com/macros/s/AKfycbw8ebFcVOwMDSzryLRDnY-BDBC0GfHZW0d4XiBEBPCpBeO9GXXdt3yHlxxWhacf4VGRvA/exec";
-const GAS_URL  = `${GAS_BASE}?sheet=SO_Integrasi&t=${Date.now()}`; // cache-bust
+// ========= KONFIG =========
+const GAS_BASE = "https://script.google.com/macros/s/AKfycbybsLoQu-8S-MlR_kB2989FZV0C-c1gRzUqcIZWBWuYb-_We03B_BShX8Q3AQqWhOTvzg/exec";
+const GAS_URL  = `${GAS_BASE}?sheet=SO_Integrasi&t=${Date.now()}`; // pastikan nama sheet benar
 const GEOJSON_URL = "LuasBaku_SerayuOpak_1.geojson";
 
-// ======== PETA ========
-const map = L.map('map').setView([-2, 118], 5);
+// ========= PETA =========
+const map = L.map('map').setView([-2,118], 5);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
   attribution:'© OpenStreetMap'
 }).addTo(map);
 
-// ======== STATE ========
-let geoLayer, lookup = {}, joined = [];
+let geoLayer, lookup = {}, rows = [], groups = {}, headers = [];
+let joined = []; // {layer, key, nama, prov, kab, luas, kond, dataObj}
 const provSel = document.getElementById('provSel');
 const kabSel  = document.getElementById('kabSel');
 const qInput  = document.getElementById('q');
+const clusterSel = document.getElementById('clusterSel');
 const statsEl = document.getElementById('stats');
+const detailEl = document.getElementById('detail');
 
 function colorByKondisi(k) {
   k = (k || '').toString().toLowerCase();
@@ -67,120 +102,148 @@ function colorByKondisi(k) {
   return '#95a5a6';
 }
 
-// render tabel popup dari object (otomatis semua kolom)
-function buildTable(obj) {
-  const entries = Object.entries(obj || {})
-    .filter(([k,v]) => v !== null && v !== undefined && v !== '')
-    .sort(([a],[b]) => a.localeCompare(b));
-  let rows = '';
-  for (const [k, v] of entries) {
-    rows += `<tr><td class="key">${k}</td><td>${v}</td></tr>`;
-  }
-  return `<table class="meta">${rows || '<tr><td>(tidak ada data)</td></tr>'}</table>`;
+function buildTable(obj, activeGroup) {
+  // Tampilkan HANYA field dari SHEET (obj), dan filter berdasarkan group terpilih
+  const groupFields = activeGroup === '__ALL__'
+    ? headers
+    : (groups[activeGroup] || []);
+  const rowsHtml = groupFields
+    .filter(k => k && k !== 'Kd_Inf') // jangan tampilkan Kd_Inf di tabel (udah di judul)
+    .map(k => {
+      const v = obj[k];
+      if (v === '' || v === null || v === undefined) return '';
+      return `<tr><td class="key">${k}</td><td>${v}</td></tr>`;
+    })
+    .join('');
+  return `<table class="meta">${rowsHtml || '<tr><td>(tidak ada data)</td></tr>'}</table>`;
 }
 
 Promise.all([
   fetch(GEOJSON_URL).then(r=>r.json()),
   fetch(GAS_URL).then(r=>r.json())
 ]).then(([gj, data]) => {
-  if (!data || (!data.lookup && !data.rows)) {
-    console.error('Format Apps Script tidak sesuai. Pastikan mengembalikan {rows, lookup}.', data);
-    alert('Gagal baca data dari Apps Script. Cek konsol F12.');
+  if (!data || !data.lookup || !data.rows || !data.groups || !data.headers) {
+    alert('Format JSON Apps Script tidak sesuai (butuh {groups, headers, rows, lookup}).');
+    console.error('Apps Script response:', data);
     return;
   }
-  lookup = data.lookup || {};
+  lookup = data.lookup; rows = data.rows; groups = data.groups; headers = data.headers;
+
+  // Isi dropdown cluster
+  Object.keys(groups).forEach(g => {
+    clusterSel.insertAdjacentHTML('beforeend', `<option value="${g}">${g}</option>`);
+  });
 
   geoLayer = L.geoJSON(gj, {
     style: f => {
-      const key  = (f.properties?.Kd_Inf ?? '').toString().trim();
+      const key = String(f.properties?.Kd_Inf || '').trim();
       const info = lookup[key];
-      const fill = colorByKondisi(info?.Kondisi || f.properties?.Kondisi);
-      return { color:'#333', weight:1, fillColor: fill, fillOpacity:0.6 };
+      return {
+        color:'#333', weight:1,
+        fillColor: colorByKondisi(info?.Kondisi),
+        fillOpacity: 0.6
+      };
     },
     onEachFeature: (f, layer) => {
-      const key  = (f.properties?.Kd_Inf ?? '').toString().trim();
-      const info = lookup[key] || {};
-      const dispTitle = info.Nama_DI || f.properties?.Nama_DI || key || '(tanpa nama)';
+      const key = String(f.properties?.Kd_Inf || '').trim();
+      const info = lookup[key] || {}; // HANYA sheet
+      const title = info.Nama_DI || key || '(tanpa nama)';
 
-      // gabungkan info dari sheet + geojson (sheet prioritas)
-      const merged = { ...f.properties, ...info, Kd_Inf: key };
+      // Popup hanya Sheet
+      layer.bindPopup(`<b>${title}</b><br/>Kode: ${key}`);
 
-      layer.bindPopup(`<b>${dispTitle}</b>${buildTable(merged)}`);
+      const prov = info.Provinsi || '';
+      const kab  = info.Kabupaten || '';
+      const luas = Number(info.Luas_Ha || 0) || 0;
+      const kond = info.Kondisi || '';
 
-      // ambil field umum bila tersedia
-      const prov = merged.Provinsi || merged.provinsi || '';
-      const kab  = merged.Kabupaten || merged.kabupaten || '';
-      const nama = (dispTitle || '').toString().toLowerCase();
-
-      joined.push({
-        layer, key, nama, prov, kab,
-        luas: Number(merged.Luas_Ha || merged.LUAS_HA || 0) || 0,
-        kond: merged.Kondisi || merged.kondisi || '',
-        bounds: layer.getBounds()
-      });
+      joined.push({ layer, key, nama: (title+'').toLowerCase(), prov, kab, luas, kond, dataObj: info });
+      layer.on('click', () => renderDetail(info, title, key));
     }
   }).addTo(map);
 
   if (geoLayer.getLayers().length) map.fitBounds(geoLayer.getBounds());
 
-  // isi dropdown (kalau kolomnya ada)
+  // Isi filter prov/kab kalau ada
   const provs = new Set(), kabs = new Set();
-  for (const o of Object.values(lookup)) {
+  rows.forEach(o => {
     if (o.Provinsi)  provs.add(o.Provinsi);
     if (o.Kabupaten) kabs.add(o.Kabupaten);
-  }
+  });
   [...provs].sort().forEach(v => provSel.insertAdjacentHTML('beforeend', `<option>${v}</option>`));
   [...kabs].sort().forEach(v => kabSel.insertAdjacentHTML('beforeend', `<option>${v}</option>`));
 
   refreshView();
+  // Render default detail: kosong
+  detailEl.innerHTML = '<i>Pilih fitur di peta untuk melihat detail.</i>';
 }).catch(err => {
   console.error(err);
-  alert('Gagal memuat GeoJSON atau data Sheets. Cek koneksi / CORS.');
+  alert('Gagal memuat GeoJSON / Sheets. Cek koneksi & CORS.');
 });
+
+function renderDetail(info, title, key) {
+  const g = clusterSel.value || '__ALL__';
+  detailEl.innerHTML = `
+    <h3 style="margin:6px 0">${title}</h3>
+    <div style="font-size:12px;color:#666;margin-bottom:6px">Kd_Inf: ${key}</div>
+    ${buildTable(info, g)}
+  `;
+}
 
 function refreshView() {
   const p = provSel.value;
   const k = kabSel.value;
   const q = qInput.value.trim().toLowerCase();
 
-  let total = 0, sumLuas = 0;
-  const byKond = {Baik:0, Sedang:0, Rusak:0, NA:0};
+  let total=0, sumLuas=0;
+  const byK = {Baik:0, Sedang:0, Rusak:0, NA:0};
 
   joined.forEach(o => {
-    const match =
-      (!p || o.prov === p) &&
-      (!k || o.kab === k) &&
-      (!q || o.nama.includes(q) || o.key.toLowerCase().includes(q));
+    const match = (!p || o.prov === p) &&
+                  (!k || o.kab === k) &&
+                  (!q || o.nama.includes(q) || o.key.toLowerCase().includes(q));
 
     o.layer.setStyle({opacity: match?1:0, fillOpacity: match?0.6:0});
     if (match) {
       total++;
       sumLuas += o.luas;
       const kk = (o.kond||'').toLowerCase();
-      if (kk==='baik') byKond.Baik++;
-      else if (kk==='sedang') byKond.Sedang++;
-      else if (kk==='rusak') byKond.Rusak++;
-      else byKond.NA++;
+      if (kk==='baik') byK.Baik++;
+      else if (kk==='sedang') byK.Sedang++;
+      else if (kk==='rusak') byK.Rusak++;
+      else byK.NA++;
     }
   });
 
   statsEl.innerHTML = `
-    <div class="stat"><span>Total DI tampil</span><b>${total}</b></div>
-    <div class="stat"><span>Luas akumulasi (Ha)</span><b>${sumLuas.toLocaleString('id-ID')}</b></div>
-    <div class="stat"><span>Baik</span><b>${byKond.Baik}</b></div>
-    <div class="stat"><span>Sedang</span><b>${byKond.Sedang}</b></div>
-    <div class="stat"><span>Rusak</span><b>${byKond.Rusak}</b></div>
-    <div class="stat"><span>Lainnya/N/A</span><b>${byKond.NA}</b></div>
+    <span>Total DI tampil</span><b>${total}</b>
+    <span>Luas akumulasi (Ha)</span><b>${sumLuas.toLocaleString('id-ID')}</b>
+    <span>Baik</span><b>${byK.Baik}</b>
+    <span>Sedang</span><b>${byK.Sedang}</b>
+    <span>Rusak</span><b>${byK.Rusak}</b>
+    <span>Lainnya/N/A</span><b>${byK.NA}</b>
   `;
 }
 
-[provSel, kabSel].forEach(el => el.addEventListener('change', refreshView));
+// Interaksi
+[provSel, kabSel, clusterSel].forEach(el => el.addEventListener('change', () => {
+  refreshView();
+  // kalau ada item detail sedang ditampilkan, re-render dengan group baru
+  const open = detailEl.querySelector('h3');
+  if (open) {
+    // cari last selected feature by key in detail DOM
+    const line = detailEl.querySelector('div[style*="Kd_Inf"]');
+    const key = line ? (line.textContent.split(':').pop() || '').trim() : null;
+    const hit = key && lookup[key] ? lookup[key] : null;
+    if (hit) renderDetail(hit, hit.Nama_DI || key, key);
+  }
+}));
 qInput.addEventListener('input', refreshView);
 qInput.addEventListener('change', () => {
   const q = qInput.value.trim().toLowerCase();
   if (!q) return;
   const hits = joined.filter(o => o.nama.includes(q) || o.key.toLowerCase().includes(q));
-  if (hits.length === 1) map.fitBounds(hits[0].bounds);
+  if (hits.length === 1) map.fitBounds(hits[0].layer.getBounds());
 });
 </script>
 </body>
