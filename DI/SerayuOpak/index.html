@@ -25,6 +25,14 @@
   .key {color:#666; width: 40%}
   .row {display:grid; grid-template-columns:1fr auto; gap:6px; font-size:13px}
   .err {color:#b00020; font-size:12px; margin-top:6px}
+  .di-label {
+    background: rgba(255,255,255,.85);
+    border: 1px solid #ccc;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-size: 12px;
+    color:#111;
+  }
 </style>
 </head>
 <body>
@@ -68,6 +76,19 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{ attribution:'
 
 let lookup={}, rows=[], groups={}, headers=[];
 let geoLayer, joined=[];
+const labelLayer = L.layerGroup().addTo(map);
+
+// Helper ambil nama DI dari berbagai kemungkinan kolom
+function getNamaDI(obj){
+  return obj?.Nama_DI || obj?.["Nama Aset"] || obj?.["Nama aset"] || obj?.["Nama DI"] || "";
+}
+
+function addLabel(latlng, text){
+  L.tooltip({ permanent:true, direction:'center', className:'di-label' })
+    .setLatLng(latlng)
+    .setContent(text)
+    .addTo(labelLayer);
+}
 
 // Tabel detail
 function buildTable(obj, activeGroup){
@@ -117,30 +138,30 @@ Promise.all([
     clusterSel.insertAdjacentHTML('beforeend', `<option value="${g}">${g}</option>`);
   });
 
-  // Isi Daerah Irigasi dropdown
-  rows.forEach(o=>{
-    if(o.Nama_DI){
-      diSel.insertAdjacentHTML('beforeend', `<option value="${o.Nama_DI}">${o.Nama_DI}</option>`);
-    }
+  // Isi dropdown DI
+  const diNames = new Set();
+  Object.values(lookup).forEach(o => {
+    const nm = getNamaDI(o);
+    if (nm) diNames.add(nm);
+  });
+  [...diNames].sort().forEach(nm => {
+    diSel.insertAdjacentHTML('beforeend', `<option value="${nm}">${nm}</option>`);
   });
 
-  // Layer
+  // Layer GeoJSON
   geoLayer = L.geoJSON(gj, {
     style: f=>{
-      const key = String((f.properties?.Kd_Inf||"")).trim();
-      return { color:"#333", weight:1, fillColor:"#3388ff", fillOpacity:0.5 };
+      return { stroke:false, fillColor:"#3388ff", fillOpacity:0.5 };
     },
-   onEachFeature:(f,layer)=>{
-  const key  = String((f.properties?.Kd_Inf||"")).trim();
-  const info = lookup[key] || {};
-  const title = info.Nama_DI || key || "(tanpa nama)";
-
-  // POPUP: hanya Nama DI + Kd_Inf
-  layer.bindPopup(`<b>${title}</b><br/>Kd_Inf: ${key}`);
-
-  joined.push({ layer, key, nama:title.toLowerCase(), dataObj:info });
-  layer.on('click', ()=> renderDetail(info, title, key)); // panel bawah tetap lengkap
-}
+    onEachFeature:(f,layer)=>{
+      const key   = String((f.properties?.Kd_Inf||"")).trim();
+      const info  = lookup[key] || {};
+      const title = getNamaDI(info) || key || "(tanpa nama)";
+      // Popup minimal
+      layer.bindPopup(`<b>${title}</b><br/>Kd_Inf: ${key}`);
+      joined.push({ layer, key, title, nama:title.toLowerCase(), dataObj:info });
+      layer.on('click', ()=> renderDetail(info, title, key));
+    }
   }).addTo(map);
 
   if (geoLayer.getLayers().length) map.fitBounds(geoLayer.getBounds());
@@ -152,6 +173,7 @@ Promise.all([
   note('Gagal load data. Cek nama sheet & Apps Script.');
 });
 
+// ====== RENDER ======
 function renderDetail(info, title, key){
   const g = clusterSel.value || "__ALL__";
   detailEl.innerHTML = `
@@ -162,23 +184,31 @@ function renderDetail(info, title, key){
 }
 
 function refreshView(){
-  const selNama = diSel.value.toLowerCase();
+  const selNama = (diSel?.value || "").trim().toLowerCase();
+
+  labelLayer.clearLayers();
   let total=0;
+
   joined.forEach(o=>{
-    const match = !selNama || (o.nama===selNama.toLowerCase());
+    const match = !selNama || (o.nama === selNama);
     o.layer.setStyle({opacity: match?1:0, fillOpacity: match?0.5:0});
-    if (match) total++;
+    if (match){
+      total++;
+      const center = o.layer.getBounds().getCenter();
+      addLabel(center, o.title);
+    }
   });
+
   statsEl.innerHTML = `<span>Total DI tampil</span><b>${total}</b>`;
 }
 
-// Events
+// ====== EVENTS ======
 [diSel, clusterSel].forEach(el=>el.addEventListener('change', ()=>{
   refreshView();
   const line = detailEl.querySelector('div[style*="Kd_Inf"]');
   const key  = line ? (line.textContent.split(':').pop()||'').trim() : null;
   if (key && lookup[key]){
-    renderDetail(lookup[key], lookup[key].Nama_DI || key, key);
+    renderDetail(lookup[key], getNamaDI(lookup[key]) || key, key);
   }
 }));
 </script>
