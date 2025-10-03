@@ -9,23 +9,21 @@
   html, body {height:100%; margin:0; font-family: system-ui, Arial}
   #map {height: 100%}
 
-  /* Bottom dock (mobile-first) */
+  /* Bottom dock */
   .dock {
     position: fixed; left: 0; right: 0; bottom: 0;
     background: #fff; border-top: 1px solid #ddd;
-    max-height: 42vh; overflow: auto; padding: 10px 12px;
+    max-height: 45vh; overflow: auto; padding: 10px 12px;
     box-shadow: 0 -8px 16px rgba(0,0,0,.06); z-index: 500;
   }
   .dock h2 {font-size: 14px; margin: 0 0 6px; font-weight: 700}
   .grid {display: grid; grid-template-columns: 1fr 1fr; gap: 8px}
-  .row {display: grid; grid-template-columns: 1fr auto; gap: 6px; font-size: 13px}
   label {font-size: 12px; color:#333}
   select, input {width:100%; padding:8px; font-size: 14px}
   .meta {font-size: 13px; border-collapse: collapse; width: 100%}
   .meta td {border-bottom: 1px dashed #eee; padding: 4px 2px; vertical-align: top}
   .key {color:#666; width: 40%}
-  .legend {font-size:12px; display:flex; gap:14px; padding-top:6px}
-  .sw {width:16px; height:12px; border:1px solid #999; display:inline-block; vertical-align: -2px; margin-right:4px}
+  .row {display:grid; grid-template-columns:1fr auto; gap:6px; font-size:13px}
   .err {color:#b00020; font-size:12px; margin-top:6px}
 </style>
 </head>
@@ -37,31 +35,13 @@
 
   <div class="grid">
     <div>
-      <label>Provinsi</label>
-      <select id="provSel"><option value="">— Semua —</option></select>
+      <label>Pilih Daerah Irigasi</label>
+      <select id="diSel"><option value="">— Semua —</option></select>
     </div>
     <div>
-      <label>Kabupaten</label>
-      <select id="kabSel"><option value="">— Semua —</option></select>
+      <label>Cluster Informasi</label>
+      <select id="clusterSel"><option value="__ALL__">— Semua —</option></select>
     </div>
-  </div>
-
-  <div class="grid" style="margin-top:8px">
-    <div>
-      <label>Cari Kode / Nama</label>
-      <input id="q" type="search" placeholder="ketik Kd_Inf / Nama_DI"/>
-    </div>
-    <div>
-      <label>Cluster Kolom</label>
-      <select id="clusterSel"><option value="__ALL__">— Semua Kolom —</option></select>
-    </div>
-  </div>
-
-  <div class="legend">
-    <div><span class="sw" style="background:#2ecc71"></span>Baik</div>
-    <div><span class="sw" style="background:#f1c40f"></span>Sedang</div>
-    <div><span class="sw" style="background:#e74c3c"></span>Rusak</div>
-    <div><span class="sw" style="background:#95a5a6"></span>Lainnya</div>
   </div>
 
   <div id="msg" class="err"></div>
@@ -73,40 +53,28 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 // ========= KONFIG =========
-const GEOJSON_URL = "LuasBaku_SerayuOpak_1.geojson"; // ganti kalau nama/letaknya beda
+const GEOJSON_URL = "LuasBaku_SerayuOpak_3.geojson";
 const GAS_URL = "https://script.google.com/macros/s/AKfycbybsLoQu-8S-MlR_kB2989FZV0C-c1gRzUqcIZWBWuYb-_We03B_BShX8Q3AQqWhOTvzg/exec?sheet=SO_Integrasi&t=" + Date.now();
 
-// ========= UI refs =========
-const provSel = document.getElementById('provSel');
-const kabSel  = document.getElementById('kabSel');
-const qInput  = document.getElementById('q');
+const diSel = document.getElementById('diSel');
 const clusterSel = document.getElementById('clusterSel');
 const statsEl = document.getElementById('stats');
 const detailEl = document.getElementById('detail');
 const msgEl = document.getElementById('msg');
-
 function note(msg){ msgEl.textContent = msg || ""; }
 
-const map = L.map('map', { zoomControl: true }).setView([-2,118], 5);
+const map = L.map('map').setView([-2,118], 5);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{ attribution:'© OpenStreetMap' }).addTo(map);
 
 let lookup={}, rows=[], groups={}, headers=[];
 let geoLayer, joined=[];
 
-function colorByKondisi(k){
-  k = (k||"").toString().toLowerCase();
-  if (k==="baik") return "#2ecc71";
-  if (k==="sedang") return "#f1c40f";
-  if (k==="rusak") return "#e74c3c";
-  return "#95a5a6";
-}
-
-// Tabel detail: HANYA field dari SHEET (obj), filter berdasarkan cluster aktif
+// Tabel detail
 function buildTable(obj, activeGroup){
   const useAll = (activeGroup==="__ALL__");
   const fields = useAll ? headers : (groups[activeGroup]||[]);
   const html = (fields||[])
-    .filter(k => k && k!=="Kd_Inf") // Kd_Inf ditampilkan di header saja
+    .filter(k => k && k!=="Kd_Inf")
     .map(k => {
       const v = obj[k];
       if (v===null || v===undefined || v==="") return "";
@@ -115,17 +83,16 @@ function buildTable(obj, activeGroup){
   return `<table class="meta">${html || '<tr><td>(tidak ada data)</td></tr>'}</table>`;
 }
 
-// Normalisasi respons GAS (harusnya {groups, headers, rows, lookup})
+// Normalisasi JSON GAS
 function normalizeGas(json){
   if (json && json.lookup && json.rows && json.headers && json.groups) return json;
-  // fallback (kalau skrip belum 2-header): bikin grup “Semua Kolom”
   let _rows = [];
   if (Array.isArray(json)) _rows = json;
   else if (json && Array.isArray(json.rows)) _rows = json.rows;
   else if (json && json.lookup) _rows = Object.values(json.lookup);
   const _headers = _rows.length ? Object.keys(_rows[0]) : [];
   const _groups  = {"Semua Kolom": _headers};
-  return { rows:_rows, headers:_headers, groups:_groups, lookup: (json.lookup || makeLookup(_rows)) };
+  return { rows:_rows, headers:_headers, groups:_groups, lookup:(json.lookup||makeLookup(_rows)) };
 }
 function makeLookup(arr){
   const out={}; (arr||[]).forEach(o=>{
@@ -145,52 +112,46 @@ Promise.all([
   headers= norm.headers|| [];
   groups = norm.groups || {};
 
-  // Dropdown cluster
+  // Cluster dropdown
   Object.keys(groups).forEach(g=>{
     clusterSel.insertAdjacentHTML('beforeend', `<option value="${g}">${g}</option>`);
   });
 
-  // Layer: hanya gunakan Kd_Inf dari GeoJSON; semua atribut lain dari Sheet
+  // Isi Daerah Irigasi dropdown
+  rows.forEach(o=>{
+    if(o.Nama_DI){
+      diSel.insertAdjacentHTML('beforeend', `<option value="${o.Nama_DI}">${o.Nama_DI}</option>`);
+    }
+  });
+
+  // Layer
   geoLayer = L.geoJSON(gj, {
     style: f=>{
       const key = String((f.properties?.Kd_Inf||"")).trim();
-      const info = lookup[key];
-      return { color:"#333", weight:1, fillColor: colorByKondisi(info?.Kondisi), fillOpacity: 0.6 };
+      return { color:"#333", weight:1, fillColor:"#3388ff", fillOpacity:0.5 };
     },
-    onEachFeature:(f,layer)=>{
-      const key = String((f.properties?.Kd_Inf||"")).trim();
-      const info = lookup[key] || {};
-      const title = info.Nama_DI || key || "(tanpa nama)";
-      layer.bindPopup(`<b>${title}</b><br/>Kode: ${key}`);
+   onEachFeature:(f,layer)=>{
+  const key  = String((f.properties?.Kd_Inf||"")).trim();
+  const info = lookup[key] || {};
+  const title = info.Nama_DI || key || "(tanpa nama)";
 
-      const prov = info.Provinsi || "";
-      const kab  = info.Kabupaten || "";
-      const luas = Number(info.Luas_Ha || 0) || 0;
-      const kond = info.Kondisi || "";
+  // POPUP: hanya Nama DI + Kd_Inf
+  layer.bindPopup(`<b>${title}</b><br/>Kd_Inf: ${key}`);
 
-      joined.push({ layer, key, nama:(title+"").toLowerCase(), prov, kab, luas, kond, dataObj: info });
-      layer.on('click', ()=> renderDetail(info, title, key));
-    }
+  joined.push({ layer, key, nama:title.toLowerCase(), dataObj:info });
+  layer.on('click', ()=> renderDetail(info, title, key)); // panel bawah tetap lengkap
+}
   }).addTo(map);
 
   if (geoLayer.getLayers().length) map.fitBounds(geoLayer.getBounds());
 
-  // Filter prov/kab bila kolomnya ada
-  const provs=new Set(), kabs=new Set();
-  rows.forEach(o=>{ if(o.Provinsi) provs.add(o.Provinsi); if(o.Kabupaten) kabs.add(o.Kabupaten); });
-  [...provs].sort().forEach(v=>provSel.insertAdjacentHTML('beforeend', `<option>${v}</option>`));
-  [...kabs].sort().forEach(v=>kabSel.insertAdjacentHTML('beforeend', `<option>${v}</option>`));
-
   refreshView();
-  detailEl.innerHTML = '<i>Tap/klik poligon di peta untuk melihat detail.</i>';
-
-  if (!headers.length) note('Catatan: header dari Sheet kosong. Pastikan baris-1 (cluster) & baris-2 (header) terisi.');
+  detailEl.innerHTML = '<i>Tap/klik poligon di peta untuk lihat detail.</i>';
 }).catch(err=>{
   console.error(err);
-  note('Gagal memuat data. Cek nama sheet, Apps Script deployment, dan konsol (F12).');
+  note('Gagal load data. Cek nama sheet & Apps Script.');
 });
 
-// ====== RENDER ======
 function renderDetail(info, title, key){
   const g = clusterSel.value || "__ALL__";
   detailEl.innerHTML = `
@@ -201,52 +162,25 @@ function renderDetail(info, title, key){
 }
 
 function refreshView(){
-  const p = provSel.value;
-  const k = kabSel.value;
-  const q = qInput.value.trim().toLowerCase();
-
-  let total=0, sumLuas=0;
-  const byK = {Baik:0, Sedang:0, Rusak:0, NA:0};
-
+  const selNama = diSel.value.toLowerCase();
+  let total=0;
   joined.forEach(o=>{
-    const match = (!p || o.prov===p) &&
-                  (!k || o.kab===k) &&
-                  (!q || o.nama.includes(q) || o.key.toLowerCase().includes(q));
-    o.layer.setStyle({opacity: match?1:0, fillOpacity: match?0.6:0});
-    if (match){
-      total++; sumLuas += o.luas;
-      const kk=(o.kond||"").toLowerCase();
-      if (kk==="baik") byK.Baik++; else if (kk==="sedang") byK.Sedang++;
-      else if (kk==="rusak") byK.Rusak++; else byK.NA++;
-    }
+    const match = !selNama || (o.nama===selNama.toLowerCase());
+    o.layer.setStyle({opacity: match?1:0, fillOpacity: match?0.5:0});
+    if (match) total++;
   });
-
-  statsEl.innerHTML = `
-    <span>Total DI tampil</span><b>${total}</b>
-    <span>Luas akumulasi (Ha)</span><b>${sumLuas.toLocaleString('id-ID')}</b>
-    <span>Baik</span><b>${byK.Baik}</b>
-    <span>Sedang</span><b>${byK.Sedang}</b>
-    <span>Rusak</span><b>${byK.Rusak}</b>
-    <span>Lainnya/N/A</span><b>${byK.NA}</b>
-  `;
+  statsEl.innerHTML = `<span>Total DI tampil</span><b>${total}</b>`;
 }
 
-// ====== EVENTS ======
-[provSel, kabSel, clusterSel].forEach(el=>el.addEventListener('change', ()=>{
+// Events
+[diSel, clusterSel].forEach(el=>el.addEventListener('change', ()=>{
   refreshView();
-  // kalau sedang melihat detail, re-render sesuai cluster baru
   const line = detailEl.querySelector('div[style*="Kd_Inf"]');
   const key  = line ? (line.textContent.split(':').pop()||'').trim() : null;
   if (key && lookup[key]){
     renderDetail(lookup[key], lookup[key].Nama_DI || key, key);
   }
 }));
-qInput.addEventListener('input', refreshView);
-qInput.addEventListener('change', ()=>{
-  const q = qInput.value.trim().toLowerCase(); if (!q) return;
-  const hits = joined.filter(o=> o.nama.includes(q) || o.key.toLowerCase().includes(q));
-  if (hits.length===1) map.fitBounds(hits[0].layer.getBounds());
-});
 </script>
 </body>
 </html>
