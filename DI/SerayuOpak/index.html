@@ -6,15 +6,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
+  :root { --hdrH: 88px; }
   html, body {height:100%; margin:0; font-family: system-ui, Arial}
-  #map {height: 100%}
+  /* Header */
+  .header {
+    position: fixed; top:0; left:0; right:0; z-index: 900;
+    background: #fff; border-bottom: 1px solid #e5e5e5;
+    padding: 8px 12px;
+  }
+  .header .title {font-weight: 800; font-size: 14px; line-height:1.2; color:#111}
+  .header .subtitle {font-weight: 600; font-size: 12px; color:#555; margin-top:4px}
+  .spacer {height: var(--hdrH);}
+  #map {height: calc(100vh - var(--hdrH));}
 
-  /* Bottom dock */
+  /* Bottom dock (mobile-first) */
   .dock {
     position: fixed; left: 0; right: 0; bottom: 0;
     background: #fff; border-top: 1px solid #ddd;
     max-height: 45vh; overflow: auto; padding: 10px 12px;
-    box-shadow: 0 -8px 16px rgba(0,0,0,.06); z-index: 500;
+    box-shadow: 0 -8px 16px rgba(0,0,0,.06); z-index: 950;
   }
   .dock h2 {font-size: 14px; margin: 0 0 6px; font-weight: 700}
   .grid {display: grid; grid-template-columns: 1fr 1fr; gap: 8px}
@@ -36,8 +46,19 @@
 </style>
 </head>
 <body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="title">Kementerian Pekerjaan Umum dan Perumahan Rakyat<br>
+    Direktorat Jenderal Sumber Daya Air — Direktorat Irigasi dan Rawa</div>
+  <div class="subtitle">Daerah Irigasi Kewenangan BBWS Serayu Opak</div>
+</div>
+<div class="spacer"></div>
+
+<!-- MAP -->
 <div id="map"></div>
 
+<!-- DOCK -->
 <div class="dock">
   <h2>Dashboard Daerah Irigasi</h2>
 
@@ -64,6 +85,7 @@
 const GEOJSON_URL = "LuasBaku_SerayuOpak_3.geojson";
 const GAS_URL = "https://script.google.com/macros/s/AKfycbybsLoQu-8S-MlR_kB2989FZV0C-c1gRzUqcIZWBWuYb-_We03B_BShX8Q3AQqWhOTvzg/exec?sheet=SO_Integrasi&t=" + Date.now();
 
+// UI refs
 const diSel = document.getElementById('diSel');
 const clusterSel = document.getElementById('clusterSel');
 const statsEl = document.getElementById('stats');
@@ -78,11 +100,12 @@ let lookup={}, rows=[], groups={}, headers=[];
 let geoLayer, joined=[];
 const labelLayer = L.layerGroup().addTo(map);
 
-// Helper ambil nama DI dari berbagai kemungkinan kolom
+// Helper nama DI
 function getNamaDI(obj){
   return obj?.Nama_DI || obj?.["Nama Aset"] || obj?.["Nama aset"] || obj?.["Nama DI"] || "";
 }
 
+// Label helper
 function addLabel(latlng, text){
   L.tooltip({ permanent:true, direction:'center', className:'di-label' })
     .setLatLng(latlng)
@@ -104,7 +127,7 @@ function buildTable(obj, activeGroup){
   return `<table class="meta">${html || '<tr><td>(tidak ada data)</td></tr>'}</table>`;
 }
 
-// Normalisasi JSON GAS
+// Normalisasi JSON GAS (fallback jika belum 2-header)
 function normalizeGas(json){
   if (json && json.lookup && json.rows && json.headers && json.groups) return json;
   let _rows = [];
@@ -122,6 +145,42 @@ function makeLookup(arr){
   }); return out;
 }
 
+// Override cluster berdasarkan rentang kolom (B..N, O..S, T..X, dst)
+function buildFixedGroups(headers, existingGroups){
+  // Index kolom: A=0, B=1, ..., Z=25
+  const g = {};
+  // Pastikan kita mengunci ke rentang yang diminta:
+  g["Informasi"] = headers.slice(1, 14); // B..N  => index 1..13
+  g["Area"]      = headers.slice(14, 19); // O..S => index 14..18
+  g["Teknis"]    = headers.slice(19, 24); // T..X => index 19..23
+
+  // Sisanya (jika ada lebih dari X), taruh ke "Lainnya" atau gunakan cluster dari row-1 bila tersedia
+  const used = new Set([ ...g["Informasi"]||[], ...g["Area"]||[], ...g["Teknis"]||[] ]);
+  const others = headers.filter(h => h && !used.has(h));
+  if (others.length) {
+    // Jika existingGroups memiliki label-lain (mis. Saluran Primer/Sekunder/Hidrologi/Manfaat/Tgl Perubahan),
+    // gunakan mereka untuk memetakan 'others' sesuai label, else satukan ke "Lainnya".
+    const labelsFromSheet = Object.keys(existingGroups||{}).filter(x => !["Semua Kolom","Ungrouped"].includes(x));
+    if (labelsFromSheet.length) {
+      // rebuild by labelsFromSheet
+      labelsFromSheet.forEach(lbl => {
+        const cols = (existingGroups[lbl] || []).filter(h => others.includes(h));
+        if (cols.length) g[lbl] = cols;
+      });
+      // sisa yang belum terpetakan -> Lainnya
+      const mapped = new Set(Object.values(g).flat());
+      const remain = others.filter(h => !mapped.has(h));
+      if (remain.length) g["Lainnya"] = remain;
+    } else {
+      g["Lainnya"] = others;
+    }
+  }
+
+  // Pastikan Kd_Inf/Nama kolom identitas tidak hilang dari "Semua Kolom"
+  // (Di tabel kita memang hide Kd_Inf)
+  return g;
+}
+
 // ====== LOAD ======
 Promise.all([
   fetch(GEOJSON_URL).then(r=>r.json()),
@@ -131,10 +190,11 @@ Promise.all([
   lookup = norm.lookup || {};
   rows   = norm.rows   || [];
   headers= norm.headers|| [];
-  groups = norm.groups || {};
+  groups = buildFixedGroups(headers, norm.groups || {}); // <-- pakai definisi rentang kolom
 
   // Cluster dropdown
-  Object.keys(groups).forEach(g=>{
+  const clusterNames = Object.keys(groups);
+  clusterNames.forEach(g=>{
     clusterSel.insertAdjacentHTML('beforeend', `<option value="${g}">${g}</option>`);
   });
 
@@ -148,26 +208,23 @@ Promise.all([
     diSel.insertAdjacentHTML('beforeend', `<option value="${nm}">${nm}</option>`);
   });
 
-  // Layer GeoJSON
+  // Layer GeoJSON (outline off)
   geoLayer = L.geoJSON(gj, {
-    style: f=>{
-      return { stroke:false, fillColor:"#3388ff", fillOpacity:0.5 };
-    },
+    style: () => ({ stroke:false, fillColor:"#3388ff", fillOpacity:0.5 }),
     onEachFeature:(f,layer)=>{
       const key   = String((f.properties?.Kd_Inf||"")).trim();
       const info  = lookup[key] || {};
       const title = getNamaDI(info) || key || "(tanpa nama)";
-      // Popup minimal
       layer.bindPopup(`<b>${title}</b><br/>Kd_Inf: ${key}`);
       joined.push({ layer, key, title, nama:title.toLowerCase(), dataObj:info });
-      layer.on('click', ()=> renderDetail(info, title, key));
     }
   }).addTo(map);
 
   if (geoLayer.getLayers().length) map.fitBounds(geoLayer.getBounds());
 
+  // Render awal
   refreshView();
-  detailEl.innerHTML = '<i>Tap/klik poligon di peta untuk lihat detail.</i>';
+  detailEl.innerHTML = '<i>Tap/klik poligon di peta atau pilih dari menu untuk lihat detail.</i>';
 }).catch(err=>{
   console.error(err);
   note('Gagal load data. Cek nama sheet & Apps Script.');
@@ -203,14 +260,34 @@ function refreshView(){
 }
 
 // ====== EVENTS ======
-[diSel, clusterSel].forEach(el=>el.addEventListener('change', ()=>{
+// 1) Ganti DI -> zoom ke DI + tampilkan detail DI terpilih
+diSel.addEventListener('change', ()=>{
+  const selNama = (diSel.value || "").trim().toLowerCase();
   refreshView();
+
+  if (!selNama) { detailEl.innerHTML = '<i>Pilih DI untuk lihat detail.</i>'; return; }
+
+  const hit = joined.find(o => o.nama === selNama);
+  if (hit) {
+    // zoom ke DI
+    map.fitBounds(hit.layer.getBounds(), { maxZoom: 14, animate: true });
+    // render detail
+    const key = hit.key;
+    const info = lookup[key] || {};
+    renderDetail(info, hit.title, key);
+  }
+});
+
+// 2) Ganti cluster -> update tabel detail (kalau ada DI yang sedang dipilih/detail terbuka)
+clusterSel.addEventListener('change', ()=>{
+  const h3 = detailEl.querySelector('h3');
+  if (!h3) return;
   const line = detailEl.querySelector('div[style*="Kd_Inf"]');
   const key  = line ? (line.textContent.split(':').pop()||'').trim() : null;
   if (key && lookup[key]){
     renderDetail(lookup[key], getNamaDI(lookup[key]) || key, key);
   }
-}));
+});
 </script>
 </body>
 </html>
