@@ -53,6 +53,7 @@
       <div id="toast" class="toast"></div>
 
       <form id="surveyForm">
+        <!-- ALUR: BWS -> PROV -> KAB -> DI -->
         <div class="row">
           <div><label>B/BWS</label><select id="balai" name="balai" required></select></div>
           <div><label>Provinsi</label><select id="provinsi" name="provinsi" required disabled></select></div>
@@ -96,13 +97,14 @@
             <button type="button" id="btnGallery" class="ghost">🖼️ Galeri</button>
             <span id="photoMeta" class="hint"></span>
           </div>
+          <!-- input file yang DIKIRIM -->
           <input type="file" accept="image/*" id="fileInput" name="foto" style="display:none">
           <div class="hint">Pilih kamera/galeri. Foto dikompresi otomatis & dikirim juga sebagai base64 fallback.</div>
         </div>
 
         <div class="row">
           <div><label>Nama Pengirim</label><input id="nama" name="nama" placeholder="Nama lengkap" required/></div>
-          <div><label>Nomor WA/HP</label><input id="telepon" name="telepon" placeholder="08xxxxxxxxxx / 628xxxxxxxxxx" pattern="[0-9+]{8,15}" required/></div>
+          <div><label>Nomor WA/HP</label><input id="telepon" name="telepon" placeholder="08xxxxxxxxxx / 628xxxxxxxxx" pattern="[0-9+]{8,15}" required/></div>
         </div>
 
         <div class="actions">
@@ -113,6 +115,7 @@
     </div>
   </main>
 
+  <!-- Overlay Upload -->
   <div id="uploadOverlay">
     <div class="u-box" role="alert" aria-live="assertive">
       <div class="u-title" id="uploadTitle">Mengunggah data…</div>
@@ -122,8 +125,8 @@
   </div>
 
 <script>
-/* ===== CONFIG (Upload path tidak diubah) ===== */
-const ENDPOINT = 'https://gas-proxy.tuic1677.workers.dev/'; // tetap sama
+/* ===== CONFIG ===== */
+const ENDPOINT = 'https://gas-proxy.tuic1677.workers.dev/'; // tetap sama seperti sebelumnya (upload)
 const DATA_URL = 'https://script.google.com/macros/s/AKfycbylSlXUDFGtiKh9xubcms6F6-bsKPAOFhIZo_kmilsr_6HEdsPdtxdJqP5RRrl4smGD/exec';
 
 /* ===== Utils & UI ===== */
@@ -132,30 +135,21 @@ function fillSelect(el, items, ph='-- pilih --'){el.innerHTML=''; if(ph&&!el.mul
 const uniq = a => [...new Set((a||[]).filter(Boolean))];
 const norm = s => String(s||'').trim();
 
+/* smart title-casing: jaga akronim & roman numerals */
 const ACRONYMS = new Set(['BWS','BBWS','PU','PUPR','DI','D.I','DKI','DIY','RI']);
-const ROMAN = /^(?:X{0,3})(?:IX|IV|V?I{0,3})$/i; // I..XXX simple roman check
-const isDotted = w => /^([A-Za-z]\.)+[A-Za-z]?$/.test(w); // e.g., "D.I" or "D.I."
-
-const smartTitle = (s) => String(s||'').split(/(\s+|[-\/])/).map(tok=>{
-  if (/^\s+$/.test(tok) || tok==='-' || tok==='/') return tok; // keep separators
-  const up = tok.toUpperCase();
-  if (ACRONYMS.has(up)) return up;              // keep known acronyms
-  if (isDotted(tok)) return up;                 // keep dotted abbrevs: D.I, D.K.I
-  if (ROMAN.test(tok)) return up;               // keep roman numerals
-  // default Title Case for normal words
-  return tok.charAt(0).toUpperCase() + tok.slice(1).toLowerCase();
-}).join('');
-
-// titleCase kept for backward compatibility, points to smartTitle
+const ROMAN = /^(?:X{0,3})(?:IX|IV|V?I{0,3})$/i;
+const isDotted = w => /^([A-Za-z]\.)+[A-Za-z]?$/.test(w);
+const smartTitle = (s) => String(s||'')
+  .split(/(\s+|[-/])/)
+  .map(tok=>{
+    if (/^\s+$/.test(tok) || tok==='-' || tok==='/') return tok;
+    const up = tok.toUpperCase();
+    if (ACRONYMS.has(up)) return up;
+    if (isDotted(tok))   return up;
+    if (ROMAN.test(tok)) return up;
+    return tok.charAt(0).toUpperCase() + tok.slice(1).toLowerCase();
+  }).join('');
 const titleCase = smartTitle;
-
-// ambil nilai dari beberapa kemungkinan alias header
-function getAlias(row, aliases){
-  for(const k of aliases){
-    if (row[k] !== undefined && row[k] !== null && String(row[k]).trim() !== '') return row[k];
-  }
-  return '';
-}
 
 function splitList(val){
   return uniq(norm(val)
@@ -165,11 +159,19 @@ function splitList(val){
     .filter(Boolean));
 }
 
+/* alias helper */
+function getAlias(row, aliases){
+  for(const k of aliases){
+    if (row[k] !== undefined && row[k] !== null && String(row[k]).trim() !== '') return row[k];
+  }
+  return '';
+}
+
 /* ===== DOM ===== */
 const $balai = document.getElementById('balai');      // BWS
 const $prov  = document.getElementById('provinsi');
 const $kab   = document.getElementById('kabupaten');
-const $di    = document.getElementById('paket');      // Nama DI (pakai id 'paket' agar kompatibel)
+const $di    = document.getElementById('paket');      // Nama DI (pakai id 'paket' agar backend tetap kompatibel)
 const $kec   = document.getElementById('kecamatan');
 const $desa  = document.getElementById('desa');
 
@@ -180,53 +182,60 @@ function disableChain(level){
   if(level<=3){ $kec.value=''; $desa.value=''; }
 }
 
-/* ===== Hierarchy: BWS -> PROV -> KAB -> DI ===== */
-let INDEX={};
-
+/* ===== Robust fetch (JSON/CSV + deteksi HTML login) ===== */
 async function fetchFlexible(url){
-  const r = await fetch(url, {cache:'no-store'});
-  if(!r.ok) throw new Error('HTTP '+r.status);
-  const ct = r.headers.get('content-type')||'';
-  if (ct.includes('application/json')){
-    const js = await r.json();
-    // bentuk fleksibel: bisa array langsung, atau objek dengan {records|data|rows|result}
+  const resp = await fetch(url, {cache:'no-store', redirect:'follow'});
+  const ct = (resp.headers.get('content-type')||'').toLowerCase();
+  const text = await resp.text();
+  // hapus XSSI prefix jika ada
+  const cleaned = text.replace(/^\)\]\}'\s*/, '');
+
+  try {
+    const js = JSON.parse(cleaned);
     if (Array.isArray(js)) return js;
     const cand = js.records || js.data || js.rows || js.result || js.items;
     return Array.isArray(cand) ? cand : [];
-  } else {
-    // fallback CSV sederhana
-    const text = await r.text();
-    const lines = text.trim().split(/\r?\n/);
-    if(lines.length<2) return [];
-    const headers = lines[0].split(',').map(h=>h.trim());
-    return lines.slice(1).map(line=>{
-      const cells = line.split(',').map(v=>v.trim());
-      const obj = {};
-      headers.forEach((h,i)=>obj[h]=cells[i]||'');
-      return obj;
-    });
+  } catch (e) {
+    if (/^\s*</.test(cleaned)) {
+      console.error('GAS mengembalikan HTML (login/domain). Set Web App: "Anyone with the link".');
+      throw new Error('GAS returned HTML (auth?)');
+    }
+    // CSV fallback
+    const lines = cleaned.trim().split(/\r?\n/);
+    if (lines.length >= 2) {
+      const headers = lines[0].split(',').map(h=>h.trim());
+      const rows = lines.slice(1).map(line=>{
+        const cells = line.split(',').map(v=>v.trim());
+        const obj = {};
+        headers.forEach((h,i)=>obj[h]=cells[i]||'');
+        return obj;
+      });
+      return rows;
+    }
+    throw new Error('Format respons GAS tidak dikenali.');
   }
 }
+
+/* ===== Build Hierarchy: BWS -> PROV -> KAB -> DI -> {kec, desa} ===== */
+let INDEX={};
 
 async function loadData(){
   try{
     const rows = await fetchFlexible(DATA_URL);
-
-    INDEX = {}; // {BWS:{PROV:{KAB:{DI:{kecamatan:Set, desa:Set}}}}}
-    let inserted = 0;
-
+    INDEX = {};
     rows.forEach(row=>{
-      const BWS  = titleCase(getAlias(row, ['BWS','B/BWS','B/BWS PELAKSANA','BALAI','BBWS']));
+      // header Sheet: NO | PROVINSI | B/BWS PELAKSANA | PENGUSUL | NAMA DI/DIR | KABUPATEN | KECAMATAN | DESA | OUTCOME (Ha) | SYC/MYC
+      const BWS  = titleCase(getAlias(row, ['B/BWS PELAKSANA','B/BWS','BALAI','BBWS','BWS']));
       const PROV = titleCase(getAlias(row, ['PROVINSI','PROV']));
       const KAB  = titleCase(getAlias(row, ['KABUPATEN','KAB/KOTA','KABUPATEN/KOTA']));
-      const DI   = titleCase(getAlias(row, ['NAMA_DI','NAMA DI/DIR','DI','NAMA DI']));
+      const DI   = titleCase(getAlias(row, ['NAMA DI/DIR','NAMA_DI','DI','NAMA DI']));
       const KECV = getAlias(row, ['KECAMATAN','Kecamatan']);
       const DESV = getAlias(row, ['DESA','Desa','DESA/KEL']);
 
-      if(!BWS || !PROV || !KAB || !DI) return; // skip baris yang gak lengkap
+      if(!BWS || !PROV || !KAB || !DI) return;
 
-      const kecs = splitList(KECV);
-      const desas= splitList(DESV);
+      const kecs  = splitList(KECV);
+      const desas = splitList(DESV);
 
       if(!INDEX[BWS]) INDEX[BWS] = {};
       if(!INDEX[BWS][PROV]) INDEX[BWS][PROV] = {};
@@ -235,18 +244,14 @@ async function loadData(){
 
       kecs.forEach(k=>INDEX[BWS][PROV][KAB][DI].kecamatan.add(k));
       desas.forEach(d=>INDEX[BWS][PROV][KAB][DI].desa.add(d));
-      inserted++;
     });
 
     const keys = Object.keys(INDEX).sort();
     fillSelect($balai, keys, '-- pilih B/BWS --');
     disableChain(0);
-
     if (!keys.length){
-      toast('⚠️ Tidak ada data BWS yang terbaca. Cek header Sheet/GAS JSON.');
-      console.warn('Tidak ada BWS. Contoh row pertama:', rows[0]);
-    } else {
-      toast(`✅ Data dimuat. BWS terdeteksi: ${keys.length}`);
+      toast('⚠️ Tidak ada BWS terbaca. Cek akses Web App / header Sheet.');
+      console.error('Tidak ada BWS. Contoh row pertama:', rows && rows[0]);
     }
   }catch(e){
     console.error(e);
@@ -295,7 +300,10 @@ $di.addEventListener('change', ()=>{
 const baseOSM=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20, attribution:'© OpenStreetMap'});
 const baseImg=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20, attribution:'Tiles © Esri/Maxar'});
 const map=L.map('map',{zoomControl:true,layers:[baseOSM]}); L.control.layers({OSM:baseOSM,'Esri Imagery':baseImg}, {}, {position:'topright', collapsed:false}).addTo(map);
-map.setView([-2.5,118],5); const coords=document.getElementById('coords'); function upd(){const c=map.getCenter(); coords.textContent=`Lat: ${c.lat.toFixed(6)}, Lng: ${c.lng.toFixed(6)}`;} map.on('move',upd); map.whenReady(upd);
+map.setView([-2.5,118],5);
+const coords=document.getElementById('coords');
+function upd(){const c=map.getCenter(); coords.textContent=`Lat: ${c.lat.toFixed(6)}, Lng: ${c.lng.toFixed(6)}`;}
+map.on('move',upd); map.whenReady(upd);
 document.getElementById('btnLocate').addEventListener('click',()=>map.locate({setView:true,maxZoom:17,enableHighAccuracy:true}));
 map.on('locationerror',()=>alert('Izin lokasi ditolak. Geser peta manual.'));
 document.getElementById('btnPick').addEventListener('click',()=>{const c=map.getCenter(); lat.value=c.lat.toFixed(6); lng.value=c.lng.toFixed(6);});
@@ -314,14 +322,20 @@ fileInput.addEventListener('change',()=>{
   photoMeta.textContent = selectedFile ? `Dipilih: ${selectedFile.name} • ${(selectedFile.size/1024).toFixed(1)} KB` : '';
 });
 
-async function compressImage(file,{maxDim=2000,quality=0.82,mime='image/jpeg'}={}){ try{
-  if(!(file&&file.type&&file.type.startsWith('image/'))) return file; let bitmap; if(window.createImageBitmap){bitmap=await createImageBitmap(file,{imageOrientation:'from-image'});}
-  const dims=f=>new Promise((res,rej)=>{const i=new Image(); i.onload=()=>res({w:i.width,h:i.height}); i.onerror=rej; i.src=URL.createObjectURL(f);});
-  const {w:W,h:H}=bitmap?{w:bitmap.width,h:bitmap.height}:await dims(file); const s=Math.min(1,maxDim/Math.max(W,H)); const w=Math.round(W*s), h=Math.round(H*s);
-  if(s===1 && file.type==='image/jpeg' && file.size<700*1024) return file; const c=document.createElement('canvas'); c.width=w; c.height=h; const ctx=c.getContext('2d');
-  if(bitmap) ctx.drawImage(bitmap,0,0,w,h); else {const i=new Image(); await new Promise((r,j)=>{i.onload=r;i.onerror=j;i.src=URL.createObjectURL(file)}); ctx.drawImage(i,0,0,w,h);}
-  const blob=await new Promise(r=>c.toBlob(r,mime,quality)); if(!blob||blob.size>=file.size) return file; const name=(file.name.replace(/\.(jpe?g|png|webp|heic|heif)$/i,'')||'foto')+'.jpg'; return new File([blob],name,{type:mime});
-}catch(e){console.warn('compress fail',e); return file;}}
+async function compressImage(file,{maxDim=2000,quality=0.82,mime='image/jpeg'}={}){
+  try{
+    if(!(file&&file.type&&file.type.startsWith('image/'))) return file;
+    let bitmap; if(window.createImageBitmap){bitmap=await createImageBitmap(file,{imageOrientation:'from-image'});}
+    const dims=f=>new Promise((res,rej)=>{const i=new Image(); i.onload=()=>res({w:i.width,h:i.height}); i.onerror=rej; i.src=URL.createObjectURL(f);});
+    const {w:W,h:H}=bitmap?{w:bitmap.width,h:bitmap.height}:await dims(file);
+    const s=Math.min(1,maxDim/Math.max(W,H)); const w=Math.round(W*s), h=Math.round(H*s);
+    if(s===1 && file.type==='image/jpeg' && file.size<700*1024) return file;
+    const c=document.createElement('canvas'); c.width=w; c.height=h; const ctx=c.getContext('2d');
+    if(bitmap) ctx.drawImage(bitmap,0,0,w,h); else {const i=new Image(); await new Promise((r,j)=>{i.onload=r;i.onerror=j;i.src=URL.createObjectURL(file)}); ctx.drawImage(i,0,0,w,h);}
+    const blob=await new Promise(r=>c.toBlob(r,mime,quality)); if(!blob||blob.size>=file.size) return file;
+    const name=(file.name.replace(/\.(jpe?g|png|webp|heic|heif)$/i,'')||'foto')+'.jpg'; return new File([blob],name,{type:mime});
+  }catch(e){console.warn('compress fail',e); return file;}
+}
 
 function setUploadingUI({show,percent}){ if(typeof percent==='number') document.getElementById('progressBar').style.width=Math.max(0,Math.min(100,Math.round(percent)))+'%'; document.getElementById('uploadOverlay').style.display=show?'flex':'none'; }
 function disableForm(b){document.querySelectorAll('#surveyForm input, #surveyForm select, #surveyForm button').forEach(e=>e.disabled=!!b);}
