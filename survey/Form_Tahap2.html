@@ -124,14 +124,30 @@
 <script>
 /* ===== CONFIG (Upload path tidak diubah) ===== */
 const ENDPOINT = 'https://gas-proxy.tuic1677.workers.dev/'; // tetap sama
-const DATA_URL = 'https://script.google.com/macros/s/AKfycbzDuFNJU4bZX_xQofUKICQ7NHxByd8h-a3IDcTllKlpJuibtMKOTtSLx6OiW5unHFOL/exec';
+const DATA_URL = 'https://script.google.com/macros/s/AKfycbylSlXUDFGtiKh9xubcms6F6-bsKPAOFhIZo_kmilsr_6HEdsPdtxdJqP5RRrl4smGD/exec';
 
 /* ===== Utils & UI ===== */
 const toast = (m)=>{const t=document.getElementById('toast');t.textContent=m;t.style.display='block';clearTimeout(window.__t);window.__t=setTimeout(()=>t.style.display='none',5000);};
 function fillSelect(el, items, ph='-- pilih --'){el.innerHTML=''; if(ph&&!el.multiple){const o=document.createElement('option');o.value='';o.textContent=ph;el.appendChild(o);} (items||[]).forEach(v=>{const o=document.createElement('option');o.value=o.textContent=v;el.appendChild(o);}); el.disabled=!(items&&items.length);}
 const uniq = a => [...new Set((a||[]).filter(Boolean))];
 const norm = s => String(s||'').trim();
-const titleCase = s => norm(s).toLowerCase().replace(/(^|\s|-|\/)\S/g, t=>t.toUpperCase());
+
+const ACRONYMS = new Set(['BWS','BBWS','PU','PUPR','DI','D.I','DKI','DIY','RI']);
+const ROMAN = /^(?:X{0,3})(?:IX|IV|V?I{0,3})$/i; // I..XXX simple roman check
+const isDotted = w => /^([A-Za-z]\.)+[A-Za-z]?$/.test(w); // e.g., "D.I" or "D.I."
+
+const smartTitle = (s) => String(s||'').split(/(\s+|[-\/])/).map(tok=>{
+  if (/^\s+$/.test(tok) || tok==='-' || tok==='/') return tok; // keep separators
+  const up = tok.toUpperCase();
+  if (ACRONYMS.has(up)) return up;              // keep known acronyms
+  if (isDotted(tok)) return up;                 // keep dotted abbrevs: D.I, D.K.I
+  if (ROMAN.test(tok)) return up;               // keep roman numerals
+  // default Title Case for normal words
+  return tok.charAt(0).toUpperCase() + tok.slice(1).toLowerCase();
+}).join('');
+
+// titleCase kept for backward compatibility, points to smartTitle
+const titleCase = smartTitle;
 
 // ambil nilai dari beberapa kemungkinan alias header
 function getAlias(row, aliases){
