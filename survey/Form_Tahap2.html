@@ -90,15 +90,44 @@
           <button type="button" id="btnPan" class="ghost">🧭 Pan ke koordinat</button>
         </div>
 
+        <!-- FOTO PROGRES (25/50/75/100) -->
         <div>
-          <label>Foto Lokasi</label>
-          <div class="actions" style="gap:8px;margin-bottom:6px">
-            <button type="button" id="btnCamera" class="ghost">📷 Kamera</button>
-            <button type="button" id="btnGallery" class="ghost">🖼️ Galeri</button>
-            <span id="photoMeta" class="hint"></span>
+          <label id="photoSectionTitle">Foto Progres 25%</label>
+
+          <!-- SLOT 25% -->
+          <div id="photoGroup1" class="actions" style="gap:8px;margin-bottom:6px">
+            <button type="button" id="btnCamera1" class="ghost">📷 Kamera</button>
+            <button type="button" id="btnGallery1" class="ghost">🖼️ Galeri</button>
+            <span id="photoMeta1" class="hint"></span>
           </div>
-          <!-- input file yang DIKIRIM -->
-          <input type="file" accept="image/*" id="fileInput" name="foto" style="display:none">
+          <input type="file" accept="image/*" id="fileInput1" name="foto" style="display:none">
+
+          <!-- SLOT 50% -->
+          <div id="photoGroup2" class="actions" style="gap:8px;margin-bottom:6px; display:none">
+            <button type="button" id="btnCamera2" class="ghost">📷 Kamera</button>
+            <button type="button" id="btnGallery2" class="ghost">🖼️ Galeri</button>
+            <span id="photoMeta2" class="hint"></span>
+          </div>
+          <input type="file" accept="image/*" id="fileInput2" style="display:none" disabled>
+
+          <!-- SLOT 75% -->
+          <div id="photoGroup3" class="actions" style="gap:8px;margin-bottom:6px; display:none">
+            <button type="button" id="btnCamera3" class="ghost">📷 Kamera</button>
+            <button type="button" id="btnGallery3" class="ghost">🖼️ Galeri</button>
+            <span id="photoMeta3" class="hint"></span>
+          </div>
+          <input type="file" accept="image/*" id="fileInput3" style="display:none" disabled>
+
+          <!-- SLOT 100% -->
+          <div id="photoGroup4" class="actions" style="gap:8px;margin-bottom:6px; display:none">
+            <button type="button" id="btnCamera4" class="ghost">📷 Kamera</button>
+            <button type="button" id="btnGallery4" class="ghost">🖼️ Galeri</button>
+            <span id="photoMeta4" class="hint"></span>
+          </div>
+          <input type="file" accept="image/*" id="fileInput4" style="display:none" disabled>
+
+          <!-- penanda stage aktif untuk backend -->
+          <input type="hidden" id="progress_stage" name="progress_stage" value="25">
           <div class="hint">Pilih kamera/galeri. Foto dikompresi otomatis & dikirim juga sebagai base64 fallback.</div>
         </div>
 
@@ -126,8 +155,8 @@
 
 <script>
 /* ===== CONFIG ===== */
-const ENDPOINT = 'https://gas-proxy.tuic1677.workers.dev/'; // tetap sama seperti sebelumnya (upload)
-const DATA_URL = 'https://script.google.com/macros/s/AKfycbyRKfCmjpKW0XMQrDfVZr-bG0ouPcVCvSesiYInlWNSirlkLV0KNl_H48f_BVxsVkii/exec';
+const ENDPOINT = 'https://gas-proxy.tuic1677.workers.dev/'; // jalur upload TETAP
+const DATA_URL = 'https://script.google.com/macros/s/AKfycbylSlXUDFGtiKh9xubcms6F6-bsKPAOFhIZo_kmilsr_6HEdsPdtxdJqP5RRrl4smGD/exec';
 
 /* ===== Utils & UI ===== */
 const toast = (m)=>{const t=document.getElementById('toast');t.textContent=m;t.style.display='block';clearTimeout(window.__t);window.__t=setTimeout(()=>t.style.display='none',5000);};
@@ -168,10 +197,10 @@ function getAlias(row, aliases){
 }
 
 /* ===== DOM ===== */
-const $balai = document.getElementById('balai');      // BWS
+const $balai = document.getElementById('balai');
 const $prov  = document.getElementById('provinsi');
 const $kab   = document.getElementById('kabupaten');
-const $di    = document.getElementById('paket');      // Nama DI (pakai id 'paket' agar backend tetap kompatibel)
+const $di    = document.getElementById('paket');
 const $kec   = document.getElementById('kecamatan');
 const $desa  = document.getElementById('desa');
 
@@ -187,8 +216,7 @@ async function fetchFlexible(url){
   const resp = await fetch(url, {cache:'no-store', redirect:'follow'});
   const ct = (resp.headers.get('content-type')||'').toLowerCase();
   const text = await resp.text();
-  // hapus XSSI prefix jika ada
-  const cleaned = text.replace(/^\)\]\}'\s*/, '');
+  const cleaned = text.replace(/^\)\]\}'\s*/, ''); // hapus XSSI prefix jika ada
 
   try {
     const js = JSON.parse(cleaned);
@@ -294,9 +322,10 @@ $di.addEventListener('change', ()=>{
   const desas= node ? Array.from(node.desa).sort() : [];
   $kec.value  = kecs.join(', ');
   $desa.value = desas.join(', ');
+  decideStage(); // tentukan slot progres saat DI berubah
 });
 
-/* ===== Map (tetap) ===== */
+/* ===== Map ===== */
 const baseOSM=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20, attribution:'© OpenStreetMap'});
 const baseImg=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20, attribution:'Tiles © Esri/Maxar'});
 const map=L.map('map',{zoomControl:true,layers:[baseOSM]}); L.control.layers({OSM:baseOSM,'Esri Imagery':baseImg}, {}, {position:'topright', collapsed:false}).addTo(map);
@@ -309,24 +338,109 @@ map.on('locationerror',()=>alert('Izin lokasi ditolak. Geser peta manual.'));
 document.getElementById('btnPick').addEventListener('click',()=>{const c=map.getCenter(); lat.value=c.lat.toFixed(6); lng.value=c.lng.toFixed(6);});
 document.getElementById('btnPan').addEventListener('click',()=>{const la=+lat.value,lo=+lng.value; if(!Number.isNaN(la)&&!Number.isNaN(lo)) map.setView([la,lo],Math.max(map.getZoom(),16));});
 
-/* ===== Foto + kompresi + base64 fallback (tetap) ===== */
-const fileInput = document.getElementById('fileInput');
-const photoMeta = document.getElementById('photoMeta');
-let selectedFile = null;
+/* ===== Foto Progres: 4 slot ===== */
+const STAGES = [25,50,75,100];
+const $photoTitle = document.getElementById('photoSectionTitle');
+const $stage = document.getElementById('progress_stage');
 
-document.getElementById('btnCamera').addEventListener('click',()=>{ fileInput.setAttribute('capture','environment'); fileInput.click(); });
-document.getElementById('btnGallery').addEventListener('click',()=>{ fileInput.removeAttribute('capture'); fileInput.click(); });
+const groups = [
+  document.getElementById('photoGroup1'),
+  document.getElementById('photoGroup2'),
+  document.getElementById('photoGroup3'),
+  document.getElementById('photoGroup4'),
+];
+const inputs = [
+  document.getElementById('fileInput1'),
+  document.getElementById('fileInput2'),
+  document.getElementById('fileInput3'),
+  document.getElementById('fileInput4'),
+];
+const metas = [
+  document.getElementById('photoMeta1'),
+  document.getElementById('photoMeta2'),
+  document.getElementById('photoMeta3'),
+  document.getElementById('photoMeta4'),
+];
 
-fileInput.addEventListener('change',()=>{
-  selectedFile = fileInput.files?.[0] || null;
-  photoMeta.textContent = selectedFile ? `Dipilih: ${selectedFile.name} • ${(selectedFile.size/1024).toFixed(1)} KB` : '';
-});
+function activateStageByIndex(idx){
+  for (let i=0;i<4;i++){
+    const active = (i===idx);
+    groups[i].style.display = active ? 'flex' : 'none';
+    inputs[i].disabled = !active;
+    metas[i].textContent = '';
+    if (active) inputs[i].setAttribute('name','foto'); else inputs[i].removeAttribute('name');
+    if (!active) inputs[i].value = '';
+  }
+  $photoTitle.textContent = `Foto Progres ${STAGES[idx]}%`;
+  $stage.value = String(STAGES[idx]);
+}
+// default 25%
+activateStageByIndex(0);
 
+// tombol kamera/galeri + meta per slot
+document.getElementById('btnCamera1').addEventListener('click',()=>{ inputs[0].setAttribute('capture','environment'); inputs[0].click(); });
+document.getElementById('btnGallery1').addEventListener('click',()=>{ inputs[0].removeAttribute('capture'); inputs[0].click(); });
+inputs[0].addEventListener('change',()=>{ const f=inputs[0].files?.[0]; metas[0].textContent = f ? `Dipilih: ${f.name} • ${(f.size/1024).toFixed(1)} KB` : ''; });
+
+document.getElementById('btnCamera2').addEventListener('click',()=>{ inputs[1].setAttribute('capture','environment'); inputs[1].click(); });
+document.getElementById('btnGallery2').addEventListener('click',()=>{ inputs[1].removeAttribute('capture'); inputs[1].click(); });
+inputs[1].addEventListener('change',()=>{ const f=inputs[1].files?.[0]; metas[1].textContent = f ? `Dipilih: ${f.name} • ${(f.size/1024).toFixed(1)} KB` : ''; });
+
+document.getElementById('btnCamera3').addEventListener('click',()=>{ inputs[2].setAttribute('capture','environment'); inputs[2].click(); });
+document.getElementById('btnGallery3').addEventListener('click',()=>{ inputs[2].removeAttribute('capture'); inputs[2].click(); });
+inputs[2].addEventListener('change',()=>{ const f=inputs[2].files?.[0]; metas[2].textContent = f ? `Dipilih: ${f.name} • ${(f.size/1024).toFixed(1)} KB` : ''; });
+
+document.getElementById('btnCamera4').addEventListener('click',()=>{ inputs[3].setAttribute('capture','environment'); inputs[3].click(); });
+document.getElementById('btnGallery4').addEventListener('click',()=>{ inputs[3].removeAttribute('capture'); inputs[3].click(); });
+inputs[3].addEventListener('change',()=>{ const f=inputs[3].files?.[0]; metas[3].textContent = f ? `Dipilih: ${f.name} • ${(f.size/1024).toFixed(1)} KB` : ''; });
+
+// key progres per DI (lokal)
+const makeDIKeyStage = (b,p,k,d)=>`di_stage:${b}|${p}|${k}|${d}`;
+
+// (Opsional) cek ke server: balikin {stage: 25|50|75|100} kalau ada
+async function serverStage(b,p,k,d){
+  const url = `${ENDPOINT}?fn=check_stage&bws=${encodeURIComponent(b)}&prov=${encodeURIComponent(p)}&kab=${encodeURIComponent(k)}&di=${encodeURIComponent(d)}`;
+  try{
+    const r = await fetch(url, {mode:'cors'});
+    if(!r.ok) return null;
+    const j = await r.json().catch(()=>null);
+    if (j && STAGES.includes(Number(j.stage))) return Number(j.stage);
+  }catch(e){}
+  return null;
+}
+
+// tentukan slot aktif berdasar progres sebelumnya (max stage completed)
+async function decideStage(){
+  const b = $balai.value, p = $prov.value, k = $kab.value, d = $di.value;
+  if(!b||!p||!k||!d){ activateStageByIndex(0); return; }
+
+  const key = makeDIKeyStage(b,p,k,d);
+  let maxDone = Number(localStorage.getItem(key) || 0);
+
+  // coba tanya server (kalau ada)
+  const s = await serverStage(b,p,k,d);
+  if (s && STAGES.includes(s)) maxDone = Math.max(maxDone, s);
+
+  let idx = 0;
+  if (maxDone >= 100) idx = 3;
+  else if (maxDone >= 75) idx = 3;
+  else if (maxDone >= 50) idx = 2;
+  else if (maxDone >= 25) idx = 1;
+  else idx = 0;
+
+  activateStageByIndex(idx);
+}
+
+/* ===== Upload UI helpers ===== */
+function setUploadingUI({show,percent}){ if(typeof percent==='number') document.getElementById('progressBar').style.width=Math.max(0,Math.min(100,Math.round(percent)))+'%'; document.getElementById('uploadOverlay').style.display=show?'flex':'none'; }
+function disableForm(b){document.querySelectorAll('#surveyForm input, #surveyForm select, #surveyForm button').forEach(e=>e.disabled=!!b);}
+
+/* ===== Kompresi foto ===== */
 async function compressImage(file,{maxDim=2000,quality=0.82,mime='image/jpeg'}={}){
   try{
     if(!(file&&file.type&&file.type.startsWith('image/'))) return file;
     let bitmap; if(window.createImageBitmap){bitmap=await createImageBitmap(file,{imageOrientation:'from-image'});}
-    const dims=f=>new Promise((res,rej)=>{const i=new Image(); i.onload=()=>res({w:i.width,h:i.height}); i.onerror=rej; i.src=URL.createObjectURL(f);});
+    const dims=f=>new Promise((res,rej)=>{const i=new Image(); i.onload=()=>res({w:i.width,h:i.height}); i.onerror=rej; i.src=URL.createObjectURL(file);});
     const {w:W,h:H}=bitmap?{w:bitmap.width,h:bitmap.height}:await dims(file);
     const s=Math.min(1,maxDim/Math.max(W,H)); const w=Math.round(W*s), h=Math.round(H*s);
     if(s===1 && file.type==='image/jpeg' && file.size<700*1024) return file;
@@ -337,22 +451,27 @@ async function compressImage(file,{maxDim=2000,quality=0.82,mime='image/jpeg'}={
   }catch(e){console.warn('compress fail',e); return file;}
 }
 
-function setUploadingUI({show,percent}){ if(typeof percent==='number') document.getElementById('progressBar').style.width=Math.max(0,Math.min(100,Math.round(percent)))+'%'; document.getElementById('uploadOverlay').style.display=show?'flex':'none'; }
-function disableForm(b){document.querySelectorAll('#surveyForm input, #surveyForm select, #surveyForm button').forEach(e=>e.disabled=!!b);}
-
 /* ===== Submit via XHR (tetap) ===== */
 const form=document.getElementById('surveyForm'); const lat=document.getElementById('lat'); const lng=document.getElementById('lng');
+
 form.addEventListener('submit', async (e)=>{
   e.preventDefault();
   if(!$balai.value||!$prov.value||!$kab.value||!$di.value){toast('Lengkapi BWS, Provinsi, Kabupaten, dan DI.'); return;}
   if(!lat.value||!lng.value){toast('Koordinat belum diisi.'); return;}
 
+  // Ambil input aktif berdasar progress_stage
   let b64 = ''; let photo = null;
+  const stageNow = Number(document.getElementById('progress_stage').value);
+  const idxActive = STAGES.indexOf(stageNow); // 0..3
+  const activeInput = inputs[idxActive];
+  const activeMeta  = metas[idxActive];
+  const selectedFile = activeInput.files?.[0] || null;
+
   if (selectedFile) {
     photo = await compressImage(selectedFile,{maxDim:2000,quality:0.82});
-    const dt = new DataTransfer(); dt.items.add(photo); fileInput.files = dt.files;
+    const dt = new DataTransfer(); dt.items.add(photo); activeInput.files = dt.files;
     b64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload=()=>res(String(r.result)); r.onerror=rej; r.readAsDataURL(photo); });
-    photoMeta.textContent = `Akan dikirim: ${photo.name} • ${(photo.size/1024).toFixed(1)} KB`;
+    activeMeta.textContent = `Akan dikirim: ${photo.name} • ${(photo.size/1024).toFixed(1)} KB`;
   }
 
   const fd = new FormData(form);
@@ -370,9 +489,18 @@ form.addEventListener('submit', async (e)=>{
     let data={}; try{ data = JSON.parse(xhr.responseText||'{}'); }catch(e){}
     if (xhr.status>=200 && xhr.status<300 && (data.ok===true || data.status==='ok')) {
       setUploadingUI({show:true, percent:100}); toast('✅ Terkirim!');
-      setTimeout(()=>{ setUploadingUI({show:false}); form.reset(); selectedFile=null; photoMeta.textContent='';
+      setTimeout(()=>{ setUploadingUI({show:false}); form.reset();
+        // tandai progres lokal utk DI ini
+        try{
+          const b = $balai.value, p = $prov.value, k = $kab.value, d = $di.value;
+          const key = makeDIKeyStage(b,p,k,d);
+          const done = Number(localStorage.getItem(key) || 0);
+          const newDone = Math.max(done, stageNow);
+          localStorage.setItem(key, String(newDone));
+        }catch(e){}
+        // reset UI
         fillSelect($balai, Object.keys(INDEX).sort(), '-- pilih B/BWS --');
-        disableChain(0); disableForm(false);
+        disableChain(0); decideStage(); disableForm(false);
       }, 600);
     } else {
       setUploadingUI({show:false}); disableForm(false);
@@ -384,9 +512,9 @@ form.addEventListener('submit', async (e)=>{
 
 /* ===== Reset ===== */
 document.getElementById('btnReset').addEventListener('click', ()=>{
-  selectedFile=null; photoMeta.textContent='';
   fillSelect($balai, Object.keys(INDEX).sort(), '-- pilih B/BWS --');
   disableChain(0);
+  activateStageByIndex(0);
 });
 
 /* ===== Start ===== */
