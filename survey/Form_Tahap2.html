@@ -435,23 +435,52 @@ async function decideStage(){
 function setUploadingUI({show,percent}){ if(typeof percent==='number') document.getElementById('progressBar').style.width=Math.max(0,Math.min(100,Math.round(percent)))+'%'; document.getElementById('uploadOverlay').style.display=show?'flex':'none'; }
 function disableForm(b){document.querySelectorAll('#surveyForm input, #surveyForm select, #surveyForm button').forEach(e=>e.disabled=!!b);}
 
-/* ===== Kompresi foto ===== */
-async function compressImage(file,{maxDim: 2000,quality:0.82,mime='image/jpeg'}={}){
+/* ===== Kompresi foto (FIX destructuring) ===== */
+async function compressImage(file,{maxDim=2000,quality=0.82,mime='image/jpeg'}={}){
   try{
     if(!(file&&file.type&&file.type.startsWith('image/'))) return file;
-    let bitmap; if(window.createImageBitmap){bitmap=await createImageBitmap(file,{imageOrientation:'from-image'});}
-    const dims=f=>new Promise((res,rej)=>{const i=new Image(); i.onload=()=>res({w:i.width,h:i.height}); i.onerror=rej; i.src=URL.createObjectURL(file);});
-    const {w:W,h:H}=bitmap?{w:bitmap.width,h:bitmap.height}:await dims(file);
-    const s=Math.min(1,maxDim/Math.max(W,H)); const w=Math.round(W*s), h=Math.round(H*s);
+
+    let bitmap;
+    if(window.createImageBitmap){
+      bitmap = await createImageBitmap(file,{imageOrientation:'from-image'});
+    }
+
+    const dims = f => new Promise((res,rej)=>{
+      const i = new Image();
+      i.onload = ()=>res({w:i.width,h:i.height});
+      i.onerror = rej;
+      i.src = URL.createObjectURL(f);
+    });
+
+    // aman: dua langkah (bukan destructuring dari ternary + await)
+    const size = bitmap ? { w: bitmap.width, h: bitmap.height } : await dims(file);
+    const W = size.w, H = size.h;
+
+    const s = Math.min(1, maxDim / Math.max(W,H));
+    const w = Math.round(W*s), h = Math.round(H*s);
+
     if(s===1 && file.type==='image/jpeg' && file.size<700*1024) return file;
-    const c=document.createElement('canvas'); c.width=w; c.height=h; const ctx=c.getContext('2d');
-    if(bitmap) ctx.drawImage(bitmap,0,0,w,h); else {const i=new Image(); await new Promise((r,j)=>{i.onload=r;i.onerror=j;i.src=URL.createObjectURL(file)}); ctx.drawImage(i,0,0,w,h);}
-    const blob=await new Promise(r=>c.toBlob(r,mime,quality)); if(!blob||blob.size>=file.size) return file;
-    const name=(file.name.replace(/\.(jpe?g|png|webp|heic|heif)$/i,'')||'foto')+'.jpg'; return new File([blob],name,{type:mime});
-  }catch(e){console.warn('compress fail',e); return file;}
+
+    const c = document.createElement('canvas'); c.width=w; c.height=h;
+    const ctx = c.getContext('2d');
+    if(bitmap) ctx.drawImage(bitmap,0,0,w,h);
+    else {
+      const i = new Image();
+      await new Promise((r,j)=>{ i.onload=r; i.onerror=j; i.src=URL.createObjectURL(file); });
+      ctx.drawImage(i,0,0,w,h);
+    }
+    const blob = await new Promise(r=>c.toBlob(r,mime,quality));
+    if(!blob || blob.size>=file.size) return file;
+
+    const name=(file.name.replace(/\.(jpe?g|png|webp|heic|heif)$/i,'')||'foto')+'.jpg';
+    return new File([blob],name,{type:mime});
+  }catch(e){
+    console.warn('compress fail',e);
+    return file;
+  }
 }
 
-/* ===== Submit via XHR (FIX urutan simpan progres) ===== */
+/* ===== Submit via XHR (FIX urutan simpan progres & opsi kompres) ===== */
 const form=document.getElementById('surveyForm'); const lat=document.getElementById('lat'); const lng=document.getElementById('lng');
 
 form.addEventListener('submit', async (e)=>{
@@ -468,7 +497,7 @@ form.addEventListener('submit', async (e)=>{
   const selectedFile = activeInput.files?.[0] || null;
 
   if (selectedFile) {
-    photo = await compressImage(selectedFile,{maxDim: 2000,quality:0.82});
+    photo = await compressImage(selectedFile, { maxDim: 2000, quality: 0.82 });
     const dt = new DataTransfer(); dt.items.add(photo); activeInput.files = dt.files;
     b64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload=()=>res(String(r.result)); r.onerror=rej; r.readAsDataURL(photo); });
     activeMeta.textContent = `Akan dikirim: ${photo.name} • ${(photo.size/1024).toFixed(1)} KB`;
