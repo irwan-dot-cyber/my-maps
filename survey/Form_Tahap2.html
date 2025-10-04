@@ -216,7 +216,7 @@ async function fetchFlexible(url){
   const resp = await fetch(url, {cache:'no-store', redirect:'follow'});
   const ct = (resp.headers.get('content-type')||'').toLowerCase();
   const text = await resp.text();
-  const cleaned = text.replace(/^\)\]\}'\s*/, ''); // hapus XSSI prefix jika ada
+  const cleaned = text.replace(/^\)\]\}'\s*/, ''); // hapus XSSI
 
   try {
     const js = JSON.parse(cleaned);
@@ -451,7 +451,7 @@ async function compressImage(file,{maxDim=2000,quality=0.82,mime='image/jpeg'}={
   }catch(e){console.warn('compress fail',e); return file;}
 }
 
-/* ===== Submit via XHR (tetap) ===== */
+/* ===== Submit via XHR (FIX urutan simpan progres) ===== */
 const form=document.getElementById('surveyForm'); const lat=document.getElementById('lat'); const lng=document.getElementById('lng');
 
 form.addEventListener('submit', async (e)=>{
@@ -468,7 +468,7 @@ form.addEventListener('submit', async (e)=>{
   const selectedFile = activeInput.files?.[0] || null;
 
   if (selectedFile) {
-    photo = await compressImage(selectedFile,{maxDim:2000,quality:0.82});
+    photo = await compressImage(selectedFile,{maxDim=2000,quality=0.82});
     const dt = new DataTransfer(); dt.items.add(photo); activeInput.files = dt.files;
     b64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload=()=>res(String(r.result)); r.onerror=rej; r.readAsDataURL(photo); });
     activeMeta.textContent = `Akan dikirim: ${photo.name} • ${(photo.size/1024).toFixed(1)} KB`;
@@ -489,18 +489,30 @@ form.addEventListener('submit', async (e)=>{
     let data={}; try{ data = JSON.parse(xhr.responseText||'{}'); }catch(e){}
     if (xhr.status>=200 && xhr.status<300 && (data.ok===true || data.status==='ok')) {
       setUploadingUI({show:true, percent:100}); toast('✅ Terkirim!');
-      setTimeout(()=>{ setUploadingUI({show:false}); form.reset();
-        // tandai progres lokal utk DI ini
-        try{
-          const b = $balai.value, p = $prov.value, k = $kab.value, d = $di.value;
-          const key = makeDIKeyStage(b,p,k,d);
-          const done = Number(localStorage.getItem(key) || 0);
-          const newDone = Math.max(done, stageNow);
-          localStorage.setItem(key, String(newDone));
-        }catch(e){}
-        // reset UI
+
+      // === SIMPAN PROGRES DULU (SEBELUM reset) ===
+      try{
+        const bSel = $balai.value, pSel = $prov.value, kSel = $kab.value, dSel = $di.value;
+        const key  = makeDIKeyStage(bSel, pSel, kSel, dSel);
+        const done = Number(localStorage.getItem(key) || 0);
+        const newDone = Math.max(done, stageNow);
+        localStorage.setItem(key, String(newDone));
+      }catch(e){ console.warn('store stage fail', e); }
+
+      // (opsional) langsung ubah label slot ke tahap berikutnya (tanpa reload)
+      try{
+        const nextIdx = Math.min(3, idxActive + 1);
+        activateStageByIndex(nextIdx);
+      }catch(e){}
+
+      setTimeout(()=>{ 
+        setUploadingUI({show:false}); 
+        form.reset();
+        // reset awal
         fillSelect($balai, Object.keys(INDEX).sort(), '-- pilih B/BWS --');
-        disableChain(0); decideStage(); disableForm(false);
+        disableChain(0);
+        activateStageByIndex(0); // default 25%
+        disableForm(false);
       }, 600);
     } else {
       setUploadingUI({show:false}); disableForm(false);
