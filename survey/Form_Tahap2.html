@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Form Survey</title>
+  <title>Form Survey (Tahap 2)</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" referrerpolicy="no-referrer"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js" referrerpolicy="no-referrer"></script>
   <style>
@@ -102,7 +102,7 @@
 
         <div class="row">
           <div><label>Nama Pengirim</label><input id="nama" name="nama" placeholder="Nama lengkap" required/></div>
-          <div><label>Nomor WA/HP</label><input id="telepon" name="telepon" placeholder="08xxxxxxxxxx / 628xxxxxxxxx" pattern="[0-9+]{8,15}" required/></div>
+          <div><label>Nomor WA/HP</label><input id="telepon" name="telepon" placeholder="08xxxxxxxxxx / 628xxxxxxxxxx" pattern="[0-9+]{8,15}" required/></div>
         </div>
 
         <div class="actions">
@@ -127,11 +127,19 @@ const ENDPOINT = 'https://gas-proxy.tuic1677.workers.dev/'; // tetap sama
 const DATA_URL = 'https://script.google.com/macros/s/AKfycbylSlXUDFGtiKh9xubcms6F6-bsKPAOFhIZo_kmilsr_6HEdsPdtxdJqP5RRrl4smGD/exec';
 
 /* ===== Utils & UI ===== */
-const toast = (m)=>{const t=document.getElementById('toast');t.textContent=m;t.style.display='block';clearTimeout(window.__t);window.__t=setTimeout(()=>t.style.display='none',4000);};
+const toast = (m)=>{const t=document.getElementById('toast');t.textContent=m;t.style.display='block';clearTimeout(window.__t);window.__t=setTimeout(()=>t.style.display='none',5000);};
 function fillSelect(el, items, ph='-- pilih --'){el.innerHTML=''; if(ph&&!el.multiple){const o=document.createElement('option');o.value='';o.textContent=ph;el.appendChild(o);} (items||[]).forEach(v=>{const o=document.createElement('option');o.value=o.textContent=v;el.appendChild(o);}); el.disabled=!(items&&items.length);}
 const uniq = a => [...new Set((a||[]).filter(Boolean))];
 const norm = s => String(s||'').trim();
 const titleCase = s => norm(s).toLowerCase().replace(/(^|\s|-|\/)\S/g, t=>t.toUpperCase());
+
+// ambil nilai dari beberapa kemungkinan alias header
+function getAlias(row, aliases){
+  for(const k of aliases){
+    if (row[k] !== undefined && row[k] !== null && String(row[k]).trim() !== '') return row[k];
+  }
+  return '';
+}
 
 function splitList(val){
   return uniq(norm(val)
@@ -159,20 +167,50 @@ function disableChain(level){
 /* ===== Hierarchy: BWS -> PROV -> KAB -> DI ===== */
 let INDEX={};
 
+async function fetchFlexible(url){
+  const r = await fetch(url, {cache:'no-store'});
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  const ct = r.headers.get('content-type')||'';
+  if (ct.includes('application/json')){
+    const js = await r.json();
+    // bentuk fleksibel: bisa array langsung, atau objek dengan {records|data|rows|result}
+    if (Array.isArray(js)) return js;
+    const cand = js.records || js.data || js.rows || js.result || js.items;
+    return Array.isArray(cand) ? cand : [];
+  } else {
+    // fallback CSV sederhana
+    const text = await r.text();
+    const lines = text.trim().split(/\r?\n/);
+    if(lines.length<2) return [];
+    const headers = lines[0].split(',').map(h=>h.trim());
+    return lines.slice(1).map(line=>{
+      const cells = line.split(',').map(v=>v.trim());
+      const obj = {};
+      headers.forEach((h,i)=>obj[h]=cells[i]||'');
+      return obj;
+    });
+  }
+}
+
 async function loadData(){
   try{
-    const r = await fetch(DATA_URL, {cache:'no-store'});
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    const rows = await r.json(); // [{BWS, PROVINSI, KABUPATEN, KECAMATAN, DESA, NAMA_DI}]
+    const rows = await fetchFlexible(DATA_URL);
 
     INDEX = {}; // {BWS:{PROV:{KAB:{DI:{kecamatan:Set, desa:Set}}}}}
+    let inserted = 0;
+
     rows.forEach(row=>{
-      const BWS  = titleCase(row.BWS);
-      const PROV = titleCase(row.PROVINSI);
-      const KAB  = titleCase(row.KABUPATEN);
-      const DI   = titleCase(row.NAMA_DI);
-      const kecs = splitList(row.KECAMATAN);
-      const desas= splitList(row.DESA);
+      const BWS  = titleCase(getAlias(row, ['BWS','B/BWS','B/BWS PELAKSANA','BALAI','BBWS']));
+      const PROV = titleCase(getAlias(row, ['PROVINSI','PROV']));
+      const KAB  = titleCase(getAlias(row, ['KABUPATEN','KAB/KOTA','KABUPATEN/KOTA']));
+      const DI   = titleCase(getAlias(row, ['NAMA_DI','NAMA DI/DIR','DI','NAMA DI']));
+      const KECV = getAlias(row, ['KECAMATAN','Kecamatan']);
+      const DESV = getAlias(row, ['DESA','Desa','DESA/KEL']);
+
+      if(!BWS || !PROV || !KAB || !DI) return; // skip baris yang gak lengkap
+
+      const kecs = splitList(KECV);
+      const desas= splitList(DESV);
 
       if(!INDEX[BWS]) INDEX[BWS] = {};
       if(!INDEX[BWS][PROV]) INDEX[BWS][PROV] = {};
@@ -181,13 +219,22 @@ async function loadData(){
 
       kecs.forEach(k=>INDEX[BWS][PROV][KAB][DI].kecamatan.add(k));
       desas.forEach(d=>INDEX[BWS][PROV][KAB][DI].desa.add(d));
+      inserted++;
     });
 
-    fillSelect($balai, Object.keys(INDEX).sort(), '-- pilih B/BWS --');
+    const keys = Object.keys(INDEX).sort();
+    fillSelect($balai, keys, '-- pilih B/BWS --');
     disableChain(0);
+
+    if (!keys.length){
+      toast('⚠️ Tidak ada data BWS yang terbaca. Cek header Sheet/GAS JSON.');
+      console.warn('Tidak ada BWS. Contoh row pertama:', rows[0]);
+    } else {
+      toast(`✅ Data dimuat. BWS terdeteksi: ${keys.length}`);
+    }
   }catch(e){
     console.error(e);
-    toast('⚠️ Gagal memuat data (periksa DATA_URL).');
+    toast('⚠️ Gagal memuat data (periksa DATA_URL / akses publik Web App).');
     fillSelect($balai, [], '-- gagal memuat BWS --');
     disableChain(0);
   }
