@@ -436,7 +436,7 @@ function setUploadingUI({show,percent}){ if(typeof percent==='number') document.
 function disableForm(b){document.querySelectorAll('#surveyForm input, #surveyForm select, #surveyForm button').forEach(e=>e.disabled=!!b);}
 
 /* ===== Kompresi foto ===== */
-async function compressImage(file,{maxDim=2000,quality=0.82,mime='image/jpeg'}={}){
+async function compressImage(file,{maxDim: 2000,quality:0.82,mime='image/jpeg'}={}){
   try{
     if(!(file&&file.type&&file.type.startsWith('image/'))) return file;
     let bitmap; if(window.createImageBitmap){bitmap=await createImageBitmap(file,{imageOrientation:'from-image'});}
@@ -468,7 +468,7 @@ form.addEventListener('submit', async (e)=>{
   const selectedFile = activeInput.files?.[0] || null;
 
   if (selectedFile) {
-    photo = await compressImage(selectedFile,{maxDim=2000,quality=0.82});
+    photo = await compressImage(selectedFile,{maxDim: 2000,quality:0.82});
     const dt = new DataTransfer(); dt.items.add(photo); activeInput.files = dt.files;
     b64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload=()=>res(String(r.result)); r.onerror=rej; r.readAsDataURL(photo); });
     activeMeta.textContent = `Akan dikirim: ${photo.name} • ${(photo.size/1024).toFixed(1)} KB`;
