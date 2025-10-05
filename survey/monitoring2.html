@@ -96,6 +96,7 @@
         </div>
         <div class="actions" style="margin-top:4px">
           <button type="button" id="btnPan" class="ghost">🧭 Pan ke koordinat</button>
+          <button type="button" id="btnClearLocal" class="ghost">🧹 Bersihkan progres lokal</button>
         </div>
 
         <!-- FOTO PROGRES (25/50/75/100) -->
@@ -164,7 +165,7 @@
 <script>
 /* ===== CONFIG ===== */
 const ENDPOINT = 'https://gas-proxy.tuic1677.workers.dev/'; // POST via proxy
-const DATA_URL = 'https://script.google.com/macros/s/AKfycbykTrXBcCAwT2WQPnJe9qgtGdWMte2OZesajQVvBf74TUAh-aVpTQ11_llepJBB3rdW/exec'; // GET ke GAS
+const DATA_URL = 'https://script.google.com/macros/s/AKfycbzPLGu4QbTg1IVOsgkOWzhR0ni6ZNmVEPdOIpH5Xj4ChgS2N3dumym7A4MmmUpKkQBmQg/exec'; // GET ke GAS
 
 /* ===== Utils & UI ===== */
 const toast = (m)=>{const t=document.getElementById('toast');t.textContent=m;t.style.display='block';clearTimeout(window.__t);window.__t=setTimeout(()=>t.style.display='none',5000);};
@@ -347,10 +348,8 @@ $di.addEventListener('change', ()=>{
   $kec.value  = kecs.join(', ');
   $desa.value = desas.join(', ');
 
-  // default: buka kunci koordinat; nanti decideStage() akan kunci jika ada riwayat
-  setCoordLock(false);
-
-  decideStage(); // tentukan slot progres + render riwayat
+  setCoordLock(false);   // default: buka; nanti decideStage() kunci kalau ada riwayat
+  decideStage();         // tentukan slot progres + render riwayat
 });
 
 /* ===== Map ===== */
@@ -447,7 +446,7 @@ async function fetchHistory(b,p,k,d){
 function renderHistoryBox(data){
   const wrap = document.getElementById('historyRows');
   wrap.innerHTML = '';
-  if(!data){ setCoordLock(false); return; }  // belum ada riwayat → koordinat bebas
+  if(!data){ setCoordLock(false); return; }
 
   // koordinat terakhir → prefill & KUNCI
   if (data.coords && Number.isFinite(data.coords.lat) && Number.isFinite(data.coords.lng)) {
@@ -541,7 +540,6 @@ function setCoordLock(isLocked, reason='Koordinat mengikuti entri sebelumnya'){
       hint.id = id;
       hint.className = 'hint';
       hint.style.marginTop = '6px';
-      // taruh sebelum tombol PAN (actions pertama setelah lat/lng)
       const actions = document.querySelectorAll('#surveyForm .actions')[0];
       actions.parentNode.insertBefore(hint, actions);
     }
@@ -559,8 +557,11 @@ async function decideStage(){
   const key = makeDIKeyStage(b,p,k,d);
   let maxDone = Number(localStorage.getItem(key) || 0);
 
+  // ✅ TRUST SERVER over cache lokal
   const hist = await fetchHistory(b,p,k,d);
-  if (hist && Number.isFinite(hist.maxStage)) maxDone = Math.max(maxDone, Number(hist.maxStage));
+  if (hist && Number.isFinite(hist.maxStage)) {
+    maxDone = Number(hist.maxStage);
+  }
   renderHistoryBox(hist);
 
   if (maxDone >= 100) {
@@ -571,10 +572,10 @@ async function decideStage(){
   }
 
   let idx = 0;
-  if (maxDone >= 75) idx = 3;       // next 100%
-  else if (maxDone >= 50) idx = 2;  // next 75%
-  else if (maxDone >= 25) idx = 1;  // next 50%
-  else idx = 0;                     // start 25%
+  if (maxDone >= 75) idx = 3;
+  else if (maxDone >= 50) idx = 2;
+  else if (maxDone >= 25) idx = 1;
+  else idx = 0;
 
   activateStageByIndex(idx);
 }
@@ -689,12 +690,17 @@ form.addEventListener('submit', async (e)=>{
   xhr.send(fd);
 });
 
-/* ===== Reset ===== */
+/* ===== Reset & Clear Local ===== */
 document.getElementById('btnReset').addEventListener('click', ()=>{
   fillSelect($balai, Object.keys(INDEX).sort(), '-- pilih B/BWS --');
   disableChain(0);
   activateStageByIndex(0);
   setCoordLock(false);
+});
+document.getElementById('btnClearLocal').addEventListener('click', ()=>{
+  localStorage.clear();
+  toast('Progres lokal dibersihkan.');
+  document.getElementById('btnReset').click();
 });
 
 /* ===== Start ===== */
