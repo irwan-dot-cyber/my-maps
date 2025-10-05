@@ -63,6 +63,9 @@
           <div><label>Kabupaten/Kota</label><select id="kabupaten" name="kabupaten" required disabled></select></div>
           <div><label>Nama DI</label><select id="paket" name="paket" required disabled></select></div>
         </div>
+        <div class="hint" id="diLegend" style="margin-top:-6px">
+          Keterangan: ✅ 100% • 🟢 75% • 🟡 50% • 🟠 25% • ⚪ belum ada progres
+        </div>
 
         <div class="row">
           <div><label>Kecamatan (otomatis)</label><input id="kecamatan" name="kecamatan" placeholder="Otomatis dari DI" readonly/></div>
@@ -161,7 +164,7 @@
 <script>
 /* ===== CONFIG ===== */
 const ENDPOINT = 'https://gas-proxy.tuic1677.workers.dev/'; // POST via proxy
-const DATA_URL = 'https://script.google.com/macros/s/AKfycbykTrXBcCAwT2WQPnJe9qgtGdWMte2OZesajQVvBf74TUAh-aVpTQ11_llepJBB3rdW/exec'; // GET langsung GAS
+const DATA_URL = 'https://script.google.com/macros/s/AKfycbzPLGu4QbTg1IVOsgkOWzhR0ni6ZNmVEPdOIpH5Xj4ChgS2N3dumym7A4MmmUpKkQBmQg/exec'; // GET ke GAS
 
 /* ===== Utils & UI ===== */
 const toast = (m)=>{const t=document.getElementById('toast');t.textContent=m;t.style.display='block';clearTimeout(window.__t);window.__t=setTimeout(()=>t.style.display='none',5000);};
@@ -282,22 +285,69 @@ $prov.addEventListener('change', ()=>{
   fillSelect($kab, kabs, '-- pilih Kabupaten/Kota --'); $kab.disabled = kabs.length===0;
   disableChain(2);
 });
-$kab.addEventListener('change', ()=>{
+
+// ======= SUMMARY untuk badge DI =======
+async function fetchSummaryStages(b,p,k){
+  const url = `${DATA_URL}?fn=summary&bws=${encodeURIComponent(b)}&prov=${encodeURIComponent(p)}&kab=${encodeURIComponent(k)}`;
+  try{
+    const r = await fetch(url, {cache:'no-store'});
+    if(!r.ok) return {};
+    const j = await r.json().catch(()=>null);
+    if (j && j.ok && j.stages && typeof j.stages==='object') return j.stages;
+  }catch(e){}
+  return {};
+}
+function stageBadgeLabel(stage){
+  const s = Number(stage||0);
+  if (s>=100) return '✅ 100%';
+  if (s>=75)  return '🟢 75%';
+  if (s>=50)  return '🟡 50%';
+  if (s>=25)  return '🟠 25%';
+  return '⚪ 0%';
+}
+
+$kab.addEventListener('change', async ()=>{
   const b = $balai.value, p = $prov.value, k = $kab.value;
   if(!b||!p||!k){ disableChain(2); return; }
-  const dis = Object.keys((((INDEX[b]||{})[p]||{})[k]||{})).sort();
-  fillSelect($di, dis, '-- pilih Nama DI --'); $di.disabled = dis.length===0;
+
+  const diList = Object.keys((((INDEX[b]||{})[p]||{})[k]||{})).sort();
+  const summary = await fetchSummaryStages(b,p,k);
+
+  $di.innerHTML = '';
+  const ph = document.createElement('option');
+  ph.value=''; ph.textContent='-- pilih Nama DI --';
+  $di.appendChild(ph);
+
+  diList.forEach(diName=>{
+    const st = Number(summary[diName]||0);
+    const opt = document.createElement('option');
+    opt.value = diName;
+    opt.textContent = `${diName}  —  ${stageBadgeLabel(st)}`;
+    opt.dataset.stage = String(st);
+    $di.appendChild(opt);
+  });
+
+  $di.disabled = diList.length===0;
   disableChain(3);
 });
+
 $di.addEventListener('change', ()=>{
   const b = $balai.value, p = $prov.value, k = $kab.value, d = $di.value;
   if(!b||!p||!k||!d){ $kec.value=''; $desa.value=''; renderHistoryBox(null); return; }
+
+  const selectedOpt = $di.options[$di.selectedIndex];
+  const preStage = selectedOpt ? Number(selectedOpt.dataset.stage||0) : 0;
+  if (preStage >= 100) setLockedUI(true, 'Sudah 100% - pengisian dikunci.');
+  else setLockedUI(false);
+
   const node = (((INDEX[b]||{})[p]||{})[k]||{})[d];
   const kecs = node ? Array.from(node.kecamatan).sort() : [];
   const desas= node ? Array.from(node.desa).sort() : [];
   $kec.value  = kecs.join(', ');
   $desa.value = desas.join(', ');
-  decideStage(); // tentukan slot progres + render riwayat
+
+  setCoordLock(false);   // default: buka; nanti decideStage() yang kunci
+  decideStage();         // auto-sync progres lokal + render riwayat
 });
 
 /* ===== Map ===== */
@@ -378,7 +428,7 @@ async function serverStage(b,p,k,d){
     const r = await fetch(url, {mode:'cors', cache:'no-store'});
     if(!r.ok) return null;
     const j = await r.json().catch(()=>null);
-    if (j && (j.ok===true || j.stage!==undefined) && STAGES.includes(Number(j.stage))) return Number(j.stage);
+    if (j && (j.ok===true || j.stage!==undefined) && [0,25,50,75,100].includes(Number(j.stage))) return Number(j.stage);
   }catch(e){}
   return null;
 }
@@ -394,14 +444,15 @@ async function fetchHistory(b,p,k,d){
 function renderHistoryBox(data){
   const wrap = document.getElementById('historyRows');
   wrap.innerHTML = '';
-  if(!data) return;
+  if(!data){ setCoordLock(false); return; }
 
-  // koordinat terakhir → prefill
+  // koordinat terakhir → prefill & KUNCI
   if (data.coords && Number.isFinite(data.coords.lat) && Number.isFinite(data.coords.lng)) {
     const prevLat = Number(data.coords.lat).toFixed(6);
     const prevLng = Number(data.coords.lng).toFixed(6);
     document.getElementById('lat').value = prevLat;
     document.getElementById('lng').value = prevLng;
+    setCoordLock(true, 'Koordinat mengikuti entri sebelumnya');
     const row = document.createElement('div');
     row.className='hint'; row.textContent = `Koordinat terakhir: ${prevLat}, ${prevLng}`;
     wrap.appendChild(row);
@@ -435,7 +486,7 @@ function renderHistoryBox(data){
   });
 }
 
-/* ===== Lock UI helper ===== */
+/* ===== Lock UI helper (progres 100%) ===== */
 function setLockedUI(isLocked, reason='Sudah 100% - pengisian dikunci'){
   const formEl = document.getElementById('surveyForm');
   const submitBtn = formEl.querySelector('button[type="submit"]');
@@ -465,18 +516,61 @@ function setLockedUI(isLocked, reason='Sudah 100% - pengisian dikunci'){
   }
 }
 
-/* ===== tentukan slot aktif + render riwayat + lock if 100% ===== */
+/* ===== Kunci Koordinat helper ===== */
+function setCoordLock(isLocked, reason='Koordinat mengikuti entri sebelumnya'){
+  const latEl = document.getElementById('lat');
+  const lngEl = document.getElementById('lng');
+  const btnLocate = document.getElementById('btnLocate');
+  const btnPick   = document.getElementById('btnPick');
+  const btnPan    = document.getElementById('btnPan');
+
+  latEl.readOnly = !!isLocked;
+  lngEl.readOnly = !!isLocked;
+  btnLocate.disabled = !!isLocked;
+  btnPick.disabled   = !!isLocked;
+  btnPan.disabled    = !!isLocked;
+
+  const id = 'coordLockHint';
+  let hint = document.getElementById(id);
+  if (isLocked) {
+    if (!hint) {
+      hint = document.createElement('div');
+      hint.id = id;
+      hint.className = 'hint';
+      hint.style.marginTop = '6px';
+      const actions = document.querySelectorAll('#surveyForm .actions')[0];
+      actions.parentNode.insertBefore(hint, actions);
+    }
+    hint.textContent = '🔒 ' + reason;
+  } else if (hint) {
+    hint.remove();
+  }
+}
+
+/* ===== AUTO-SYNC progres lokal + render riwayat ===== */
 async function decideStage(){
   const b = $balai.value, p = $prov.value, k = $kab.value, d = $di.value;
-  if(!b||!p||!k||!d){ activateStageByIndex(0); renderHistoryBox(null); setLockedUI(false); return; }
+  if(!b||!p||!k||!d){ activateStageByIndex(0); renderHistoryBox(null); setLockedUI(false); setCoordLock(false); return; }
 
   const key = makeDIKeyStage(b,p,k,d);
-  let maxDone = Number(localStorage.getItem(key) || 0);
 
+  // Ambil riwayat dari server
   const hist = await fetchHistory(b,p,k,d);
-  if (hist && Number.isFinite(hist.maxStage)) maxDone = Math.max(maxDone, Number(hist.maxStage));
+  let maxDone = 0;
+  if (hist && Number.isFinite(hist.maxStage)) maxDone = Number(hist.maxStage);
+
+  // Sinkron otomatis localStorage
+  const oldLocal = Number(localStorage.getItem(key) || 0);
+  if (maxDone === 0 && oldLocal > 0) {
+    localStorage.removeItem(key);
+  } else {
+    localStorage.setItem(key, String(maxDone));
+  }
+
+  // Render riwayat + kunci koordinat (kalau ada)
   renderHistoryBox(hist);
 
+  // Kunci total jika 100%
   if (maxDone >= 100) {
     setLockedUI(true, 'Sudah 100% - pengisian dikunci.');
     return;
@@ -484,12 +578,12 @@ async function decideStage(){
     setLockedUI(false);
   }
 
+  // Tentukan slot aktif berikutnya
   let idx = 0;
-  if (maxDone >= 75) idx = 3;       // next 100%
-  else if (maxDone >= 50) idx = 2;  // next 75%
-  else if (maxDone >= 25) idx = 1;  // next 50%
-  else idx = 0;                     // start 25%
-
+  if (maxDone >= 75) idx = 3;
+  else if (maxDone >= 50) idx = 2;
+  else if (maxDone >= 25) idx = 1;
+  else idx = 0;
   activateStageByIndex(idx);
 }
 
@@ -517,7 +611,7 @@ async function compressImage(file,{maxDim=2000,quality=0.82,mime='image/jpeg'}={
   }catch(e){ console.warn('compress fail',e); return file; }
 }
 
-/* ===== Submit via XHR (simpan progres sebelum reset) ===== */
+/* ===== Submit via XHR ===== */
 const form=document.getElementById('surveyForm'); const lat=document.getElementById('lat'); const lng=document.getElementById('lng');
 
 form.addEventListener('submit', async (e)=>{
@@ -555,16 +649,15 @@ form.addEventListener('submit', async (e)=>{
     if (xhr.status>=200 && xhr.status<300 && (data.ok===true || data.status==='ok')) {
       setUploadingUI({show:true, percent:100}); toast('✅ Terkirim!');
 
-      // simpan progres (SEBELUM reset)
+      // simpan progres lokal berdasar stage terkini
       try{
-        const bSel = $balai.value, pSel = $prov.value, kSel = $kab.value, dSel = $di.value;
-        const key  = makeDIKeyStage(bSel, pSel, kSel, dSel);
+        const key  = makeDIKeyStage($balai.value, $prov.value, $kab.value, $di.value);
         const done = Number(localStorage.getItem(key) || 0);
         const newDone = Math.max(done, stageNow);
         localStorage.setItem(key, String(newDone));
-      }catch(e){ console.warn('store stage fail', e); }
+      }catch(e){}
 
-      // opsional: langsung loncat label ke tahap berikutnya
+      // loncat label ke tahap berikutnya
       try{ const nextIdx = Math.min(3, idxActive + 1); activateStageByIndex(nextIdx); }catch(e){}
 
       setTimeout(()=>{ 
@@ -573,6 +666,7 @@ form.addEventListener('submit', async (e)=>{
         fillSelect($balai, Object.keys(INDEX).sort(), '-- pilih B/BWS --');
         disableChain(0);
         activateStageByIndex(0);
+        setCoordLock(false);
         disableForm(false);
       }, 600);
     } else {
@@ -586,6 +680,11 @@ form.addEventListener('submit', async (e)=>{
           if ((data.code === 'LOCKED') || /locked|terkunci|progress.*penuh/i.test(String(data.error))) {
             decideStage(); // sinkron UI sesuai server
             toast('🔒 Terkunci: progres sudah lengkap untuk DI ini.');
+            return;
+          }
+          if ((data.code === 'COORD_LOCK')) {
+            decideStage();
+            toast('🔒 Koordinat mengikuti entri sebelumnya.');
             return;
           }
         }
@@ -602,6 +701,7 @@ document.getElementById('btnReset').addEventListener('click', ()=>{
   fillSelect($balai, Object.keys(INDEX).sort(), '-- pilih B/BWS --');
   disableChain(0);
   activateStageByIndex(0);
+  setCoordLock(false);
 });
 
 /* ===== Start ===== */
