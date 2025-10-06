@@ -151,7 +151,6 @@ function fillSelect(el, items, ph='-- pilih --'){
   (items||[]).forEach(v=>{const o=document.createElement('option');o.value=o.textContent=v;el.appendChild(o);});
   el.disabled=!(items&&items.length);
 }
-const uniq = a => [...new Set((a||[]).filter(Boolean))];
 // Title Case pintar: jaga BBWS/BWS & D.I.
 const titleCase = s => String(s||'').split(/(\s+|[-/])/).map(tok=>{
   if(/^\s+$/.test(tok)||tok==='-'||tok==='/') return tok;
@@ -297,13 +296,24 @@ async function fetchHistory(bws, p, k, d){
   try{const j=await res.json(); return j&&j.ok?j:{ok:false,maxStage:0,coords:null,photos:{}};}catch{ return {ok:false,maxStage:0,coords:null,photos:{}}; }
 }
 
+/* === DI selected: isi kec/desa otomatis + placeholder opsi, ambil history, kunci koordinat === */
 di.addEventListener('change', async ()=>{
   const b=balai.value, p=prov.value, k=kab.value, d=di.value;
   const entry = (((INDEX[b]||{})[p]||{})[k]||{})[d];
-  const kecs = entry ? [...entry.kecamatan] : []; const desas = entry ? [...entry.desa] : [];
-  const kecEl=document.getElementById('kecamatan'), desaEl=document.getElementById('desa');
-  if (kecs.length===1) kecEl.value = kecs[0];
-  if (desas.length===1) desaEl.value = desas[0];
+
+  const kecEl = document.getElementById('kecamatan');
+  const desaEl = document.getElementById('desa');
+
+  const kecs  = entry ? [...entry.kecamatan] : [];
+  const desas = entry ? [...entry.desa] : [];
+
+  // SELALU isi otomatis dengan opsi pertama bila ada
+  kecEl.value  = (kecs[0]  || '');
+  desaEl.value = (desas[0] || '');
+
+  // Tampilkan semua opsi di placeholder bila >1
+  kecEl.placeholder  = kecs.length  > 1 ? `Opsi: ${kecs.join(', ')}`  : '(otomatis/isi manual)';
+  desaEl.placeholder = desas.length > 1 ? `Opsi: ${desas.join(', ')}` : '(otomatis/isi manual)';
 
   const hist = await fetchHistory(b,p,k,d);
   lastStageEl.textContent = (hist.maxStage||0) + '%';
