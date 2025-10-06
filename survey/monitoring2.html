@@ -3,32 +3,35 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Dashboard Monitoring – INPRES 2/2025 Tahap 2</title>
+  <title>Monitoring INPRES 2/2025 Tahap 2 — All-in-One</title>
+
+  <!-- Leaflet + MarkerCluster -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" referrerpolicy="no-referrer"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.min.css" referrerpolicy="no-referrer"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.min.css" referrerpolicy="no-referrer"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js" referrerpolicy="no-referrer"></script>
+
   <style>
     :root{--bg:#0b1224;--card:#0f172a;--mut:#9aa3b2;--accent:#22c55e;--warn:#f59e0b}
     *{box-sizing:border-box}
     body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;background:var(--bg);color:#e5e7eb}
     header{padding:14px 18px;border-bottom:1px solid #1f2937;background:#0c1326;position:sticky;top:0;z-index:10}
-    main{max-width:1200px;margin:0 auto;padding:14px}
+    main{max-width:1240px;margin:0 auto;padding:14px}
     .card{background:var(--card);border:1px solid #1f2937;border-radius:14px;overflow:hidden}
     .card h2{margin:0;padding:12px 14px;border-bottom:1px solid #1f2937;font-size:16px}
     .section{padding:12px 14px;display:grid;gap:12px}
     label{font-size:12px;color:var(--mut)}
-    select,input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #334155;background:#0b1224;color:#e5e7eb}
+    select,button{border-radius:10px}
+    select{width:100%;padding:10px 12px;border:1px solid #334155;background:#0b1224;color:#e5e7eb}
     .row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
     .row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
     .actions{display:flex;flex-wrap:wrap;gap:8px}
-    button{cursor:pointer;border:0;padding:10px 14px;border-radius:10px}
+    button{cursor:pointer;border:0;padding:10px 14px}
     .primary{background:var(--accent);color:#01250f;font-weight:600}
     .ghost{background:#0b1224;color:#e5e7eb;border:1px solid #334155}
-    .hint{font-size:12px;color:var(--mut)}
+    .hint{font-size:12px;color:#9aa3b2}
     .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid #334155;border-radius:999px;background:#0b1224;font-size:12px}
-    .chip{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;border:1px solid #334155;background:#0b1224;font-size:12px}
-    .chip.ok{border-color:#22c55e}
-    .chip.mid{border-color:#f59e0b}
-    .chip.low{border-color:#94a3b8}
     table{width:100%;border-collapse:separate;border-spacing:0 8px}
     th,td{padding:10px 12px;text-align:left}
     thead th{font-size:12px;color:#9aa3b2;border-bottom:1px solid #1f2937}
@@ -36,17 +39,23 @@
     tbody td{border-top:1px solid #1f2937;border-bottom:1px solid #1f2937}
     tbody tr td:first-child{border-left:1px solid #1f2937;border-top-left-radius:10px;border-bottom-left-radius:10px}
     tbody tr td:last-child{border-right:1px solid #1f2937;border-top-right-radius:10px;border-bottom-right-radius:10px}
+    .chip{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;border:1px solid #334155;background:#0b1224;font-size:12px}
+    .ok{border-color:#22c55e}.mid{border-color:#f59e0b}.low{border-color:#94a3b8}
     .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
     .gallery a{display:block;border:1px solid #1f2937;border-radius:10px;overflow:hidden;background:#0b1224}
     .gallery img{display:block;width:100%;height:120px;object-fit:cover}
-    #map{height:50vh;border-radius:12px;border:1px solid #1f2937}
-    @media (max-width:1024px){.row{grid-template-columns:1fr 1fr}.row-2{grid-template-columns:1fr}}
+    #map{height:60vh;border-radius:12px;border:1px solid #1f2937}
+    .legend{display:flex;gap:8px;flex-wrap:wrap}
+    .legend .dot{width:12px;height:12px;border-radius:50%}
+    .dot.s0{background:#94a3b8}.dot.s25{background:#fca311}.dot.s50{background:#f59e0b}.dot.s75{background:#22c55e}.dot.s100{background:#16a34a}
+    .pill{padding:6px 10px;border-radius:999px;border:1px solid #334155;background:#0b1224}
+    @media (max-width:1100px){.row{grid-template-columns:1fr 1fr}.row-2{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
 <header>
-  <strong>Monitoring Progres</strong>
-  <span class="hint"> INPRES 2/2025 • Tahap 2</span>
+  <strong>Monitoring Tahap 2</strong>
+  <span class="hint">INPRES 2/2025 • Ringkasan + Peta Sebaran</span>
 </header>
 
 <main>
@@ -61,55 +70,76 @@
         <div><label>Nama DI</label><select id="di" disabled></select></div>
       </div>
       <div class="actions">
-        <button id="btnExport" class="ghost">⬇️ Export CSV</button>
+        <button id="btnExportSummary" class="ghost">⬇️ Export Ringkasan DI (CSV)</button>
+        <button id="btnExportRecap" class="ghost">⬇️ Export Rekap B/BWS (CSV)</button>
         <span id="sumInfo" class="hint">—</span>
       </div>
     </div>
   </div>
 
-  <!-- Ringkasan Tabel -->
+  <!-- Ringkasan DI -->
   <div class="card" style="margin-top:12px">
-    <h2>Ringkasan Progres DI</h2>
+    <h2>Ringkasan Progres DI (sesuai filter)</h2>
     <div class="section">
-      <div class="hint">Menampilkan progres maksimum per DI untuk kombinasi filter terpilih.</div>
       <div style="overflow:auto">
         <table id="tbl">
           <thead>
             <tr>
-              <th style="min-width:220px">Nama DI</th>
+              <th style="min-width:240px">Nama DI</th>
               <th>Progres</th>
               <th>Provinsi</th>
               <th>Kabupaten</th>
             </tr>
           </thead>
           <tbody id="tblBody">
-            <tr><td colspan="4" class="hint">Silakan pilih B/BWS & filter di atas.</td></tr>
+            <tr><td colspan="4" class="hint">Silakan pilih B/BWS & filter.</td></tr>
           </tbody>
         </table>
       </div>
     </div>
   </div>
 
-  <!-- Detail & Galeri -->
+  <!-- Rekap BWS + Peta -->
   <div class="row-2" style="margin-top:12px">
     <div class="card">
-      <h2>Detail DI Terpilih</h2>
-      <div class="section" id="detailBox">
-        <div class="hint">Pilih salah satu DI pada filter untuk melihat detail & foto.</div>
+      <h2>Rekap per B/BWS</h2>
+      <div class="section" id="recapBox">
+        <div class="hint">Pilih B/BWS untuk melihat rekap jumlah DI pada tiap tingkat progres.</div>
       </div>
     </div>
+
     <div class="card">
-      <h2>Peta Lokasi (koordinat terakhir)</h2>
+      <h2>Peta Sebaran DI (B/BWS terpilih)</h2>
       <div class="section">
+        <div class="legend">
+          <span class="pill"><span class="dot s0"></span> 0%</span>
+          <span class="pill"><span class="dot s25"></span> 25%</span>
+          <span class="pill"><span class="dot s50"></span> 50%</span>
+          <span class="pill"><span class="dot s75"></span> 75%</span>
+          <span class="pill"><span class="dot s100"></span> 100%</span>
+          <span class="hint" id="mapInfo">—</span>
+        </div>
+        <div class="actions" style="gap:8px">
+          <button id="btnLoadMarkers" class="primary">Muat Marker DI untuk B/BWS</button>
+          <button id="btnClearMarkers" class="ghost">Hapus Marker</button>
+        </div>
         <div id="map"></div>
       </div>
+    </div>
+  </div>
+
+  <!-- Detail DI (opsional saat dipilih spesifik) -->
+  <div class="card" style="margin-top:12px">
+    <h2>Detail & Foto DI Terpilih</h2>
+    <div class="section" id="detailBox">
+      <div class="hint">Pilih salah satu DI pada filter untuk melihat riwayat foto & koordinat terakhir.</div>
     </div>
   </div>
 </main>
 
 <script>
 /* ===== CONFIG (ganti ke Web App GAS kamu) ===== */
-const DATA_URL = 'https://script.google.com/macros/s/AKfycbwWe8SY1T51LL3yp_OlLlOORuMLjcVkbaL1td5pOm1EX0-POztzV-6CUl-tQo91OMzT/exec';
+const DATA_URL = 'https://script.google.com/macros/s/AKfycbwWe8SY1T51LL3yp_OlLlOORuMLjcVkbaL1td5pOm1EX0-POztzV-6CUl-tQo91OMzT/exec'; // ← ganti ke URL /exec GAS kamu
 
 /* ===== Utils ===== */
 function fillSelect(el, items, ph='-- pilih --'){
@@ -118,33 +148,34 @@ function fillSelect(el, items, ph='-- pilih --'){
     const o=document.createElement('option');o.value='';o.textContent=ph;el.appendChild(o);
   }
   (items||[]).forEach(v=>{
-    const o=document.createElement('option');
-    o.value=o.textContent=v; el.appendChild(o);
+    const o=document.createElement('option');o.value=o.textContent=v;el.appendChild(o);
   });
   el.disabled=!(items&&items.length);
 }
 const titleCase = s => String(s||'').split(/(\s+|[-/])/).map(tok=>{
   if(/^\s+$/.test(tok)||tok==='-'||tok==='/') return tok;
-  const up=tok.toUpperCase();
+  const up = tok.toUpperCase();
   if (up==='BBWS'||up==='BWS') return up;
   if (/^(D\.?I\.?|DI)$/.test(up)) return 'D.I.';
   return tok.charAt(0).toUpperCase()+tok.slice(1).toLowerCase();
 }).join('');
+function toCSV(rows){return rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\r\n');}
 
 /* ===== State ===== */
-let INDEX = {}; // {BWS: {Prov: {Kab: {DI: true}}}}
-const selB = document.getElementById('bws');
-const selP = document.getElementById('prov');
-const selK = document.getElementById('kab');
-const selD = document.getElementById('di');
-const sumInfo = document.getElementById('sumInfo');
-const tblBody = document.getElementById('tblBody');
-const detailBox = document.getElementById('detailBox');
+let INDEX = {}; // {BWS:{Prov:{Kab:{DI:true}}}}
+const selB=document.getElementById('bws'), selP=document.getElementById('prov'), selK=document.getElementById('kab'), selD=document.getElementById('di');
+const tblBody=document.getElementById('tblBody'), sumInfo=document.getElementById('sumInfo'), recapBox=document.getElementById('recapBox'), detailBox=document.getElementById('detailBox');
 
-/* ===== Map ===== */
+/* ===== Map + Cluster ===== */
 const baseOSM=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20, attribution:'© OpenStreetMap'});
 const map=L.map('map',{zoomControl:true,layers:[baseOSM]}).setView([-2.5,118],5);
-let marker=null;
+let clusterGroup=L.markerClusterGroup();
+map.addLayer(clusterGroup);
+function stageColor(st){ if(st>=100) return '#16a34a'; if(st>=75) return '#22c55e'; if(st>=50) return '#f59e0b'; if(st>=25) return '#fca311'; return '#94a3b8'; }
+function makeDotIcon(st){
+  const c=stageColor(st);
+  return L.divIcon({className:'', html:`<div style="width:14px;height:14px;border-radius:50%;background:${c};border:1px solid #0006"></div>`, iconSize:[14,14]});
+}
 
 /* ===== Load Baseline ===== */
 async function loadBaseline(){
@@ -152,176 +183,211 @@ async function loadBaseline(){
   const txt = await (await fetch(url,{cache:'no-store'})).text();
   const rows = JSON.parse(txt.replace(/^\)\]\}'\s*/,'')) || [];
   INDEX={};
-  rows.forEach(row=>{
-    const BWS=titleCase(row['B/BWS PELAKSANA']||row['Balai']||row['BWS']);
-    const PROV=titleCase(row['PROVINSI']||row['Provinsi']);
-    const KAB=titleCase(row['KABUPATEN']||row['Kabupaten']);
-    const DI =titleCase(row['NAMA DI/DIR']||row['nama di']||row['DI']||row['Paket']);
+  rows.forEach(r=>{
+    const BWS=titleCase(r['B/BWS PELAKSANA']||r['Balai']||r['BWS']);
+    const PROV=titleCase(r['PROVINSI']||r['Provinsi']);
+    const KAB =titleCase(r['KABUPATEN']||r['Kabupaten']);
+    const DI  =titleCase(r['NAMA DI/DIR']||r['nama di']||r['DI']||r['Paket']);
     if(!(BWS&&PROV&&KAB&&DI)) return;
-    INDEX[BWS] ??= {};
-    INDEX[BWS][PROV] ??= {};
-    INDEX[BWS][PROV][KAB] ??= {};
+    (INDEX[BWS] ??= {});
+    (INDEX[BWS][PROV] ??= {});
+    (INDEX[BWS][PROV][KAB] ??= {});
     INDEX[BWS][PROV][KAB][DI] = true;
   });
-  fillSelect(selB, Object.keys(INDEX).sort(),'-- pilih B/BWS --');
+  fillSelect(selB, Object.keys(INDEX).sort(), '-- pilih B/BWS --');
   selP.disabled = selK.disabled = selD.disabled = true;
 }
 loadBaseline();
 
-/* ===== Event Cascades ===== */
-selB.addEventListener('change', ()=>{
-  const b=selB.value;
-  sumInfo.textContent='—';
-  if (!b){ fillSelect(selP,[], '-- pilih Provinsi --'); selP.disabled=true; resetTable(); return; }
-  fillSelect(selP, Object.keys(INDEX[b]||{}).sort(),'-- pilih Provinsi --'); selP.disabled=false;
-  fillSelect(selK,[], '-- pilih Kabupaten/Kota --'); selK.disabled=true;
-  fillSelect(selD,[], '-- pilih Nama DI --'); selD.disabled=true;
-  resetTable();
-});
-selP.addEventListener('change', ()=>{
-  const b=selB.value, p=selP.value;
-  sumInfo.textContent='—';
-  if (!p){ fillSelect(selK,[], '-- pilih Kabupaten/Kota --'); selK.disabled=true; resetTable(); return; }
-  fillSelect(selK, Object.keys((INDEX[b]||{})[p]||{}).sort(),'-- pilih Kabupaten/Kota --'); selK.disabled=false;
-  fillSelect(selD,[], '-- pilih Nama DI --'); selD.disabled=true;
-  resetTable();
-});
-selK.addEventListener('change', ()=>{
-  const b=selB.value, p=selP.value, k=selK.value;
-  sumInfo.textContent='—';
-  if (!k){ fillSelect(selD,[], '-- pilih Nama DI --'); selD.disabled=true; resetTable(); return; }
-  fillSelect(selD, Object.keys(((INDEX[b]||{})[p]||{})[k]||{}).sort(),'-- pilih Nama DI --'); selD.disabled=false;
-  refreshSummary();
-});
-selD.addEventListener('change', async ()=>{
-  await refreshSummary();
-  await showDetail(); // galeri + map
-});
-
-/* ===== Summary from GAS (max stage per DI) ===== */
+/* ===== GAS helpers ===== */
 async function fetchSummary(b,p,k){
-  const qs = new URLSearchParams({fn:'summary', bws:b, prov:p, kab:k});
-  const url = DATA_URL + (DATA_URL.includes('?')?'&':'?') + qs.toString() + '&t=' + Date.now();
-  try{ const j = await (await fetch(url,{cache:'no-store'})).json(); return j.ok ? (j.stages||{}) : {}; }
+  const qs=new URLSearchParams({fn:'summary', bws:b, prov:p, kab:k});
+  const url=DATA_URL + (DATA_URL.includes('?')?'&':'?') + qs.toString() + '&t=' + Date.now();
+  try{ const j=await (await fetch(url,{cache:'no-store'})).json(); return j.ok ? (j.stages||{}) : {}; }
   catch{ return {}; }
 }
-
-function renderSummaryTable(stages, b,p,k){
-  const listDI = Object.keys(((INDEX[b]||{})[p]||{})[k]||{}).sort();
-  tblBody.innerHTML = '';
-  let cnt = 0;
-  listDI.forEach(di=>{
-    const st = Number(stages[di]||0);
-    const cls = st>=75 ? 'ok' : st>=25 ? 'mid' : 'low';
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${di}</td>
-      <td><span class="chip ${cls}">${st}%</span></td>
-      <td>${p}</td>
-      <td>${k}</td>`;
-    tblBody.appendChild(tr);
-    cnt++;
-  });
-  if (!cnt){
-    const tr=document.createElement('tr');
-    tr.innerHTML = `<td colspan="4" class="hint">Tidak ada data untuk filter ini.</td>`;
-    tblBody.appendChild(tr);
-  }
-  const done = Object.values(stages).filter(v=>Number(v)>=100).length;
-  sumInfo.textContent = `Total DI: ${listDI.length} • Selesai 100%: ${done}`;
-}
-
-async function refreshSummary(){
-  const b=selB.value, p=selP.value, k=selK.value;
-  if(!(b&&p&&k)){ resetTable(); return; }
-  const stages = await fetchSummary(b,p,k);
-  renderSummaryTable(stages, b,p,k);
-}
-
-/* ===== Detail per DI (history + map) ===== */
 async function fetchHistory(b,p,k,d){
-  const qs = new URLSearchParams({fn:'history', bws:b, prov:p, kab:k, di:d});
-  const url = DATA_URL + (DATA_URL.includes('?')?'&':'?') + qs.toString() + '&t=' + Date.now();
-  try{ const j = await (await fetch(url,{cache:'no-store'})).json(); return j.ok ? j : {maxStage:0,coords:null,photos:{}}; }
+  const qs=new URLSearchParams({fn:'history', bws:b, prov:p, kab:k, di:d});
+  const url=DATA_URL + (DATA_URL.includes('?')?'&':'?') + qs.toString() + '&t=' + Date.now();
+  try{ const j=await (await fetch(url,{cache:'no-store'})).json(); return j.ok ? j : {maxStage:0,coords:null,photos:{}}; }
   catch{ return {maxStage:0,coords:null,photos:{}}; }
 }
 
+/* ===== Summary table ===== */
+function renderSummaryTable(stages, b,p,k){
+  const listDI = Object.keys(((INDEX[b]||{})[p]||{})[k]||{}).sort();
+  tblBody.innerHTML='';
+  let cnt=0;
+  listDI.forEach(di=>{
+    const st=Number(stages[di]||0);
+    const cls = st>=75 ? 'ok' : st>=25 ? 'mid' : 'low';
+    const tr=document.createElement('tr');
+    tr.innerHTML = `<td>${di}</td><td><span class="chip ${cls}">${st}%</span></td><td>${p}</td><td>${k}</td>`;
+    tblBody.appendChild(tr); cnt++;
+  });
+  if(!cnt){ tblBody.innerHTML=`<tr><td colspan="4" class="hint">Tidak ada data untuk filter ini.</td></tr>`; }
+  const done = Object.values(stages).filter(v=>Number(v)>=100).length;
+  sumInfo.textContent = `Total DI: ${listDI.length} • Selesai 100%: ${done}`;
+}
+async function refreshSummary(){
+  const b=selB.value, p=selP.value, k=selK.value;
+  if(!(b&&p&&k)){ tblBody.innerHTML=`<tr><td colspan="4" class="hint">Lengkapi filter.</td></tr>`; return; }
+  const stages=await fetchSummary(b,p,k);
+  renderSummaryTable(stages,b,p,k);
+}
+
+/* ===== Rekap per BWS ===== */
+async function buildBwsRecap(bws){
+  if(!bws){ recapBox.innerHTML='<div class="hint">Pilih B/BWS terlebih dahulu.</div>'; return; }
+  const provs = Object.keys(INDEX[bws]||{});
+  const counts = {0:0,25:0,50:0,75:0,100:0};
+  let totalDI=0;
+  const rowsCSV=[['BWS','Provinsi','Kabupaten','Nama DI','Progres']];
+  for (const p of provs){
+    const kabs = Object.keys(INDEX[bws][p]||{});
+    for (const k of kabs){
+      const stages = await fetchSummary(bws,p,k); // { 'DI Name': maxStage }
+      const diList = Object.keys(((INDEX[bws]||{})[p]||{})[k]||{});
+      diList.forEach(di=>{
+        const st = Number(stages[di]||0);
+        let bucket = 0;
+        if (st>=100) bucket=100; else if(st>=75) bucket=75; else if(st>=50) bucket=50; else if(st>=25) bucket=25; else bucket=0;
+        counts[bucket]++; totalDI++;
+        rowsCSV.push([bws,p,k,di,st]);
+      });
+    }
+  }
+  const pct = v => totalDI? ((v/totalDI*100).toFixed(1)+'%'):'0%';
+  recapBox.innerHTML = `
+    <div class="actions" style="gap:10px;flex-wrap:wrap">
+      <span class="badge">B/BWS: <b>${bws}</b></span>
+      <span class="badge">Total DI: <b>${totalDI}</b></span>
+      <span class="badge">0%: <b>${counts[0]}</b> (${pct(counts[0])})</span>
+      <span class="badge">25%: <b>${counts[25]}</b> (${pct(counts[25])})</span>
+      <span class="badge">50%: <b>${counts[50]}</b> (${pct(counts[50])})</span>
+      <span class="badge">75%: <b>${counts[75]}</b> (${pct(counts[75])})</span>
+      <span class="badge">100%: <b>${counts[100]}</b> (${pct(counts[100])})</span>
+    </div>
+  `;
+  // simpan CSV terakhir untuk tombol export rekap
+  window.__recapCSV = rowsCSV;
+}
+
+/* ===== Map Markers for BWS ===== */
+async function loadMarkersForBws(bws){
+  if(!bws){ document.getElementById('mapInfo').textContent='—'; return; }
+  clusterGroup.clearLayers();
+  let added=0;
+  const provs = Object.keys(INDEX[bws]||{});
+  for (const p of provs){
+    const kabs = Object.keys(INDEX[bws][p]||{});
+    for (const k of kabs){
+      const diList = Object.keys(((INDEX[bws]||{})[p]||{})[k]||{});
+      // ambil history per DI (koordinat + maxStage)
+      for (const d of diList){
+        const hist = await fetchHistory(bws,p,k,d);
+        const st = Number(hist.maxStage||0);
+        if (hist.coords && Number.isFinite(hist.coords.lat) && Number.isFinite(hist.coords.lng)){
+          const m = L.marker([hist.coords.lat, hist.coords.lng], {icon: makeDotIcon(st)})
+            .bindPopup(`<b>${d}</b><br>${k}, ${p}<br>Progres: ${st}%`);
+          clusterGroup.addLayer(m); added++;
+        }
+      }
+    }
+  }
+  document.getElementById('mapInfo').textContent = added ? `Marker: ${added} DI` : 'Tidak ada DI berkoordinat.';
+  if (added){ map.fitBounds(clusterGroup.getBounds().pad(0.2)); } else { map.setView([-2.5,118],5); }
+}
+
+/* ===== Detail DI: galeri + map focus ===== */
 async function showDetail(){
-  const b=selB.value, p=selP.value, k=selK.value, d=selD.value;
-  if(!(b&&p&&k&&d)){ detailBox.innerHTML='<div class="hint">Pilih satu DI untuk melihat detail.</div>'; return; }
+  const b=selB.value,p=selP.value,k=selK.value,d=selD.value;
+  if(!(b&&p&&k&&d)){ detailBox.innerHTML='<div class="hint">Pilih DI pada filter.</div>'; return; }
   const hist = await fetchHistory(b,p,k,d);
-  const max = Number(hist.maxStage||0);
+  const max=Number(hist.maxStage||0);
   const photos = hist.photos||{};
-  // Galeri
   let gal = '';
   [25,50,75,100].forEach(st=>{
     const ph = photos[String(st)];
-    if (ph && ph.url){
-      gal += `
-        <div>
-          <div class="hint">Foto Progres ${st}%:</div>
-          <div class="gallery">
-            <a href="${ph.url}" target="_blank" title="${ph.name||('Stage '+st)}">
-              <img loading="lazy" src="${ph.url}" alt="Progres ${st}%">
-            </a>
-          </div>
-        </div>`;
+    if(ph && ph.url){
+      gal += `<div>
+        <div class="hint">Foto Progres ${st}%:</div>
+        <div class="gallery">
+          <a href="${ph.url}" target="_blank"><img loading="lazy" src="${ph.url}" alt="Progres ${st}%"/></a>
+        </div></div>`;
     }
   });
   if (!gal) gal = `<div class="hint">Belum ada foto progres untuk DI ini.</div>`;
-
   detailBox.innerHTML = `
-    <div class="actions" style="gap:10px;margin-bottom:6px">
-      <span class="badge">B/BWS: <b>${b}</b></span>
+    <div class="actions" style="gap:10px">
+      <span class="badge">BWS: <b>${b}</b></span>
       <span class="badge">Prov: <b>${p}</b></span>
       <span class="badge">Kab: <b>${k}</b></span>
       <span class="badge">DI: <b>${d}</b></span>
       <span class="badge">Progres maks: <b>${max}%</b></span>
-    </div>
-    ${gal}
-  `;
-
-  // Map ke koordinat terakhir kalau ada
+    </div>${gal}`;
   if (hist.coords && Number.isFinite(hist.coords.lat) && Number.isFinite(hist.coords.lng)){
-    const {lat,lng} = hist.coords;
-    map.setView([lat,lng], 16);
-    if (marker) map.removeLayer(marker);
-    marker = L.marker([lat,lng]).addTo(map).bindPopup(`${d}<br>${k}, ${p}<br>Progres: ${max}%`).openPopup();
-  }
-  else{
-    if (marker) { map.removeLayer(marker); marker=null; }
-    map.setView([-2.5,118],5);
+    map.setView([hist.coords.lat, hist.coords.lng], 16);
   }
 }
 
-/* ===== Export CSV ===== */
-document.getElementById('btnExport').addEventListener('click', ()=>{
-  const rows = [['Nama DI','Progres','Provinsi','Kabupaten']];
+/* ===== Exports ===== */
+document.getElementById('btnExportSummary').addEventListener('click', ()=>{
+  // Ambil dari table ringkasan
+  const rows=[['Nama DI','Progres','Provinsi','Kabupaten']];
   [...tblBody.querySelectorAll('tr')].forEach(tr=>{
-    const tds = tr.querySelectorAll('td');
-    if (tds.length===4){
-      const di = tds[0].innerText.trim();
-      const pr = tds[1].innerText.trim().replace('Progres ','');
-      const pv = tds[2].innerText.trim();
-      const kb = tds[3].innerText.trim();
-      rows.push([di,pr,pv,kb]);
-    }
+    const t=tr.querySelectorAll('td');
+    if (t.length===4) rows.push([t[0].innerText.trim(), t[1].innerText.trim(), t[2].innerText.trim(), t[3].innerText.trim()]);
   });
-  const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\r\n');
-  const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'monitoring_tahap2.csv'; a.click();
-  URL.revokeObjectURL(url);
+  const blob=new Blob([toCSV(rows)],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=url; a.download='ringkasan_DI.csv'; a.click(); URL.revokeObjectURL(url);
+});
+document.getElementById('btnExportRecap').addEventListener('click', ()=>{
+  const rows = window.__recapCSV || [['BWS','Provinsi','Kabupaten','Nama DI','Progres']];
+  const blob=new Blob([toCSV(rows)],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=url; a.download='rekap_BWS.csv'; a.click(); URL.revokeObjectURL(url);
 });
 
-/* ===== Helpers ===== */
-function resetTable(){
-  tblBody.innerHTML = `<tr><td colspan="4" class="hint">Silakan lengkapi filter.</td></tr>`;
-  detailBox.innerHTML = `<div class="hint">Pilih salah satu DI untuk melihat detail.</div>`;
-  if (marker) { map.removeLayer(marker); marker=null; }
-  map.setView([-2.5,118],5);
-}
+/* ===== Filter events ===== */
+selB.addEventListener('change', async ()=>{
+  const b=selB.value;
+  if(!b){ fillSelect(selP,[], '-- pilih Provinsi --'); selP.disabled=true;
+         fillSelect(selK,[], '-- pilih Kabupaten/Kota --'); selK.disabled=true;
+         fillSelect(selD,[], '-- pilih Nama DI --'); selD.disabled=true;
+         recapBox.innerHTML='<div class="hint">Pilih B/BWS.</div>';
+         tblBody.innerHTML=`<tr><td colspan="4" class="hint">Pilih B/BWS & filter.</td></tr>`;
+         return;
+  }
+  fillSelect(selP, Object.keys(INDEX[b]||{}).sort(),'-- pilih Provinsi --'); selP.disabled=false;
+  fillSelect(selK,[], '-- pilih Kabupaten/Kota --'); selK.disabled=true;
+  fillSelect(selD,[], '-- pilih Nama DI --'); selD.disabled=true;
+  await buildBwsRecap(b); // hitung rekap begitu BWS dipilih
+});
+selP.addEventListener('change', ()=>{
+  const b=selB.value,p=selP.value;
+  if(!p){ fillSelect(selK,[], '-- pilih Kabupaten/Kota --'); selK.disabled=true; tblBody.innerHTML=`<tr><td colspan="4" class="hint">Lengkapi filter.</td></tr>`; return; }
+  fillSelect(selK, Object.keys((INDEX[b]||{})[p]||{}).sort(),'-- pilih Kabupaten/Kota --'); selK.disabled=false;
+  fillSelect(selD,[], '-- pilih Nama DI --'); selD.disabled=true;
+});
+selK.addEventListener('change', ()=>{
+  const b=selB.value,p=selP.value,k=selK.value;
+  if(!k){ fillSelect(selD,[], '-- pilih Nama DI --'); selD.disabled=true; tblBody.innerHTML=`<tr><td colspan="4" class="hint">Lengkapi filter.</td></tr>`; return; }
+  fillSelect(selD, Object.keys(((INDEX[b]||{})[p]||{})[k]||{}).sort(),'-- pilih Nama DI --'); selD.disabled=false;
+  refreshSummary();
+});
+selD.addEventListener('change', async ()=>{ await refreshSummary(); await showDetail(); });
+
+/* ===== Map buttons ===== */
+document.getElementById('btnLoadMarkers').addEventListener('click', async ()=>{
+  const b=selB.value; if(!b){ alert('Pilih B/BWS dulu.'); return; }
+  document.getElementById('mapInfo').textContent='Memuat marker…';
+  await loadMarkersForBws(b);
+});
+document.getElementById('btnClearMarkers').addEventListener('click', ()=>{
+  clusterGroup.clearLayers(); document.getElementById('mapInfo').textContent='—'; map.setView([-2.5,118],5);
+});
 </script>
 </body>
 </html>
