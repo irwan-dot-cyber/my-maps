@@ -3,12 +3,13 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Form Tahap 2 (Final)</title>
+  <title>Form Tahap 2 (Final + Coord Badge)</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" referrerpolicy="no-referrer"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js" referrerpolicy="no-referrer"></script>
   <style>
-    :root{--bg:#0b1224;--card:#0f172a;--mut:#9aa3b2;--accent:#22c55e;--danger:#ef4444}
-    *{box-sizing:border-box} body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;background:var(--bg);color:#e5e7eb}
+    :root{--bg:#0b1224;--card:#0f172a;--mut:#9aa3b2;--accent:#22c55e;--warn:#f59e0b;--danger:#ef4444}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;background:var(--bg);color:#e5e7eb}
     header{padding:14px 18px;border-bottom:1px solid #1f2937;background:#0c1326;position:sticky;top:0;z-index:10}
     main{max-width:1100px;margin:0 auto;padding:14px}
     .card{background:var(--card);border:1px solid #1f2937;border-radius:14px;overflow:hidden}
@@ -21,7 +22,6 @@
     button{cursor:pointer;border:0;padding:10px 14px;border-radius:10px}
     .primary{background:var(--accent);color:#01250f;font-weight:600}
     .ghost{background:#0b1224;color:#e5e7eb;border:1px solid #334155}
-    .danger{background:var(--danger);color:#fff}
     .hint{font-size:12px;color:var(--mut)}
     #map{height:56vh}
     .mapwrap{position:relative}
@@ -33,131 +33,140 @@
     .crosshair .reticle .v{width:2px;height:14px;left:50%;top:50%;transform:translate(-50%,-50%)}
     .toast{margin:10px 14px;padding:10px 12px;border-radius:10px;background:#052e1a;border:1px solid #14532d;color:#bbf7d0;display:none}
     .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid #334155;border-radius:999px;background:#0b1224;font-size:12px}
+    .badge .dot{width:8px;height:8px;border-radius:50%}
+    .dot.green{background:#22c55e}.dot.orange{background:#f59e0b}.dot.gray{background:#94a3b8}
     .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
     .gallery a{display:block;border:1px solid #1f2937;border-radius:10px;overflow:hidden;background:#0b1224}
     .gallery img{display:block;width:100%;height:140px;object-fit:cover}
-    .muted{opacity:.6}
+    .muted{opacity:.7}
+    .field-inline{display:flex;gap:8px;align-items:center}
+    .readonly input[disabled]{opacity:.8}
     @media (max-width:820px){.row{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
-  <header>
-    <strong>Form Tahap 2</strong>
-    <span class="hint"> INPRES 2/2025 • Pelaksanaan Tahap 2</span>
-  </header>
+<header>
+  <strong>Form Tahap 2</strong>
+  <span class="hint"> INPRES 2/2025 • Pelaksanaan Tahap 2</span>
+</header>
 
-  <main>
-    <div class="card">
-      <h2>Data Survey</h2>
-      <div id="toast" class="toast"></div>
+<main>
+  <div class="card">
+    <h2>Data Survey</h2>
+    <div id="toast" class="toast"></div>
 
-      <form id="surveyForm">
-        <div class="row">
-          <div><label>B/BWS</label><select id="balai" name="balai" required></select></div>
-          <div><label>Provinsi</label><select id="prov" name="provinsi" required disabled></select></div>
-        </div>
-
-        <div class="row">
-          <div><label>Kabupaten/Kota</label><select id="kab" name="kabupaten" required disabled></select></div>
-          <div><label>Daerah Irigasi (DI)</label><select id="di" name="di" required disabled></select></div>
-        </div>
-
-        <div class="actions" id="statusBar" style="gap:10px">
-          <span class="badge">Progres terakhir: <b id="lastStage">0%</b></span>
-          <span class="badge">Koordinat: <span id="coordStat">-</span></span>
-        </div>
-
-        <div class="row">
-          <div><label>Kecamatan</label><input id="kecamatan" name="kecamatan" placeholder="(otomatis/isi manual)" required/></div>
-          <div><label>Desa/Kelurahan</label><input id="desa" name="desa" placeholder="(otomatis/isi manual)" required/></div>
-        </div>
-
-        <div>
-          <label>Peta Lokasi</label>
-          <div class="mapwrap">
-            <div id="map"></div>
-            <div class="crosshair"><div class="reticle"><span class="h"></span><span class="v"></span></div></div>
-          </div>
-          <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <button id="btnLocate" type="button" class="ghost">📍 Lokasi saya</button>
-            <button id="btnPick" type="button" class="primary">✅ Pilih lokasi (ambil dari tanda ＋)</button>
-            <span class="hint" id="coords">Lat: -, Lng: -</span>
-          </div>
-        </div>
-
-        <div class="row">
-          <div><label>Latitude</label><input type="number" step="0.000001" id="lat" name="lat" placeholder="Klik 'Pilih lokasi' atau isi manual" required/></div>
-          <div><label>Longitude</label><input type="number" step="0.000001" id="lng" name="lng" required/></div>
-        </div>
-        <div class="actions" style="margin-top:4px">
-          <button type="button" id="btnPan" class="ghost">🧭 Pan ke koordinat</button>
-        </div>
-
-        <div id="historyBlock" class="card" style="border-radius:12px">
-          <h2 style="font-size:14px">Riwayat Foto Progres</h2>
-          <div id="historyGals" style="padding:12px 14px">
-            <div class="hint muted">Belum ada foto progres untuk kombinasi terpilih.</div>
-          </div>
-        </div>
-
-        <div class="card" style="border-radius:12px">
-          <h2 style="font-size:14px">Upload Foto Progres</h2>
-          <div style="padding:12px 14px; display:grid; gap:10px">
-            <div class="actions" id="stageBtns">
-              <!-- tombol stage akan dirender dinamis -->
-            </div>
-            <div class="actions" style="gap:8px;margin-bottom:6px">
-              <button type="button" id="btnCamera" class="ghost">📷 Kamera</button>
-              <button type="button" id="btnGallery" class="ghost">🖼️ Galeri</button>
-              <span id="photoMeta" class="hint"></span>
-            </div>
-            <input type="file" accept="image/*" id="fileInput" name="foto" style="display:none">
-            <div class="hint">Pilih kamera/galeri. Foto dikompresi otomatis & dikirim juga sebagai base64 fallback.</div>
-          </div>
-        </div>
-
-        <div class="row">
-          <div><label>Nama Pengirim</label><input id="nama" name="nama" placeholder="Nama lengkap" required/></div>
-          <div><label>Nomor WA/HP</label><input id="telepon" name="telepon" placeholder="08xxxxxxxxxx / 628xxxxxxxxx" pattern="[0-9+]{8,15}" required/></div>
-        </div>
-
-        <div class="actions">
-          <button type="submit" class="primary" id="btnSubmit" disabled>Kirim</button>
-          <button type="reset" class="ghost" id="btnReset">Reset</button>
-        </div>
-      </form>
-    </div>
-  </main>
-
-  <div id="uploadOverlay" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,6,23,.65);backdrop-filter:blur(3px);z-index:9999">
-    <div class="u-box" role="alert" aria-live="assertive" style="background:#0b1222;border:1px solid #263142;border-radius:16px;padding:18px 22px;min-width:300px;max-width:92vw">
-      <div class="u-title" id="uploadTitle" style="font-weight:800;margin-bottom:6px">Mengunggah data…</div>
-      <div class="u-progress" style="height:10px;border:1px solid #263142;border-radius:999px;overflow:hidden;margin-top:10px;background:#0b1222">
-        <div id="progressBar" style="height:100%;width:0%;background:linear-gradient(90deg,#22c55e,#86efac)"></div>
+    <form id="surveyForm">
+      <div class="row">
+        <div><label>B/BWS</label><select id="balai" name="balai" required></select></div>
+        <div><label>Provinsi</label><select id="prov" name="provinsi" required disabled></select></div>
       </div>
-      <div class="u-hint" id="uploadHint" style="font-size:12px;color:#a1a1aa;margin-top:8px">Jangan tutup halaman ini.</div>
-    </div>
+
+      <div class="row">
+        <div><label>Kabupaten/Kota</label><select id="kab" name="kabupaten" required disabled></select></div>
+        <div><label>Daerah Irigasi (DI)</label><select id="di" name="di" required disabled></select></div>
+      </div>
+
+      <div class="actions" id="statusBar" style="gap:10px;margin-top:-4px">
+        <span class="badge"><span class="dot green"></span>Progres terakhir: <b id="lastStage">0%</b></span>
+        <span class="badge" id="coordBadge"><span class="dot gray"></span><span id="coordBadgeText">Koordinat: -</span></span>
+      </div>
+
+      <div class="row">
+        <div><label>Kecamatan</label><input id="kecamatan" name="kecamatan" placeholder="(otomatis/isi manual)" required/></div>
+        <div><label>Desa/Kelurahan</label><input id="desa" name="desa" placeholder="(otomatis/isi manual)" required/></div>
+      </div>
+
+      <div>
+        <label>Peta Lokasi</label>
+        <div class="mapwrap">
+          <div id="map"></div>
+          <div class="crosshair"><div class="reticle"><span class="h"></span><span class="v"></span></div></div>
+        </div>
+        <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button id="btnLocate" type="button" class="ghost">📍 Lokasi saya</button>
+          <button id="btnPick" type="button" class="primary">✅ Pilih lokasi (ambil dari tanda ＋)</button>
+          <span class="hint" id="coords">Lat: -, Lng: -</span>
+        </div>
+      </div>
+
+      <div class="row readonly">
+        <div>
+          <label>Latitude</label>
+          <div class="field-inline">
+            <input type="number" step="0.000001" id="lat" name="lat" placeholder="Klik 'Pilih lokasi' atau isi manual" required/>
+          </div>
+        </div>
+        <div>
+          <label>Longitude</label>
+          <div class="field-inline">
+            <input type="number" step="0.000001" id="lng" name="lng" required/>
+          </div>
+        </div>
+      </div>
+      <div class="actions" style="margin-top:4px">
+        <button type="button" id="btnPan" class="ghost">🧭 Pan ke koordinat</button>
+      </div>
+
+      <div id="historyBlock" class="card" style="border-radius:12px">
+        <h2 style="font-size:14px">Riwayat Foto Progres</h2>
+        <div id="historyGals" style="padding:12px 14px">
+          <div class="hint muted">Belum ada foto progres untuk kombinasi terpilih.</div>
+        </div>
+      </div>
+
+      <div class="card" style="border-radius:12px">
+        <h2 style="font-size:14px">Upload Foto Progres</h2>
+        <div style="padding:12px 14px; display:grid; gap:10px">
+          <div class="actions" id="stageBtns"></div>
+          <div class="actions" style="gap:8px;margin-bottom:6px">
+            <button type="button" id="btnCamera" class="ghost">📷 Kamera</button>
+            <button type="button" id="btnGallery" class="ghost">🖼️ Galeri</button>
+            <span id="photoMeta" class="hint"></span>
+          </div>
+          <input type="file" accept="image/*" id="fileInput" name="foto" style="display:none">
+          <div class="hint">Pilih kamera/galeri. Foto dikompresi otomatis & dikirim juga sebagai base64 fallback.</div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div><label>Nama Pengirim</label><input id="nama" name="nama" placeholder="Nama lengkap" required/></div>
+        <div><label>Nomor WA/HP</label><input id="telepon" name="telepon" placeholder="08xxxxxxxxxx / 628xxxxxxxxx" pattern="[0-9+]{8,15}" required/></div>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="primary" id="btnSubmit" disabled>Kirim</button>
+        <button type="reset" class="ghost" id="btnReset">Reset</button>
+      </div>
+    </form>
   </div>
+</main>
+
+<!-- Overlay Upload -->
+<div id="uploadOverlay" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,6,23,.65);backdrop-filter:blur(3px);z-index:9999">
+  <div class="u-box" role="alert" aria-live="assertive" style="background:#0b1222;border:1px solid #263142;border-radius:16px;padding:18px 22px;min-width:300px;max-width:92vw">
+    <div class="u-title" id="uploadTitle" style="font-weight:800;margin-bottom:6px">Mengunggah data…</div>
+    <div class="u-progress" style="height:10px;border:1px solid #263142;border-radius:999px;overflow:hidden;margin-top:10px;background:#0b1222">
+      <div id="progressBar" style="height:100%;width:0%;background:linear-gradient(90deg,#22c55e,#86efac)"></div>
+    </div>
+    <div class="u-hint" id="uploadHint" style="font-size:12px;color:#a1a1aa;margin-top:8px">Jangan tutup halaman ini.</div>
+  </div>
+</div>
 
 <script>
-/* ===== CONFIG (ganti sesuai deploy kamu) ===== */
-const ENDPOINT = 'https://gas-proxy2.tuic1677.workers.dev/'; // POST via proxy (Worker)
-const DATA_URL = 'https://script.google.com/macros/s/AKfycbwWe8SY1T51LL3yp_OlLlOORuMLjcVkbaL1td5pOm1EX0-POztzV-6CUl-tQo91OMzT/exec'; // GET ke GAS
+/* ===== CONFIG (sesuaikan) ===== */
+const ENDPOINT = 'https://gas-proxy2.tuic1677.workers.dev/'; // POST via proxy
+const DATA_URL = 'https://script.google.com/macros/s/AKfycbwWe8SY1T51LL3yp_OlLlOORuMLjcVkbaL1td5pOm1EX0-POztzV-6CUl-tQo91OMzT/exec'; // GET ke GAS kamu
 
-/* ===== Utils & UI ===== */
+/* ===== Utils ===== */
 const toast = (m)=>{const t=document.getElementById('toast');t.textContent=m;t.style.display='block';clearTimeout(window.__t);window.__t=setTimeout(()=>t.style.display='none',4200);};
 function fillSelect(el, items, ph='-- pilih --'){el.innerHTML=''; if(ph&&!el.multiple){const o=document.createElement('option');o.value='';o.textContent=ph;el.appendChild(o);} (items||[]).forEach(v=>{const o=document.createElement('option');o.value=o.textContent=v;el.appendChild(o);}); el.disabled=!(items&&items.length);el.dispatchEvent(new Event('change'));}
 const uniq = a => [...new Set((a||[]).filter(Boolean))];
 const titleCase = s => String(s||'').split(/(\s+|[-/])/).map(tok=>/^\s+$/.test(tok)||tok==='-'||tok==='/'?tok:tok.toUpperCase()==='DI'?'DI':tok.charAt(0).toUpperCase()+tok.slice(1).toLowerCase()).join('');
-/* overlay */
 const $overlay=document.getElementById('uploadOverlay'), $bar=document.getElementById('progressBar');
 function setUploadingUI({show,percent}){ if(typeof percent==='number') $bar.style.width=Math.max(0,Math.min(100,Math.round(percent)))+'%'; $overlay.style.display=show?'flex':'none'; }
 function disableForm(b){document.querySelectorAll('#surveyForm input, #surveyForm select, #surveyForm button').forEach(e=>e.disabled=!!b);}
 
-/* ===== DOM & Map ===== */
-const balai=document.getElementById('balai'), prov=document.getElementById('prov'), kab=document.getElementById('kab'), di=document.getElementById('di');
-const lat=document.getElementById('lat'), lng=document.getElementById('lng'), form=document.getElementById('surveyForm'), btnSubmit=document.getElementById('btnSubmit');
-const photoMeta=document.getElementById('photoMeta'), fileInput=document.getElementById('fileInput');
+/* ===== Map ===== */
 const baseOSM=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20, attribution:'© OpenStreetMap'});
 const baseImg=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20, attribution:'Tiles © Esri/Maxar'});
 const map=L.map('map',{zoomControl:true,layers:[baseOSM]}); L.control.layers({OSM:baseOSM,'Esri Imagery':baseImg}, {}, {position:'topright', collapsed:false}).addTo(map);
@@ -168,14 +177,20 @@ map.on('locationerror',()=>alert('Izin lokasi ditolak. Geser peta manual.'));
 document.getElementById('btnPick').addEventListener('click',()=>{const c=map.getCenter(); lat.value=c.lat.toFixed(6); lng.value=c.lng.toFixed(6);});
 document.getElementById('btnPan').addEventListener('click',()=>{const la=+lat.value,lo=+lng.value; if(!Number.isNaN(la)&&!Number.isNaN(lo)) map.setView([la,lo],Math.max(map.getZoom(),16));});
 
-/* ===== Data INDEX dari baseline ===== */
-let INDEX={}; // {BWS:{PROV:{KAB:{DI:{kecamatan:Set, desa:Set}}}}}
+/* ===== DOM ===== */
+const balai=document.getElementById('balai'), prov=document.getElementById('prov'), kab=document.getElementById('kab'), di=document.getElementById('di');
+const lat=document.getElementById('lat'), lng=document.getElementById('lng'), form=document.getElementById('surveyForm'), btnSubmit=document.getElementById('btnSubmit');
+const coordBadge=document.getElementById('coordBadge'), coordBadgeText=document.getElementById('coordBadgeText');
+
+/* ===== Baseline ===== */
+let INDEX={};
 async function loadData(){
   try{
     const url = DATA_URL + (DATA_URL.includes('?')?'&':'?') + 't=' + Date.now();
-    const resp = await fetch(url,{cache:'no-store'}); const raw=await resp.text(); const cleaned = raw.replace(/^\)\]\}'\s*/,'');
-    let rows=JSON.parse(cleaned);
-    if(!Array.isArray(rows)){ toast('⚠️ Baseline kosong/invalid. Cek GAS.'); console.error('Baseline response:', rows); return; }
+    const resp = await fetch(url,{cache:'no-store'});
+    const raw = await resp.text(); const cleaned = raw.replace(/^\)\]\}'\s*/,'');
+    let rows = JSON.parse(cleaned);
+    if(!Array.isArray(rows)){ toast('⚠️ Baseline kosong/invalid.'); console.error(rows); return; }
     INDEX={};
     rows.forEach(row=>{
       const BWS=titleCase(row['B/BWS PELAKSANA']||row['Balai']||row['BWS']);
@@ -184,17 +199,17 @@ async function loadData(){
       const DI=titleCase(row['NAMA DI/DIR']||row['nama di']||row['DI']||row['Paket']);
       const KEC=row['KECAMATAN']||row['Kecamatan']||''; const DESA=row['DESA']||row['Desa']||'';
       if(!(BWS&&PROV&&KAB&&DI)) return;
-      INDEX[BWS] ??= {}; INDEX[BWS][PROV] ??= {}; INDEX[BWS][PROV][KAB] ??= {}; 
+      INDEX[BWS] ??= {}; INDEX[BWS][PROV] ??= {}; INDEX[BWS][PROV][KAB] ??= {};
       INDEX[BWS][PROV][KAB][DI] ??= {kecamatan:new Set(), desa:new Set()};
       (String(KEC).split(/\s*[,;/]\s*|[\r\n]+/).filter(Boolean)).forEach(k=>INDEX[BWS][PROV][KAB][DI].kecamatan.add(titleCase(k)));
       (String(DESA).split(/\s*[,;/]\s*|[\r\n]+/).filter(Boolean)).forEach(d=>INDEX[BWS][PROV][KAB][DI].desa.add(titleCase(d)));
     });
-    const listBws=Object.keys(INDEX).sort(); fillSelect(balai,listBws,'-- pilih B/BWS --');
+    fillSelect(balai, Object.keys(INDEX).sort(), '-- pilih B/BWS --');
     prov.disabled=kab.disabled=di.disabled=true;
   }catch(e){ console.error(e); toast('⚠️ Gagal memuat baseline.'); }
 }
 
-/* ===== Cascade handlers ===== */
+/* ===== Cascade ===== */
 balai.addEventListener('change', ()=>{
   const b=balai.value; if(!b){fillSelect(prov,[], '-- pilih Provinsi --');prov.disabled=true; return;}
   fillSelect(prov, Object.keys(INDEX[b]||{}).sort(),'-- pilih Provinsi --'); prov.disabled=false;
@@ -210,10 +225,19 @@ kab.addEventListener('change', ()=>{
   fillSelect(di, Object.keys((((INDEX[b]||{})[p]||{})[k]||{})).sort(),'-- pilih DI --'); di.disabled=false;
 });
 
-/* ===== History & stage UI ===== */
-let currentStage=null; // 25/50/75/100 to upload
-const lastStageEl=document.getElementById('lastStage'), coordStat=document.getElementById('coordStat');
+/* ===== History / Stage / Koordinat Badge ===== */
+let currentStage=null;
+const lastStageEl=document.getElementById('lastStage');
 const historyGals=document.getElementById('historyGals');
+
+function setCoordBadge(type, text){
+  // type: 'locked' | 'none'
+  coordBadge.querySelector('.dot')?.classList.remove('green','orange','gray');
+  const dot = coordBadge.querySelector('.dot') || document.createElement('span');
+  dot.className = 'dot ' + (type==='locked' ? 'green' : type==='none' ? 'orange' : 'gray');
+  if (!coordBadge.contains(dot)) coordBadge.prepend(dot);
+  coordBadgeText.textContent = text;
+}
 
 function renderStageButtons(maxStage){
   const wrap=document.getElementById('stageBtns'); wrap.innerHTML='';
@@ -225,75 +249,59 @@ function renderStageButtons(maxStage){
     const enabled = st=== (maxStage>=100?null:(maxStage===0?25:maxStage+25));
     btn.className = enabled ? 'primary' : 'ghost';
     btn.disabled = !enabled;
-    btn.addEventListener('click', ()=>{
-      currentStage=st; btnSubmit.disabled=false; toast(`Stage dipilih: ${st}%`);
-    });
+    btn.addEventListener('click', ()=>{ currentStage=st; btnSubmit.disabled=false; toast(`Stage dipilih: ${st}%`); });
     wrap.appendChild(btn);
   });
-  // disable submit jika belum pilih stage
-  btnSubmit.disabled = true;
-  currentStage=null;
+  btnSubmit.disabled=true; currentStage=null;
 }
-
 function renderHistoryPhotos(photos){
-  const stagesOrder=[25,50,75,100];
-  let html='';
-  let has=false;
-  stagesOrder.forEach(st=>{
-    const p = photos[String(st)];
-    if (p && p.url){ has=true;
-      html += `
-        <div>
-          <div class="hint">Foto Progres ${st}%:</div>
-          <div class="gallery">
-            <a href="${p.url}" target="_blank" title="${p.name||('Stage '+st)}">
-              <img loading="lazy" src="${p.url}" alt="Progres ${st}%"/>
-            </a>
-          </div>
-        </div>`;
-    }
-  });
+  const order=[25,50,75,100]; let html='', has=false;
+  order.forEach(st=>{const p=photos[String(st)]; if(p&&p.url){has=true; html+=`
+    <div style="margin-bottom:10px">
+      <div class="hint">Foto Progres ${st}%:</div>
+      <div class="gallery">
+        <a href="${p.url}" target="_blank" title="${p.name||('Stage '+st)}">
+          <img loading="lazy" src="${p.url}" alt="Progres ${st}%"/>
+        </a>
+      </div>
+    </div>`; }});
   historyGals.innerHTML = has ? html : `<div class="hint muted">Belum ada foto progres untuk kombinasi terpilih.</div>`;
 }
 
 async function fetchHistory(bws, p, k, d){
   const qs = new URLSearchParams({fn:'history', bws, prov:p, kab:k, di:d});
   const url = DATA_URL + (DATA_URL.includes('?')?'&':'?') + qs.toString() + '&t=' + Date.now();
-  const res = await fetch(url, {cache:'no-store'}); const j = await res.json();
-  return j && j.ok ? j : {ok:false,maxStage:0,coords:null,photos:{}};
+  const res = await fetch(url, {cache:'no-store'}); try{const j=await res.json(); return j&&j.ok?j:{ok:false,maxStage:0,coords:null,photos:{}};}catch{ return {ok:false,maxStage:0,coords:null,photos:{}}; }
 }
 
 di.addEventListener('change', async ()=>{
   const b=balai.value, p=prov.value, k=kab.value, d=di.value;
-  // kec/desa auto-suggest
   const entry = (((INDEX[b]||{})[p]||{})[k]||{})[d];
   const kecs = entry ? [...entry.kecamatan] : []; const desas = entry ? [...entry.desa] : [];
   const kecEl=document.getElementById('kecamatan'), desaEl=document.getElementById('desa');
-  if (kecs.length===1) kecEl.value = kecs[0]; else if (!kecEl.value) kecEl.placeholder='(boleh kosong bila tidak ada di baseline)';
+  if (kecs.length===1) kecEl.value = kecs[0];
   if (desas.length===1) desaEl.value = desas[0];
 
-  // history
   const hist = await fetchHistory(b,p,k,d);
   lastStageEl.textContent = (hist.maxStage||0) + '%';
   renderHistoryPhotos(hist.photos||{});
   renderStageButtons(hist.maxStage||0);
 
-  // lock/auto koordinat jika ada
   const hasCoord = hist.coords && Number.isFinite(hist.coords.lat) && Number.isFinite(hist.coords.lng);
   if (hasCoord){
     lat.value = Number(hist.coords.lat).toFixed(6);
     lng.value = Number(hist.coords.lng).toFixed(6);
     lat.disabled = true; lng.disabled = true;
-    coordStat.textContent = 'Terkunci (pakai koordinat sebelumnya)';
+    setCoordBadge('locked','Koordinat: terkunci (pakai entri sebelumnya)');
     map.setView([hist.coords.lat, hist.coords.lng], 17);
-  }else{
+  } else {
     lat.disabled = false; lng.disabled=false;
-    coordStat.textContent = 'Belum ada';
+    setCoordBadge('none','Koordinat: belum ada, silakan pilih titik');
   }
 });
 
 /* ===== Foto + kompresi ===== */
-let selectedFile=null;
+let selectedFile=null; const fileInput=document.getElementById('fileInput'); const photoMeta=document.getElementById('photoMeta');
 document.getElementById('btnCamera').addEventListener('click',()=>{ fileInput.setAttribute('capture','environment'); fileInput.click(); });
 document.getElementById('btnGallery').addEventListener('click',()=>{ fileInput.removeAttribute('capture'); fileInput.click(); });
 fileInput.addEventListener('change',()=>{ selectedFile = fileInput.files?.[0] || null; photoMeta.textContent = selectedFile ? `Dipilih: ${selectedFile.name} • ${(selectedFile.size/1024).toFixed(1)} KB` : ''; });
@@ -314,7 +322,6 @@ form.addEventListener('submit', async (e)=>{
   if(!currentStage){ toast('Pilih stage progres (25/50/75/100) dulu.'); return; }
   if(!lat.value||!lng.value){ toast('Koordinat belum diisi.'); return; }
 
-  // kompres & b64 fallback
   let b64='', photo=null;
   if (selectedFile) {
     photo = await compressImage(selectedFile,{maxDim:2000,quality:0.82});
@@ -324,11 +331,10 @@ form.addEventListener('submit', async (e)=>{
   }
 
   const fd = new FormData(form);
-  fd.set('progress_stage', String(currentStage)); // <- penting!
+  fd.set('progress_stage', String(currentStage));
   if (b64) { fd.set('foto_b64', b64); fd.set('foto_name', photo.name); fd.set('foto_type', photo.type); }
 
   disableForm(true); setUploadingUI({show:true, percent:6});
-
   const xhr = new XMLHttpRequest();
   xhr.open('POST', ENDPOINT, true);
   xhr.upload.onprogress = (ev)=>{ if (ev.lengthComputable) setUploadingUI({show:true, percent:(ev.loaded/ev.total)*100}); };
@@ -339,13 +345,13 @@ form.addEventListener('submit', async (e)=>{
     let data={}; try{ data = JSON.parse(xhr.responseText||'{}'); }catch(e){}
     if (xhr.status>=200 && xhr.status<300 && data && data.ok) {
       setUploadingUI({show:true, percent:100}); toast('✅ Terkirim!');
-      // refresh history untuk memantulkan progres baru
+      // refresh history
       const hist = await fetchHistory(b, p, k, d);
       lastStageEl.textContent = (hist.maxStage||0) + '%';
       renderHistoryPhotos(hist.photos||{});
       renderStageButtons(hist.maxStage||0);
+      if (hist.coords){ lat.value=Number(hist.coords.lat).toFixed(6); lng.value=Number(hist.coords.lng).toFixed(6); lat.disabled=true; lng.disabled=true; setCoordBadge('locked','Koordinat: terkunci (pakai entri sebelumnya)'); }
       setTimeout(()=>{ setUploadingUI({show:false}); }, 600);
-      // tidak reset pilihan agar user bisa lanjut stage berikutnya
     } else {
       setUploadingUI({show:false}); disableForm(false);
       toast('❌ Gagal kirim (server). ' + (data && data.error ? data.error : ''));
@@ -361,11 +367,13 @@ document.getElementById('btnReset').addEventListener('click', ()=>{
   fillSelect(prov,[], '-- pilih Provinsi --'); prov.disabled=true;
   fillSelect(kab,[], '-- pilih Kab/Kota --'); kab.disabled=true;
   fillSelect(di,[], '-- pilih DI --'); di.disabled=true;
-  lastStageEl.textContent='0%'; coordStat.textContent='-';
+  lastStageEl.textContent='0%'; setCoordBadge('none','Koordinat: -');
   lat.disabled=false; lng.disabled=false; currentStage=null; btnSubmit.disabled=true;
 });
 
-loadData();
+/* start */
+const latEl=document.getElementById('lat'), lngEl=document.getElementById('lng');
+loadData(); setCoordBadge('none','Koordinat: -');
 </script>
 </body>
 </html>
