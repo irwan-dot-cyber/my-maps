@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Monitoring INPRES 2/2025 Tahap 2 — All Data</title>
+  <title>Monitoring Tahap 2 — Per Balai + Cari DI</title>
 
   <!-- Leaflet + MarkerCluster -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" referrerpolicy="no-referrer"/>
@@ -17,19 +17,14 @@
     *{box-sizing:border-box}
     body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;background:var(--bg);color:#e5e7eb}
     header{padding:14px 18px;border-bottom:1px solid #1f2937;background:#0c1326;position:sticky;top:0;z-index:10}
-    main{max-width:1240px;margin:0 auto;padding:14px}
+    main{max-width:1200px;margin:0 auto;padding:14px}
     .card{background:var(--card);border:1px solid #1f2937;border-radius:14px;overflow:hidden}
     .card h2{margin:0;padding:12px 14px;border-bottom:1px solid #1f2937;font-size:16px}
     .section{padding:12px 14px;display:grid;gap:12px}
     label{font-size:12px;color:var(--mut)}
-    select,button{border-radius:10px}
-    select{width:100%;padding:10px 12px;border:1px solid #334155;background:#0b1224;color:#e5e7eb}
-    .row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
-    .row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-    button{cursor:pointer;border:0;padding:10px 14px}
-    .primary{background:var(--accent);color:#01250f;font-weight:600}
-    .ghost{background:#0b1224;color:#e5e7eb;border:1px solid #334155}
+    select,input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #334155;background:#0b1224;color:#e5e7eb}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
     .hint{font-size:12px;color:#9aa3b2}
     table{width:100%;border-collapse:separate;border-spacing:0 8px}
     th,td{padding:10px 12px;text-align:left}
@@ -40,58 +35,63 @@
     tbody tr td:last-child{border-right:1px solid #1f2937;border-top-right-radius:10px;border-bottom-right-radius:10px}
     .chip{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;border:1px solid #334155;background:#0b1224;font-size:12px}
     .ok{border-color:#22c55e}.mid{border-color:#f59e0b}.low{border-color:#94a3b8}
-    #map{height:64vh;border-radius:12px;border:1px solid #1f2937}
+    #map{height:60vh;border-radius:12px;border:1px solid #1f2937}
     .legend{display:flex;gap:8px;flex-wrap:wrap}
-    .legend .dot{width:12px;height:12px;border-radius:50%}
-    .dot.s0{background:#94a3b8}.dot.s25{background:#fca311}.dot.s50{background:#f59e0b}.dot.s75{background:#22c55e}.dot.s100{background:#16a34a}
-    .pill{padding:6px 10px;border-radius:999px;border:1px solid #334155;background:#0b1224}
-    progress{width:180px;height:10px;border-radius:999px;overflow:hidden;background:#0b1224;border:1px solid #334155}
-    @media (max-width:1100px){.row{grid-template-columns:1fr 1fr}.row-2{grid-template-columns:1fr}}
+    .dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px}
+    .s0{background:#94a3b8}.s25{background:#fca311}.s50{background:#f59e0b}.s75{background:#22c55e}.s100{background:#16a34a}
   </style>
 </head>
 <body>
 <header>
   <strong>Monitoring Tahap 2</strong>
-  <span class="hint">INPRES 2/2025 • Semua data tampil dulu, filter kemudian</span>
+  <span class="hint">INPRES 2/2025 • Per Balai + Cari DI</span>
 </header>
 
 <main>
-  <!-- Filter -->
+  <!-- Filter bar (Per Balai + Cari DI) -->
   <div class="card">
     <h2>Filter</h2>
     <div class="section">
       <div class="row">
-        <div><label>B/BWS</label><select id="f_bws"></select></div>
-        <div><label>Provinsi</label><select id="f_prov" disabled></select></div>
-        <div><label>Kabupaten/Kota</label><select id="f_kab" disabled></select></div>
-        <div><label>Nama DI</label><select id="f_di" disabled></select></div>
+        <div>
+          <label>B/BWS</label>
+          <select id="f_bws"></select>
+        </div>
+        <div>
+          <label>Cari DI</label>
+          <input id="f_search" placeholder="Ketik nama DI (mis. D.I. Ledok)"/>
+        </div>
       </div>
       <div class="actions">
-        <button id="btnExport" class="ghost">⬇️ Export CSV (tampilan saat ini)</button>
-        <span id="infoCount" class="hint">—</span>
-        <span class="hint">Muat data:</span>
-        <progress id="prog" max="100" value="0"></progress>
-        <span id="progText" class="hint">menunggu…</span>
+        <span id="info" class="hint">memuat…</span>
+        <span class="hint">
+          <span class="dot s0"></span>0% •
+          <span class="dot s25"></span>25% •
+          <span class="dot s50"></span>50% •
+          <span class="dot s75"></span>75% •
+          <span class="dot s100"></span>100%
+        </span>
       </div>
     </div>
   </div>
 
   <!-- Tabel -->
   <div class="card" style="margin-top:12px">
-    <h2>Ringkasan Seluruh DI</h2>
+    <h2>Ringkasan DI</h2>
     <div class="section">
       <div style="overflow:auto">
         <table>
           <thead>
             <tr>
-              <th style="min-width:240px">Nama DI</th>
+              <th style="min-width:280px">Nama DI</th>
               <th>Progres</th>
-              <th>B/BWS</th>
               <th>Provinsi</th>
               <th>Kabupaten</th>
             </tr>
           </thead>
-          <tbody id="tb"></tbody>
+          <tbody id="tb">
+            <tr><td colspan="4" class="hint">Memuat data…</td></tr>
+          </tbody>
         </table>
       </div>
     </div>
@@ -99,16 +99,8 @@
 
   <!-- Peta -->
   <div class="card" style="margin-top:12px">
-    <h2>Peta Sebaran DI (semua / sesuai filter)</h2>
+    <h2>Peta Sebaran (sesuai filter)</h2>
     <div class="section">
-      <div class="legend">
-        <span class="pill"><span class="dot s0"></span> 0%</span>
-        <span class="pill"><span class="dot s25"></span> 25%</span>
-        <span class="pill"><span class="dot s50"></span> 50%</span>
-        <span class="pill"><span class="dot s75"></span> 75%</span>
-        <span class="pill"><span class="dot s100"></span> 100%</span>
-        <span id="mapInfo" class="hint">—</span>
-      </div>
       <div id="map"></div>
     </div>
   </div>
@@ -116,7 +108,7 @@
 
 <script>
 /* ====== CONFIG ====== */
-const DATA_URL = 'https://script.google.com/macros/s/AKfycbwWe8SY1T51LL3yp_OlLlOORuMLjcVkbaL1td5pOm1EX0-POztzV-6CUl-tQo91OMzT/exec'; // ← ganti dgn URL Web App GAS kamu
+const DATA_URL = 'https://script.google.com/macros/s/AKfycbwWe8SY1T51LL3yp_OlLlOORuMLjcVkbaL1td5pOm1EX0-POztzV-6CUl-tQo91OMzT/exec'; // ← ganti ke URL Web App GAS kamu
 
 /* ====== Utils ====== */
 const titleCase = s => String(s||'').split(/(\s+|[-/])/).map(tok=>{
@@ -139,8 +131,6 @@ function fillSelect(el, items, ph){
 }
 const chunk = (arr, n)=>arr.map((_,i)=> i % n ===0 ? arr.slice(i,i+n):null).filter(Boolean);
 const sleep = ms=> new Promise(r=>setTimeout(r,ms));
-
-/* ====== GAS helpers ====== */
 async function fetchJSON(u){ const r=await fetch(u,{cache:'no-store'}); return r.json(); }
 async function fetchBaseline(){
   const url = DATA_URL + (DATA_URL.includes('?')?'&':'?') + 't=' + Date.now();
@@ -154,26 +144,28 @@ async function fetchHistory(b,p,k,d){
 }
 
 /* ====== Map ====== */
-const baseOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20, attribution:'© OpenStreetMap'});
-const map = L.map('map',{zoomControl:true,layers:[baseOSM]}).setView([-2.5,118],5);
-let cluster = L.markerClusterGroup(); map.addLayer(cluster);
+const baseOSM=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20, attribution:'© OpenStreetMap'});
+const map=L.map('map',{zoomControl:true,layers:[baseOSM]}).setView([-2.5,118],5);
+let cluster=L.markerClusterGroup(); map.addLayer(cluster);
 function stageColor(st){ if(st>=100) return '#16a34a'; if(st>=75) return '#22c55e'; if(st>=50) return '#f59e0b'; if(st>=25) return '#fca311'; return '#94a3b8'; }
 function iconFor(st){ const c=stageColor(st); return L.divIcon({className:'',html:`<div style="width:14px;height:14px;border-radius:50%;background:${c};border:1px solid #0006"></div>`,iconSize:[14,14]}); }
 
 /* ====== DOM ====== */
-const fB=document.getElementById('f_bws'), fP=document.getElementById('f_prov'), fK=document.getElementById('f_kab'), fD=document.getElementById('f_di');
-const tb=document.getElementById('tb'), infoCount=document.getElementById('infoCount');
-const prog=document.getElementById('prog'), progText=document.getElementById('progText'), mapInfo=document.getElementById('mapInfo');
+const fB=document.getElementById('f_bws');
+const fSearch=document.getElementById('f_search');
+const tb=document.getElementById('tb');
+const info=document.getElementById('info');
 
-/* ====== Global Data ====== */
-let FLAT=[]; // baseline flatten: {bws,prov,kab,di}
-let ALL=[];  // with history: {bws,prov,kab,di,stage,lat,lng}
+/* ====== Data ====== */
+let FLAT=[]; // baseline {bws,prov,kab,di}
+let ALL=[];  // {bws,prov,kab,di,stage,lat,lng}
 
-/* ====== Load All Data (baseline → history, paralel terbatas) ====== */
-async function loadAll(){
-  prog.value=0; progText.textContent='memuat baseline…';
+/* ====== Load All (auto) ====== */
+(async function boot(){
+  info.textContent='memuat baseline…';
   const rows = await fetchBaseline();
-  // build FLAT
+
+  // Flatten baseline & unique
   const seen = new Set();
   FLAT = [];
   rows.forEach(r=>{
@@ -182,124 +174,79 @@ async function loadAll(){
     const k=titleCase(r['KABUPATEN']||r['Kabupaten']);
     const d=titleCase(r['NAMA DI/DIR']||r['nama di']||r['DI']||r['Paket']);
     if(!(b&&p&&k&&d)) return;
-    const key = [b,p,k,d].join('|');
-    if(seen.has(key)) return; seen.add(key);
+    const key=[b,p,k,d].join('|'); if(seen.has(key)) return; seen.add(key);
     FLAT.push({bws:b,prov:p,kab:k,di:d});
   });
 
-  // fetch histories with concurrency limit
-  const total = FLAT.length;
-  const limit = 6;
-  ALL = [];
-  let done = 0;
-
-  const batches = chunk(FLAT, limit);
+  // fetch history with concurrency limit
+  info.textContent='memuat progres/koordinat…';
+  const limit=6; const batches=chunk(FLAT,limit);
+  ALL=[]; let done=0, total=FLAT.length;
   for (const batch of batches){
-    const task = batch.map(async it=>{
+    await Promise.all(batch.map(async it=>{
       const h = await fetchHistory(it.bws,it.prov,it.kab,it.di);
       ALL.push({
         ...it,
-        stage: Number(h.maxStage||0),
-        lat: h.coords && Number.isFinite(h.coords.lat) ? Number(h.coords.lat) : null,
-        lng: h.coords && Number.isFinite(h.coords.lng) ? Number(h.coords.lng) : null
+        stage:Number(h.maxStage||0),
+        lat:(h.coords&&Number.isFinite(h.coords.lat))?Number(h.coords.lat):null,
+        lng:(h.coords&&Number.isFinite(h.coords.lng))?Number(h.coords.lng):null
       });
-      done++; prog.value = Math.round(done/total*100); progText.textContent = `memuat ${done}/${total}`;
-    });
-    await Promise.all(task);
-    // kecilkan jeda biar adem
+      done++; if (done%10===0 || done===total) info.textContent=`memuat ${done}/${total}`;
+    }));
     await sleep(80);
   }
-}
+  // Isi dropdown Balai
+  const listBalai=[...new Set(ALL.map(x=>x.bws))].sort();
+  fillSelect(fB, listBalai, 'Semua B/BWS');
 
-/* ====== Renderers ====== */
+  // Render awal (semua)
+  applyFilters();
+  info.textContent=`Total DI: ${ALL.length}`;
+})();
+
+/* ====== Filtering (per Balai + search DI) ====== */
+function getFiltered(){
+  const b=fB.value, q=fSearch.value.trim().toLowerCase();
+  return ALL.filter(x =>
+    (!b || x.bws===b) &&
+    (!q || x.di.toLowerCase().includes(q))
+  );
+}
 function renderTable(data){
-  if(!data.length){ tb.innerHTML='<tr><td colspan="5" class="hint">Tidak ada data.</td></tr>'; infoCount.textContent='0 baris'; return;}
-  const rows = data.slice().sort((a,b)=> (a.bws+b.prov+a.kab+a.di).localeCompare(b.bws+b.prov+a.kab+b.di));
+  if(!data.length){ tb.innerHTML='<tr><td colspan="4" class="hint">Tidak ada data.</td></tr>'; return;}
+  const rows = data.slice().sort((a,b)=> (a.prov+a.kab+a.di).localeCompare(b.prov+b.kab+b.di));
   tb.innerHTML = rows.map(r=>{
     const cls = r.stage>=75 ? 'ok' : r.stage>=25 ? 'mid' : 'low';
     return `<tr>
       <td>${r.di}</td>
       <td><span class="chip ${cls}">${r.stage}%</span></td>
-      <td>${r.bws}</td>
       <td>${r.prov}</td>
       <td>${r.kab}</td>
     </tr>`;
   }).join('');
-  infoCount.textContent = `${rows.length} baris`;
 }
 function renderMarkers(data){
   cluster.clearLayers();
   let m=0;
   data.forEach(r=>{
     if(Number.isFinite(r.lat)&&Number.isFinite(r.lng)){
-      const mk = L.marker([r.lat,r.lng],{icon:iconFor(r.stage)}).bindPopup(`<b>${r.di}</b><br>${r.kab}, ${r.prov}<br>${r.bws}<br>Progres: ${r.stage}%`);
+      const mk=L.marker([r.lat,r.lng],{icon:iconFor(r.stage)})
+        .bindPopup(`<b>${r.di}</b><br>${r.kab}, ${r.prov}<br>${r.bws}<br>Progres: ${r.stage}%`);
       cluster.addLayer(mk); m++;
     }
   });
-  if(m){ map.fitBounds(cluster.getBounds().pad(0.2)); mapInfo.textContent=`Marker: ${m}`; }
-  else { map.setView([-2.5,118],5); mapInfo.textContent='Tidak ada marker'; }
-}
-
-/* ====== Filter logic ====== */
-function getFiltered(){
-  const b=fB.value, p=fP.value, k=fK.value, d=fD.value;
-  return ALL.filter(x =>
-    (!b || x.bws===b) &&
-    (!p || x.prov===p) &&
-    (!k || x.kab===k) &&
-    (!d || x.di===d)
-  );
-}
-function refreshCascades(){
-  // isi opsi berdasarkan ALL (bukan baseline) supaya pasti ada stage/coords
-  const uniq = (arr, key) => [...new Set(arr.map(o=>o[key]))].sort();
-  const b = fB.value, p = fP.value, k = fK.value;
-
-  // BWS
-  fillSelect(fB, uniq(ALL,'bws'), 'Semua B/BWS');
-  if (b) fB.value = b;
-
-  // Prov
-  const listP = uniq(ALL.filter(o=>!b || o.bws===b),'prov');
-  fillSelect(fP, listP, 'Semua Provinsi'); fP.disabled = false;
-  if (p && listP.includes(p)) fP.value = p; else fP.value='';
-
-  // Kab
-  const listK = uniq(ALL.filter(o=>(!b||o.bws===b)&&(!p||o.prov===p)),'kab');
-  fillSelect(fK, listK, 'Semua Kabupaten/Kota'); fK.disabled = false;
-  if (k && listK.includes(k)) fK.value = k; else fK.value='';
-
-  // DI
-  const listD = uniq(ALL.filter(o=>(!b||o.bws===b)&&(!p||o.prov===p)&&(!k||o.kab===k)),'di');
-  fillSelect(fD, listD, 'Semua DI'); fD.disabled=false;
+  if(m){ map.fitBounds(cluster.getBounds().pad(0.2)); } else { map.setView([-2.5,118],5); }
 }
 function applyFilters(){
   const data = getFiltered();
   renderTable(data);
   renderMarkers(data);
+  info.textContent = `Tampil: ${data.length} DI` + (fB.value ? ` • ${fB.value}` : '');
 }
 
-/* ====== Export ====== */
-document.getElementById('btnExport').addEventListener('click', ()=>{
-  const cur = getFiltered();
-  const rows=[['Nama DI','Progres','B/BWS','Provinsi','Kabupaten','Lat','Lng']];
-  cur.forEach(r=>rows.push([r.di, r.stage, r.bws, r.prov, r.kab, r.lat??'', r.lng??'']));
-  const csv = rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\r\n');
-  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
-  const url=URL.createObjectURL(blob); const a=document.createElement('a');
-  a.href=url; a.download='monitoring_DI.csv'; a.click(); URL.revokeObjectURL(url);
-});
-
 /* ====== Events ====== */
-[fB,fP,fK,fD].forEach(el=> el.addEventListener('change', applyFilters));
-
-/* ====== Boot ====== */
-(async ()=>{
-  await loadAll();
-  prog.value=100; progText.textContent='selesai';
-  refreshCascades();
-  applyFilters(); // tampilkan semua dulu
-})();
+fB.addEventListener('change', applyFilters);
+fSearch.addEventListener('input', applyFilters);
 </script>
 </body>
 </html>
