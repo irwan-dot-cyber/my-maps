@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Form Tahap 2 (Final + Coord Badge)</title>
+  <title>Form Tahap 2 (Koordinat Auto-Lock)</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" referrerpolicy="no-referrer"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js" referrerpolicy="no-referrer"></script>
   <style>
-    :root{--bg:#0b1224;--card:#0f172a;--mut:#9aa3b2;--accent:#22c55e;--warn:#f59e0b;--danger:#ef4444}
+    :root{--bg:#0b1224;--card:#0f172a;--mut:#9aa3b2;--accent:#22c55e;--warn:#f59e0b}
     *{box-sizing:border-box}
     body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;background:var(--bg);color:#e5e7eb}
     header{padding:14px 18px;border-bottom:1px solid #1f2937;background:#0c1326;position:sticky;top:0;z-index:10}
@@ -16,7 +16,7 @@
     .card h2{margin:0;padding:12px 14px;border-bottom:1px solid #1f2937;font-size:16px}
     form{padding:12px 14px;display:grid;gap:12px}
     label{font-size:12px;color:var(--mut)}
-    select,input,textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #334155;background:#0b1224;color:#e5e7eb}
+    select,input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #334155;background:#0b1224;color:#e5e7eb}
     .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
     .actions{display:flex;flex-wrap:wrap;gap:8px}
     button{cursor:pointer;border:0;padding:10px 14px;border-radius:10px}
@@ -39,8 +39,6 @@
     .gallery a{display:block;border:1px solid #1f2937;border-radius:10px;overflow:hidden;background:#0b1224}
     .gallery img{display:block;width:100%;height:140px;object-fit:cover}
     .muted{opacity:.7}
-    .field-inline{display:flex;gap:8px;align-items:center}
-    .readonly input[disabled]{opacity:.8}
     @media (max-width:820px){.row{grid-template-columns:1fr}}
   </style>
 </head>
@@ -85,29 +83,17 @@
         <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <button id="btnLocate" type="button" class="ghost">📍 Lokasi saya</button>
           <button id="btnPick" type="button" class="primary">✅ Pilih lokasi (ambil dari tanda ＋)</button>
+          <button type="button" id="btnPan" class="ghost">🧭 Pan ke koordinat</button>
           <span class="hint" id="coords">Lat: -, Lng: -</span>
         </div>
       </div>
 
-      <div class="row readonly">
-        <div>
-          <label>Latitude</label>
-          <div class="field-inline">
-            <input type="number" step="0.000001" id="lat" name="lat" placeholder="Klik 'Pilih lokasi' atau isi manual" required/>
-          </div>
-        </div>
-        <div>
-          <label>Longitude</label>
-          <div class="field-inline">
-            <input type="number" step="0.000001" id="lng" name="lng" required/>
-          </div>
-        </div>
-      </div>
-      <div class="actions" style="margin-top:4px">
-        <button type="button" id="btnPan" class="ghost">🧭 Pan ke koordinat</button>
+      <div class="row">
+        <div><label>Latitude</label><input type="number" step="0.000001" id="lat" name="lat" placeholder="Klik 'Pilih lokasi' atau isi manual" required/></div>
+        <div><label>Longitude</label><input type="number" step="0.000001" id="lng" name="lng" required/></div>
       </div>
 
-      <div id="historyBlock" class="card" style="border-radius:12px">
+      <div id="historyBlock" class="card" style="border-radius:12px;margin-top:6px">
         <h2 style="font-size:14px">Riwayat Foto Progres</h2>
         <div id="historyGals" style="padding:12px 14px">
           <div class="hint muted">Belum ada foto progres untuk kombinasi terpilih.</div>
@@ -153,7 +139,7 @@
 </div>
 
 <script>
-/* ===== CONFIG (sesuaikan) ===== */
+/* ===== CONFIG ===== */
 const ENDPOINT = 'https://gas-proxy2.tuic1677.workers.dev/'; // POST via proxy
 const DATA_URL = 'https://script.google.com/macros/s/AKfycbwWe8SY1T51LL3yp_OlLlOORuMLjcVkbaL1td5pOm1EX0-POztzV-6CUl-tQo91OMzT/exec'; // GET ke GAS kamu
 
@@ -172,15 +158,20 @@ const baseImg=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/
 const map=L.map('map',{zoomControl:true,layers:[baseOSM]}); L.control.layers({OSM:baseOSM,'Esri Imagery':baseImg}, {}, {position:'topright', collapsed:false}).addTo(map);
 map.setView([-2.5,118],5);
 const coordsTxt=document.getElementById('coords'); function upd(){const c=map.getCenter(); coordsTxt.textContent=`Lat: ${c.lat.toFixed(6)}, Lng: ${c.lng.toFixed(6)}`;} map.on('move',upd); map.whenReady(upd);
-document.getElementById('btnLocate').addEventListener('click',()=>map.locate({setView:true,maxZoom:17,enableHighAccuracy:true}));
-map.on('locationerror',()=>alert('Izin lokasi ditolak. Geser peta manual.'));
-document.getElementById('btnPick').addEventListener('click',()=>{const c=map.getCenter(); lat.value=c.lat.toFixed(6); lng.value=c.lng.toFixed(6);});
-document.getElementById('btnPan').addEventListener('click',()=>{const la=+lat.value,lo=+lng.value; if(!Number.isNaN(la)&&!Number.isNaN(lo)) map.setView([la,lo],Math.max(map.getZoom(),16));});
 
 /* ===== DOM ===== */
 const balai=document.getElementById('balai'), prov=document.getElementById('prov'), kab=document.getElementById('kab'), di=document.getElementById('di');
 const lat=document.getElementById('lat'), lng=document.getElementById('lng'), form=document.getElementById('surveyForm'), btnSubmit=document.getElementById('btnSubmit');
 const coordBadge=document.getElementById('coordBadge'), coordBadgeText=document.getElementById('coordBadgeText');
+const btnPick = document.getElementById('btnPick');
+const btnPan  = document.getElementById('btnPan');
+const btnLocate = document.getElementById('btnLocate');
+
+/* tombol map */
+btnLocate.addEventListener('click',()=>map.locate({setView:true,maxZoom:17,enableHighAccuracy:true}));
+map.on('locationerror',()=>alert('Izin lokasi ditolak. Geser peta manual.'));
+btnPick.addEventListener('click',()=>{const c=map.getCenter(); lat.value=c.lat.toFixed(6); lng.value=c.lng.toFixed(6);});
+btnPan.addEventListener('click',()=>{const la=+lat.value,lo=+lng.value; if(!Number.isNaN(la)&&!Number.isNaN(lo)) map.setView([la,lo],Math.max(map.getZoom(),16));});
 
 /* ===== Baseline ===== */
 let INDEX={};
@@ -209,6 +200,30 @@ async function loadData(){
   }catch(e){ console.error(e); toast('⚠️ Gagal memuat baseline.'); }
 }
 
+/* ===== Helper Badge & Lock ===== */
+function setCoordBadge(type, text){
+  coordBadge.querySelector('.dot')?.classList.remove('green','orange','gray');
+  const dot = coordBadge.querySelector('.dot') || document.createElement('span');
+  dot.className = 'dot ' + (type==='locked' ? 'green' : type==='none' ? 'orange' : 'gray');
+  if (!coordBadge.contains(dot)) coordBadge.prepend(dot);
+  coordBadgeText.textContent = text;
+}
+function setCoordLock(locked, la, ln){
+  if (locked) {
+    if (Number.isFinite(la) && Number.isFinite(ln)) {
+      lat.value = Number(la).toFixed(6);
+      lng.value = Number(ln).toFixed(6);
+    }
+    lat.disabled = true; lng.disabled = true;
+    btnPick.disabled = true; btnPan.disabled = true; btnLocate.disabled = true;
+    btnPick.classList.remove('primary'); btnPick.classList.add('ghost');
+  } else {
+    lat.disabled = false; lng.disabled = false;
+    btnPick.disabled = false; btnPan.disabled = false; btnLocate.disabled = false;
+    btnPick.classList.add('primary'); btnPick.classList.remove('ghost');
+  }
+}
+
 /* ===== Cascade ===== */
 balai.addEventListener('change', ()=>{
   const b=balai.value; if(!b){fillSelect(prov,[], '-- pilih Provinsi --');prov.disabled=true; return;}
@@ -225,19 +240,10 @@ kab.addEventListener('change', ()=>{
   fillSelect(di, Object.keys((((INDEX[b]||{})[p]||{})[k]||{})).sort(),'-- pilih DI --'); di.disabled=false;
 });
 
-/* ===== History / Stage / Koordinat Badge ===== */
+/* ===== History / Stage ===== */
 let currentStage=null;
 const lastStageEl=document.getElementById('lastStage');
 const historyGals=document.getElementById('historyGals');
-
-function setCoordBadge(type, text){
-  // type: 'locked' | 'none'
-  coordBadge.querySelector('.dot')?.classList.remove('green','orange','gray');
-  const dot = coordBadge.querySelector('.dot') || document.createElement('span');
-  dot.className = 'dot ' + (type==='locked' ? 'green' : type==='none' ? 'orange' : 'gray');
-  if (!coordBadge.contains(dot)) coordBadge.prepend(dot);
-  coordBadgeText.textContent = text;
-}
 
 function renderStageButtons(maxStage){
   const wrap=document.getElementById('stageBtns'); wrap.innerHTML='';
@@ -267,7 +273,6 @@ function renderHistoryPhotos(photos){
     </div>`; }});
   historyGals.innerHTML = has ? html : `<div class="hint muted">Belum ada foto progres untuk kombinasi terpilih.</div>`;
 }
-
 async function fetchHistory(bws, p, k, d){
   const qs = new URLSearchParams({fn:'history', bws, prov:p, kab:k, di:d});
   const url = DATA_URL + (DATA_URL.includes('?')?'&':'?') + qs.toString() + '&t=' + Date.now();
@@ -289,13 +294,11 @@ di.addEventListener('change', async ()=>{
 
   const hasCoord = hist.coords && Number.isFinite(hist.coords.lat) && Number.isFinite(hist.coords.lng);
   if (hasCoord){
-    lat.value = Number(hist.coords.lat).toFixed(6);
-    lng.value = Number(hist.coords.lng).toFixed(6);
-    lat.disabled = true; lng.disabled = true;
+    setCoordLock(true, hist.coords.lat, hist.coords.lng);
     setCoordBadge('locked','Koordinat: terkunci (pakai entri sebelumnya)');
     map.setView([hist.coords.lat, hist.coords.lng], 17);
   } else {
-    lat.disabled = false; lng.disabled=false;
+    setCoordLock(false);
     setCoordBadge('none','Koordinat: belum ada, silakan pilih titik');
   }
 });
@@ -350,7 +353,10 @@ form.addEventListener('submit', async (e)=>{
       lastStageEl.textContent = (hist.maxStage||0) + '%';
       renderHistoryPhotos(hist.photos||{});
       renderStageButtons(hist.maxStage||0);
-      if (hist.coords){ lat.value=Number(hist.coords.lat).toFixed(6); lng.value=Number(hist.coords.lng).toFixed(6); lat.disabled=true; lng.disabled=true; setCoordBadge('locked','Koordinat: terkunci (pakai entri sebelumnya)'); }
+      if (hist.coords){
+        setCoordLock(true, hist.coords.lat, hist.coords.lng);
+        setCoordBadge('locked','Koordinat: terkunci (pakai entri sebelumnya)');
+      }
       setTimeout(()=>{ setUploadingUI({show:false}); }, 600);
     } else {
       setUploadingUI({show:false}); disableForm(false);
@@ -368,11 +374,10 @@ document.getElementById('btnReset').addEventListener('click', ()=>{
   fillSelect(kab,[], '-- pilih Kab/Kota --'); kab.disabled=true;
   fillSelect(di,[], '-- pilih DI --'); di.disabled=true;
   lastStageEl.textContent='0%'; setCoordBadge('none','Koordinat: -');
-  lat.disabled=false; lng.disabled=false; currentStage=null; btnSubmit.disabled=true;
+  setCoordLock(false);
 });
 
 /* start */
-const latEl=document.getElementById('lat'), lngEl=document.getElementById('lng');
 loadData(); setCoordBadge('none','Koordinat: -');
 </script>
 </body>
