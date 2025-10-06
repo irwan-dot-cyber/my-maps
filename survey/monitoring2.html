@@ -26,6 +26,8 @@
     .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
     .actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
     .hint{font-size:12px;color:#9aa3b2}
+    #map{height:60vh;border-radius:12px;border:1px solid #1f2937}
+
     table{width:100%;border-collapse:separate;border-spacing:0 8px}
     th,td{padding:10px 12px;text-align:left}
     thead th{font-size:12px;color:#9aa3b2;border-bottom:1px solid #1f2937}
@@ -35,8 +37,7 @@
     tbody tr td:last-child{border-right:1px solid #1f2937;border-top-right-radius:10px;border-bottom-right-radius:10px}
     .chip{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;border:1px solid #334155;background:#0b1224;font-size:12px}
     .ok{border-color:#22c55e}.mid{border-color:#f59e0b}.low{border-color:#94a3b8}
-    #map{height:60vh;border-radius:12px;border:1px solid #1f2937}
-    .legend{display:flex;gap:8px;flex-wrap:wrap}
+
     .dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px}
     .s0{background:#94a3b8}.s25{background:#fca311}.s50{background:#f59e0b}.s75{background:#22c55e}.s100{background:#16a34a}
   </style>
@@ -48,7 +49,7 @@
 </header>
 
 <main>
-  <!-- Filter bar (Per Balai + Cari DI) -->
+  <!-- Filter -->
   <div class="card">
     <h2>Filter</h2>
     <div class="section">
@@ -75,7 +76,15 @@
     </div>
   </div>
 
-  <!-- Tabel -->
+  <!-- Peta -->
+  <div class="card" style="margin-top:12px">
+    <h2>Peta Sebaran (hasil filter)</h2>
+    <div class="section">
+      <div id="map"></div>
+    </div>
+  </div>
+
+  <!-- Tabel (dipindah ke bawah peta) -->
   <div class="card" style="margin-top:12px">
     <h2>Ringkasan DI</h2>
     <div class="section">
@@ -89,26 +98,16 @@
               <th>Kabupaten</th>
             </tr>
           </thead>
-          <tbody id="tb">
-            <tr><td colspan="4" class="hint">Memuat data…</td></tr>
-          </tbody>
+          <tbody id="tb"><tr><td colspan="4" class="hint">Memuat data…</td></tr></tbody>
         </table>
       </div>
-    </div>
-  </div>
-
-  <!-- Peta -->
-  <div class="card" style="margin-top:12px">
-    <h2>Peta Sebaran (sesuai filter)</h2>
-    <div class="section">
-      <div id="map"></div>
     </div>
   </div>
 </main>
 
 <script>
 /* ====== CONFIG ====== */
-const DATA_URL = 'https://script.google.com/macros/s/AKfycbwWe8SY1T51LL3yp_OlLlOORuMLjcVkbaL1td5pOm1EX0-POztzV-6CUl-tQo91OMzT/exec'; // ← ganti ke URL Web App GAS kamu
+const DATA_URL = 'https://script.google.com/macros/s/AKfycbwWe8SY1T51LL3yp_OlLlOORuMLjcVkbaL1td5pOm1EX0-POztzV-6CUl-tQo91OMzT/exec';
 
 /* ====== Utils ====== */
 const titleCase = s => String(s||'').split(/(\s+|[-/])/).map(tok=>{
@@ -129,7 +128,6 @@ function fillSelect(el, items, ph){
   });
   el.disabled = !(items && items.length);
 }
-const chunk = (arr, n)=>arr.map((_,i)=> i % n ===0 ? arr.slice(i,i+n):null).filter(Boolean);
 const sleep = ms=> new Promise(r=>setTimeout(r,ms));
 async function fetchJSON(u){ const r=await fetch(u,{cache:'no-store'}); return r.json(); }
 async function fetchBaseline(){
@@ -137,10 +135,15 @@ async function fetchBaseline(){
   const txt = await (await fetch(url,{cache:'no-store'})).text();
   return JSON.parse(txt.replace(/^\)\]\}'\s*/,'')) || [];
 }
-async function fetchHistory(b,p,k,d){
+async function fetchSummary(b,p,k){
+  const qs = new URLSearchParams({fn:'summary', bws:b, prov:p, kab:k});
+  const url = DATA_URL + (DATA_URL.includes('?')?'&':'?') + qs.toString() + '&t=' + Date.now();
+  try{ const j=await fetchJSON(url); return j&&j.ok ? (j.stages||{}) : {}; }catch{ return {}; }
+}
+async function fetchHistoryCoord(b,p,k,d){ // hanya ambil koordinat + stage dari history
   const qs = new URLSearchParams({fn:'history', bws:b, prov:p, kab:k, di:d});
   const url = DATA_URL + (DATA_URL.includes('?')?'&':'?') + qs.toString() + '&t=' + Date.now();
-  try{ const j=await fetchJSON(url); return j&&j.ok?j:{maxStage:0,coords:null,photos:{}}; }catch{ return {maxStage:0,coords:null,photos:{}}; }
+  try{ const j=await fetchJSON(url); return j&&j.ok? j : {maxStage:0,coords:null}; }catch{ return {maxStage:0,coords:null}; }
 }
 
 /* ====== Map ====== */
@@ -157,54 +160,68 @@ const tb=document.getElementById('tb');
 const info=document.getElementById('info');
 
 /* ====== Data ====== */
-let FLAT=[]; // baseline {bws,prov,kab,di}
-let ALL=[];  // {bws,prov,kab,di,stage,lat,lng}
+let FLAT=[];  // baseline unique (bws,prov,kab,di)
+let ALL=[];   // final list with stage (coords later)
+const COORD_CACHE=new Map(); // key -> {lat,lng,stage}
 
-/* ====== Load All (auto) ====== */
+/* ====== Boot: cepat dengan SUMMARY ====== */
 (async function boot(){
   info.textContent='memuat baseline…';
-  const rows = await fetchBaseline();
+  const raw = await fetchBaseline();
 
-  // Flatten baseline & unique
-  const seen = new Set();
-  FLAT = [];
-  rows.forEach(r=>{
+  // FLATTEN baseline
+  const seen=new Set();
+  FLAT=[];
+  raw.forEach(r=>{
     const b=titleCase(r['B/BWS PELAKSANA']||r['Balai']||r['BWS']);
     const p=titleCase(r['PROVINSI']||r['Provinsi']);
     const k=titleCase(r['KABUPATEN']||r['Kabupaten']);
     const d=titleCase(r['NAMA DI/DIR']||r['nama di']||r['DI']||r['Paket']);
     if(!(b&&p&&k&&d)) return;
-    const key=[b,p,k,d].join('|'); if(seen.has(key)) return; seen.add(key);
+    const key=[b,p,k,d].join('|');
+    if(seen.has(key)) return; seen.add(key);
     FLAT.push({bws:b,prov:p,kab:k,di:d});
   });
 
-  // fetch history with concurrency limit
-  info.textContent='memuat progres/koordinat…';
-  const limit=6; const batches=chunk(FLAT,limit);
-  ALL=[]; let done=0, total=FLAT.length;
-  for (const batch of batches){
-    await Promise.all(batch.map(async it=>{
-      const h = await fetchHistory(it.bws,it.prov,it.kab,it.di);
-      ALL.push({
-        ...it,
-        stage:Number(h.maxStage||0),
-        lat:(h.coords&&Number.isFinite(h.coords.lat))?Number(h.coords.lat):null,
-        lng:(h.coords&&Number.isFinite(h.coords.lng))?Number(h.coords.lng):null
-      });
-      done++; if (done%10===0 || done===total) info.textContent=`memuat ${done}/${total}`;
-    }));
-    await sleep(80);
-  }
-  // Isi dropdown Balai
-  const listBalai=[...new Set(ALL.map(x=>x.bws))].sort();
-  fillSelect(fB, listBalai, 'Semua B/BWS');
+  // SUMMARY per (bws,prov,kab) → dapat stage semua DI sekaligus
+  info.textContent='memuat progres…';
+  const group = {}; // {bws|prov|kab: [{idx...}] }
+  FLAT.forEach((it,i)=>{
+    const g=[it.bws,it.prov,it.kab].join('|');
+    (group[g] ||= []).push(i);
+  });
 
-  // Render awal (semua)
-  applyFilters();
+  const keys=Object.keys(group);
+  let done=0;
+  const STAGE_MAP=new Map(); // key(b,p,k,d) -> stage
+  for (const g of keys){
+    const [b,p,k]=g.split('|');
+    const stages=await fetchSummary(b,p,k);
+    // stages = { "Nama DI": stage }
+    (group[g]||[]).forEach(idx=>{
+      const di=FLAT[idx].di;
+      const st = Number(stages[di]||0);
+      STAGE_MAP.set([b,p,k,di].join('|'), st);
+    });
+    done++; if(done%5===0 || done===keys.length) info.textContent=`progres ${done}/${keys.length} kelompok`;
+    await sleep(30);
+  }
+
+  // Build ALL dengan stage cepat
+  ALL = FLAT.map(it=>{
+    const st=STAGE_MAP.get([it.bws,it.prov,it.kab,it.di].join('|')) || 0;
+    return {...it, stage:st, lat:null, lng:null};
+  });
+
+  // Dropdown balai
+  fillSelect(fB, [...new Set(ALL.map(x=>x.bws))].sort(), 'Semua B/BWS');
+
+  // Render pertama
+  applyFilters(true);
   info.textContent=`Total DI: ${ALL.length}`;
 })();
 
-/* ====== Filtering (per Balai + search DI) ====== */
+/* ====== Filtering ====== */
 function getFiltered(){
   const b=fB.value, q=fSearch.value.trim().toLowerCase();
   return ALL.filter(x =>
@@ -237,16 +254,43 @@ function renderMarkers(data){
   });
   if(m){ map.fitBounds(cluster.getBounds().pad(0.2)); } else { map.setView([-2.5,118],5); }
 }
-function applyFilters(){
+
+async function ensureCoordsFor(data, limit=8){
+  // ambil koordinat hanya yg belum ada (dan cache)
+  const targets = data.filter(r=>{
+    const key=[r.bws,r.prov,r.kab,r.di].join('|');
+    if (COORD_CACHE.has(key)) { const c=COORD_CACHE.get(key); r.lat=c.lat; r.lng=c.lng; if(c.stage>r.stage) r.stage=c.stage; return false; }
+    return true;
+  }).slice(0,200); // batasi supaya nggak kebanyakan
+
+  for (let i=0;i<targets.length;i+=limit){
+    const batch = targets.slice(i,i+limit);
+    await Promise.all(batch.map(async r=>{
+      const key=[r.bws,r.prov,r.kab,r.di].join('|');
+      const h = await fetchHistoryCoord(r.bws,r.prov,r.kab,r.di);
+      if (h.coords && Number.isFinite(h.coords.lat) && Number.isFinite(h.coords.lng)) {
+        r.lat=Number(h.coords.lat); r.lng=Number(h.coords.lng);
+      }
+      if (Number(h.maxStage||0)>r.stage) r.stage=Number(h.maxStage||0);
+      COORD_CACHE.set(key,{lat:r.lat??null,lng:r.lng??null,stage:r.stage});
+    }));
+    await sleep(50);
+  }
+}
+
+async function applyFilters(first=false){
   const data = getFiltered();
   renderTable(data);
-  renderMarkers(data);
+  // Koordinat: lazy untuk yang terlihat
   info.textContent = `Tampil: ${data.length} DI` + (fB.value ? ` • ${fB.value}` : '');
+  await ensureCoordsFor(data);
+  renderMarkers(data);
+  if(first) info.textContent += ' • siap';
 }
 
 /* ====== Events ====== */
-fB.addEventListener('change', applyFilters);
-fSearch.addEventListener('input', applyFilters);
+fB.addEventListener('change', ()=>applyFilters());
+fSearch.addEventListener('input', ()=>applyFilters());
 </script>
 </body>
 </html>
