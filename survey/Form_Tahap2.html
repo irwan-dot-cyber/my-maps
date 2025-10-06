@@ -145,9 +145,21 @@ const DATA_URL = 'https://script.google.com/macros/s/AKfycbwWe8SY1T51LL3yp_OlLlO
 
 /* ===== Utils ===== */
 const toast = (m)=>{const t=document.getElementById('toast');t.textContent=m;t.style.display='block';clearTimeout(window.__t);window.__t=setTimeout(()=>t.style.display='none',4200);};
-function fillSelect(el, items, ph='-- pilih --'){el.innerHTML=''; if(ph&&!el.multiple){const o=document.createElement('option');o.value='';o.textContent=ph;el.appendChild(o);} (items||[]).forEach(v=>{const o=document.createElement('option');o.value=o.textContent=v;el.appendChild(o);}); el.disabled=!(items&&items.length);el.dispatchEvent(new Event('change'));}
+function fillSelect(el, items, ph='-- pilih --'){
+  el.innerHTML='';
+  if(ph&&!el.multiple){const o=document.createElement('option');o.value='';o.textContent=ph;el.appendChild(o);}
+  (items||[]).forEach(v=>{const o=document.createElement('option');o.value=o.textContent=v;el.appendChild(o);});
+  el.disabled=!(items&&items.length);
+}
 const uniq = a => [...new Set((a||[]).filter(Boolean))];
-const titleCase = s => String(s||'').split(/(\s+|[-/])/).map(tok=>/^\s+$/.test(tok)||tok==='-'||tok==='/'?tok:tok.toUpperCase()==='DI'?'DI':tok.charAt(0).toUpperCase()+tok.slice(1).toLowerCase()).join('');
+// Title Case pintar: jaga BBWS/BWS & D.I.
+const titleCase = s => String(s||'').split(/(\s+|[-/])/).map(tok=>{
+  if(/^\s+$/.test(tok)||tok==='-'||tok==='/') return tok;
+  const up = tok.toUpperCase();
+  if (up==='BBWS'||up==='BWS') return up;
+  if (/^(D\.?I\.?|DI)$/.test(up)) return 'D.I.';
+  return tok.charAt(0).toUpperCase()+tok.slice(1).toLowerCase();
+}).join('');
 const $overlay=document.getElementById('uploadOverlay'), $bar=document.getElementById('progressBar');
 function setUploadingUI({show,percent}){ if(typeof percent==='number') $bar.style.width=Math.max(0,Math.min(100,Math.round(percent)))+'%'; $overlay.style.display=show?'flex':'none'; }
 function disableForm(b){document.querySelectorAll('#surveyForm input, #surveyForm select, #surveyForm button').forEach(e=>e.disabled=!!b);}
@@ -248,18 +260,22 @@ const historyGals=document.getElementById('historyGals');
 function renderStageButtons(maxStage){
   const wrap=document.getElementById('stageBtns'); wrap.innerHTML='';
   const stages=[25,50,75,100];
+  const nextStage = (maxStage>=100) ? null : (maxStage===0 ? 25 : (maxStage+25));
   stages.forEach(st=>{
     const btn=document.createElement('button');
     btn.type='button';
     btn.textContent=`Progres ${st}%`;
-    const enabled = st=== (maxStage>=100?null:(maxStage===0?25:maxStage+25));
+    const enabled = (st===nextStage);
     btn.className = enabled ? 'primary' : 'ghost';
     btn.disabled = !enabled;
     btn.addEventListener('click', ()=>{ currentStage=st; btnSubmit.disabled=false; toast(`Stage dipilih: ${st}%`); });
     wrap.appendChild(btn);
   });
-  btnSubmit.disabled=true; currentStage=null;
+  // Auto-pilih stage biar bisa kirim langsung
+  currentStage = nextStage;
+  btnSubmit.disabled = !nextStage;
 }
+
 function renderHistoryPhotos(photos){
   const order=[25,50,75,100]; let html='', has=false;
   order.forEach(st=>{const p=photos[String(st)]; if(p&&p.url){has=true; html+=`
@@ -273,10 +289,12 @@ function renderHistoryPhotos(photos){
     </div>`; }});
   historyGals.innerHTML = has ? html : `<div class="hint muted">Belum ada foto progres untuk kombinasi terpilih.</div>`;
 }
+
 async function fetchHistory(bws, p, k, d){
   const qs = new URLSearchParams({fn:'history', bws, prov:p, kab:k, di:d});
   const url = DATA_URL + (DATA_URL.includes('?')?'&':'?') + qs.toString() + '&t=' + Date.now();
-  const res = await fetch(url, {cache:'no-store'}); try{const j=await res.json(); return j&&j.ok?j:{ok:false,maxStage:0,coords:null,photos:{}};}catch{ return {ok:false,maxStage:0,coords:null,photos:{}}; }
+  const res = await fetch(url, {cache:'no-store'});
+  try{const j=await res.json(); return j&&j.ok?j:{ok:false,maxStage:0,coords:null,photos:{}};}catch{ return {ok:false,maxStage:0,coords:null,photos:{}}; }
 }
 
 di.addEventListener('change', async ()=>{
