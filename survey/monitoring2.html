@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Monitoring INPRES 2/2025 Tahap 2 — All-in-One</title>
+  <title>Monitoring INPRES 2/2025 Tahap 2 — All Data</title>
 
   <!-- Leaflet + MarkerCluster -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" referrerpolicy="no-referrer"/>
@@ -13,7 +13,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js" referrerpolicy="no-referrer"></script>
 
   <style>
-    :root{--bg:#0b1224;--card:#0f172a;--mut:#9aa3b2;--accent:#22c55e;--warn:#f59e0b}
+    :root{--bg:#0b1224;--card:#0f172a;--mut:#9aa3b2;--accent:#22c55e}
     *{box-sizing:border-box}
     body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;background:var(--bg);color:#e5e7eb}
     header{padding:14px 18px;border-bottom:1px solid #1f2937;background:#0c1326;position:sticky;top:0;z-index:10}
@@ -26,12 +26,11 @@
     select{width:100%;padding:10px 12px;border:1px solid #334155;background:#0b1224;color:#e5e7eb}
     .row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
     .row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .actions{display:flex;flex-wrap:wrap;gap:8px}
+    .actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
     button{cursor:pointer;border:0;padding:10px 14px}
     .primary{background:var(--accent);color:#01250f;font-weight:600}
     .ghost{background:#0b1224;color:#e5e7eb;border:1px solid #334155}
     .hint{font-size:12px;color:#9aa3b2}
-    .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid #334155;border-radius:999px;background:#0b1224;font-size:12px}
     table{width:100%;border-collapse:separate;border-spacing:0 8px}
     th,td{padding:10px 12px;text-align:left}
     thead th{font-size:12px;color:#9aa3b2;border-bottom:1px solid #1f2937}
@@ -41,21 +40,19 @@
     tbody tr td:last-child{border-right:1px solid #1f2937;border-top-right-radius:10px;border-bottom-right-radius:10px}
     .chip{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;border:1px solid #334155;background:#0b1224;font-size:12px}
     .ok{border-color:#22c55e}.mid{border-color:#f59e0b}.low{border-color:#94a3b8}
-    .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
-    .gallery a{display:block;border:1px solid #1f2937;border-radius:10px;overflow:hidden;background:#0b1224}
-    .gallery img{display:block;width:100%;height:120px;object-fit:cover}
-    #map{height:60vh;border-radius:12px;border:1px solid #1f2937}
+    #map{height:64vh;border-radius:12px;border:1px solid #1f2937}
     .legend{display:flex;gap:8px;flex-wrap:wrap}
     .legend .dot{width:12px;height:12px;border-radius:50%}
     .dot.s0{background:#94a3b8}.dot.s25{background:#fca311}.dot.s50{background:#f59e0b}.dot.s75{background:#22c55e}.dot.s100{background:#16a34a}
     .pill{padding:6px 10px;border-radius:999px;border:1px solid #334155;background:#0b1224}
+    progress{width:180px;height:10px;border-radius:999px;overflow:hidden;background:#0b1224;border:1px solid #334155}
     @media (max-width:1100px){.row{grid-template-columns:1fr 1fr}.row-2{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
 <header>
   <strong>Monitoring Tahap 2</strong>
-  <span class="hint">INPRES 2/2025 • Ringkasan + Peta Sebaran</span>
+  <span class="hint">INPRES 2/2025 • Semua data tampil dulu, filter kemudian</span>
 </header>
 
 <main>
@@ -64,330 +61,245 @@
     <h2>Filter</h2>
     <div class="section">
       <div class="row">
-        <div><label>B/BWS</label><select id="bws"></select></div>
-        <div><label>Provinsi</label><select id="prov" disabled></select></div>
-        <div><label>Kabupaten/Kota</label><select id="kab" disabled></select></div>
-        <div><label>Nama DI</label><select id="di" disabled></select></div>
+        <div><label>B/BWS</label><select id="f_bws"></select></div>
+        <div><label>Provinsi</label><select id="f_prov" disabled></select></div>
+        <div><label>Kabupaten/Kota</label><select id="f_kab" disabled></select></div>
+        <div><label>Nama DI</label><select id="f_di" disabled></select></div>
       </div>
       <div class="actions">
-        <button id="btnExportSummary" class="ghost">⬇️ Export Ringkasan DI (CSV)</button>
-        <button id="btnExportRecap" class="ghost">⬇️ Export Rekap B/BWS (CSV)</button>
-        <span id="sumInfo" class="hint">—</span>
+        <button id="btnExport" class="ghost">⬇️ Export CSV (tampilan saat ini)</button>
+        <span id="infoCount" class="hint">—</span>
+        <span class="hint">Muat data:</span>
+        <progress id="prog" max="100" value="0"></progress>
+        <span id="progText" class="hint">menunggu…</span>
       </div>
     </div>
   </div>
 
-  <!-- Ringkasan DI -->
+  <!-- Tabel -->
   <div class="card" style="margin-top:12px">
-    <h2>Ringkasan Progres DI (sesuai filter)</h2>
+    <h2>Ringkasan Seluruh DI</h2>
     <div class="section">
       <div style="overflow:auto">
-        <table id="tbl">
+        <table>
           <thead>
             <tr>
               <th style="min-width:240px">Nama DI</th>
               <th>Progres</th>
+              <th>B/BWS</th>
               <th>Provinsi</th>
               <th>Kabupaten</th>
             </tr>
           </thead>
-          <tbody id="tblBody">
-            <tr><td colspan="4" class="hint">Silakan pilih B/BWS & filter.</td></tr>
-          </tbody>
+          <tbody id="tb"></tbody>
         </table>
       </div>
     </div>
   </div>
 
-  <!-- Rekap BWS + Peta -->
-  <div class="row-2" style="margin-top:12px">
-    <div class="card">
-      <h2>Rekap per B/BWS</h2>
-      <div class="section" id="recapBox">
-        <div class="hint">Pilih B/BWS untuk melihat rekap jumlah DI pada tiap tingkat progres.</div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Peta Sebaran DI (B/BWS terpilih)</h2>
-      <div class="section">
-        <div class="legend">
-          <span class="pill"><span class="dot s0"></span> 0%</span>
-          <span class="pill"><span class="dot s25"></span> 25%</span>
-          <span class="pill"><span class="dot s50"></span> 50%</span>
-          <span class="pill"><span class="dot s75"></span> 75%</span>
-          <span class="pill"><span class="dot s100"></span> 100%</span>
-          <span class="hint" id="mapInfo">—</span>
-        </div>
-        <div class="actions" style="gap:8px">
-          <button id="btnLoadMarkers" class="primary">Muat Marker DI untuk B/BWS</button>
-          <button id="btnClearMarkers" class="ghost">Hapus Marker</button>
-        </div>
-        <div id="map"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Detail DI (opsional saat dipilih spesifik) -->
+  <!-- Peta -->
   <div class="card" style="margin-top:12px">
-    <h2>Detail & Foto DI Terpilih</h2>
-    <div class="section" id="detailBox">
-      <div class="hint">Pilih salah satu DI pada filter untuk melihat riwayat foto & koordinat terakhir.</div>
+    <h2>Peta Sebaran DI (semua / sesuai filter)</h2>
+    <div class="section">
+      <div class="legend">
+        <span class="pill"><span class="dot s0"></span> 0%</span>
+        <span class="pill"><span class="dot s25"></span> 25%</span>
+        <span class="pill"><span class="dot s50"></span> 50%</span>
+        <span class="pill"><span class="dot s75"></span> 75%</span>
+        <span class="pill"><span class="dot s100"></span> 100%</span>
+        <span id="mapInfo" class="hint">—</span>
+      </div>
+      <div id="map"></div>
     </div>
   </div>
 </main>
 
 <script>
-/* ===== CONFIG (ganti ke Web App GAS kamu) ===== */
-const DATA_URL = 'https://script.google.com/macros/s/AKfycbwWe8SY1T51LL3yp_OlLlOORuMLjcVkbaL1td5pOm1EX0-POztzV-6CUl-tQo91OMzT/exec'; // ← ganti ke URL /exec GAS kamu
+/* ====== CONFIG ====== */
+const DATA_URL = 'https://script.google.com/macros/s/AKfycbwWe8SY1T51LL3yp_OlLlOORuMLjcVkbaL1td5pOm1EX0-POztzV-6CUl-tQo91OMzT/exec'; // ← ganti dgn URL Web App GAS kamu
 
-/* ===== Utils ===== */
-function fillSelect(el, items, ph='-- pilih --'){
-  el.innerHTML='';
-  if (ph && !el.multiple) {
-    const o=document.createElement('option');o.value='';o.textContent=ph;el.appendChild(o);
-  }
-  (items||[]).forEach(v=>{
-    const o=document.createElement('option');o.value=o.textContent=v;el.appendChild(o);
-  });
-  el.disabled=!(items&&items.length);
-}
+/* ====== Utils ====== */
 const titleCase = s => String(s||'').split(/(\s+|[-/])/).map(tok=>{
   if(/^\s+$/.test(tok)||tok==='-'||tok==='/') return tok;
-  const up = tok.toUpperCase();
-  if (up==='BBWS'||up==='BWS') return up;
-  if (/^(D\.?I\.?|DI)$/.test(up)) return 'D.I.';
+  const up=tok.toUpperCase();
+  if(up==='BBWS'||up==='BWS') return up;
+  if(/^(D\.?I\.?|DI)$/.test(up)) return 'D.I.';
   return tok.charAt(0).toUpperCase()+tok.slice(1).toLowerCase();
 }).join('');
-function toCSV(rows){return rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\r\n');}
-
-/* ===== State ===== */
-let INDEX = {}; // {BWS:{Prov:{Kab:{DI:true}}}}
-const selB=document.getElementById('bws'), selP=document.getElementById('prov'), selK=document.getElementById('kab'), selD=document.getElementById('di');
-const tblBody=document.getElementById('tblBody'), sumInfo=document.getElementById('sumInfo'), recapBox=document.getElementById('recapBox'), detailBox=document.getElementById('detailBox');
-
-/* ===== Map + Cluster ===== */
-const baseOSM=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20, attribution:'© OpenStreetMap'});
-const map=L.map('map',{zoomControl:true,layers:[baseOSM]}).setView([-2.5,118],5);
-let clusterGroup=L.markerClusterGroup();
-map.addLayer(clusterGroup);
-function stageColor(st){ if(st>=100) return '#16a34a'; if(st>=75) return '#22c55e'; if(st>=50) return '#f59e0b'; if(st>=25) return '#fca311'; return '#94a3b8'; }
-function makeDotIcon(st){
-  const c=stageColor(st);
-  return L.divIcon({className:'', html:`<div style="width:14px;height:14px;border-radius:50%;background:${c};border:1px solid #0006"></div>`, iconSize:[14,14]});
+function fillSelect(el, items, ph){
+  el.innerHTML='';
+  const list = (ph? [ph] : []).concat(items||[]);
+  list.forEach((v,i)=>{
+    const o=document.createElement('option');
+    if(i===0 && ph){ o.value=''; o.textContent=ph; }
+    else { o.value=o.textContent=v; }
+    el.appendChild(o);
+  });
+  el.disabled = !(items && items.length);
 }
+const chunk = (arr, n)=>arr.map((_,i)=> i % n ===0 ? arr.slice(i,i+n):null).filter(Boolean);
+const sleep = ms=> new Promise(r=>setTimeout(r,ms));
 
-/* ===== Load Baseline ===== */
-async function loadBaseline(){
+/* ====== GAS helpers ====== */
+async function fetchJSON(u){ const r=await fetch(u,{cache:'no-store'}); return r.json(); }
+async function fetchBaseline(){
   const url = DATA_URL + (DATA_URL.includes('?')?'&':'?') + 't=' + Date.now();
   const txt = await (await fetch(url,{cache:'no-store'})).text();
-  const rows = JSON.parse(txt.replace(/^\)\]\}'\s*/,'')) || [];
-  INDEX={};
-  rows.forEach(r=>{
-    const BWS=titleCase(r['B/BWS PELAKSANA']||r['Balai']||r['BWS']);
-    const PROV=titleCase(r['PROVINSI']||r['Provinsi']);
-    const KAB =titleCase(r['KABUPATEN']||r['Kabupaten']);
-    const DI  =titleCase(r['NAMA DI/DIR']||r['nama di']||r['DI']||r['Paket']);
-    if(!(BWS&&PROV&&KAB&&DI)) return;
-    (INDEX[BWS] ??= {});
-    (INDEX[BWS][PROV] ??= {});
-    (INDEX[BWS][PROV][KAB] ??= {});
-    INDEX[BWS][PROV][KAB][DI] = true;
-  });
-  fillSelect(selB, Object.keys(INDEX).sort(), '-- pilih B/BWS --');
-  selP.disabled = selK.disabled = selD.disabled = true;
-}
-loadBaseline();
-
-/* ===== GAS helpers ===== */
-async function fetchSummary(b,p,k){
-  const qs=new URLSearchParams({fn:'summary', bws:b, prov:p, kab:k});
-  const url=DATA_URL + (DATA_URL.includes('?')?'&':'?') + qs.toString() + '&t=' + Date.now();
-  try{ const j=await (await fetch(url,{cache:'no-store'})).json(); return j.ok ? (j.stages||{}) : {}; }
-  catch{ return {}; }
+  return JSON.parse(txt.replace(/^\)\]\}'\s*/,'')) || [];
 }
 async function fetchHistory(b,p,k,d){
-  const qs=new URLSearchParams({fn:'history', bws:b, prov:p, kab:k, di:d});
-  const url=DATA_URL + (DATA_URL.includes('?')?'&':'?') + qs.toString() + '&t=' + Date.now();
-  try{ const j=await (await fetch(url,{cache:'no-store'})).json(); return j.ok ? j : {maxStage:0,coords:null,photos:{}}; }
-  catch{ return {maxStage:0,coords:null,photos:{}}; }
+  const qs = new URLSearchParams({fn:'history', bws:b, prov:p, kab:k, di:d});
+  const url = DATA_URL + (DATA_URL.includes('?')?'&':'?') + qs.toString() + '&t=' + Date.now();
+  try{ const j=await fetchJSON(url); return j&&j.ok?j:{maxStage:0,coords:null,photos:{}}; }catch{ return {maxStage:0,coords:null,photos:{}}; }
 }
 
-/* ===== Summary table ===== */
-function renderSummaryTable(stages, b,p,k){
-  const listDI = Object.keys(((INDEX[b]||{})[p]||{})[k]||{}).sort();
-  tblBody.innerHTML='';
-  let cnt=0;
-  listDI.forEach(di=>{
-    const st=Number(stages[di]||0);
-    const cls = st>=75 ? 'ok' : st>=25 ? 'mid' : 'low';
-    const tr=document.createElement('tr');
-    tr.innerHTML = `<td>${di}</td><td><span class="chip ${cls}">${st}%</span></td><td>${p}</td><td>${k}</td>`;
-    tblBody.appendChild(tr); cnt++;
+/* ====== Map ====== */
+const baseOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20, attribution:'© OpenStreetMap'});
+const map = L.map('map',{zoomControl:true,layers:[baseOSM]}).setView([-2.5,118],5);
+let cluster = L.markerClusterGroup(); map.addLayer(cluster);
+function stageColor(st){ if(st>=100) return '#16a34a'; if(st>=75) return '#22c55e'; if(st>=50) return '#f59e0b'; if(st>=25) return '#fca311'; return '#94a3b8'; }
+function iconFor(st){ const c=stageColor(st); return L.divIcon({className:'',html:`<div style="width:14px;height:14px;border-radius:50%;background:${c};border:1px solid #0006"></div>`,iconSize:[14,14]}); }
+
+/* ====== DOM ====== */
+const fB=document.getElementById('f_bws'), fP=document.getElementById('f_prov'), fK=document.getElementById('f_kab'), fD=document.getElementById('f_di');
+const tb=document.getElementById('tb'), infoCount=document.getElementById('infoCount');
+const prog=document.getElementById('prog'), progText=document.getElementById('progText'), mapInfo=document.getElementById('mapInfo');
+
+/* ====== Global Data ====== */
+let FLAT=[]; // baseline flatten: {bws,prov,kab,di}
+let ALL=[];  // with history: {bws,prov,kab,di,stage,lat,lng}
+
+/* ====== Load All Data (baseline → history, paralel terbatas) ====== */
+async function loadAll(){
+  prog.value=0; progText.textContent='memuat baseline…';
+  const rows = await fetchBaseline();
+  // build FLAT
+  const seen = new Set();
+  FLAT = [];
+  rows.forEach(r=>{
+    const b=titleCase(r['B/BWS PELAKSANA']||r['Balai']||r['BWS']);
+    const p=titleCase(r['PROVINSI']||r['Provinsi']);
+    const k=titleCase(r['KABUPATEN']||r['Kabupaten']);
+    const d=titleCase(r['NAMA DI/DIR']||r['nama di']||r['DI']||r['Paket']);
+    if(!(b&&p&&k&&d)) return;
+    const key = [b,p,k,d].join('|');
+    if(seen.has(key)) return; seen.add(key);
+    FLAT.push({bws:b,prov:p,kab:k,di:d});
   });
-  if(!cnt){ tblBody.innerHTML=`<tr><td colspan="4" class="hint">Tidak ada data untuk filter ini.</td></tr>`; }
-  const done = Object.values(stages).filter(v=>Number(v)>=100).length;
-  sumInfo.textContent = `Total DI: ${listDI.length} • Selesai 100%: ${done}`;
-}
-async function refreshSummary(){
-  const b=selB.value, p=selP.value, k=selK.value;
-  if(!(b&&p&&k)){ tblBody.innerHTML=`<tr><td colspan="4" class="hint">Lengkapi filter.</td></tr>`; return; }
-  const stages=await fetchSummary(b,p,k);
-  renderSummaryTable(stages,b,p,k);
-}
 
-/* ===== Rekap per BWS ===== */
-async function buildBwsRecap(bws){
-  if(!bws){ recapBox.innerHTML='<div class="hint">Pilih B/BWS terlebih dahulu.</div>'; return; }
-  const provs = Object.keys(INDEX[bws]||{});
-  const counts = {0:0,25:0,50:0,75:0,100:0};
-  let totalDI=0;
-  const rowsCSV=[['BWS','Provinsi','Kabupaten','Nama DI','Progres']];
-  for (const p of provs){
-    const kabs = Object.keys(INDEX[bws][p]||{});
-    for (const k of kabs){
-      const stages = await fetchSummary(bws,p,k); // { 'DI Name': maxStage }
-      const diList = Object.keys(((INDEX[bws]||{})[p]||{})[k]||{});
-      diList.forEach(di=>{
-        const st = Number(stages[di]||0);
-        let bucket = 0;
-        if (st>=100) bucket=100; else if(st>=75) bucket=75; else if(st>=50) bucket=50; else if(st>=25) bucket=25; else bucket=0;
-        counts[bucket]++; totalDI++;
-        rowsCSV.push([bws,p,k,di,st]);
+  // fetch histories with concurrency limit
+  const total = FLAT.length;
+  const limit = 6;
+  ALL = [];
+  let done = 0;
+
+  const batches = chunk(FLAT, limit);
+  for (const batch of batches){
+    const task = batch.map(async it=>{
+      const h = await fetchHistory(it.bws,it.prov,it.kab,it.di);
+      ALL.push({
+        ...it,
+        stage: Number(h.maxStage||0),
+        lat: h.coords && Number.isFinite(h.coords.lat) ? Number(h.coords.lat) : null,
+        lng: h.coords && Number.isFinite(h.coords.lng) ? Number(h.coords.lng) : null
       });
-    }
+      done++; prog.value = Math.round(done/total*100); progText.textContent = `memuat ${done}/${total}`;
+    });
+    await Promise.all(task);
+    // kecilkan jeda biar adem
+    await sleep(80);
   }
-  const pct = v => totalDI? ((v/totalDI*100).toFixed(1)+'%'):'0%';
-  recapBox.innerHTML = `
-    <div class="actions" style="gap:10px;flex-wrap:wrap">
-      <span class="badge">B/BWS: <b>${bws}</b></span>
-      <span class="badge">Total DI: <b>${totalDI}</b></span>
-      <span class="badge">0%: <b>${counts[0]}</b> (${pct(counts[0])})</span>
-      <span class="badge">25%: <b>${counts[25]}</b> (${pct(counts[25])})</span>
-      <span class="badge">50%: <b>${counts[50]}</b> (${pct(counts[50])})</span>
-      <span class="badge">75%: <b>${counts[75]}</b> (${pct(counts[75])})</span>
-      <span class="badge">100%: <b>${counts[100]}</b> (${pct(counts[100])})</span>
-    </div>
-  `;
-  // simpan CSV terakhir untuk tombol export rekap
-  window.__recapCSV = rowsCSV;
 }
 
-/* ===== Map Markers for BWS ===== */
-async function loadMarkersForBws(bws){
-  if(!bws){ document.getElementById('mapInfo').textContent='—'; return; }
-  clusterGroup.clearLayers();
-  let added=0;
-  const provs = Object.keys(INDEX[bws]||{});
-  for (const p of provs){
-    const kabs = Object.keys(INDEX[bws][p]||{});
-    for (const k of kabs){
-      const diList = Object.keys(((INDEX[bws]||{})[p]||{})[k]||{});
-      // ambil history per DI (koordinat + maxStage)
-      for (const d of diList){
-        const hist = await fetchHistory(bws,p,k,d);
-        const st = Number(hist.maxStage||0);
-        if (hist.coords && Number.isFinite(hist.coords.lat) && Number.isFinite(hist.coords.lng)){
-          const m = L.marker([hist.coords.lat, hist.coords.lng], {icon: makeDotIcon(st)})
-            .bindPopup(`<b>${d}</b><br>${k}, ${p}<br>Progres: ${st}%`);
-          clusterGroup.addLayer(m); added++;
-        }
-      }
-    }
-  }
-  document.getElementById('mapInfo').textContent = added ? `Marker: ${added} DI` : 'Tidak ada DI berkoordinat.';
-  if (added){ map.fitBounds(clusterGroup.getBounds().pad(0.2)); } else { map.setView([-2.5,118],5); }
+/* ====== Renderers ====== */
+function renderTable(data){
+  if(!data.length){ tb.innerHTML='<tr><td colspan="5" class="hint">Tidak ada data.</td></tr>'; infoCount.textContent='0 baris'; return;}
+  const rows = data.slice().sort((a,b)=> (a.bws+b.prov+a.kab+a.di).localeCompare(b.bws+b.prov+a.kab+b.di));
+  tb.innerHTML = rows.map(r=>{
+    const cls = r.stage>=75 ? 'ok' : r.stage>=25 ? 'mid' : 'low';
+    return `<tr>
+      <td>${r.di}</td>
+      <td><span class="chip ${cls}">${r.stage}%</span></td>
+      <td>${r.bws}</td>
+      <td>${r.prov}</td>
+      <td>${r.kab}</td>
+    </tr>`;
+  }).join('');
+  infoCount.textContent = `${rows.length} baris`;
 }
-
-/* ===== Detail DI: galeri + map focus ===== */
-async function showDetail(){
-  const b=selB.value,p=selP.value,k=selK.value,d=selD.value;
-  if(!(b&&p&&k&&d)){ detailBox.innerHTML='<div class="hint">Pilih DI pada filter.</div>'; return; }
-  const hist = await fetchHistory(b,p,k,d);
-  const max=Number(hist.maxStage||0);
-  const photos = hist.photos||{};
-  let gal = '';
-  [25,50,75,100].forEach(st=>{
-    const ph = photos[String(st)];
-    if(ph && ph.url){
-      gal += `<div>
-        <div class="hint">Foto Progres ${st}%:</div>
-        <div class="gallery">
-          <a href="${ph.url}" target="_blank"><img loading="lazy" src="${ph.url}" alt="Progres ${st}%"/></a>
-        </div></div>`;
+function renderMarkers(data){
+  cluster.clearLayers();
+  let m=0;
+  data.forEach(r=>{
+    if(Number.isFinite(r.lat)&&Number.isFinite(r.lng)){
+      const mk = L.marker([r.lat,r.lng],{icon:iconFor(r.stage)}).bindPopup(`<b>${r.di}</b><br>${r.kab}, ${r.prov}<br>${r.bws}<br>Progres: ${r.stage}%`);
+      cluster.addLayer(mk); m++;
     }
   });
-  if (!gal) gal = `<div class="hint">Belum ada foto progres untuk DI ini.</div>`;
-  detailBox.innerHTML = `
-    <div class="actions" style="gap:10px">
-      <span class="badge">BWS: <b>${b}</b></span>
-      <span class="badge">Prov: <b>${p}</b></span>
-      <span class="badge">Kab: <b>${k}</b></span>
-      <span class="badge">DI: <b>${d}</b></span>
-      <span class="badge">Progres maks: <b>${max}%</b></span>
-    </div>${gal}`;
-  if (hist.coords && Number.isFinite(hist.coords.lat) && Number.isFinite(hist.coords.lng)){
-    map.setView([hist.coords.lat, hist.coords.lng], 16);
-  }
+  if(m){ map.fitBounds(cluster.getBounds().pad(0.2)); mapInfo.textContent=`Marker: ${m}`; }
+  else { map.setView([-2.5,118],5); mapInfo.textContent='Tidak ada marker'; }
 }
 
-/* ===== Exports ===== */
-document.getElementById('btnExportSummary').addEventListener('click', ()=>{
-  // Ambil dari table ringkasan
-  const rows=[['Nama DI','Progres','Provinsi','Kabupaten']];
-  [...tblBody.querySelectorAll('tr')].forEach(tr=>{
-    const t=tr.querySelectorAll('td');
-    if (t.length===4) rows.push([t[0].innerText.trim(), t[1].innerText.trim(), t[2].innerText.trim(), t[3].innerText.trim()]);
-  });
-  const blob=new Blob([toCSV(rows)],{type:'text/csv;charset=utf-8;'});
+/* ====== Filter logic ====== */
+function getFiltered(){
+  const b=fB.value, p=fP.value, k=fK.value, d=fD.value;
+  return ALL.filter(x =>
+    (!b || x.bws===b) &&
+    (!p || x.prov===p) &&
+    (!k || x.kab===k) &&
+    (!d || x.di===d)
+  );
+}
+function refreshCascades(){
+  // isi opsi berdasarkan ALL (bukan baseline) supaya pasti ada stage/coords
+  const uniq = (arr, key) => [...new Set(arr.map(o=>o[key]))].sort();
+  const b = fB.value, p = fP.value, k = fK.value;
+
+  // BWS
+  fillSelect(fB, uniq(ALL,'bws'), 'Semua B/BWS');
+  if (b) fB.value = b;
+
+  // Prov
+  const listP = uniq(ALL.filter(o=>!b || o.bws===b),'prov');
+  fillSelect(fP, listP, 'Semua Provinsi'); fP.disabled = false;
+  if (p && listP.includes(p)) fP.value = p; else fP.value='';
+
+  // Kab
+  const listK = uniq(ALL.filter(o=>(!b||o.bws===b)&&(!p||o.prov===p)),'kab');
+  fillSelect(fK, listK, 'Semua Kabupaten/Kota'); fK.disabled = false;
+  if (k && listK.includes(k)) fK.value = k; else fK.value='';
+
+  // DI
+  const listD = uniq(ALL.filter(o=>(!b||o.bws===b)&&(!p||o.prov===p)&&(!k||o.kab===k)),'di');
+  fillSelect(fD, listD, 'Semua DI'); fD.disabled=false;
+}
+function applyFilters(){
+  const data = getFiltered();
+  renderTable(data);
+  renderMarkers(data);
+}
+
+/* ====== Export ====== */
+document.getElementById('btnExport').addEventListener('click', ()=>{
+  const cur = getFiltered();
+  const rows=[['Nama DI','Progres','B/BWS','Provinsi','Kabupaten','Lat','Lng']];
+  cur.forEach(r=>rows.push([r.di, r.stage, r.bws, r.prov, r.kab, r.lat??'', r.lng??'']));
+  const csv = rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
   const url=URL.createObjectURL(blob); const a=document.createElement('a');
-  a.href=url; a.download='ringkasan_DI.csv'; a.click(); URL.revokeObjectURL(url);
-});
-document.getElementById('btnExportRecap').addEventListener('click', ()=>{
-  const rows = window.__recapCSV || [['BWS','Provinsi','Kabupaten','Nama DI','Progres']];
-  const blob=new Blob([toCSV(rows)],{type:'text/csv;charset=utf-8;'});
-  const url=URL.createObjectURL(blob); const a=document.createElement('a');
-  a.href=url; a.download='rekap_BWS.csv'; a.click(); URL.revokeObjectURL(url);
+  a.href=url; a.download='monitoring_DI.csv'; a.click(); URL.revokeObjectURL(url);
 });
 
-/* ===== Filter events ===== */
-selB.addEventListener('change', async ()=>{
-  const b=selB.value;
-  if(!b){ fillSelect(selP,[], '-- pilih Provinsi --'); selP.disabled=true;
-         fillSelect(selK,[], '-- pilih Kabupaten/Kota --'); selK.disabled=true;
-         fillSelect(selD,[], '-- pilih Nama DI --'); selD.disabled=true;
-         recapBox.innerHTML='<div class="hint">Pilih B/BWS.</div>';
-         tblBody.innerHTML=`<tr><td colspan="4" class="hint">Pilih B/BWS & filter.</td></tr>`;
-         return;
-  }
-  fillSelect(selP, Object.keys(INDEX[b]||{}).sort(),'-- pilih Provinsi --'); selP.disabled=false;
-  fillSelect(selK,[], '-- pilih Kabupaten/Kota --'); selK.disabled=true;
-  fillSelect(selD,[], '-- pilih Nama DI --'); selD.disabled=true;
-  await buildBwsRecap(b); // hitung rekap begitu BWS dipilih
-});
-selP.addEventListener('change', ()=>{
-  const b=selB.value,p=selP.value;
-  if(!p){ fillSelect(selK,[], '-- pilih Kabupaten/Kota --'); selK.disabled=true; tblBody.innerHTML=`<tr><td colspan="4" class="hint">Lengkapi filter.</td></tr>`; return; }
-  fillSelect(selK, Object.keys((INDEX[b]||{})[p]||{}).sort(),'-- pilih Kabupaten/Kota --'); selK.disabled=false;
-  fillSelect(selD,[], '-- pilih Nama DI --'); selD.disabled=true;
-});
-selK.addEventListener('change', ()=>{
-  const b=selB.value,p=selP.value,k=selK.value;
-  if(!k){ fillSelect(selD,[], '-- pilih Nama DI --'); selD.disabled=true; tblBody.innerHTML=`<tr><td colspan="4" class="hint">Lengkapi filter.</td></tr>`; return; }
-  fillSelect(selD, Object.keys(((INDEX[b]||{})[p]||{})[k]||{}).sort(),'-- pilih Nama DI --'); selD.disabled=false;
-  refreshSummary();
-});
-selD.addEventListener('change', async ()=>{ await refreshSummary(); await showDetail(); });
+/* ====== Events ====== */
+[fB,fP,fK,fD].forEach(el=> el.addEventListener('change', applyFilters));
 
-/* ===== Map buttons ===== */
-document.getElementById('btnLoadMarkers').addEventListener('click', async ()=>{
-  const b=selB.value; if(!b){ alert('Pilih B/BWS dulu.'); return; }
-  document.getElementById('mapInfo').textContent='Memuat marker…';
-  await loadMarkersForBws(b);
-});
-document.getElementById('btnClearMarkers').addEventListener('click', ()=>{
-  clusterGroup.clearLayers(); document.getElementById('mapInfo').textContent='—'; map.setView([-2.5,118],5);
-});
+/* ====== Boot ====== */
+(async ()=>{
+  await loadAll();
+  prog.value=100; progText.textContent='selesai';
+  refreshCascades();
+  applyFilters(); // tampilkan semua dulu
+})();
 </script>
 </body>
 </html>
