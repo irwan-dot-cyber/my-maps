@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Monitoring Form Survey — Inpres 2/2025</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root{--brand:#FFD700}
+  html,body{height:100%;margin:0}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial}
+  #topbar{display:flex;align-items:center;gap:10px;background:var(--brand);color:#000;padding:8px 10px;font-weight:700}
+  #topbar img{height:30px}
+  #container{display:grid;grid-template-columns:1.2fr .8fr;grid-template-rows:1fr;height:calc(100% - 54px)}
+  #map{height:100%;background:#eef}
+  #side{border-left:1px solid #ddd;display:flex;flex-direction:column;min-width:280px}
+  #filters{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:8px;border-bottom:1px solid #eee;background:#fff}
+  select,button,input{padding:8px 10px;border:1px solid #ccc;border-radius:8px;font-size:14px}
+  #count{background:#000;color:#fff;border-radius:999px;padding:4px 10px;font-weight:700}
+  #tableWrap{flex:1;overflow:auto;background:#fafafa}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  thead th{position:sticky;top:0;background:#fff;border-bottom:1px solid #ddd;text-align:left;padding:8px}
+  tbody td{border-bottom:1px solid #eee;padding:8px;vertical-align:top}
+  .muted{color:#666}
+  .thumb{max-width:100%;max-height:100px;border-radius:8px;border:1px solid #ddd}
+  .pill{background:#fff;border:1px solid #ddd;border-radius:999px;padding:4px 10px}
+  @media (max-width: 900px){#container{grid-template-columns:1fr;grid-template-rows:55% 45%}}
+  .leaflet-popup-content{font-size:13px;line-height:1.35}
+</style>
+</head>
+<body>
+  <div id="topbar">
+    <img alt="PUPR" src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/Logo_Kementerian_Pekerjaan_Umum_dan_Perumahan_Rakyat_%28PUPR%29.svg/256px-Logo_Kementerian_Pekerjaan_Umum_dan_Perumahan_Rakyat_%28PUPR%29.svg.png">
+    <div>Monitoring Form Survey — <span class="pill">Balai • Daerah Irigasi</span></div>
+    <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+      <span id="count">0 titik</span>
+    </div>
+  </div>
+
+  <div id="container">
+    <div id="map"></div>
+    <aside id="side">
+      <div id="filters">
+        <label>Balai
+          <select id="balaiSelect">
+            <option value="">Semua Balai</option>
+          </select>
+        </label>
+        <label>Daerah Irigasi
+          <select id="diSelect" disabled>
+            <option value="">Semua DI</option>
+          </select>
+        </label>
+        <input id="q" placeholder="Cari nama/ket…" style="min-width:160px">
+        <button id="resetBtn" title="Reset filter">Reset</button>
+      </div>
+      <div id="tableWrap">
+        <table id="tbl">
+          <thead>
+            <tr>
+              <th style="width:36%">DI</th>
+              <th style="width:24%">Balai</th>
+              <th style="width:40%">Info</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr><td colspan="3" class="muted">Memuat data…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </aside>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+  // ========= KONFIGURASI =========
+  const SHEET_ID = "1iizRCE8T0JMIqTd_qsvhZs-wij_gaqUQDucJbjCXc3c"; // ganti bila perlu
+  const SHEET_NAME = "Sheet1"; // ganti ke nama tab sheet lo
+  // Mapping header (ubah bila nama kolom berbeda)
+  const COL = {
+    balai: "Balai",
+    di: "Daerah_Irigasi",
+    prov: "Provinsi",
+    kab: "Kabupaten",
+    ket: "Keterangan",
+    lat: "Lat",
+    lon: "Lon",
+    foto: "FotoURL",
+    nama: "Nama",
+    wa: "WA",
+    ts: "Timestamp"
+  };
+
+  // ========= MAP BASE =========
+  const map = L.map('map', { zoomControl:true }).setView([-2.5, 117], 5);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19, attribution: '&copy; OpenStreetMap'
+  }).addTo(map);
+
+  // ========= ELEMEN UI =========
+  const $ = id => document.getElementById(id);
+  const balaiSelect = $("balaiSelect");
+  const diSelect = $("diSelect");
+  const qInput = $("q");
+  const resetBtn = $("resetBtn");
+  const countBox = $("count");
+  const tbody = $("tbody");
+
+  let ALL = [];   // semua fitur (GeoJSON Feature<Point>)
+  let VIEW = [];  // fitur terfilter
+  let layer;      // Leaflet layer
+
+  // ========= UTIL =========
+  const esc = s => String(s ?? "-").replace(/[&<>"'`=\/]/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','/':'&#x2F;','`':'&#x60;','=':'&#x3D;' }[m]));
+  const toNum = v => { const n = Number(String(v??"").replace(",", ".")); return isFinite(n)? n : null; };
+  const vget = (o,k) => o?.[k] ?? o?.[k?.toUpperCase?.()] ?? o?.[k?.toLowerCase?.()];
+
+  function detectLatLon(row){
+    const latKeys = [COL.lat,"Latitude","Lat_Y","Y","LAT","latitude"];
+    const lonKeys = [COL.lon,"Longitude","Lon_X","X","LON","longitude","Long"];
+    let lat=null, lon=null;
+    for (const k of latKeys) { const n=toNum(vget(row,k)); if(n!==null){ lat=n; break; } }
+    for (const k of lonKeys) { const n=toNum(vget(row,k)); if(n!==null){ lon=n; break; } }
+    return {lat,lon};
+  }
+
+  function fotoToThumb(url){
+    if(!url) return null;
+    // Auto-handle Google Drive share links
+    const m = String(url).match(/(?:id=|\/d\/)([a-zA-Z0-9_-]{20,})/);
+    if (m) return `https://drive.google.com/uc?export=view&id=${m[1]}`;
+    return url;
+  }
+
+  function mkPopup(p){
+    const thumb = fotoToThumb(p[COL.foto]);
+    return `
+      <div style="min-width:220px">
+        <div style="font-weight:700">${esc(p[COL.di])}</div>
+        <div class="muted" style="margin:2px 0 6px">${esc(p[COL.balai])}</div>
+        ${thumb ? `<img class="thumb" src="${esc(thumb)}" alt="foto">` : ""}
+        <table style="margin-top:6px">
+          <tr><td style="padding-right:8px">Prov</td><td>: ${esc(p[COL.prov])}</td></tr>
+          <tr><td>Kab</td><td>: ${esc(p[COL.kab])}</td></tr>
+        </table>
+        ${p[COL.ket] ? `<div style="margin-top:6px">${esc(p[COL.ket])}</div>` : ""}
+        <div class="muted" style="margin-top:6px">
+          ${p[COL.nama] ? `By ${esc(p[COL.nama])}`:""} ${p[COL.wa] ? ` · ${esc(p[COL.wa])}`:""} ${p[COL.ts] ? ` · ${esc(p[COL.ts])}`:""}
+        </div>
+      </div>`;
+  }
+
+  function pointStyle(){
+    return { radius:7, fillColor:"#e63946", color:"#b51d2a", weight:1, opacity:1, fillOpacity:.9 };
+  }
+
+  function renderMap(arr){
+    if (layer) layer.removeFrom(map);
+    layer = L.geoJSON(arr, {
+      pointToLayer: (f, latlng)=>L.circleMarker(latlng, pointStyle()),
+      onEachFeature: (f, lyr)=>lyr.bindPopup(mkPopup(f.properties))
+    }).addTo(map);
+    countBox.textContent = `${arr.length} titik`;
+    if (arr.length) { try { map.fitBounds(layer.getBounds(), {padding:[16,16]}); } catch(e){} }
+  }
+
+  function renderTable(arr){
+    if (!arr.length) {
+      tbody.innerHTML = `<tr><td colspan="3" class="muted">Tidak ada data</td></tr>`;
+      return;
+    }
+    const rows = arr.map(f=>{
+      const p=f.properties||{};
+      const thumb = fotoToThumb(p[COL.foto]);
+      const info = [
+        p[COL.prov] ? `Prov: ${esc(p[COL.prov])}`:null,
+        p[COL.kab] ? `Kab: ${esc(p[COL.kab])}`:null,
+        p[COL.ket] ? esc(p[COL.ket]):null,
+        p[COL.ts] ? `<span class="muted">${esc(p[COL.ts])}</span>`:null
+      ].filter(Boolean).join("<br>");
+      return `<tr>
+        <td><strong>${esc(p[COL.di])}</strong></td>
+        <td>${esc(p[COL.balai])}</td>
+        <td>${thumb?`<img class="thumb" src="${esc(thumb)}"><br>`:""}${info||"-"}</td>
+      </tr>`;
+    }).join("");
+    tbody.innerHTML = rows;
+  }
+
+  function applyFilters(){
+    const b = balaiSelect.value;
+    const d = diSelect.value;
+    const q = qInput.value.trim().toLowerCase();
+    VIEW = ALL.filter(f=>{
+      const p=f.properties||{};
+      const okB = !b || p[COL.balai]===b;
+      const okD = !d || p[COL.di]===d;
+      const okQ = !q || Object.values(p).some(v=> String(v??"").toLowerCase().includes(q));
+      return okB && okD && okQ;
+    });
+    renderMap(VIEW);
+    renderTable(VIEW);
+  }
+
+  function fillDropdowns(arr){
+    const setB=new Set(), idx=new Map();
+    arr.forEach(f=>{
+      const p=f.properties||{}, b=p[COL.balai], d=p[COL.di];
+      if(!b||!d) return;
+      setB.add(b);
+      if(!idx.has(b)) idx.set(b, new Set());
+      idx.get(b).add(d);
+    });
+    // Balai
+    const balaiList=[...setB].sort((a,b)=>String(a).localeCompare(String(b),'id'));
+    balaiSelect.innerHTML = `<option value="">Semua Balai</option>` + balaiList.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
+    // onchange Balai => DI
+    balaiSelect.onchange = ()=>{
+      const b = balaiSelect.value;
+      if(!b || !idx.has(b)){
+        diSelect.innerHTML = `<option value="">Semua DI</option>`;
+        diSelect.disabled = true;
+        applyFilters();
+        return;
+      }
+      const diList=[...idx.get(b)].sort((a,b)=>String(a).localeCompare(String(b),'id'));
+      diSelect.innerHTML = `<option value="">Semua DI</option>` + diList.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
+      diSelect.disabled = false;
+      diSelect.value = "";
+      applyFilters();
+    };
+  }
+
+  resetBtn.onclick = ()=>{
+    balaiSelect.value=""; diSelect.innerHTML=`<option value="">Semua DI</option>`; diSelect.disabled=true;
+    qInput.value="";
+    applyFilters();
+  };
+  qInput.addEventListener('input', ()=>{ applyFilters(); });
+
+  // ========= LOAD DATA DARI GOOGLE SHEETS (GViz) =========
+  async function loadFromSheet(sheetId, sheetName){
+    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
+    const raw = await fetch(url).then(r=>r.text());
+    const json = JSON.parse(raw.replace(/^[^]*setResponse\(/,'').replace(/\);?$/,''));
+    const cols = (json.table?.cols||[]).map(c=> (c&&c.label)? c.label.trim() : "");
+    const rows = (json.table?.rows||[]).map(r=>{
+      const o={}; r.c?.forEach((cell,i)=> o[cols[i]] = cell? cell.v : null); return o;
+    });
+    return rows;
+  }
+
+  (async function init(){
+    try{
+      const rows = await loadFromSheet(SHEET_ID, SHEET_NAME);
+      // build features
+      const feats = rows.map(r=>{
+        const {lat,lon} = detectLatLon(r);
+        if(lat===null || lon===null) return null;
+        return {
+          type:"Feature",
+          geometry:{type:"Point",coordinates:[lon,lat]},
+          properties:{
+            [COL.balai]: vget(r,COL.balai),
+            [COL.di]: vget(r,COL.di),
+            [COL.prov]: vget(r,COL.prov),
+            [COL.kab]: vget(r,COL.kab),
+            [COL.ket]: vget(r,COL.ket),
+            [COL.foto]: vget(r,COL.foto),
+            [COL.nama]: vget(r,COL.nama),
+            [COL.wa]: vget(r,COL.wa),
+            [COL.ts]: vget(r,COL.ts)
+          }
+        };
+      }).filter(Boolean);
+
+      ALL = feats;
+      fillDropdowns(ALL);
+      applyFilters(); // initial render
+    }catch(err){
+      console.error(err);
+      tbody.innerHTML = `<tr><td colspan="3" class="muted">Gagal memuat data. Pastikan Sheet share “Anyone with the link: Viewer” & nama tab benar.</td></tr>`;
+      alert("Gagal memuat data dari Google Sheets. Cek SHEET_ID / SHEET_NAME di kode.");
+    }
+  })();
+  </script>
+</body>
+</html>
