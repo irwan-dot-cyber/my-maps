@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Form Tahap 2 (Auto-Lock) — Sheet Baseline</title>
+  <title>Form Tahap 2 (Koordinat Auto-Lock)</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" referrerpolicy="no-referrer"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js" referrerpolicy="no-referrer"></script>
   <style>
@@ -51,7 +51,7 @@
 <main>
   <div class="card">
     <h2>Data Survey</h2>
-    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <div id="toast" class="toast"></div>
 
     <form id="surveyForm">
       <div class="row">
@@ -110,7 +110,7 @@
             <span id="photoMeta" class="hint"></span>
           </div>
           <input type="file" accept="image/*" id="fileInput" name="foto" style="display:none">
-          <div class="hint">Semua field wajib. Foto dikompresi otomatis.</div>
+          <div class="hint">Pilih kamera/galeri. Foto dikompresi otomatis & dikirim juga sebagai base64 fallback.</div>
         </div>
       </div>
 
@@ -140,66 +140,78 @@
 
 <script>
 /* ===== CONFIG ===== */
-/* Upload/History via GAS (kalau nggak pakai history, set USE_HISTORY=false) */
-const USE_HISTORY = true;
-const ENDPOINT = 'https://gas-proxy2.tuic1677.workers.dev/';
-const DATA_URL = 'https://script.google.com/macros/s/AKfycbwWe8SY1T51LL3yp_OlLlOORuMLjcVkbaL1td5pOm1EX0-POztzV-6CUl-tQo91OMzT/exec';
+const ENDPOINT = 'https://gas-proxy2.tuic1677.workers.dev/'; // POST via proxy
+const DATA_URL = 'https://script.google.com/macros/s/AKfycbwWe8SY1T51LL3yp_OlLlOORuMLjcVkbaL1td5pOm1EX0-POztzV-6CUl-tQo91OMzT/exec'; // GET ke GAS kamu
 
-/* Baseline via Google Sheets (opensheet) — dari link lo */
-const SHEET_ID = '1LrRWGns6d68uQ7sNy2F7ecGsBrBgGbiO9S4lVXEkpXQ';
-/* Cocokkan gid=>tab name. Ganti "NamaTabKamu" sesuai label tab yang pakai gid=674582970 */
-const SHEET_TAB_BY_GID = { '674582970':'NamaTabKamu' };
-const SHEET_TAB = SHEET_TAB_BY_GID['674582970'] || 'Sheet1';
-
-/* ===== Utils & Normalizer ===== */
-const toast = (m)=>{const t=document.getElementById('toast');t.textContent=String(m);t.style.display='block';clearTimeout(window.__t);window.__t=setTimeout(()=>t.style.display='none',4200);};
-function fillSelect(el, items, ph='-- pilih --'){ el.innerHTML=''; if(ph&&!el.multiple){const o=document.createElement('option');o.value='';o.textContent=ph;el.appendChild(o);} (items||[]).forEach(v=>{const o=document.createElement('option');o.value=o.textContent=v;el.appendChild(o);}); el.disabled=!(items&&items.length); }
+/* ===== Utils ===== */
+const toast = (m)=>{const t=document.getElementById('toast');t.textContent=m;t.style.display='block';clearTimeout(window.__t);window.__t=setTimeout(()=>t.style.display='none',4200);};
+function fillSelect(el, items, ph='-- pilih --'){
+  el.innerHTML='';
+  if(ph&&!el.multiple){const o=document.createElement('option');o.value='';o.textContent=ph;el.appendChild(o);}
+  (items||[]).forEach(v=>{const o=document.createElement('option');o.value=o.textContent=v;el.appendChild(o);});
+  el.disabled=!(items&&items.length);
+}
+// Title Case pintar: jaga BBWS/BWS & D.I.
+const titleCase = s => String(s||'').split(/(\s+|[-/])/).map(tok=>{
+  if(/^\s+$/.test(tok)||tok==='-'||tok==='/') return tok;
+  const up = tok.toUpperCase();
+  if (up==='BBWS'||up==='BWS') return up;
+  if (/^(D\.?I\.?|DI)$/.test(up)) return 'D.I.';
+  return tok.charAt(0).toUpperCase()+tok.slice(1).toLowerCase();
+}).join('');
 const $overlay=document.getElementById('uploadOverlay'), $bar=document.getElementById('progressBar');
 function setUploadingUI({show,percent}){ if(typeof percent==='number') $bar.style.width=Math.max(0,Math.min(100,Math.round(percent)))+'%'; $overlay.style.display=show?'flex':'none'; }
 function disableForm(b){document.querySelectorAll('#surveyForm input, #surveyForm select, #surveyForm button').forEach(e=>e.disabled=!!b);}
-function debounce(fn, ms){let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms)};}
-async function fetchWithRetry(url, {tries=3, timeout=9000}={}){ for (let i=0;i<tries;i++){ const ctrl=new AbortController(); const tid=setTimeout(()=>ctrl.abort(),timeout); try{ const res=await fetch(url,{cache:'no-store', signal:ctrl.signal}); clearTimeout(tid); if(!res.ok) throw new Error('HTTP '+res.status); return res; }catch(e){ if(i===tries-1) throw e; await new Promise(r=>setTimeout(r, 600*(i+1))); } }}
-
-/* Aliases untuk header (biar fleksibel) + normalizer key */
-const alias = {
-  bws: ['B/BWS PELAKSANA','Balai','BWS','BBWS','B/BWS'],
-  prov: ['PROVINSI','Provinsi'],
-  kab: ['KABUPATEN','Kabupaten','Kabupaten/Kota','Kab/Kota'],
-  di: ['NAMA DI/DIR','nama di','DI','Paket','Daerah Irigasi','Daerah_Irigasi'],
-  kec: ['KECAMATAN','Kecamatan','Kec.','Kec'],
-  desa: ['DESA','Desa','DESA/KEL','Desa/Kel','Desa/Kelurahan','Kelurahan','KELURAHAN','Desa/Kel.']
-};
-const norm = s => String(s??'').trim().replace(/\s+/g,' ').replace(/D\.?\s*I\.?/gi,'DI');
-const titleCase = s => norm(s).split(/(\s+|[-/])/).map(tok=>{ if(/^\s+$/.test(tok)||tok==='-'||tok==='/') return tok; const up=tok.toUpperCase(); if(up==='BBWS'||up==='BWS') return up; if(/^DI$/.test(up)) return 'D.I.'; return tok.charAt(0).toUpperCase()+tok.slice(1).toLowerCase(); }).join('');
-function pick(obj, keys){ for(const k of keys){ if(obj && obj[k]!=null && obj[k]!=='') return obj[k]; } return ''; }
 
 /* ===== Map ===== */
 const baseOSM=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20, attribution:'© OpenStreetMap'});
 const baseImg=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20, attribution:'Tiles © Esri/Maxar'});
 const map=L.map('map',{zoomControl:true,layers:[baseOSM]}); L.control.layers({OSM:baseOSM,'Esri Imagery':baseImg}, {}, {position:'topright', collapsed:false}).addTo(map);
 map.setView([-2.5,118],5);
-const coordsTxt=document.getElementById('coords'); map.on('move', debounce(()=>{const c=map.getCenter(); coordsTxt.textContent=`Lat: ${c.lat.toFixed(6)}, Lng: ${c.lng.toFixed(6)}`;}, 80));
+const coordsTxt=document.getElementById('coords'); function upd(){const c=map.getCenter(); coordsTxt.textContent=`Lat: ${c.lat.toFixed(6)}, Lng: ${c.lng.toFixed(6)}`;} map.on('move',upd); map.whenReady(upd);
 
 /* ===== DOM ===== */
 const balai=document.getElementById('balai'), prov=document.getElementById('prov'), kab=document.getElementById('kab'), di=document.getElementById('di');
 const lat=document.getElementById('lat'), lng=document.getElementById('lng'), form=document.getElementById('surveyForm'), btnSubmit=document.getElementById('btnSubmit');
 const coordBadge=document.getElementById('coordBadge'), coordBadgeText=document.getElementById('coordBadgeText');
-const btnPick = document.getElementById('btnPick'); const btnPan  = document.getElementById('btnPan'); const btnLocate = document.getElementById('btnLocate');
-const tel = document.getElementById('telepon'); const lastStageEl=document.getElementById('lastStage'); const historyGals=document.getElementById('historyGals');
+const btnPick = document.getElementById('btnPick');
+const btnPan  = document.getElementById('btnPan');
+const btnLocate = document.getElementById('btnLocate');
 
-/* ===== Validasi Wajib ===== */
-function checkMenus(required=['balai','prov','kab','di']){
-  const mapEl = { balai, prov, kab, di };
-  const msg   = { balai:'Pilih B/BWS dulu.', prov:'Pilih Provinsi dulu.', kab:'Pilih Kabupaten/Kota dulu.', di:'Pilih Daerah Irigasi dulu.' };
-  for (const k of required){ if (!mapEl[k].value){ toast('⚠️ ' + msg[k]); mapEl[k].focus(); return false; } }
-  return true;
+/* tombol map */
+btnLocate.addEventListener('click',()=>map.locate({setView:true,maxZoom:17,enableHighAccuracy:true}));
+map.on('locationerror',()=>alert('Izin lokasi ditolak. Geser peta manual.'));
+btnPick.addEventListener('click',()=>{const c=map.getCenter(); lat.value=c.lat.toFixed(6); lng.value=c.lng.toFixed(6);});
+btnPan.addEventListener('click',()=>{const la=+lat.value,lo=+lng.value; if(!Number.isNaN(la)&&!Number.isNaN(lo)) map.setView([la,lo],Math.max(map.getZoom(),16));});
+
+/* ===== Baseline ===== */
+let INDEX={};
+async function loadData(){
+  try{
+    const url = DATA_URL + (DATA_URL.includes('?')?'&':'?') + 't=' + Date.now();
+    const resp = await fetch(url,{cache:'no-store'});
+    const raw = await resp.text(); const cleaned = raw.replace(/^\)\]\}'\s*/,'');
+    let rows = JSON.parse(cleaned);
+    if(!Array.isArray(rows)){ toast('⚠️ Baseline kosong/invalid.'); console.error(rows); return; }
+    INDEX={};
+    rows.forEach(row=>{
+      const BWS=titleCase(row['B/BWS PELAKSANA']||row['Balai']||row['BWS']);
+      const PROV=titleCase(row['PROVINSI']||row['Provinsi']);
+      const KAB=titleCase(row['KABUPATEN']||row['Kabupaten']);
+      const DI=titleCase(row['NAMA DI/DIR']||row['nama di']||row['DI']||row['Paket']);
+      const KEC=row['KECAMATAN']||row['Kecamatan']||''; const DESA=row['DESA']||row['Desa']||'';
+      if(!(BWS&&PROV&&KAB&&DI)) return;
+      INDEX[BWS] ??= {}; INDEX[BWS][PROV] ??= {}; INDEX[BWS][PROV][KAB] ??= {};
+      INDEX[BWS][PROV][KAB][DI] ??= {kecamatan:new Set(), desa:new Set()};
+      (String(KEC).split(/\s*[,;/]\s*|[\r\n]+/).filter(Boolean)).forEach(k=>INDEX[BWS][PROV][KAB][DI].kecamatan.add(titleCase(k)));
+      (String(DESA).split(/\s*[,;/]\s*|[\r\n]+/).filter(Boolean)).forEach(d=>INDEX[BWS][PROV][KAB][DI].desa.add(titleCase(d)));
+    });
+    fillSelect(balai, Object.keys(INDEX).sort(), '-- pilih B/BWS --');
+    prov.disabled=kab.disabled=di.disabled=true;
+  }catch(e){ console.error(e); toast('⚠️ Gagal memuat baseline.'); }
 }
-function listMissing(){
-  const miss=[]; if(!balai.value) miss.push('B/BWS'); if(!prov.value) miss.push('Provinsi'); if(!kab.value) miss.push('Kab/Kota'); if(!di.value) miss.push('DI');
-  if(!document.getElementById('kecamatan').value) miss.push('Kecamatan'); if(!document.getElementById('desa').value) miss.push('Desa/Kelurahan');
-  if(!lat.value||!lng.value) miss.push('Koordinat'); if(!currentStage) miss.push('Stage Progres');
-  if(!document.getElementById('nama').value) miss.push('Nama'); if(!document.getElementById('telepon').value) miss.push('Nomor WA/HP'); return miss;
-}
+
+/* ===== Helper Badge & Lock ===== */
 function setCoordBadge(type, text){
   coordBadge.querySelector('.dot')?.classList.remove('green','orange','gray');
   const dot = coordBadge.querySelector('.dot') || document.createElement('span');
@@ -208,152 +220,103 @@ function setCoordBadge(type, text){
   coordBadgeText.textContent = text;
 }
 function setCoordLock(locked, la, ln){
-  if (locked) { if (Number.isFinite(la) && Number.isFinite(ln)) { lat.value = Number(la).toFixed(6); lng.value = Number(ln).toFixed(6); }
-    lat.disabled = true; lng.disabled = true; btnPick.disabled = true; btnPan.disabled = true; btnLocate.disabled = true; btnPick.classList.remove('primary'); btnPick.classList.add('ghost');
-  } else { lat.disabled = false; lng.disabled = false; btnPick.disabled = false; btnPan.disabled = false; btnLocate.disabled = false; btnPick.classList.add('primary'); btnPick.classList.remove('ghost'); }
-}
-
-/* tombol map guarded */
-btnLocate.addEventListener('click', ()=>{ if (!checkMenus(['balai','prov','kab','di'])) return; map.locate({setView:true,maxZoom:17,enableHighAccuracy:true}); });
-map.on('locationerror',()=>toast('Izin lokasi ditolak. Geser peta manual.'));
-let pickMarker=null;
-btnPick.addEventListener('click', ()=>{ if (!checkMenus(['balai','prov','kab','di'])) return;
-  const c=map.getCenter(); lat.value=c.lat.toFixed(6); lng.value=c.lng.toFixed(6);
-  if (pickMarker) pickMarker.remove(); pickMarker = L.marker([c.lat, c.lng], {opacity:0.9}).addTo(map);
-  setCoordBadge('locked','Koordinat: dipilih dari peta'); updateSubmitState();
-});
-btnPan.addEventListener('click', ()=>{ if (!checkMenus(['balai','prov','kab','di'])) return;
-  const la=+lat.value, lo=+lng.value; if(!Number.isFinite(la)||!Number.isFinite(lo)||la<-90||la>90||lo<-180||lo>180){ return toast('Koordinat tidak valid.'); }
-  map.setView([la,lo], Math.max(map.getZoom(),16));
-});
-
-/* ====== Baseline dari Google Sheets (opensheet) ====== */
-async function loadBaselineFromSheet(sheetId, sheetTab){
-  const url = `https://opensheet.elk.sh/${sheetId}/${encodeURIComponent(sheetTab)}`;
-  const res = await fetchWithRetry(url);
-  return await res.json(); // array of objects (header→value)
-}
-
-/* ===== Baseline → INDEX (normalisasi kunci) ===== */
-let INDEX={};
-async function loadData(){
-  try{
-    const rows = await loadBaselineFromSheet(SHEET_ID, SHEET_TAB);
-    if(!Array.isArray(rows) || !rows.length){ toast('⚠️ Baseline kosong/invalid (sheet).'); return; }
-
-    INDEX={};
-    rows.forEach(row=>{
-      const BWS = titleCase(pick(row, alias.bws));
-      const PROV= titleCase(pick(row, alias.prov));
-      const KAB = titleCase(pick(row, alias.kab));
-      const DI  = titleCase(pick(row, alias.di));
-      const KECs= String(pick(row, alias.kec)||'').split(/\s*[,;/]\s*|[\r\n]+/).filter(Boolean).map(titleCase);
-      const DESAs=String(pick(row, alias.desa)||'').split(/\s*[,;/]\s*|[\r\n]+/).filter(Boolean).map(titleCase);
-      if(!(BWS&&PROV&&KAB&&DI)) return;
-      const kB=norm(BWS), kP=norm(PROV), kK=norm(KAB), kD=norm(DI);
-      INDEX[kB] ??= {}; INDEX[kB][kP] ??= {}; INDEX[kB][kP][kK] ??= {};
-      INDEX[kB][kP][kK][kD] ??= {kecamatan:new Set(), desa:new Set(), label:{BWS,PROV,KAB,DI}};
-      KECs.forEach(k=>INDEX[kB][kP][kK][kD].kecamatan.add(k));
-      DESAs.forEach(d=>INDEX[kB][kP][kK][kD].desa.add(d));
-    });
-
-    const balaiList = Object.keys(INDEX).map(titleCase).sort((a,b)=>a.localeCompare(b,'id'));
-    fillSelect(balai, balaiList, '-- pilih B/BWS --');
-    prov.disabled=kab.disabled=di.disabled=true;
-  }catch(e){ console.error(e); toast('⚠️ Gagal memuat baseline (sheet/CORS).'); }
-}
-
-/* ===== Cascade (pakai norm() untuk lookup) ===== */
-balai.addEventListener('change', ()=>{
-  const bK = norm(balai.value);
-  if(!bK || !INDEX[bK]){
-    fillSelect(prov,[], '-- pilih Provinsi --'); prov.disabled=true;
-    fillSelect(kab,[], '-- pilih Kab/Kota --');  kab.disabled=true;
-    fillSelect(di,[],  '-- pilih DI --');        di.disabled=true;
-    updateSubmitState(); return;
+  if (locked) {
+    if (Number.isFinite(la) && Number.isFinite(ln)) {
+      lat.value = Number(la).toFixed(6);
+      lng.value = Number(ln).toFixed(6);
+    }
+    lat.disabled = true; lng.disabled = true;
+    btnPick.disabled = true; btnPan.disabled = true; btnLocate.disabled = true;
+    btnPick.classList.remove('primary'); btnPick.classList.add('ghost');
+  } else {
+    lat.disabled = false; lng.disabled = false;
+    btnPick.disabled = false; btnPan.disabled = false; btnLocate.disabled = false;
+    btnPick.classList.add('primary'); btnPick.classList.remove('ghost');
   }
-  const provs = Object.keys(INDEX[bK]).map(titleCase).sort((a,b)=>a.localeCompare(b,'id'));
-  fillSelect(prov, provs, '-- pilih Provinsi --'); prov.disabled=false;
-  fillSelect(kab,[], '-- pilih Kab/Kota --'); kab.disabled=true;
-  fillSelect(di,[], '-- pilih DI --'); di.disabled=true;
-  updateSubmitState();
+}
+
+/* ===== Cascade ===== */
+balai.addEventListener('change', ()=>{
+  const b=balai.value; if(!b){fillSelect(prov,[], '-- pilih Provinsi --');prov.disabled=true; return;}
+  fillSelect(prov, Object.keys(INDEX[b]||{}).sort(),'-- pilih Provinsi --'); prov.disabled=false;
+  fillSelect(kab,[], '-- pilih Kab/Kota --'); kab.disabled=true; fillSelect(di,[], '-- pilih DI --'); di.disabled=true;
 });
 prov.addEventListener('change', ()=>{
-  if (!balai.value){ toast('⚠️ Pilih B/BWS dulu.'); balai.focus(); prov.value=''; return; }
-  const bK=norm(balai.value), pK=norm(prov.value);
-  if(!pK || !INDEX[bK]?.[pK]){
-    fillSelect(kab,[], '-- pilih Kab/Kota --'); kab.disabled=true;
-    fillSelect(di,[],  '-- pilih DI --');       di.disabled=true;
-    updateSubmitState(); return;
-  }
-  const kabs = Object.keys(INDEX[bK][pK]).map(titleCase).sort((a,b)=>a.localeCompare(b,'id'));
-  fillSelect(kab, kabs, '-- pilih Kab/Kota --'); kab.disabled=false;
+  const b=balai.value,p=prov.value; if(!p){fillSelect(kab,[], '-- pilih Kab/Kota --'); kab.disabled=true; return;}
+  fillSelect(kab, Object.keys((INDEX[b]||{})[p]||{}).sort(),'-- pilih Kab/Kota --'); kab.disabled=false;
   fillSelect(di,[], '-- pilih DI --'); di.disabled=true;
-  updateSubmitState();
 });
 kab.addEventListener('change', ()=>{
-  if (!prov.value){ toast('⚠️ Pilih Provinsi dulu.'); prov.focus(); kab.value=''; return; }
-  const bK=norm(balai.value), pK=norm(prov.value), kK=norm(kab.value);
-  if(!kK || !INDEX[bK]?.[pK]?.[kK]){
-    fillSelect(di,[], '-- pilih DI --'); di.disabled=true;
-    updateSubmitState(); return;
-  }
-  const dis = Object.keys(INDEX[bK][pK][kK]).map(titleCase).sort((a,b)=>a.localeCompare(b,'id'));
-  fillSelect(di, dis, '-- pilih DI --'); di.disabled=false;
-  updateSubmitState();
+  const b=balai.value,p=prov.value,k=kab.value; if(!k){fillSelect(di,[], '-- pilih DI --'); di.disabled=true; return;}
+  fillSelect(di, Object.keys((((INDEX[b]||{})[p]||{})[k]||{})).sort(),'-- pilih DI --'); di.disabled=false;
 });
 
-/* ===== History / Stage (opsional via GAS) ===== */
+/* ===== History / Stage ===== */
 let currentStage=null;
+const lastStageEl=document.getElementById('lastStage');
+const historyGals=document.getElementById('historyGals');
+
 function renderStageButtons(maxStage){
   const wrap=document.getElementById('stageBtns'); wrap.innerHTML='';
-  const stages=[25,50,75,100]; const nextStage = (maxStage>=100) ? null : (maxStage===0 ? 25 : (maxStage+25));
-  stages.forEach(st=>{ const btn=document.createElement('button'); btn.type='button'; btn.textContent=`Progres ${st}%`;
-    const enabled = (st===nextStage); btn.className = enabled ? 'primary' : 'ghost'; btn.disabled = !enabled;
-    btn.addEventListener('click', ()=>{ currentStage=st; toast(`Stage dipilih: ${st}%`); updateSubmitState(); });
+  const stages=[25,50,75,100];
+  const nextStage = (maxStage>=100) ? null : (maxStage===0 ? 25 : (maxStage+25));
+  stages.forEach(st=>{
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.textContent=`Progres ${st}%`;
+    const enabled = (st===nextStage);
+    btn.className = enabled ? 'primary' : 'ghost';
+    btn.disabled = !enabled;
+    btn.addEventListener('click', ()=>{ currentStage=st; btnSubmit.disabled=false; toast(`Stage dipilih: ${st}%`); });
     wrap.appendChild(btn);
   });
-  currentStage = nextStage; updateSubmitState();
+  // Auto-pilih stage biar bisa kirim langsung
+  currentStage = nextStage;
+  btnSubmit.disabled = !nextStage;
 }
+
 function renderHistoryPhotos(photos){
   const order=[25,50,75,100]; let html='', has=false;
   order.forEach(st=>{const p=photos[String(st)]; if(p&&p.url){has=true; html+=`
     <div style="margin-bottom:10px">
       <div class="hint">Foto Progres ${st}%:</div>
-      <div class="gallery"><a href="${p.url}" target="_blank" title="${p.name||('Stage '+st)}"><img loading="lazy" src="${p.url}" alt="Progres ${st}%"/></a></div>
+      <div class="gallery">
+        <a href="${p.url}" target="_blank" title="${p.name||('Stage '+st)}">
+          <img loading="lazy" src="${p.url}" alt="Progres ${st}%"/>
+        </a>
+      </div>
     </div>`; }});
-  document.getElementById('historyGals').innerHTML = has ? html : `<div class="hint muted">Belum ada foto progres untuk kombinasi terpilih.</div>`;
+  historyGals.innerHTML = has ? html : `<div class="hint muted">Belum ada foto progres untuk kombinasi terpilih.</div>`;
 }
+
 async function fetchHistory(bws, p, k, d){
-  if (!USE_HISTORY) return {ok:false,maxStage:0,coords:null,photos:{}};
   const qs = new URLSearchParams({fn:'history', bws, prov:p, kab:k, di:d});
   const url = DATA_URL + (DATA_URL.includes('?')?'&':'?') + qs.toString() + '&t=' + Date.now();
-  try{ const res = await fetchWithRetry(url); const j = await res.json(); return j && j.ok ? j : {ok:false,maxStage:0,coords:null,photos:{}}; }catch{ return {ok:false,maxStage:0,coords:null,photos:{}}; }
+  const res = await fetch(url, {cache:'no-store'});
+  try{const j=await res.json(); return j&&j.ok?j:{ok:false,maxStage:0,coords:null,photos:{}};}catch{ return {ok:false,maxStage:0,coords:null,photos:{}}; }
 }
 
-/* === DI selected: kec/desa dari INDEX; history + lock koordinat === */
+/* === DI selected: isi kec/desa otomatis + placeholder opsi, ambil history, kunci koordinat === */
 di.addEventListener('change', async ()=>{
-  if (!kab.value){ toast('⚠️ Pilih Kab/Kota dulu.'); kab.focus(); di.value=''; return; }
-
-  const bK=norm(balai.value), pK=norm(prov.value), kK=norm(kab.value), dK=norm(di.value);
-  const node = INDEX[bK]?.[pK]?.[kK]?.[dK];
+  const b=balai.value, p=prov.value, k=kab.value, d=di.value;
+  const entry = (((INDEX[b]||{})[p]||{})[k]||{})[d];
 
   const kecEl = document.getElementById('kecamatan');
   const desaEl = document.getElementById('desa');
 
-  const kecs  = node ? [...node.kecamatan] : [];
-  const desas = node ? [...node.desa] : [];
+  const kecs  = entry ? [...entry.kecamatan] : [];
+  const desas = entry ? [...entry.desa] : [];
 
+  // SELALU isi otomatis dengan opsi pertama bila ada
   kecEl.value  = (kecs[0]  || '');
   desaEl.value = (desas[0] || '');
 
+  // Tampilkan semua opsi di placeholder bila >1
   kecEl.placeholder  = kecs.length  > 1 ? `Opsi: ${kecs.join(', ')}`  : '(otomatis/isi manual)';
   desaEl.placeholder = desas.length > 1 ? `Opsi: ${desas.join(', ')}` : '(otomatis/isi manual)';
 
-  if (!kecs.length && !desas.length){ toast('ℹ️ Kecamatan/Desa tidak ada di baseline untuk DI ini — silakan isi manual (wajib).'); }
-
-  const hist = await fetchHistory(balai.value, prov.value, kab.value, di.value);
-  document.getElementById('lastStage').textContent = (hist.maxStage||0) + '%';
+  const hist = await fetchHistory(b,p,k,d);
+  lastStageEl.textContent = (hist.maxStage||0) + '%';
   renderHistoryPhotos(hist.photos||{});
   renderStageButtons(hist.maxStage||0);
 
@@ -362,55 +325,49 @@ di.addEventListener('change', async ()=>{
     setCoordLock(true, hist.coords.lat, hist.coords.lng);
     setCoordBadge('locked','Koordinat: terkunci (pakai entri sebelumnya)');
     map.setView([hist.coords.lat, hist.coords.lng], 17);
-    if (pickMarker) pickMarker.remove();
-    pickMarker = L.marker([hist.coords.lat, hist.coords.lng], {opacity:0.9}).addTo(map);
   } else {
     setCoordLock(false);
     setCoordBadge('none','Koordinat: belum ada, silakan pilih titik');
   }
-  updateSubmitState();
 });
 
 /* ===== Foto + kompresi ===== */
 let selectedFile=null; const fileInput=document.getElementById('fileInput'); const photoMeta=document.getElementById('photoMeta');
-document.getElementById('btnCamera').addEventListener('click', ()=>{ if (!checkMenus(['balai','prov','kab','di'])) return; fileInput.setAttribute('capture','environment'); fileInput.click(); });
-document.getElementById('btnGallery').addEventListener('click', ()=>{ if (!checkMenus(['balai','prov','kab','di'])) return; fileInput.removeAttribute('capture'); fileInput.click(); });
-fileInput.addEventListener('change',()=>{ selectedFile = fileInput.files?.[0] || null; photoMeta.textContent = selectedFile ? `Dipilih: ${selectedFile.name} • ${(selectedFile.size/1024).toFixed(1)} KB` : ''; updateSubmitState(); });
+document.getElementById('btnCamera').addEventListener('click',()=>{ fileInput.setAttribute('capture','environment'); fileInput.click(); });
+document.getElementById('btnGallery').addEventListener('click',()=>{ fileInput.removeAttribute('capture'); fileInput.click(); });
+fileInput.addEventListener('change',()=>{ selectedFile = fileInput.files?.[0] || null; photoMeta.textContent = selectedFile ? `Dipilih: ${selectedFile.name} • ${(selectedFile.size/1024).toFixed(1)} KB` : ''; });
 async function compressImage(file,{maxDim=2000,quality=0.82,mime='image/jpeg'}={}){ try{
   if(!(file&&file.type&&file.type.startsWith('image/'))) return file;
-  if (window.createImageBitmap) {
-    const bitmap = await createImageBitmap(file,{imageOrientation:'from-image'});
-    const W=bitmap.width,H=bitmap.height; const s=Math.min(1,maxDim/Math.max(W,H)); const w=Math.round(W*s), h=Math.round(H*s);
-    if(s===1 && file.type==='image/jpeg' && file.size<700*1024) return file;
-    const c=document.createElement('canvas'); c.width=w; c.height=h; const ctx=c.getContext('2d'); ctx.drawImage(bitmap,0,0,w,h);
-    const blob=await new Promise(r=>c.toBlob(r,mime,quality)); if(!blob||blob.size>=file.size) return file; const name=(file.name.replace(/\.(jpe?g|png|webp|heic|heif)$/i,'')||'foto')+'.jpg'; return new File([blob],name,{type:mime});
-  } else {
-    const img = new Image(); img.src = URL.createObjectURL(file); await img.decode();
-    const W=img.naturalWidth,H=img.naturalHeight; const s=Math.min(1,maxDim/Math.max(W,H)); const w=Math.round(W*s), h=Math.round(H*s);
-    const c=document.createElement('canvas'); c.width=w; c.height=h; const ctx=c.getContext('2d'); ctx.drawImage(img,0,0,w,h);
-    const blob=await new Promise(r=>c.toBlob(r,mime,quality)); if(!blob||blob.size>=file.size) return file; const name=(file.name.replace(/\.(jpe?g|png|webp|heic|heif)$/i,'')||'foto')+'.jpg'; return new File([blob],name,{type:mime});
-  }
+  const bitmap = await createImageBitmap(file,{imageOrientation:'from-image'});
+  const W=bitmap.width,H=bitmap.height; const s=Math.min(1,maxDim/Math.max(W,H)); const w=Math.round(W*s), h=Math.round(H*s);
+  if(s===1 && file.type==='image/jpeg' && file.size<700*1024) return file;
+  const c=document.createElement('canvas'); c.width=w; c.height=h; const ctx=c.getContext('2d'); ctx.drawImage(bitmap,0,0,w,h);
+  const blob=await new Promise(r=>c.toBlob(r,mime,quality)); if(!blob||blob.size>=file.size) return file; const name=(file.name.replace(/\.(jpe?g|png|webp|heic|heif)$/i,'')||'foto')+'.jpg'; return new File([blob],name,{type:mime});
 }catch(e){console.warn('compress fail',e); return file;}}
 
 /* ===== Submit ===== */
-function updateSubmitState(){ const ready = !!(balai.value && prov.value && kab.value && di.value && document.getElementById('kecamatan').value && document.getElementById('desa').value && currentStage && lat.value && lng.value); document.getElementById('btnSubmit').disabled = !ready; }
-['change','input'].forEach(ev=>document.getElementById('surveyForm').addEventListener(ev, updateSubmitState));
-document.getElementById('telepon').addEventListener('blur', ()=>{ let v = telepon.value.trim(); if (v.startsWith('0')) v = '62' + v.slice(1); telepon.value = v.replace(/[^0-9+]/g,''); });
-
-document.getElementById('surveyForm').addEventListener('submit', async (e)=>{
+form.addEventListener('submit', async (e)=>{
   e.preventDefault();
-  if (!checkMenus(['balai','prov','kab','di'])) return;
-  const missing = listMissing(); if (missing.length){ toast('⚠️ Harus diisi dulu: ' + missing.join(', ')); return; }
-
   const b=balai.value, p=prov.value, k=kab.value, d=di.value;
-  let photo=null; if (selectedFile) photo = await compressImage(selectedFile,{maxDim=2000,quality=0.82});
+  if(!b||!p||!k||!d){ toast('Lengkapi B/BWS, Provinsi, Kabupaten, DI.'); return; }
+  if(!currentStage){ toast('Pilih stage progres (25/50/75/100) dulu.'); return; }
+  if(!lat.value||!lng.value){ toast('Koordinat belum diisi.'); return; }
 
-  const fd = new FormData(surveyForm);
+  let b64='', photo=null;
+  if (selectedFile) {
+    photo = await compressImage(selectedFile,{maxDim:2000,quality:0.82});
+    const dt = new DataTransfer(); dt.items.add(photo); fileInput.files = dt.files;
+    b64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload=()=>res(String(r.result)); r.onerror=rej; r.readAsDataURL(photo); });
+    photoMeta.textContent = `Akan dikirim: ${photo.name} • ${(photo.size/1024).toFixed(1)} KB`;
+  }
+
+  const fd = new FormData(form);
   fd.set('progress_stage', String(currentStage));
-  if (photo) { const dt = new DataTransfer(); dt.items.add(photo); fileInput.files = dt.files; photoMeta.textContent = `Akan dikirim: ${photo.name} • ${(photo.size/1024).toFixed(1)} KB`; }
+  if (b64) { fd.set('foto_b64', b64); fd.set('foto_name', photo.name); fd.set('foto_type', photo.type); }
 
   disableForm(true); setUploadingUI({show:true, percent:6});
-  const xhr = new XMLHttpRequest(); xhr.open('POST', ENDPOINT, true);
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', ENDPOINT, true);
   xhr.upload.onprogress = (ev)=>{ if (ev.lengthComputable) setUploadingUI({show:true, percent:(ev.loaded/ev.total)*100}); };
   xhr.onloadstart = ()=> setUploadingUI({show:true, percent:5});
   xhr.onreadystatechange = ()=>{ if (xhr.readyState === XMLHttpRequest.HEADERS_RECEIVED) setUploadingUI({show:true, percent:95}); };
@@ -419,20 +376,21 @@ document.getElementById('surveyForm').addEventListener('submit', async (e)=>{
     let data={}; try{ data = JSON.parse(xhr.responseText||'{}'); }catch(e){}
     if (xhr.status>=200 && xhr.status<300 && data && data.ok) {
       setUploadingUI({show:true, percent:100}); toast('✅ Terkirim!');
-      if (USE_HISTORY){
-        const hist = await fetchHistory(b, p, k, d);
-        lastStageEl.textContent = (hist.maxStage||0) + '%';
-        renderHistoryPhotos(hist.photos||{});
-        renderStageButtons(hist.maxStage||0);
-        if (hist.coords){
-          setCoordLock(true, hist.coords.lat, hist.coords.lng);
-          setCoordBadge('locked','Koordinat: terkunci (pakai entri sebelumnya)');
-          if (pickMarker) pickMarker.remove(); pickMarker = L.marker([hist.coords.lat, hist.coords.lng], {opacity:0.9}).addTo(map);
-        }
+      // refresh history
+      const hist = await fetchHistory(b, p, k, d);
+      lastStageEl.textContent = (hist.maxStage||0) + '%';
+      renderHistoryPhotos(hist.photos||{});
+      renderStageButtons(hist.maxStage||0);
+      if (hist.coords){
+        setCoordLock(true, hist.coords.lat, hist.coords.lng);
+        setCoordBadge('locked','Koordinat: terkunci (pakai entri sebelumnya)');
       }
       setTimeout(()=>{ setUploadingUI({show:false}); }, 600);
-    } else { setUploadingUI({show:false}); disableForm(false); toast('❌ Gagal kirim (server). ' + (data && data.error ? data.error : '')); }
-    disableForm(false); updateSubmitState();
+    } else {
+      setUploadingUI({show:false}); disableForm(false);
+      toast('❌ Gagal kirim (server). ' + (data && data.error ? data.error : ''));
+    }
+    disableForm(false);
   };
   xhr.send(fd);
 });
@@ -441,13 +399,13 @@ document.getElementById('surveyForm').addEventListener('submit', async (e)=>{
 document.getElementById('btnReset').addEventListener('click', ()=>{
   selectedFile=null; photoMeta.textContent='';
   fillSelect(prov,[], '-- pilih Provinsi --'); prov.disabled=true;
-  fillSelect(kab,[], '-- pilih Kab/Kota --');  kab.disabled=true;
-  fillSelect(di,[],  '-- pilih DI --');        di.disabled=true;
-  document.getElementById('lastStage').textContent='0%'; setCoordBadge('none','Koordinat: -');
-  setCoordLock(false); if (pickMarker) { pickMarker.remove(); pickMarker=null; } updateSubmitState();
+  fillSelect(kab,[], '-- pilih Kab/Kota --'); kab.disabled=true;
+  fillSelect(di,[], '-- pilih DI --'); di.disabled=true;
+  lastStageEl.textContent='0%'; setCoordBadge('none','Koordinat: -');
+  setCoordLock(false);
 });
 
-/* ===== Start ===== */
+/* start */
 loadData(); setCoordBadge('none','Koordinat: -');
 </script>
 </body>
