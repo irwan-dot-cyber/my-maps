@@ -151,7 +151,6 @@ function fillSelect(el, items, ph='-- pilih --'){
   (items||[]).forEach(v=>{const o=document.createElement('option');o.value=o.textContent=v;el.appendChild(o);});
   el.disabled=!(items&&items.length);
 }
-// Title Case pintar: jaga BBWS/BWS & D.I.
 const titleCase = s => String(s||'').split(/(\s+|[-/])/).map(tok=>{
   if(/^\s+$/.test(tok)||tok==='-'||tok==='/') return tok;
   const up = tok.toUpperCase();
@@ -267,12 +266,12 @@ function renderStageButtons(maxStage){
     const enabled = (st===nextStage);
     btn.className = enabled ? 'primary' : 'ghost';
     btn.disabled = !enabled;
-    btn.addEventListener('click', ()=>{ currentStage=st; btnSubmit.disabled=false; toast(`Stage dipilih: ${st}%`); });
+    btn.addEventListener('click', ()=>{ currentStage=st; btnSubmit.disabled=false; toast(`Stage dipilih: ${st}%`); updateSubmitState(); });
     wrap.appendChild(btn);
   });
-  // Auto-pilih stage biar bisa kirim langsung
   currentStage = nextStage;
   btnSubmit.disabled = !nextStage;
+  updateSubmitState();
 }
 
 function renderHistoryPhotos(photos){
@@ -307,11 +306,9 @@ di.addEventListener('change', async ()=>{
   const kecs  = entry ? [...entry.kecamatan] : [];
   const desas = entry ? [...entry.desa] : [];
 
-  // SELALU isi otomatis dengan opsi pertama bila ada
   kecEl.value  = (kecs[0]  || '');
   desaEl.value = (desas[0] || '');
 
-  // Tampilkan semua opsi di placeholder bila >1
   kecEl.placeholder  = kecs.length  > 1 ? `Opsi: ${kecs.join(', ')}`  : '(otomatis/isi manual)';
   desaEl.placeholder = desas.length > 1 ? `Opsi: ${desas.join(', ')}` : '(otomatis/isi manual)';
 
@@ -336,6 +333,7 @@ let selectedFile=null; const fileInput=document.getElementById('fileInput'); con
 document.getElementById('btnCamera').addEventListener('click',()=>{ fileInput.setAttribute('capture','environment'); fileInput.click(); });
 document.getElementById('btnGallery').addEventListener('click',()=>{ fileInput.removeAttribute('capture'); fileInput.click(); });
 fileInput.addEventListener('change',()=>{ selectedFile = fileInput.files?.[0] || null; photoMeta.textContent = selectedFile ? `Dipilih: ${selectedFile.name} • ${(selectedFile.size/1024).toFixed(1)} KB` : ''; });
+
 async function compressImage(file,{maxDim=2000,quality=0.82,mime='image/jpeg'}={}){ try{
   if(!(file&&file.type&&file.type.startsWith('image/'))) return file;
   const bitmap = await createImageBitmap(file,{imageOrientation:'from-image'});
@@ -344,9 +342,6 @@ async function compressImage(file,{maxDim=2000,quality=0.82,mime='image/jpeg'}={
   const c=document.createElement('canvas'); c.width=w; c.height=h; const ctx=c.getContext('2d'); ctx.drawImage(bitmap,0,0,w,h);
   const blob=await new Promise(r=>c.toBlob(r,mime,quality)); if(!blob||blob.size>=file.size) return file; const name=(file.name.replace(/\.(jpe?g|png|webp|heic|heif)$/i,'')||'foto')+'.jpg'; return new File([blob],name,{type:mime});
 }catch(e){console.warn('compress fail',e); return file;}}
-
-
-// …(kode kamu di atas tetap)…/
 
 /* ===== Wajib Terisi: toggle tombol Kirim ===== */
 function missingList(){
@@ -367,32 +362,14 @@ function updateSubmitState(){
   const ok = missingList().length === 0;
   document.getElementById('btnSubmit').disabled = !ok;
 }
-
 // pantau semua input/select
-document.getElementById('surveyForm')
-  .addEventListener('input', updateSubmitState);
-document.getElementById('surveyForm')
-  .addEventListener('change', updateSubmitState);
-
-// pastikan tombol map juga memicu cek
+document.getElementById('surveyForm').addEventListener('input', updateSubmitState);
+document.getElementById('surveyForm').addEventListener('change', updateSubmitState);
+// tombol map ikut ngecek
 btnPick.addEventListener('click', ()=>{ setTimeout(updateSubmitState, 0); });
 btnPan.addEventListener('click',  ()=>{ setTimeout(updateSubmitState, 0); });
 
-// setelah render stage, panggil lagi
-// (PENTING: tambahkan baris ini di akhir fungsi renderStageButtons)
-const __origRenderStageButtons = renderStageButtons;
-renderStageButtons = function(maxStage){
-  __origRenderStageButtons(maxStage);
-  updateSubmitState();
-};
-
-// panggilan awal
-updateSubmitState();
-
-
-
 /* ===== Submit ===== */
-<script>
 form.addEventListener('submit', async (e)=>{
   e.preventDefault();
 
@@ -407,7 +384,7 @@ form.addEventListener('submit', async (e)=>{
 
   let b64='', photo=null;
   if (selectedFile) {
-    photo = await compressImage(selectedFile,{maxDim:2000,quality:0.82});
+    photo = await compressImage(selectedFile,{maxDim=2000,quality=0.82});
     const dt = new DataTransfer(); dt.items.add(photo); fileInput.files = dt.files;
     b64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload=()=>res(String(r.result)); r.onerror=rej; r.readAsDataURL(photo); });
     photoMeta.textContent = `Akan dikirim: ${photo.name} • ${(photo.size/1024).toFixed(1)} KB`;
@@ -446,7 +423,6 @@ form.addEventListener('submit', async (e)=>{
   xhr.send(fd);
 });
 
-
 /* ===== Reset ===== */
 document.getElementById('btnReset').addEventListener('click', ()=>{
   selectedFile=null; photoMeta.textContent='';
@@ -455,10 +431,11 @@ document.getElementById('btnReset').addEventListener('click', ()=>{
   fillSelect(di,[], '-- pilih DI --'); di.disabled=true;
   lastStageEl.textContent='0%'; setCoordBadge('none','Koordinat: -');
   setCoordLock(false);
+  updateSubmitState();
 });
 
 /* start */
-loadData(); setCoordBadge('none','Koordinat: -');
+loadData(); setCoordBadge('none','Koordinat: -'); updateSubmitState();
 </script>
 </body>
 </html>
