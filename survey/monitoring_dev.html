@@ -277,9 +277,23 @@ function buildStatsUI({totalBaseline, totalTerisi, persen, byBBWS, missing}){
     <button class="btn-small" id="btnExportMissing">⬇️ Unduh DI yang belum terisi (CSV)</button>
   `;
 
+  // MINI CHART
+  const chartBox = `
+    <div class="chart-wrap">
+      <div class="chart-head">
+        <div class="chart-title">Mini Chart — % Keterisian per B/BWS (Top 8)</div>
+        <div class="chart-legend">
+          <button class="btn-xsmall" id="btnSortChart" data-order="desc">Urut: tertinggi</button>
+        </div>
+      </div>
+      <canvas id="statsChart" height="160"></canvas>
+    </div>
+  `;
+
   document.getElementById('stats').innerHTML = `
     <div class="stats-row" style="margin-bottom:8px"><b>Statistik Keterisian Data (Baseline vs Survey)</b></div>
     ${bar}
+    ${chartBox}
     ${table}
     ${downloadBtn}
   `;
@@ -297,6 +311,83 @@ function buildStatsUI({totalBaseline, totalTerisi, persen, byBBWS, missing}){
     document.body.appendChild(a); a.click(); a.remove();
     URL.revokeObjectURL(url);
   };
+
+  // ---- render mini chart ----
+  const btnSort = document.getElementById('btnSortChart');
+  const canvas  = document.getElementById('statsChart');
+  const ctx     = canvas.getContext('2d');
+
+  function drawMiniChart(order='desc'){
+    // sort & ambil top 8
+    const sorted = [...byBBWS].sort((a,b)=> order==='desc' ? (b.pct-a.pct) : (a.pct-b.pct)).slice(0,8);
+
+    // HiDPI scale
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = canvas.clientWidth;
+    const cssH = canvas.clientHeight;
+    canvas.width  = Math.round(cssW * dpr);
+    canvas.height = Math.round(cssH * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0,0,cssW,cssH);
+
+    // margin & area
+    const padL=10, padR=10, padT=10, padB=20;
+    const barGap = 6;
+    const barCount = sorted.length;
+    const barW = Math.max(12, (cssW - padL - padR - (barGap*(barCount-1))) / barCount);
+    const maxPct = 100;
+
+    // axis (sederhana)
+    ctx.strokeStyle = '#ddd';
+    ctx.lineWidth = 1;
+    // baseline 0% & 100%
+    [0, 100].forEach(p=>{
+      const y = padT + (cssH-padT-padB) * (1 - p/maxPct);
+      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(cssW-padR, y); ctx.stroke();
+    });
+
+    // bars
+    sorted.forEach((r, i)=>{
+      const x = padL + i*(barW + barGap);
+      const hMax = cssH - padT - padB;
+      const hBar = Math.max(2, (r.pct/maxPct) * hMax);
+      const y = padT + (hMax - hBar);
+
+      // bar
+      const grd = ctx.createLinearGradient(0,y,0,y+hBar);
+      grd.addColorStop(0, '#16a34a');
+      grd.addColorStop(1, '#86efac');
+      ctx.fillStyle = grd;
+      ctx.fillRect(x, y, barW, hBar);
+
+      // label pct
+      ctx.fillStyle='#222';
+      ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(r.pct+'%', x + barW/2, y - 4);
+
+      // label BBWS (dipersingkat)
+      const short = (r.bbws||'-').length>10 ? (r.bbws.slice(0,9)+'…') : (r.bbws||'-');
+      ctx.save();
+      ctx.translate(x + barW/2, cssH - padB + 12);
+      ctx.rotate(-Math.PI/6); // miring dikit biar muat
+      ctx.fillStyle='#444';
+      ctx.fillText(short, 0, 0);
+      ctx.restore();
+    });
+  }
+
+  // initial draw
+  drawMiniChart('desc');
+
+  // toggle sort
+  btnSort.addEventListener('click', ()=>{
+    const cur = btnSort.getAttribute('data-order');
+    const next = cur === 'desc' ? 'asc' : 'desc';
+    btnSort.setAttribute('data-order', next);
+    btnSort.textContent = next === 'desc' ? 'Urut: tertinggi' : 'Urut: terendah';
+    drawMiniChart(next);
+  });
 }
 
 async function buildStats(){
