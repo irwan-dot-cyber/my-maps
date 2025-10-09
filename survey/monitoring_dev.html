@@ -11,8 +11,8 @@
   body, html { margin:0; padding:0; height:100%; }
   #header { background:#FFD700; color:black; padding:10px; display:flex; align-items:center; font-weight:bold; font-size:14px; }
   #header img { height:40px; margin-right:10px; }
-  #map { height:calc(100% - 110px); }
-  #route-info { background:#f9f9f9; padding:8px; font-size:14px; border-top:1px solid #ccc; }
+  #map { height:calc(100% - 180px); } /* ruang lebih untuk stats */
+  #stats { background:#f9f9f9; padding:10px; font-size:14px; border-top:1px solid #ccc; }
 
   .top-controls { position:absolute; top:60px; right:10px; left:10px; display:flex; justify-content:space-between; gap:10px; z-index:1000; }
   .filters { display:flex; gap:8px; flex-wrap:wrap; }
@@ -37,6 +37,16 @@
 
   .leaflet-marker-icon.bounce{animation:marker-bounce 600ms cubic-bezier(.28,.84,.42,1) 1;transform-origin:bottom center}
   @keyframes marker-bounce{0%{transform:translateY(0)}25%{transform:translateY(-14px)}55%{transform:translateY(0)}75%{transform:translateY(-7px)}100%{transform:translateY(0)}}
+
+  /* stats UI */
+  .stats-row{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+  .pill{display:inline-block;background:#fff;border:1px solid #ddd;border-radius:999px;padding:4px 10px;font-weight:600}
+  .bar{height:10px;background:#eee;border-radius:999px;overflow:hidden}
+  .bar>span{display:block;height:100%;background:linear-gradient(90deg,#16a34a,#86efac)}
+  table.stats{width:100%;border-collapse:collapse;margin-top:8px}
+  table.stats th,table.stats td{border:1px solid #ddd;padding:6px 8px;font-size:13px}
+  table.stats th{background:#fafafa;text-align:left}
+  .btn-small{display:inline-block;margin-top:6px;padding:6px 10px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer}
 </style>
 </head>
 <body>
@@ -70,7 +80,8 @@
   <div id="locate-me" class="custom-button" onclick="locateMe()">Posisi Saya</div>
 </div>
 
-<div id="route-info">Jarak &amp; Waktu tempuh akan muncul di sini</div>
+<!-- GANTI PANEL INI: sekarang berisi statistik -->
+<div id="stats">Memuat statistik…</div>
 
 <!-- libs -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -78,17 +89,17 @@
 
 <script>
 // ====== KONFIG ======
-const DATA_URL  = "https://script.google.com/macros/s/AKfycbw2SaLuw0wR9TzAHIR8bo0RE7yx0LNgKVwjBfiFTjXXYeKqu1cJOgMYbAVVzMnN8gfTaw/exec";
+const DATA_URL  = "https://script.google.com/macros/s/AKfycbw2SaLuw0wR9TzAHIR8bo0RE7yx0LNgKVwjBfiFTjXXYeKqu1cJOgMYbAVVzMnN8gfTaw/exec"; // SURVEY (JSON)
+const SHEET_ID  = "1LrRWGns6d68uQ7sNy2F7ecGsBrBgGbiO9S4lVXEkpXQ"; // BASELINE (Google Sheet)
+const SHEET_GID = "674582970";
+const GVIZ_URL  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${SHEET_GID}`;
 const FOTO_BASE = "https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/data/images/";
 
 // ====== PETA ======
 const map = L.map('map').setView([-2.5,117],5);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
 
-// (opsi) placeholder info rute
-function resetRoute(){
-  document.getElementById('route-info').innerHTML="Jarak &amp; Waktu tempuh akan muncul di sini";
-}
+function resetRoute(){ /* no-op, diganti stats */ }
 
 function locateMe(){
   if(!navigator.geolocation) return alert("Geolocation tidak didukung di browser ini.");
@@ -111,12 +122,13 @@ function getIcon(name){
 
 // ====== DATA & MARKERS ======
 const cluster = L.markerClusterGroup();
-const index   = [];        // untuk search
-const allMarkers = [];     // semua marker
+const index   = [];
+const allMarkers = [];
 const uniqBBWS = new Set();
 const uniqDI   = new Set();
 
 const norm = s => (s||"").toString().trim();
+const canon = s => norm(s).toLowerCase(); // untuk pencocokan DI
 
 function fillSelect(el, items, placeholder){
   const cur = el.value;
@@ -131,83 +143,204 @@ function fillSelect(el, items, placeholder){
   if ([...items,''].includes(cur)) el.value = cur;
 }
 
-async function loadFromGAS(){
-  try{
-    const res = await fetch(DATA_URL + (DATA_URL.includes('?')?'&':'?') + 't=' + Date.now(), {cache:'no-store'});
-    let text = await res.text();
-    text = text.replace(/^\)\]\}'\s*/, ''); // strip JSONP prefix jika ada
-    const payload = JSON.parse(text);
-    // dukung format: array langsung atau {data:[...]}
-    const rows = Array.isArray(payload) ? payload : (Array.isArray(payload.data) ? payload.data : []);
-    if(!Array.isArray(rows)) throw new Error('Format respons bukan array');
-
-    rows.forEach(r=>{
-      const diName = norm(r.nama_di || r.Nama || r.DI || r['Nama DI'] || r['NAMA DI/DIR'] || r['Nama DI/DIR'] || r['Nama'] );
-      const lat = parseFloat(r.y||r.lat||r.latitude||r.Latitude||r.LAT||r.lat_dd);
-      const lng = parseFloat(r.x||r.lng||r.longitude||r.Longitude||r.LNG||r.long_dd);
-      if(isNaN(lat)||isNaN(lng)) return;
-
-      const prov= norm(r.provinsi||r.Provinsi||r.PROVINSI);
-      const kab = norm(r.kabupaten||r.Kabupaten||r.KABUPATEN);
-      const bbws= norm(r.bbws||r.BBWS||r['B/BWS']||r['BWS']||r['B/BWS PELAKSANA']);
-      const note= norm(r.catatan||r.Catatan||r.Note||r.Keterangan);
-
-      if (bbws) uniqBBWS.add(bbws);
-      if (diName) uniqDI.add(diName);
-
-      // foto (opsional)
-      const list = [];
-      const f1   = norm(r.foto||r.Foto||r['Foto 1']||r.Foto1);
-      const f2   = norm(r['Foto 2']||r.Foto2);
-      const fmul = norm(r.foto_urls||r.FotoURLs||r['Foto URLs']);
-      if(f1) list.push(f1);
-      if(f2) list.push(f2);
-      if(fmul){ fmul.split(/[;,\n]/).forEach(u=>{ const v=norm(u); if(v) list.push(v); }); }
-      const fotoList = list.map(u=>/^https?:\/\//i.test(u)? u : (FOTO_BASE+encodeURIComponent(u)));
-      const imgHtml = fotoList.length
-        ? `<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;max-width:240px;">
-             ${fotoList.slice(0,4).map(u=>`<a href="${u}" target="_blank" rel="noopener">
-               <img src="${u}" alt="foto ${diName}" style="width:110px;height:80px;object-fit:cover;border:1px solid #ddd;border-radius:6px"/>
-             </a>`).join("")}
-           </div>` : "";
-
-      const popupHtml = `
-        <b>${diName || '-'}</b><br>
-        <div style="color:#555;font-size:12px;margin:2px 0;">📍 <b>Koordinat:</b> ${lat.toFixed(6)}, ${lng.toFixed(6)}</div>
-        Provinsi: ${prov || '-'}<br>
-        Kabupaten: ${kab || '-'}<br>
-        BBWS: ${bbws || '-'}<br>
-        Catatan: ${note || '-'}<br>
-        <a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank" rel="noopener">Buka di Google Maps</a><br>
-        <a href="sentinel.html?lat=${lat}&lng=${lng}" target="_blank" rel="noopener">Bandingkan Sentinel</a>
-        ${imgHtml}
-      `;
-
-      const m = L.marker([lat,lng],{icon:getIcon(diName)}).bindPopup(popupHtml);
-      m.__meta = { diName, bbws, prov, kab, lat, lng };
-      m.on('popupopen',()=>{ const el=m.getElement(); if(el){ el.classList.remove('bounce'); void el.offsetWidth; el.classList.add('bounce'); }});
-      cluster.addLayer(m);
-      index.push({name: diName, marker:m});
-      allMarkers.push(m);
+function parseGviz(text){
+  // strip JSONP prefix: )]}'
+  text = text.replace(/^\)\]\}'\s*/, '');
+  const j = JSON.parse(text);
+  // ubah rows jadi array of objects by header labels
+  const cols = (j.table.cols || []).map(c=>c.label || c.id || '');
+  const out = [];
+  (j.table.rows || []).forEach(r=>{
+    const o = {};
+    (r.c || []).forEach((cell,i)=>{
+      o[cols[i] || ('C'+i)] = cell ? cell.v : '';
     });
+    out.push(o);
+  });
+  return out;
+}
 
-    map.addLayer(cluster);
-    if(allMarkers.length){
-      const g=L.featureGroup(allMarkers);
-      map.fitBounds(g.getBounds(), {padding:[20,20]});
-    }
+// ----- SURVEY (GAS) -----
+async function loadSurvey(){
+  const res = await fetch(DATA_URL + (DATA_URL.includes('?')?'&':'?') + 't=' + Date.now(), {cache:'no-store'});
+  let text = await res.text();
+  text = text.replace(/^\)\]\}'\s*/, '');
+  const payload = JSON.parse(text);
+  const rows = Array.isArray(payload) ? payload : (Array.isArray(payload.data) ? payload.data : []);
+  if(!Array.isArray(rows)) throw new Error('Survey: format bukan array');
 
+  // render markers
+  rows.forEach(r=>{
+    const diName = norm(r.nama_di || r.Nama || r.DI || r['Nama DI'] || r['NAMA DI/DIR'] || r['Nama DI/DIR'] || r['Nama'] );
+    const lat = parseFloat(r.y||r.lat||r.latitude||r.Latitude||r.LAT||r.lat_dd);
+    const lng = parseFloat(r.x||r.lng||r.longitude||r.Longitude||r.LNG||r.long_dd);
+    if(isNaN(lat)||isNaN(lng)) return;
+
+    const prov= norm(r.provinsi||r.Provinsi||r.PROVINSI);
+    const kab = norm(r.kabupaten||r.Kabupaten||r.KABUPATEN);
+    const bbws= norm(r.bbws||r.BBWS||r['B/BWS']||r['BWS']||r['B/BWS PELAKSANA']);
+    const note= norm(r.catatan||r.Catatan||r.Note||r.Keterangan);
+
+    if (bbws) uniqBBWS.add(bbws);
+    if (diName) uniqDI.add(diName);
+
+    // foto (opsional)
+    const list = [];
+    const f1   = norm(r.foto||r.Foto||r['Foto 1']||r.Foto1);
+    const f2   = norm(r['Foto 2']||r.Foto2);
+    const fmul = norm(r.foto_urls||r.FotoURLs||r['Foto URLs']);
+    if(f1) list.push(f1); if(f2) list.push(f2);
+    if(fmul){ fmul.split(/[;,\n]/).forEach(u=>{ const v=norm(u); if(v) list.push(v); }); }
+    const fotoList = list.map(u=>/^https?:\/\//i.test(u)? u : (FOTO_BASE+encodeURIComponent(u)));
+    const imgHtml = fotoList.length
+      ? `<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;max-width:240px;">
+           ${fotoList.slice(0,4).map(u=>`<a href="${u}" target="_blank" rel="noopener">
+             <img src="${u}" alt="foto ${diName}" style="width:110px;height:80px;object-fit:cover;border:1px solid #ddd;border-radius:6px"/>
+           </a>`).join("")}
+         </div>` : "";
+
+    const popupHtml = `
+      <b>${diName || '-'}</b><br>
+      <div style="color:#555;font-size:12px;margin:2px 0;">📍 <b>Koordinat:</b> ${lat.toFixed(6)}, ${lng.toFixed(6)}</div>
+      Provinsi: ${prov || '-'}<br>
+      Kabupaten: ${kab || '-'}<br>
+      BBWS: ${bbws || '-'}<br>
+      Catatan: ${note || '-'}<br>
+      <a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank" rel="noopener">Buka di Google Maps</a><br>
+      <a href="sentinel.html?lat=${lat}&lng=${lng}" target="_blank" rel="noopener">Bandingkan Sentinel</a>
+      ${imgHtml}
+    `;
+
+    const m = L.marker([lat,lng],{icon:getIcon(diName)}).bindPopup(popupHtml);
+    m.__meta = { diName, bbws, prov, kab, lat, lng };
+    m.on('popupopen',()=>{ const el=m.getElement(); if(el){ el.classList.remove('bounce'); void el.offsetWidth; el.classList.add('bounce'); }});
+    cluster.addLayer(m);
+    index.push({name: diName, marker:m});
+    allMarkers.push(m);
+  });
+
+  map.addLayer(cluster);
+  if(allMarkers.length){
+    const g=L.featureGroup(allMarkers);
+    map.fitBounds(g.getBounds(), {padding:[20,20]});
+  }
+
+  // hasil untuk statistik: kunci DI yang sudah punya kiriman
+  const filledSet = new Set(
+    rows.map(r => canon(r.nama_di || r.Nama || r.DI || r['Nama DI'] || r['NAMA DI/DIR'] || r['Nama DI/DIR'] || r['Nama']))
+        .filter(v=>v)
+  );
+  return {filledSet, surveyRows: rows};
+}
+
+// ----- BASELINE (GViz JSON) -----
+async function loadBaseline(){
+  const res = await fetch(GVIZ_URL + '&t=' + Date.now(), {cache:'no-store'});
+  const text = await res.text();
+  const rows = parseGviz(text);
+  // ambil kolom yang umum dipakai
+  const out = rows.map(o=>{
+    const di = o['NAMA DI/DIR'] || o['Nama DI/DIR'] || o['DI'] || o['Nama DI'] || o['Nama'] || o['nama di'] || '';
+    const bb = o['B/BWS PELAKSANA'] || o['B/BWS'] || o['BWS'] || o['BBWS'] || '';
+    const pr = o['PROVINSI'] || o['Provinsi'] || '';
+    const kb = o['KABUPATEN'] || o['Kabupaten'] || '';
+    return { di: norm(di), bbws: norm(bb), prov: norm(pr), kab: norm(kb) };
+  }).filter(r=>r.di);
+  return out;
+}
+
+// ----- STATISTIK -----
+function buildStatsUI({totalBaseline, totalTerisi, persen, byBBWS, missing}){
+  const bar = `
+    <div class="bar"><span style="width:${persen}%;"></span></div>
+    <div class="stats-row" style="justify-content:space-between">
+      <div>
+        <span class="pill">Baseline: ${totalBaseline} DI</span>
+        <span class="pill" style="margin-left:6px">Terisi: ${totalTerisi} DI</span>
+      </div>
+      <div><b>${persen}%</b> lengkap</div>
+    </div>
+  `;
+
+  const rows = byBBWS
+    .sort((a,b)=>a.bbws.localeCompare(b.bbws))
+    .map(r=>`<tr><td>${r.bbws||'-'}</td><td>${r.filled}/${r.total}</td><td>${r.pct}%</td></tr>`).join('');
+
+  const table = `
+    <table class="stats">
+      <thead><tr><th>B/BWS</th><th>Terisi / Total</th><th>%</th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="3">Tidak ada data B/BWS</td></tr>'}</tbody>
+    </table>
+  `;
+
+  const downloadBtn = `
+    <button class="btn-small" id="btnExportMissing">⬇️ Unduh DI yang belum terisi (CSV)</button>
+  `;
+
+  document.getElementById('stats').innerHTML = `
+    <div class="stats-row" style="margin-bottom:8px"><b>Statistik Keterisian Data (Baseline vs Survey)</b></div>
+    ${bar}
+    ${table}
+    ${downloadBtn}
+  `;
+
+  // export CSV
+  document.getElementById('btnExportMissing').onclick = ()=>{
+    const header = ["B/BWS","DI","Provinsi","Kabupaten"];
+    const lines = [header.join(",")].concat(
+      missing.map(m=>[m.bbws,m.di,m.prov,m.kab].map(v=>`"${(v||'').replace(/"/g,'""')}"`).join(","))
+    );
+    const blob = new Blob([lines.join("\n")], {type:"text/csv;charset=utf-8"});
+    const url  = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'di-belum-terisi.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  };
+}
+
+async function buildStats(){
+  try{
+    document.getElementById('stats').textContent = 'Memuat statistik…';
+    const [baseline, survey] = await Promise.all([loadBaseline(), loadSurvey()]);
+    const baselineCanon = baseline.map(b=>({...b, key: canon(b.di)}));
+
+    const totalBaseline = baselineCanon.length;
+    const totalTerisi   = baselineCanon.filter(b=> survey.filledSet.has(b.key)).length;
+    const persen        = totalBaseline ? Math.round((totalTerisi/totalBaseline)*100) : 0;
+
+    // rekap per B/BWS
+    const mapBB = new Map();
+    baselineCanon.forEach(b=>{
+      const key = b.bbws || '-';
+      if(!mapBB.has(key)) mapBB.set(key, {bbws:key, total:0, filled:0});
+      const acc = mapBB.get(key);
+      acc.total++;
+      if (survey.filledSet.has(b.key)) acc.filled++;
+    });
+    const byBBWS = [...mapBB.values()].map(x=>({...x, pct: x.total ? Math.round((x.filled/x.total)*100) : 0}));
+
+    // DI yang belum terisi
+    const missing = baselineCanon.filter(b=>!survey.filledSet.has(b.key))
+      .map(b=>({bbws:b.bbws, di:b.di, prov:b.prov, kab:b.kab}));
+
+    buildStatsUI({totalBaseline, totalTerisi, persen, byBBWS, missing});
+
+    // isi dropdown filter setelah marker jadi
     fillSelect(document.getElementById('f-bbws'), [...uniqBBWS], '— Semua B/BWS —');
     fillSelect(document.getElementById('f-di'),   [...uniqDI],   '— Semua DI —');
 
-  }catch(err){
-    console.error(err);
-    alert("Gagal memuat data dari GAS. Cek CORS/format respons.");
+  }catch(e){
+    console.error(e);
+    document.getElementById('stats').innerHTML = `
+      <div style="color:#b91c1c">Gagal memuat statistik. Pastikan Sheet baseline dipublikasikan (Publish to web) atau bisa diakses publik tanpa login.</div>
+      <div style="font-size:12px;color:#444;margin-top:6px">Detail: ${e.message||e}</div>
+    `;
   }
 }
 
 // panggil saat load
-loadFromGAS();
+buildStats();
 
 // ====== FILTER ======
 function applyFilters(){
@@ -267,7 +400,6 @@ function showSuggestions(q){
   box.style.display = hits.length ? "block" : "none";
 }
 
-// enter untuk langsung zoom ke hasil terdekat
 document.getElementById('search').addEventListener('keydown', e=>{
   if(e.key==='Enter'){
     const q = e.currentTarget.value.trim().toLowerCase();
