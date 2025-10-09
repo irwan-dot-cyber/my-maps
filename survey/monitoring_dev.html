@@ -144,21 +144,31 @@ function fillSelect(el, items, placeholder){
 }
 
 function parseGviz(text){
-  // strip JSONP prefix: )]}'
-  text = text.replace(/^\)\]\}'\s*/, '');
-  const j = JSON.parse(text);
-  // ubah rows jadi array of objects by header labels
-  const cols = (j.table.cols || []).map(c=>c.label || c.id || '');
+  // Buang prefix )]}' kalau ada (kadang ikut muncul dari proxy)
+  text = String(text || '').replace(/^\)\]\}'\s*/, '');
+
+  // Ambil payload di dalam google.visualization.Query.setResponse(...)
+  const m = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]+)\)\s*;?\s*$/);
+  if(!m){
+    throw new Error('Format GViz tidak dikenali.');
+  }
+  const j = JSON.parse(m[1]);
+
+  // Ubah ke array of objects pakai header dari label kolom
+  const cols = (j.table && j.table.cols ? j.table.cols : []).map(c => c.label || c.id || '');
+  const rows = (j.table && j.table.rows ? j.table.rows : []);
+
   const out = [];
-  (j.table.rows || []).forEach(r=>{
-    const o = {};
-    (r.c || []).forEach((cell,i)=>{
-      o[cols[i] || ('C'+i)] = cell ? cell.v : '';
+  rows.forEach(r => {
+    const obj = {};
+    (r.c || []).forEach((cell, i) => {
+      obj[cols[i] || ('C'+i)] = cell ? cell.v : '';
     });
-    out.push(o);
+    out.push(obj);
   });
   return out;
 }
+
 
 // ----- SURVEY (GAS) -----
 async function loadSurvey(){
