@@ -15,6 +15,9 @@
   #route-info { background:#f9f9f9; padding:8px; font-size:14px; border-top:1px solid #ccc; }
 
   .top-controls { position:absolute; top:60px; right:10px; left:10px; display:flex; justify-content:space-between; gap:10px; z-index:1000; }
+  .filters { display:flex; gap:8px; flex-wrap:wrap; }
+  .filters select { padding:6px; min-width:180px; }
+
   .search-box { background:white; padding:5px; border-radius:4px; box-shadow:0 0 4px rgba(0,0,0,.3); position:relative; }
   .search-box input { width:240px; padding:6px; }
   #suggestions { position:absolute; top:40px; left:0; right:0; background:white; border:1px solid #ccc; border-top:none; max-height:220px; overflow-y:auto; display:none; z-index:2000; }
@@ -27,13 +30,11 @@
   #reset-route{ background: linear-gradient(135deg,#ff5722,#e24a18); }
   #locate-me  { background: linear-gradient(135deg,#4CAF50,#3f8f44); }
 
-  /* ripple & pulse */
   .custom-button::after{content:"";position:absolute;top:0;left:-150%;width:130%;height:100%;background:linear-gradient(120deg,transparent 0%,rgba(255,255,255,.25) 50%,transparent 100%);transform:skewX(-20deg);transition:left .6s}
   .custom-button:hover::after{left:120%}
   #locate-me::before{content:"";position:absolute;inset:-4px;border-radius:10px;border:2px solid rgba(255,255,255,.65);opacity:0;transform:scale(.9);pointer-events:none;animation:pulse-ring 4s ease-out infinite}
   @keyframes pulse-ring{0%{opacity:0;transform:scale(.9)}8%{opacity:.9;transform:scale(1.02)}35%{opacity:.35;transform:scale(1.25)}60%{opacity:0;transform:scale(1.35)}100%{opacity:0;transform:scale(1.35)}}
 
-  /* marker bounce */
   .leaflet-marker-icon.bounce{animation:marker-bounce 600ms cubic-bezier(.28,.84,.42,1) 1;transform-origin:bottom center}
   @keyframes marker-bounce{0%{transform:translateY(0)}25%{transform:translateY(-14px)}55%{transform:translateY(0)}75%{transform:translateY(-7px)}100%{transform:translateY(0)}}
 </style>
@@ -46,6 +47,16 @@
 </div>
 
 <div class="top-controls">
+  <!-- FILTERS DIPASANG DI SINI (BUKAN DI DALAM <script>) -->
+  <div class="filters">
+    <select id="f-bbws">
+      <option value="">— Semua B/BWS —</option>
+    </select>
+    <select id="f-di" style="min-width:220px">
+      <option value="">— Semua DI —</option>
+    </select>
+  </div>
+
   <div class="search-box">
     <input type="text" id="search" placeholder="Cari lokasi..." oninput="showSuggestions(this.value)"/>
     <div id="suggestions"></div>
@@ -76,7 +87,7 @@ const FOTO_BASE = "https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/mai
 const map = L.map('map').setView([-2.5,117],5);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
 
-// (opsi) placeholder untuk info rute meskipun tombol rute sudah dihapus
+// (opsi) placeholder info rute
 function resetRoute(){
   document.getElementById('route-info').innerHTML="Jarak &amp; Waktu tempuh akan muncul di sini";
 }
@@ -108,10 +119,8 @@ const rawRows = [];        // simpan data mentah utk filter
 const uniqBBWS = new Set();
 const uniqDI   = new Set();
 
-// helper normalisasi string (biar konsisten untuk filter)
 const norm = s => (s||"").toString().trim();
 
-// isi dropdown helper
 function fillSelect(el, items, placeholder){
   const cur = el.value;
   el.innerHTML = '';
@@ -122,7 +131,6 @@ function fillSelect(el, items, placeholder){
   items.sort((a,b)=>a.localeCompare(b)).forEach(v=>{
     const o=document.createElement('option'); o.value=v; o.textContent=v; el.appendChild(o);
   });
-  // pertahankan pilihan jika masih ada
   if ([...items,''].includes(cur)) el.value = cur;
 }
 
@@ -130,7 +138,6 @@ Papa.parse(CSV_URL,{
   download:true, header:true, skipEmptyLines:true,
   complete: res=>{
     (res.data||[]).forEach(r=>{
-      // simpan raw utk filter
       rawRows.push(r);
 
       const diName = norm(r.nama_di || r.Nama || r.DI || r['Nama DI'] || r['Nama'] );
@@ -143,11 +150,9 @@ Papa.parse(CSV_URL,{
       const bbws= norm(r.bbws||r.BBWS||r['B/BWS']||r['BWS']);
       const note= norm(r.catatan||r.Catatan);
 
-      // koleksi nilai unik untuk filter
       if (bbws) uniqBBWS.add(bbws);
       if (diName) uniqDI.add(diName);
 
-      // FOTO
       const list = [];
       const f1   = norm(r.foto||r.Foto);
       const fmul = norm(r.foto_urls||r.FotoURLs);
@@ -174,7 +179,7 @@ Papa.parse(CSV_URL,{
       `;
 
       const m = L.marker([lat,lng],{icon:getIcon(diName)}).bindPopup(popupHtml);
-      m.__meta = { diName, bbws, prov, kab, lat, lng }; // meta buat filter
+      m.__meta = { diName, bbws, prov, kab, lat, lng };
       m.on('popupopen',()=>{ const el=m.getElement(); if(el){ el.classList.remove('bounce'); void el.offsetWidth; el.classList.add('bounce'); }});
       cluster.addLayer(m);
       index.push({name: diName, marker:m});
@@ -212,23 +217,20 @@ function applyFilters(){
     }
   });
 
-  // sesuaikan bounds setelah filter
   if(visible.length){
     const g=L.featureGroup(visible);
     map.fitBounds(g.getBounds(), {padding:[20,20]});
   }
-  // benahi suggestions: cuma dari marker yang lolos filter
   rebuildSuggestions();
 }
 
 document.getElementById('f-bbws').addEventListener('change', applyFilters);
 document.getElementById('f-di').addEventListener('change', applyFilters);
 
-// perbarui index search sesuai filter aktif
+// rebuild index search sesuai filter aktif
 function rebuildSuggestions(){
   const fBBWS = norm(document.getElementById('f-bbws').value);
   const fDI   = norm(document.getElementById('f-di').value);
-  // clear & re-build
   index.length = 0;
   allMarkers.forEach(m=>{
     const {bbws, diName} = m.__meta || {};
@@ -240,22 +242,12 @@ function rebuildSuggestions(){
   });
 }
 
-
 // ====== PENCARIAN ======
-  <div style="display:flex; gap:8px; flex-wrap:wrap">
-  <select id="f-bbws" style="padding:6px; min-width:180px">
-    <option value="">— Semua B/BWS —</option>
-  </select>
-  <select id="f-di" style="padding:6px; min-width:220px">
-    <option value="">— Semua DI —</option>
-  </select>
-</div>
-
 function showSuggestions(q){
   const box=document.getElementById('suggestions');
   box.innerHTML="";
   if(!q){ box.style.display="none"; return; }
-  const hits=index.filter(it=>it.name.toLowerCase().includes(q.toLowerCase()));
+  const hits=index.filter(it=>it.name && it.name.toLowerCase().includes(q.toLowerCase()));
   hits.slice(0,100).forEach(it=>{
     const d=document.createElement('div'); d.textContent=it.name;
     d.onclick=()=>{ document.getElementById('search').value=it.name; box.style.display="none";
@@ -264,8 +256,20 @@ function showSuggestions(q){
   });
   box.style.display = hits.length ? "block" : "none";
 }
+
+// opsional: enter untuk langsung zoom ke hasil terdekat
+document.getElementById('search').addEventListener('keydown', e=>{
+  if(e.key==='Enter'){
+    const q = e.currentTarget.value.trim().toLowerCase();
+    const hit = index.find(it=>it.name && it.name.toLowerCase()===q)
+            || index.find(it=>it.name && it.name.toLowerCase().includes(q));
+    if(hit){
+      map.setView(hit.marker.getLatLng(),14); hit.marker.openPopup();
+      document.getElementById('suggestions').style.display='none';
+    }
+  }
+});
 </script>
 
 </body>
 </html>
-
