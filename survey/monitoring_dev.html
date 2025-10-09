@@ -76,11 +76,10 @@
 <!-- libs -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
-<script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 
 <script>
 // ====== KONFIG ======
-const CSV_URL   = "https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/data/survey.csv";
+const DATA_URL  = "https://script.google.com/macros/s/AKfycbw2SaLuw0wR9TzAHIR8bo0RE7yx0LNgKVwjBfiFTjXXYeKqu1cJOgMYbAVVzMnN8gfTaw/exec";
 const FOTO_BASE = "https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/data/images/";
 
 // ====== PETA ======
@@ -134,30 +133,42 @@ function fillSelect(el, items, placeholder){
   if ([...items,''].includes(cur)) el.value = cur;
 }
 
-Papa.parse(CSV_URL,{
-  download:true, header:true, skipEmptyLines:true,
-  complete: res=>{
-    (res.data||[]).forEach(r=>{
-      rawRows.push(r);
+async function loadFromGAS(){
+  try{
+    // anti-cache
+    const res = await fetch(DATA_URL + (DATA_URL.includes('?')?'&':'?') + 't=' + Date.now(), {cache:'no-store'});
+    let text = await res.text();
 
-      const diName = norm(r.nama_di || r.Nama || r.DI || r['Nama DI'] || r['Nama'] );
-      const lat = parseFloat(r.y||r.lat||r.latitude||r.Latitude);
-      const lng = parseFloat(r.x||r.lng||r.longitude||r.Longitude);
+    // kalau GAS kirim JSONP / prefix )]}'
+    text = text.replace(/^\)\]\}'\s*/, '');
+    const rows = JSON.parse(text);
+
+    if(!Array.isArray(rows)) throw new Error('Format bukan array');
+
+    rows.forEach(r=>{
+      const diName = norm(r.nama_di || r.Nama || r.DI || r['Nama DI'] || r['NAMA DI/DIR'] || r['Nama DI/DIR'] || r['Nama'] );
+      const lat = parseFloat(r.y||r.lat||r.latitude||r.Latitude||r.LAT||r.lat_dd);
+      const lng = parseFloat(r.x||r.lng||r.longitude||r.Longitude||r.LNG||r.long_dd);
       if(isNaN(lat)||isNaN(lng)) return;
 
-      const prov= norm(r.provinsi||r.Provinsi);
-      const kab = norm(r.kabupaten||r.Kabupaten);
-      const bbws= norm(r.bbws||r.BBWS||r['B/BWS']||r['BWS']);
-      const note= norm(r.catatan||r.Catatan);
+      const prov= norm(r.provinsi||r.Provinsi||r.PROVINSI);
+      const kab = norm(r.kabupaten||r.Kabupaten||r.KABUPATEN);
+      const bbws= norm(r.bbws||r.BBWS||r['B/BWS']||r['BWS']||r['B/BWS PELAKSANA']);
 
+      const note= norm(r.catatan||r.Catatan||r.Note||r.Keterangan);
+
+      // koleksi filter
       if (bbws) uniqBBWS.add(bbws);
       if (diName) uniqDI.add(diName);
 
+      // FOTO: dukung beberapa kolom umum
       const list = [];
-      const f1   = norm(r.foto||r.Foto);
-      const fmul = norm(r.foto_urls||r.FotoURLs);
+      const f1   = norm(r.foto||r.Foto||r['Foto 1']||r.Foto1);
+      const f2   = norm(r['Foto 2']||r.Foto2);
+      const fmul = norm(r.foto_urls||r.FotoURLs||r['Foto URLs']);
       if(f1) list.push(f1);
-      if(fmul){ fmul.split(";").forEach(u=>{ const v=norm(u); if(v) list.push(v); }); }
+      if(f2) list.push(f2);
+      if(fmul){ fmul.split(/[;,\n]/).forEach(u=>{ const v=norm(u); if(v) list.push(v); }); }
       const fotoList = list.map(u=>/^https?:\/\//i.test(u)? u : (FOTO_BASE+encodeURIComponent(u)));
       const imgHtml = fotoList.length
         ? `<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;max-width:240px;">
@@ -185,6 +196,26 @@ Papa.parse(CSV_URL,{
       index.push({name: diName, marker:m});
       allMarkers.push(m);
     });
+
+    map.addLayer(cluster);
+    if(allMarkers.length){
+      const g=L.featureGroup(allMarkers);
+      map.fitBounds(g.getBounds(), {padding:[20,20]});
+    }
+
+    // isi dropdown filter
+    fillSelect(document.getElementById('f-bbws'), [...uniqBBWS], '— Semua B/BWS —');
+    fillSelect(document.getElementById('f-di'),   [...uniqDI],   '— Semua DI —');
+
+  }catch(err){
+    console.error(err);
+    alert("Gagal memuat data dari GAS. Cek CORS/format respons.");
+  }
+}
+
+// panggil saat load
+loadFromGAS();
+
 
     map.addLayer(cluster);
     if(allMarkers.length){
