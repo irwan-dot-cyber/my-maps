@@ -47,7 +47,6 @@
 </div>
 
 <div class="top-controls">
-  <!-- FILTERS DIPASANG DI SINI (BUKAN DI DALAM <script>) -->
   <div class="filters">
     <select id="f-bbws">
       <option value="">— Semua B/BWS —</option>
@@ -110,11 +109,10 @@ function getIcon(name){
   });
 }
 
-// ====== MARKERS dari CSV ======
+// ====== DATA & MARKERS ======
 const cluster = L.markerClusterGroup();
 const index   = [];        // untuk search
 const allMarkers = [];     // semua marker
-const rawRows = [];        // simpan data mentah utk filter
 const uniqBBWS = new Set();
 const uniqDI   = new Set();
 
@@ -135,15 +133,13 @@ function fillSelect(el, items, placeholder){
 
 async function loadFromGAS(){
   try{
-    // anti-cache
     const res = await fetch(DATA_URL + (DATA_URL.includes('?')?'&':'?') + 't=' + Date.now(), {cache:'no-store'});
     let text = await res.text();
-
-    // kalau GAS kirim JSONP / prefix )]}'
-    text = text.replace(/^\)\]\}'\s*/, '');
-    const rows = JSON.parse(text);
-
-    if(!Array.isArray(rows)) throw new Error('Format bukan array');
+    text = text.replace(/^\)\]\}'\s*/, ''); // strip JSONP prefix jika ada
+    const payload = JSON.parse(text);
+    // dukung format: array langsung atau {data:[...]}
+    const rows = Array.isArray(payload) ? payload : (Array.isArray(payload.data) ? payload.data : []);
+    if(!Array.isArray(rows)) throw new Error('Format respons bukan array');
 
     rows.forEach(r=>{
       const diName = norm(r.nama_di || r.Nama || r.DI || r['Nama DI'] || r['NAMA DI/DIR'] || r['Nama DI/DIR'] || r['Nama'] );
@@ -154,14 +150,12 @@ async function loadFromGAS(){
       const prov= norm(r.provinsi||r.Provinsi||r.PROVINSI);
       const kab = norm(r.kabupaten||r.Kabupaten||r.KABUPATEN);
       const bbws= norm(r.bbws||r.BBWS||r['B/BWS']||r['BWS']||r['B/BWS PELAKSANA']);
-
       const note= norm(r.catatan||r.Catatan||r.Note||r.Keterangan);
 
-      // koleksi filter
       if (bbws) uniqBBWS.add(bbws);
       if (diName) uniqDI.add(diName);
 
-      // FOTO: dukung beberapa kolom umum
+      // foto (opsional)
       const list = [];
       const f1   = norm(r.foto||r.Foto||r['Foto 1']||r.Foto1);
       const f2   = norm(r['Foto 2']||r.Foto2);
@@ -203,7 +197,6 @@ async function loadFromGAS(){
       map.fitBounds(g.getBounds(), {padding:[20,20]});
     }
 
-    // isi dropdown filter
     fillSelect(document.getElementById('f-bbws'), [...uniqBBWS], '— Semua B/BWS —');
     fillSelect(document.getElementById('f-di'),   [...uniqDI],   '— Semua DI —');
 
@@ -215,20 +208,6 @@ async function loadFromGAS(){
 
 // panggil saat load
 loadFromGAS();
-
-
-    map.addLayer(cluster);
-    if(allMarkers.length){
-      const g=L.featureGroup(allMarkers);
-      map.fitBounds(g.getBounds(), {padding:[20,20]});
-    }
-
-    // isi dropdown setelah data terbaca
-    fillSelect(document.getElementById('f-bbws'), [...uniqBBWS], '— Semua B/BWS —');
-    fillSelect(document.getElementById('f-di'),   [...uniqDI],   '— Semua DI —');
-  },
-  error: ()=>alert("Gagal memuat CSV. Periksa URL/format file.")
-});
 
 // ====== FILTER ======
 function applyFilters(){
@@ -288,7 +267,7 @@ function showSuggestions(q){
   box.style.display = hits.length ? "block" : "none";
 }
 
-// opsional: enter untuk langsung zoom ke hasil terdekat
+// enter untuk langsung zoom ke hasil terdekat
 document.getElementById('search').addEventListener('keydown', e=>{
   if(e.key==='Enter'){
     const q = e.currentTarget.value.trim().toLowerCase();
