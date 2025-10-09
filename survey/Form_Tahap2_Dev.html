@@ -345,8 +345,8 @@ async function compressImage(file,{maxDim=2000,quality=0.82,mime='image/jpeg'}={
   const blob=await new Promise(r=>c.toBlob(r,mime,quality)); if(!blob||blob.size>=file.size) return file; const name=(file.name.replace(/\.(jpe?g|png|webp|heic|heif)$/i,'')||'foto')+'.jpg'; return new File([blob],name,{type:mime});
 }catch(e){console.warn('compress fail',e); return file;}}
 
-  <script>
-// …(kode kamu di atas tetap)…
+
+// …(kode kamu di atas tetap)…/
 
 /* ===== Wajib Terisi: toggle tombol Kirim ===== */
 function missingList(){
@@ -388,7 +388,7 @@ renderStageButtons = function(maxStage){
 
 // panggilan awal
 updateSubmitState();
-</script>
+
 
 
 /* ===== Submit ===== */
