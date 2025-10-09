@@ -334,7 +334,7 @@ document.getElementById('btnCamera').addEventListener('click',()=>{ fileInput.se
 document.getElementById('btnGallery').addEventListener('click',()=>{ fileInput.removeAttribute('capture'); fileInput.click(); });
 fileInput.addEventListener('change',()=>{ selectedFile = fileInput.files?.[0] || null; photoMeta.textContent = selectedFile ? `Dipilih: ${selectedFile.name} • ${(selectedFile.size/1024).toFixed(1)} KB` : ''; });
 
-async function compressImage(file,{maxDim:2000,quality:0.82,mime='image/jpeg'}={}){ try{
+async function compressImage(file,{maxDim=2000,quality=0.82,mime='image/jpeg'}={}){ try{
   if(!(file&&file.type&&file.type.startsWith('image/'))) return file;
   const bitmap = await createImageBitmap(file,{imageOrientation:'from-image'});
   const W=bitmap.width,H=bitmap.height; const s=Math.min(1,maxDim/Math.max(W,H)); const w=Math.round(W*s), h=Math.round(H*s);
