@@ -182,7 +182,29 @@ function buildStatsUI({totalBaseline,totalFilled,percent,byBBWS,missing}){
     a.click();a.remove();URL.revokeObjectURL(url);
   };
 }
+function fillSelect(el, items, placeholder){
+  const cur = el.value;
+  el.innerHTML = '';
 
+  // option placeholder
+  const opt0 = document.createElement('option');
+  opt0.value = '';
+  opt0.textContent = placeholder;
+  el.appendChild(opt0);
+
+  // unique + sort
+  const uniqueSorted = [...new Set(items.filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+
+  uniqueSorted.forEach(v=>{
+    const o = document.createElement('option');
+    o.value = v;
+    o.textContent = v;
+    el.appendChild(o);
+  });
+
+  // pertahankan pilihan lama kalau masih ada
+  if (uniqueSorted.includes(cur) || cur === '') el.value = cur;
+}
 async function build(){
   try{
     $('#stats').textContent='Memuat statistik…';
