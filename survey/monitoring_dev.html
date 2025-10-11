@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
 <style>
-  :root{ --brand:#FFD700; --line:#e5e7eb; --ok1:#16a34a; --ok2:#86efac; }
+  :root{ --brand:#FFD700; --line:#e5e7eb; --ok1:#16a34a; --ok2:#86efac; --blue:#1d4ed8; --blue2:#3b82f6; --mut:#6b7280; }
   *{box-sizing:border-box}
   html,body{height:100%;margin:0;font-family:system-ui,Segoe UI,Roboto,Arial}
   #header{background:var(--brand);padding:10px 12px;font-weight:800;display:flex;gap:10px;align-items:center}
@@ -37,14 +37,15 @@
   table.stats th,table.stats td{border-top:1px solid var(--line);padding:8px 10px;font-size:13px;text-align:left}
   table.stats th{background:#f9fafb}
   .btn-small{padding:6px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer}
-  /* tooltip label permanen */
+  /* label permanen di atas marker */
   .di-label{background:rgba(255,255,255,.95);border:1px solid #d1d5db;border-radius:999px;
     padding:2px 8px;font-size:12px;color:#111827;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.08)}
-  /* galeri foto di popup */
-  .galeri{display:grid;grid-template-columns:repeat(2, 1fr);gap:8px;margin-top:6px}
-  .foto-card{border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;background:#fff}
-  .foto-card .cap{font-size:12px;padding:4px 6px;border-bottom:1px solid #eee;background:#fafafa}
-  .foto-card img{width:100%;height:140px;object-fit:cover;display:block}
+  /* chips foto progres */
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .chip{display:inline-block;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:700;border:1px solid}
+  .chip.on{background:var(--blue2);color:#fff;border-color:var(--blue)}
+  .chip.off{background:#f3f4f6;color:#6b7280;border-color:#e5e7eb}
+  .chip.on:hover{filter:brightness(0.95)}
   @media (max-width:560px){ #map{height:50vh} .floating-btns{bottom:calc(38vh + 10px)} }
 </style>
 </head>
@@ -80,10 +81,10 @@
 <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
 
 <script>
-/* ===== Guard agar tidak dieksekusi dua kali ===== */
+/* ===== Guard agar tidak duplikat ===== */
 if (!window.__MONAPP__) { window.__MONAPP__ = true;
 
-  /* ===== CONFIG (pakai namespace global supaya tidak redeclare) ===== */
+  /* ===== CONFIG (namespace global) ===== */
   const CFG = window.__MONCFG__ || (window.__MONCFG__ = {
     SHEET_ID : "1LrRWGns6d68uQ7sNy2F7ecGsBrBgGbiO9S4lVXEkpXQ"
   });
@@ -157,6 +158,7 @@ if (!window.__MONAPP__) { window.__MONAPP__ = true;
     }).filter(r=>r.di);
   }
 
+  // agregasi Log_Progres → 1 record/DI (max stage + kumpulkan foto 25/50/75/100)
   async function loadLogAggregated(){
     const t = await (await fetch(URL_LOG+'&t='+Date.now(),{cache:'no-store'})).text();
     const rows = parseGviz(t);
@@ -183,22 +185,18 @@ if (!window.__MONAPP__) { window.__MONAPP__ = true;
 
   /* ===== Marker helpers ===== */
   function makePopup(r){
+    const have = s => !!r.photos[s];
+    const chip = (s) => {
+      if (have(s)) {
+        const url = r.photos[s];
+        return `<a class="chip on" href="${url}" target="_blank" rel="noopener">Foto Progres ${s}%</a>`;
+      } else {
+        return `<span class="chip off">Foto Progres ${s}%</span>`;
+      }
+    };
     const gmaps = (Number.isFinite(r.lat)&&Number.isFinite(r.lng))
       ? `https://www.google.com/maps?q=${r.lat},${r.lng}` : null;
-    const stages = [25,50,75,100];
-    const galeri = stages.map(s=>{
-      const url = r.photos[s];
-      if (!url) {
-        return `<div class="foto-card"><div class="cap">Progres ${s}%</div>
-                <div style="height:140px;display:flex;align-items:center;justify-content:center;color:#6b7280;font-size:12px">— belum ada foto —</div></div>`;
-      }
-      return `<div class="foto-card">
-                <div class="cap">Progres ${s}%</div>
-                <a href="${url}" target="_blank" rel="noopener">
-                  <img src="${url}" alt="Foto ${r.di} ${s}%">
-                </a>
-              </div>`;
-    }).join('');
+
     return `
       <b>${r.di}</b>
       <div style="font-size:12px;color:#555;margin:4px 0">
@@ -207,7 +205,9 @@ if (!window.__MONAPP__) { window.__MONAPP__ = true;
         ${(gmaps && r.lat && r.lng) ? ('📍 '+r.lat.toFixed(6)+', '+r.lng.toFixed(6)) : ''}
       </div>
       ${ gmaps ? `<a href="${gmaps}" target="_blank" rel="noopener">Buka di Google Maps</a>` : '' }
-      <div class="galeri">${galeri}</div>
+      <div class="chips">
+        ${chip(25)} ${chip(50)} ${chip(75)} ${chip(100)}
+      </div>
     `;
   }
   function iconByStage(stage){
@@ -269,7 +269,7 @@ if (!window.__MONAPP__) { window.__MONAPP__ = true;
     $('#stats').textContent='Memuat statistik…';
     const [baseline, agg] = await Promise.all([loadBaseline(), loadLogAggregated()]);
 
-    // markers: 1 per DI + tooltip label permanen
+    // markers: 1 per DI + tooltip label permanen (tidak menutup marker)
     cluster.clearLayers(); window.__allMarkers.length = 0;
     const markers=[];
     agg.forEach(r=>{
@@ -277,13 +277,13 @@ if (!window.__MONAPP__) { window.__MONAPP__ = true;
       const m = L.marker([r.lat, r.lng], {icon: iconByStage(r.maxStage)}).bindPopup(makePopup(r));
       m.__meta = {bbws:r.bbws, di:r.di, stage:r.maxStage};
       m.bindTooltip(`${r.di} (${r.maxStage||0}%)`, {
-        permanent:true, direction:'top', offset:[0,-18], className:'di-label'
+        permanent:true, direction:'top', offset:[0,-22], className:'di-label'
       });
       cluster.addLayer(m);
       window.__allMarkers.push(m);
       markers.push(m);
     });
-    fitToMarkers(markers);   // aman meski kosong
+    fitToMarkers(markers);
 
     // stats
     const filledSet = new Set(agg.map(r => `${canon(r.bbws)}|${canon(r.di)}`));
@@ -314,6 +314,7 @@ if (!window.__MONAPP__) { window.__MONAPP__ = true;
   build();
 
   /* ===== Filter & Search ===== */
+  function fitToMarkersSafe(list){ try{ if(list && list.length){ const g=L.featureGroup(list); const b=g.getBounds(); if(b.isValid && b.isValid()) map.fitBounds(b,{padding:[20,20]}); } }catch(e){} }
   function applyFilters(){
     const fB = canon($('#f-bbws').value);
     const fD = canon($('#f-di').value);
@@ -325,7 +326,7 @@ if (!window.__MONAPP__) { window.__MONAPP__ = true;
       const passD = !fD || canon(meta.di)===fD;
       if(passB && passD){ cluster.addLayer(m); visible.push(m); }
     });
-    fitToMarkers(visible);
+    fitToMarkersSafe(visible);
   }
   $('#f-bbws').addEventListener('change', applyFilters);
   $('#f-di').addEventListener('change', applyFilters);
@@ -359,7 +360,7 @@ if (!window.__MONAPP__) { window.__MONAPP__ = true;
     }
   });
 
-} // end guard
+} /* end guard */
 </script>
 </body>
 </html>
