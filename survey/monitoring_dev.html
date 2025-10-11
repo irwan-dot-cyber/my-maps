@@ -2,406 +2,374 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8" />
+<title>Pelaksanaan Inpres 2/2025 Tahap 1 — Monitoring</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Pelaksanaan Inpres 2/2025 Tahap 1</title>
-
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
-
 <style>
   :root{
-    --brand:#FFD700; --txt:#111; --panel-bg:#f9f9f9; --border:#dcdcdc;
-    --btn-blue:#2196F3; --btn-blue2:#1b7ed0;
-    --btn-green:#4CAF50; --btn-green2:#3f8f44;
-    --btn-orange:#ff5722; --btn-orange2:#e24a18;
+    --brand:#FFD700; --ink:#111827; --mut:#6b7280;
+    --ok1:#16a34a; --ok2:#86efac; --card:#ffffff; --line:#e5e7eb;
   }
   *{box-sizing:border-box}
-  html,body{height:100%}
-  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;color:var(--txt);background:#fff}
-
-  /* Header */
-  #header{background:var(--brand);color:#000;padding:10px 12px;display:flex;align-items:center;gap:10px;font-weight:800;line-height:1.2}
-  #header img{height:40px;flex:0 0 40px}
-
-  /* Top controls */
-  .top-controls{position:sticky;top:0;z-index:1000;background:#ffffffcc;backdrop-filter:saturate(1.2) blur(2px);
-    padding:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;border-bottom:1px solid var(--border)}
-  .filters{display:flex;gap:8px;flex-wrap:wrap}
-  .filters select{padding:8px;min-width:210px;border:1px solid var(--border);border-radius:8px;background:#fff}
-  .search-box{position:relative;background:#fff;border:1px solid var(--border);border-radius:8px;padding:5px}
-  .search-box input{width:260px;max-width:70vw;padding:8px;border:0;outline:none}
-  #suggestions{position:absolute;top:45px;left:0;right:0;background:#fff;border:1px solid var(--border);border-top:none;max-height:220px;overflow-y:auto;display:none;z-index:2000}
-  #suggestions div{padding:8px;cursor:pointer}
-  #suggestions div:hover{background:#efefef}
-
-  /* Map */
-  #map{height:calc(100% - 220px)} /* sisakan ruang default untuk stats */
-  .leaflet-control-zoom{margin-top:70px} /* geser zoom agar tak nabrak filter di mobile */
-
-  /* Floating buttons (kiri-bawah) */
-  .bottom-buttons{position:fixed;left:12px;bottom:200px;display:flex;flex-direction:column;gap:8px;z-index:900}
-  .custom-button{position:relative;overflow:hidden;border-radius:12px;box-shadow:0 6px 14px rgba(0,0,0,.12);
-    font-weight:800;text-align:center;text-decoration:none;padding:10px 14px;color:#fff}
-  #home{background:linear-gradient(135deg,var(--btn-blue),var(--btn-blue2))}
-  #reset-route{background:linear-gradient(135deg,var(--btn-orange),var(--btn-orange2))}
-  #locate-me{background:linear-gradient(135deg,var(--btn-green),var(--btn-green2))}
-  .custom-button::after{content:"";position:absolute;top:0;left:-150%;width:130%;height:100%;
-    background:linear-gradient(120deg,transparent 0%,rgba(255,255,255,.25) 50%,transparent 100%);transform:skewX(-20deg);transition:left .6s}
-  .custom-button:hover::after{left:120%}
-
-  /* Stats panel */
-  #stats{background:var(--panel-bg);padding:12px 12px 14px;border-top:1px solid var(--border)}
-  .stats-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-  .pill{display:inline-block;background:#fff;border:1px solid var(--border);border-radius:999px;padding:6px 12px;font-weight:700}
-  .bar{height:12px;background:#eee;border-radius:999px;overflow:hidden}
-  .bar>span{display:block;height:100%;background:linear-gradient(90deg,#16a34a,#86efac)}
-  table.stats{width:100%;border-collapse:collapse;margin-top:8px}
-  table.stats th,table.stats td{border:1px solid var(--border);padding:8px 10px;font-size:13px}
-  table.stats th{background:#fafafa;text-align:left}
-  .btn-small{display:inline-block;margin-top:8px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:#fff;cursor:pointer}
-
-  /* Mini chart box */
-  .chart-wrap{margin:10px 0 4px}
-  .chart-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  html,body{height:100%;margin:0;font-family:system-ui,Segoe UI,Roboto,Arial}
+  #header{background:var(--brand);color:#000;padding:10px 12px;font-weight:800;font-size:14px;display:flex;align-items:center;gap:10px}
+  #header img{height:40px}
+  .top-controls{position:sticky;top:0;z-index:999;background:#fff;border-bottom:1px solid var(--line);padding:8px 10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .filters{display:flex;gap:8px;flex:1;flex-wrap:wrap}
+  .filters select,.search-box input{padding:8px 10px;border:1px solid var(--line);border-radius:10px;min-width:160px;background:#fff}
+  .search-box{position:relative}
+  #suggestions{position:absolute;top:42px;left:0;right:0;background:#fff;border:1px solid var(--line);border-radius:10px;max-height:220px;overflow:auto;display:none}
+  #suggestions div{padding:8px 10px;cursor:pointer}
+  #suggestions div:hover{background:#f3f4f6}
+  #map{height:54vh}
+  .floating-btns{position:fixed;left:10px;bottom:calc(34vh + 10px);display:flex;flex-direction:column;gap:8px;z-index:900}
+  .btn{color:#fff;padding:10px 14px;border-radius:12px;font-weight:800;box-shadow:0 6px 14px rgba(0,0,0,.12);text-decoration:none;display:inline-block}
+  .btn-home{background:linear-gradient(135deg,#2196F3,#1b7ed0)}
+  .btn-reset{background:linear-gradient(135deg,#ff5722,#e24a18)}
+  .btn-locate{background:linear-gradient(135deg,#4CAF50,#3f8f44)}
+  #stats{background:#fafafa;border-top:1px solid var(--line);padding:12px 12px}
+  .bar{height:12px;background:#e5e7eb;border-radius:999px;overflow:hidden}
+  .bar>span{display:block;height:100%;background:linear-gradient(90deg,var(--ok1),var(--ok2))}
+  .pill{display:inline-block;background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-weight:700}
+  .stats-row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:8px 0}
+  table.stats{width:100%;border-collapse:collapse;margin-top:8px;background:#fff;border:1px solid var(--line)}
+  table.stats th,table.stats td{border-top:1px solid var(--line);padding:8px 10px;font-size:13px;text-align:left}
+  table.stats th{background:#f9fafb}
+  .btn-small{padding:6px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer}
+  .chart-wrap{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px;margin:10px 0}
+  .chart-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:10px;flex-wrap:wrap}
   .chart-title{font-weight:800}
-  .btn-xsmall{border:1px solid var(--border);background:#fff;padding:6px 10px;border-radius:8px;cursor:pointer}
-  canvas{width:100%;height:180px;display:block;max-width:100%}
-
-  /* Mobile tweaks */
-  @media (max-width:720px){
-    .filters select{min-width:160px}
-    #map{height:calc(100% - 260px)}
-    .bottom-buttons{bottom:260px} /* otomatis naik mengikuti tinggi panel stats */
-    .search-box input{width:180px}
+  .btn-xsmall{padding:4px 8px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer}
+  @media (max-width:560px){
+    #map{height:50vh}
+    .floating-btns{bottom:calc(38vh + 10px)}
   }
 </style>
 </head>
 <body>
 
-<!-- Header -->
 <div id="header">
-  <img src="https://iconape.com/wp-content/png_logo_vector/pu-logo.png" alt="Logo PU">
-  <div>KEMENTERIAN PEKERJAAN UMUM<br/>DIREKTORAT JENDERAL SUMBER DAYA AIR — DIREKTORAT IRIGASI & RAWA</div>
+  <img src="https://iconape.com/wp-content/png_logo_vector/pu-logo.png" alt="Logo PU"/>
+  <div>KEMENTERIAN PEKERJAAN UMUM • DITJEN SDA — DIREKTORAT IRIGASI & RAWA</div>
 </div>
 
-<!-- Filters + Search -->
 <div class="top-controls">
   <div class="filters">
-    <select id="f-bbws">
-      <option value="">— Semua B/BWS —</option>
-    </select>
-    <select id="f-di" style="min-width:220px">
-      <option value="">— Semua DI —</option>
-    </select>
+    <select id="f-bbws"><option value="">— Semua B/BWS —</option></select>
+    <select id="f-di" style="min-width:220px"><option value="">— Semua DI —</option></select>
   </div>
-
   <div class="search-box">
-    <input type="text" id="search" placeholder="Cari lokasi…" oninput="showSuggestions(this.value)"/>
+    <input id="search" type="text" placeholder="Cari DI…" />
     <div id="suggestions"></div>
   </div>
 </div>
 
-<!-- Map -->
 <div id="map"></div>
 
-<!-- Floating buttons -->
-<div class="bottom-buttons" id="floatBtns">
-  <a href="https://s.pu.go.id/MTI4OA/Pelaksanaan_INPRES2_Tahap1" target="_blank" id="home" class="custom-button">Beranda</a>
-  <div id="reset-route" class="custom-button" onclick="resetRoute()">Reset Rute</div>
-  <div id="locate-me" class="custom-button" onclick="locateMe()">Posisi Saya</div>
+<!-- tombol mengambang diposisikan di atas statistik agar tidak menimpa -->
+<div class="floating-btns">
+  <a class="btn btn-home" href="https://s.pu.go.id/MTI4OA/Pelaksanaan_INPRES2_Tahap1" target="_blank" rel="noopener">Beranda</a>
+  <button class="btn btn-reset" id="btnResetRoute" type="button">Reset Rute</button>
+  <button class="btn btn-locate" id="btnLocate" type="button">Posisi Saya</button>
 </div>
 
-<!-- Stats -->
 <div id="stats">Memuat statistik…</div>
 
-<!-- Libs -->
+<!-- libs -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
 
 <script>
-/* ====== KONFIG ====== */
-const DATA_URL  = "https://script.google.com/macros/s/AKfycbw2SaLuw0wR9TzAHIR8bo0RE7yx0LNgKVwjBfiFTjXXYeKqu1cJOgMYbAVVzMnN8gfTaw/exec"; // survey (GAS)
-const SHEET_ID  = "1LrRWGns6d68uQ7sNy2F7ecGsBrBgGbiO9S4lVXEkpXQ"; // baseline
-const SHEET_GID = "674582970";
-const GVIZ_URL  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${SHEET_GID}`;
-const FOTO_BASE = "https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/data/images/";
+/* ===== CONFIG ===== */
+const SHEET_ID = "1LrRWGns6d68uQ7sNy2F7ecGsBrBgGbiO9S4lVXEkpXQ";
+const URL_BASELINE = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Sheet1`;
+const URL_LOG      = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Log_Progres`;
 
-/* ====== PETA ====== */
-const map = L.map('map').setView([-2.5,117],5);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
-function resetRoute(){ /* no-op, dipertahankan untuk kompatibilitas */ }
-function locateMe(){
-  if(!navigator.geolocation) return alert("Geolocation tidak didukung di browser ini.");
-  navigator.geolocation.getCurrentPosition(pos=>{
-    const lat=pos.coords.latitude, lng=pos.coords.longitude;
-    L.marker([lat,lng],{icon:L.icon({iconUrl:'https://maps.google.com/mapfiles/ms/icons/green-dot.png',iconSize:[25,41],iconAnchor:[12,41]})})
-      .addTo(map).bindPopup("Lokasi Anda").openPopup();
-    map.setView([lat,lng],13);
-  }, ()=>alert("Tidak dapat mengakses lokasi Anda."));
-}
-function getIcon(name){
-  const url = (name && name.startsWith('D.I.R.')) ? 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
-            : 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png';
-  return L.icon({
-    iconUrl:url, iconSize:[25,41], iconAnchor:[12,41], popupAnchor:[1,-34],
-    shadowUrl:'https://unpkg.com/leaflet/dist/images/marker-shadow.png', shadowSize:[41,41]
+/* ===== Helpers ===== */
+const norm = s => (s==null?'':String(s)).trim();
+const canon = s => norm(s).toLowerCase();   // kunci gabungan
+const $ = sel => document.querySelector(sel);
+
+function parseGviz(text){
+  text = String(text||'').replace(/^\)\]\}'\s*/, '');
+  const m = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]+?)\)\s*;?\s*$/);
+  if(!m) throw new Error('GViz payload tidak dikenali');
+  const j = JSON.parse(m[1]);
+  const cols = (j.table.cols||[]).map(c=>c.label || c.id || '');
+  const out = [];
+  (j.table.rows||[]).forEach(r=>{
+    const o={};
+    (r.c||[]).forEach((cell,i)=> o[cols[i] || ('C'+i)] = cell ? cell.v : '');
+    out.push(o);
   });
+  return out;
 }
-
-/* ====== DATA & MARKERS ====== */
-const cluster = L.markerClusterGroup();
-const index = [];
-const allMarkers = [];
-const uniqBBWS = new Set();
-const uniqDI   = new Set();
-
-const norm  = s => (s||"").toString().trim();
-const canon = s => norm(s).toLowerCase();
 
 function fillSelect(el, items, placeholder){
   const cur = el.value;
   el.innerHTML = '';
-  const opt0 = document.createElement('option'); opt0.value=''; opt0.textContent=placeholder; el.appendChild(opt0);
-  items.sort((a,b)=>a.localeCompare(b)).forEach(v=>{
+  const opt0 = document.createElement('option'); opt0.value=''; opt0.textContent=placeholder;
+  el.appendChild(opt0);
+  items.sort((a,b)=> a.localeCompare(b)).forEach(v=>{
     const o=document.createElement('option'); o.value=v; o.textContent=v; el.appendChild(o);
   });
-  if ([...items,''].includes(cur)) el.value = cur;
+  if ([...items,''].includes(cur)) el.value=cur;
 }
 
-/* ---- Parse GViz (Google Visualization JSONP) ---- */
-function parseGviz(text){
-  text = String(text||'').replace(/^\)\]\}'\s*/, '');
-  const m = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]+)\)\s*;?\s*$/);
-  if(!m) throw new Error('Format GViz tidak dikenali');
-  const j = JSON.parse(m[1]);
-  const cols = (j.table?.cols||[]).map(c=>c.label||c.id||'');
-  const rows = (j.table?.rows||[]);
-  return rows.map(r=>{
-    const o={}; (r.c||[]).forEach((cell,i)=>{ o[cols[i]||('C'+i)] = cell ? cell.v : ''; }); return o;
-  });
+/* ===== Map ===== */
+const map = L.map('map').setView([-2.5,117],5);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+const cluster = L.markerClusterGroup(); map.addLayer(cluster);
+
+function markerIcon(kind){
+  const url = kind==='you' ? 'https://maps.google.com/mapfiles/ms/icons/green-dot.png'
+                           : 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png';
+  return L.icon({iconUrl:url,iconSize:[25,41],iconAnchor:[12,41],
+                 shadowUrl:'https://unpkg.com/leaflet/dist/images/marker-shadow.png',shadowSize:[41,41]});
 }
+$('#btnLocate').addEventListener('click', ()=>{
+  if(!navigator.geolocation) return alert('Geolocation tidak didukung');
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const lat=pos.coords.latitude, lng=pos.coords.longitude;
+    L.marker([lat,lng],{icon:markerIcon('you')}).addTo(map).bindPopup('Lokasi Anda').openPopup();
+    map.setView([lat,lng],13);
+  }, ()=>alert('Tidak dapat mengakses lokasi.'));
+});
+$('#btnResetRoute').addEventListener('click', ()=> map.setView([-2.5,117],5) );
 
-/* ---- SURVEY (GAS) ---- */
-async function loadSurvey(){
-  const res = await fetch(DATA_URL + (DATA_URL.includes('?')?'&':'?') + 't=' + Date.now(), {cache:'no-store'});
-  let text = await res.text();
-  text = text.replace(/^\)\]\}'\s*/, '');
-  const payload = JSON.parse(text);
-  const rows = Array.isArray(payload) ? payload : (Array.isArray(payload.data)? payload.data : []);
-  if(!Array.isArray(rows)) throw new Error('Survey: format bukan array');
-
-  rows.forEach(r=>{
-    const diName = norm(r.nama_di || r.Nama || r.DI || r['Nama DI'] || r['NAMA DI/DIR'] || r['Nama DI/DIR'] || r['Nama'] );
-    const lat = parseFloat(r.y||r.lat||r.latitude||r.Latitude||r.LAT||r.lat_dd);
-    const lng = parseFloat(r.x||r.lng||r.longitude||r.Longitude||r.LNG||r.long_dd);
-    if(isNaN(lat)||isNaN(lng)) return;
-
-    const prov= norm(r.provinsi||r.Provinsi||r.PROVINSI);
-    const kab = norm(r.kabupaten||r.Kabupaten||r.KABUPATEN);
-    const bbws= norm(r.bbws||r.BBWS||r['B/BWS']||r['BWS']||r['B/BWS PELAKSANA']);
-    const note= norm(r.catatan||r.Catatan||r.Note||r.Keterangan);
-
-    if (bbws) uniqBBWS.add(bbws);
-    if (diName) uniqDI.add(diName);
-
-    const list=[], f1=norm(r.foto||r.Foto||r['Foto 1']||r.Foto1), f2=norm(r['Foto 2']||r.Foto2), fmul=norm(r.foto_urls||r.FotoURLs||r['Foto URLs']);
-    if(f1) list.push(f1); if(f2) list.push(f2);
-    if(fmul){ fmul.split(/[;,\n]/).forEach(u=>{ const v=norm(u); if(v) list.push(v); }); }
-    const fotoList=list.map(u=>/^https?:\/\//i.test(u)?u:(FOTO_BASE+encodeURIComponent(u)));
-    const imgHtml = fotoList.length? `<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;max-width:240px;">
-      ${fotoList.slice(0,4).map(u=>`<a href="${u}" target="_blank" rel="noopener"><img src="${u}" alt="foto ${diName}" style="width:110px;height:80px;object-fit:cover;border:1px solid #ddd;border-radius:6px"/></a>`).join("")}
-    </div>`:"";
-
-    const popupHtml = `
-      <b>${diName || '-'}</b><br>
-      <div style="color:#555;font-size:12px;margin:2px 0;">📍 <b>Koordinat:</b> ${lat.toFixed(6)}, ${lng.toFixed(6)}</div>
-      Provinsi: ${prov || '-'}<br>Kabupaten: ${kab || '-'}<br>BBWS: ${bbws || '-'}<br>Catatan: ${note || '-'}<br>
-      <a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank" rel="noopener">Buka di Google Maps</a><br>
-      <a href="sentinel.html?lat=${lat}&lng=${lng}" target="_blank" rel="noopener">Bandingkan Sentinel</a>
-      ${imgHtml}
-    `;
-    const m=L.marker([lat,lng],{icon:getIcon(diName)}).bindPopup(popupHtml);
-    m.__meta={diName,bbws,prov,kab,lat,lng};
-    m.on('popupopen',()=>{ const el=m.getElement(); if(el){ el.classList.remove('bounce'); void el.offsetWidth; el.classList.add('bounce'); }});
-    cluster.addLayer(m); index.push({name:diName, marker:m}); allMarkers.push(m);
-  });
-
-  map.addLayer(cluster);
-  if(allMarkers.length){ const g=L.featureGroup(allMarkers); map.fitBounds(g.getBounds(),{padding:[20,20]}); }
-
-  const filledSet=new Set(rows.map(r=>canon(r.nama_di||r.Nama||r.DI||r['Nama DI']||r['NAMA DI/DIR']||r['Nama DI/DIR']||r['Nama'])).filter(Boolean));
-  return {filledSet, surveyRows:rows};
-}
-
-/* ---- BASELINE (GViz) ---- */
+/* ===== Data Loader (dua tab) ===== */
 async function loadBaseline(){
-  const res = await fetch(GVIZ_URL + '&t=' + Date.now(), {cache:'no-store'});
-  const text = await res.text();
-  const rows = parseGviz(text);
-  return rows.map(o=>{
-    const di = o['NAMA DI/DIR'] || o['Nama DI/DIR'] || o['DI'] || o['Nama DI'] || o['Nama'] || o['nama di'] || '';
-    const bb = o['B/BWS PELAKSANA'] || o['B/BWS'] || o['BWS'] || o['BBWS'] || '';
-    const pr = o['PROVINSI'] || o['Provinsi'] || '';
-    const kb = o['KABUPATEN'] || o['Kabupaten'] || '';
-    return {di:norm(di), bbws:norm(bb), prov:norm(pr), kab:norm(kb)};
+  const t = await (await fetch(URL_BASELINE+'&t='+Date.now(),{cache:'no-store'})).text();
+  const rows = parseGviz(t);
+  // normalisasi field penting
+  return rows.map(r=>{
+    const bb = r['B/BWS PELAKSANA'] || r['B/BWS'] || r['BBWS'] || r['BWS'] || '';
+    const di = r['NAMA DI/DIR'] || r['Nama DI/DIR'] || r['Nama DI'] || r['DI'] || '';
+    const prov = r['PROVINSI'] || r['Provinsi'] || '';
+    const kab  = r['KABUPATEN'] || r['Kabupaten'] || '';
+    return {bbws:norm(bb), di:norm(di), prov:norm(prov), kab:norm(kab)};
   }).filter(r=>r.di);
 }
 
-/* ---- STATISTIK UI ---- */
-function buildStatsUI({totalBaseline,totalTerisi,persen,byBBWS,missing}){
-  const bar=`
-    <div class="bar"><span style="width:${persen}%;"></span></div>
-    <div class="stats-row" style="justify-content:space-between">
-      <div><span class="pill">Baseline: ${totalBaseline} DI</span><span class="pill" style="margin-left:6px">Terisi: ${totalTerisi} DI</span></div>
-      <div style="font-weight:800">${persen}% lengkap</div>
+async function loadLog(){
+  const t = await (await fetch(URL_LOG+'&t='+Date.now(),{cache:'no-store'})).text();
+  const rows = parseGviz(t);
+  // normalisasi + marker (kalau ada lat/lng)
+  const out = rows.map(r=>{
+    const bws = r['BWS'] || r['B/BWS'] || r['BBWS'] || '';
+    const di  = r['NAMA_DI'] || r['Nama DI'] || r['DI'] || '';
+    const lat = parseFloat(r['LAT'] || r['Lat'] || r['Latitude'] || r['lat']);
+    const lng = parseFloat(r['LNG'] || r['Long'] || r['Longitude'] || r['lng']);
+    const stage = Number(r['STAGE'] || r['Stage'] || 0);
+    return {bbws:norm(bws), di:norm(di), lat, lng, stage};
+  }).filter(r=>r.di);
+
+  // markers dari Log_Progres
+  cluster.clearLayers();
+  const markers=[];
+  out.forEach(r=>{
+    if(Number.isFinite(r.lat) && Number.isFinite(r.lng)){
+      const pop = `<b>${r.di}</b><div style="font-size:12px;color:#555;margin:4px 0">
+        B/BWS: ${r.bbws || '-'}<br/>📍 ${r.lat.toFixed(6)}, ${r.lng.toFixed(6)}<br/>Progres: ${r.stage||0}%</div>`;
+      const m=L.marker([r.lat,r.lng],{icon:markerIcon('log')}).bindPopup(pop);
+      cluster.addLayer(m); markers.push(m);
+    }
+  });
+  if(markers.length){
+    const g=L.featureGroup(markers); map.fitBounds(g.getBounds(),{padding:[20,20]});
+  }
+
+  return out;
+}
+
+/* ===== Stats ===== */
+function buildStatsUI({totalBaseline,totalFilled,percent,byBBWS,missing}){
+  const bar = `<div class="bar"><span style="width:${percent}%"></span></div>`;
+  const head = `
+    <div class="stats-row">
+      <div class="pill">Baseline: ${totalBaseline} DI</div>
+      <div class="pill">Terisi: ${totalFilled} DI</div>
+      <div style="font-weight:800">${percent}% lengkap</div>
     </div>
   `;
-  const rows=byBBWS.sort((a,b)=>a.bbws.localeCompare(b.bbws))
-                   .map(r=>`<tr><td>${r.bbws||'-'}</td><td>${r.filled}/${r.total}</td><td>${r.pct}%</td></tr>`).join('');
-  const table=`
+
+  const rows = byBBWS
+    .sort((a,b)=> a.bbws.localeCompare(b.bbws))
+    .map(r=>`<tr><td>${r.bbws||'-'}</td><td>${r.filled}/${r.total}</td><td>${r.pct}%</td></tr>`)
+    .join('');
+
+  const table = `
     <table class="stats">
       <thead><tr><th>B/BWS</th><th>Terisi / Total</th><th>%</th></tr></thead>
-      <tbody>${rows||'<tr><td colspan="3">Tidak ada data B/BWS</td></tr>'}</tbody>
+      <tbody>${rows || '<tr><td colspan="3">Tidak ada data</td></tr>'}</tbody>
     </table>
   `;
-  const chartBox=`
+
+  const chart = `
     <div class="chart-wrap">
       <div class="chart-head">
         <div class="chart-title">Mini Chart — % Keterisian per B/BWS (Top 8)</div>
         <button class="btn-xsmall" id="btnSortChart" data-order="desc">Urut: tertinggi</button>
       </div>
-      <canvas id="statsChart" height="180"></canvas>
+      <canvas id="statsChart" height="160" style="width:100%"></canvas>
     </div>
   `;
-  document.getElementById('stats').innerHTML = `
-    <div class="stats-row" style="margin-bottom:8px"><b>Statistik Keterisian Data (Baseline vs Survey)</b></div>
-    ${bar}${chartBox}${table}
-    <button class="btn-small" id="btnExportMissing">⬇️ Unduh DI yang belum terisi (CSV)</button>
-  `;
 
-  // Export CSV
-  document.getElementById('btnExportMissing').onclick=()=>{
-    const header=["B/BWS","DI","Provinsi","Kabupaten"];
-    const lines=[header.join(",")].concat(missing.map(m=>[m.bbws,m.di,m.prov,m.kab].map(v=>`"${(v||'').replace(/"/g,'""')}"`).join(",")));
-    const blob=new Blob([lines.join("\n")],{type:"text/csv;charset=utf-8"});
-    const url=URL.createObjectURL(blob); const a=document.createElement('a');
-    a.href=url; a.download='di-belum-terisi.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  const exportBtn = `<button class="btn-small" id="btnExportMissing">⬇️ Unduh DI yang belum upload (CSV)</button>`;
+
+  $('#stats').innerHTML = `<b>Statistik Keterisian Data (Sheet1 vs Log_Progres)</b>${head}${bar}${chart}${table}${exportBtn}`;
+
+  // export CSV
+  $('#btnExportMissing').onclick = ()=>{
+    const header = ["B/BWS","DI","Provinsi","Kabupaten"];
+    const lines = [header.join(",")].concat(
+      missing.map(m=>[m.bbws,m.di,m.prov,m.kab].map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(","))
+    );
+    const blob = new Blob([lines.join("\n")],{type:"text/csv;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download='di-belum-upload.csv';
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
   };
 
-  // Mini chart
-  const btnSort=document.getElementById('btnSortChart');
-  const canvas=document.getElementById('statsChart'); const ctx=canvas.getContext('2d');
-  function drawMiniChart(order='desc'){
-    const sorted=[...byBBWS].sort((a,b)=> order==='desc'? (b.pct-a.pct):(a.pct-b.pct)).slice(0,8);
-    const dpr=window.devicePixelRatio||1; const cssW=canvas.clientWidth; const cssH=canvas.clientHeight;
-    canvas.width=Math.round(cssW*dpr); canvas.height=Math.round(cssH*dpr); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,cssW,cssH);
-    const padL=12,padR=10,padT=12,padB=28, gap=8, count=sorted.length;
-    const barW=Math.max(18,(cssW-padL-padR-gap*(count-1))/count); const maxPct=100; const hMax=cssH-padT-padB;
-    // grid
-    ctx.strokeStyle='#ddd'; [0,100].forEach(p=>{ const y=padT + (hMax*(1-p/maxPct)); ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(cssW-padR,y); ctx.stroke(); });
-    // bars
-    sorted.forEach((r,i)=>{
-      const x=padL + i*(barW+gap); const hBar=Math.max(2,(r.pct/maxPct)*hMax); const y=padT+(hMax-hBar);
-      const grd=ctx.createLinearGradient(0,y,0,y+hBar); grd.addColorStop(0,'#16a34a'); grd.addColorStop(1,'#86efac');
-      ctx.fillStyle=grd; ctx.fillRect(x,y,barW,hBar);
-      ctx.fillStyle='#222'; ctx.font='12px system-ui,Segoe UI,Roboto,Arial'; ctx.textAlign='center'; ctx.fillText(r.pct+'%', x+barW/2, y-4);
-      const short=(r.bbws||'-').length>12?(r.bbws.slice(0,11)+'…'):(r.bbws||'-'); ctx.save(); ctx.translate(x+barW/2, cssH-padB+14); ctx.rotate(-Math.PI/6); ctx.fillStyle='#444'; ctx.fillText(short,0,0); ctx.restore();
+  // mini chart (canvas)
+  const canvas = $('#statsChart'); const ctx = canvas.getContext('2d');
+  function draw(order='desc'){
+    const data = [...byBBWS].sort((a,b)=> order==='desc' ? (b.pct-a.pct) : (a.pct-b.pct)).slice(0,8);
+    const dpr=window.devicePixelRatio||1, cssW=canvas.clientWidth, cssH=canvas.clientHeight;
+    canvas.width=Math.round(cssW*dpr); canvas.height=Math.round(cssH*dpr); ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,cssW,cssH);
+    const padL=10,padR=10,padT=10,padB=20,gap=6,w=Math.max(12,(cssW-padL-padR-gap*(data.length-1))/data.length);
+    const hMax=cssH-padT-padB;
+    // guides
+    ctx.strokeStyle="#e5e7eb"; [0,100].forEach(p=>{const y=padT+hMax*(1-p/100);ctx.beginPath();ctx.moveTo(padL,y);ctx.lineTo(cssW-padR,y);ctx.stroke();});
+    data.forEach((r,i)=>{
+      const x=padL+i*(w+gap), h=Math.max(2,(r.pct/100)*hMax), y=padT+(hMax-h);
+      const grd = ctx.createLinearGradient(0,y,0,y+h); grd.addColorStop(0,"#16a34a"); grd.addColorStop(1,"#86efac");
+      ctx.fillStyle=grd; ctx.fillRect(x,y,w,h);
+      ctx.fillStyle="#111"; ctx.font="12px system-ui,Segoe UI,Roboto,Arial"; ctx.textAlign="center";
+      ctx.fillText(r.pct+"%", x+w/2, y-4);
+      const short=(r.bbws||'-'); ctx.save(); ctx.translate(x+w/2, cssH-6); ctx.rotate(-Math.PI/6);
+      ctx.fillStyle="#6b7280"; ctx.fillText(short.length>12?short.slice(0,11)+"…":short, 0, 0); ctx.restore();
     });
   }
-  drawMiniChart('desc');
-  btnSort.addEventListener('click',()=>{ const cur=btnSort.getAttribute('data-order'); const next=cur==='desc'?'asc':'desc';
-    btnSort.setAttribute('data-order',next); btnSort.textContent = next==='desc'?'Urut: tertinggi':'Urut: terendah'; drawMiniChart(next); });
-
-  // Sesuaikan posisi tombol mengambang dengan tinggi stats aktual
-  requestAnimationFrame(()=> {
-    const statsH = document.getElementById('stats').getBoundingClientRect().height;
-    const btns = document.getElementById('floatBtns');
-    btns.style.bottom = Math.max(160, Math.min(360, statsH)) + 'px';
-  });
+  draw('desc');
+  $('#btnSortChart').onclick = (e)=>{
+    const cur=e.currentTarget.getAttribute('data-order'); const next=cur==='desc'?'asc':'desc';
+    e.currentTarget.setAttribute('data-order', next);
+    e.currentTarget.textContent = next==='desc'?'Urut: tertinggi':'Urut: terendah';
+    draw(next);
+  };
 }
 
-/* ---- Build Stats ---- */
-async function buildStats(){
+/* ===== Build ===== */
+async function build(){
   try{
-    document.getElementById('stats').textContent='Memuat statistik…';
-    const [baseline, survey] = await Promise.all([loadBaseline(), loadSurvey()]);
-    const baselineCanon = baseline.map(b=>({...b, key: canon(b.di)}));
-    const totalBaseline = baselineCanon.length;
-    const totalTerisi   = baselineCanon.filter(b=> survey.filledSet.has(b.key)).length;
-    const persen        = totalBaseline ? Math.round((totalTerisi/totalBaseline)*100) : 0;
+    $('#stats').textContent='Memuat statistik…';
+    const [baseline, logrows] = await Promise.all([loadBaseline(), loadLog()]);
 
+    // set untuk DI yang sudah upload (kunci: bbws|di) -> DI dihitung 1x per B/BWS
+    const filledSet = new Set(
+      logrows.map(r => `${canon(r.bbws)}|${canon(r.di)}`)
+    );
+
+    // agregasi baseline per B/BWS
     const mapBB = new Map();
-    baselineCanon.forEach(b=>{
-      const key=b.bbws || '-';
-      if(!mapBB.has(key)) mapBB.set(key,{bbws:key,total:0,filled:0});
-      const acc=mapBB.get(key); acc.total++; if(survey.filledSet.has(b.key)) acc.filled++;
+    baseline.forEach(b=>{
+      const key = b.bbws || '-';
+      if(!mapBB.has(key)) mapBB.set(key,{bbws:key, diSet:new Set(), total:0, filled:0});
+      const acc=mapBB.get(key);
+      const diKey = `${canon(b.bbws)}|${canon(b.di)}`;
+      if(!acc._seen) acc._seen=new Set();
+      if(!acc._seen.has(diKey)){ acc._seen.add(diKey); acc.total++; acc.diSet.add(diKey); }
+      if(filledSet.has(diKey)) acc.filled++;
     });
-    const byBBWS=[...mapBB.values()].map(x=>({...x, pct: x.total? Math.round((x.filled/x.total)*100) : 0}));
+    const byBBWS = [...mapBB.values()].map(x=>({bbws:x.bbws,total:x.total,filled:x.filled,pct: x.total?Math.round(x.filled/x.total*100):0}));
 
-    const missing = baselineCanon.filter(b=>!survey.filledSet.has(b.key)).map(b=>({bbws:b.bbws,di:b.di,prov:b.prov,kab:b.kab}));
+    const totalBaseline = baseline.reduce((s, b, i, arr)=>{
+      // hitung unik per B/BWS+DI
+      return s;
+    }, 0);
+    // total baseline unik:
+    const uniqBaseline = new Set(baseline.map(b => `${canon(b.bbws)}|${canon(b.di)}`));
+    const totalBL = uniqBaseline.size;
+    const totalFilled = [...uniqBaseline].filter(k => filledSet.has(k)).length;
+    const percent = totalBL ? Math.round(totalFilled/totalBL*100) : 0;
 
-    buildStatsUI({totalBaseline,totalTerisi,persen,byBBWS,missing});
+    // missing list untuk export
+    const missing = baseline.filter(b => !filledSet.has(`${canon(b.bbws)}|${canon(b.di)}`));
 
-    // isi dropdown filter setelah marker jadi
-    fillSelect(document.getElementById('f-bbws'), [...uniqBBWS], '— Semua B/BWS —');
-    fillSelect(document.getElementById('f-di'),   [...uniqDI],   '— Semua DI —');
+    buildStatsUI({totalBaseline: totalBL, totalFilled, percent, byBBWS, missing});
+
+    // isi filter dari data LOG (yang ada markernya)
+    const uniqBB = Array.from(new Set(logrows.map(r=>r.bbws).filter(Boolean)));
+    const uniqDI = Array.from(new Set(logrows.map(r=>r.di).filter(Boolean)));
+    fillSelect($('#f-bbws'), uniqBB, '— Semua B/BWS —');
+    fillSelect($('#f-di'),   uniqDI, '— Semua DI —');
 
   }catch(e){
     console.error(e);
-    document.getElementById('stats').innerHTML =
-      `<div style="color:#b91c1c">Gagal memuat statistik. Pastikan Sheet baseline bisa diakses publik (Anyone with the link - Viewer).</div>
-       <div style="font-size:12px;color:#444;margin-top:6px">Detail: ${e.message||e}</div>`;
+    $('#stats').innerHTML = `<div style="color:#b91c1c">Gagal memuat data. Pastikan kedua sheet bisa diakses publik (Anyone with the link - Viewer).</div>
+                             <div style="font-size:12px;color:#6b7280">Detail: ${e.message||e}</div>`;
   }
 }
-buildStats();
+build();
 
-/* ====== FILTER ====== */
+/* ===== Filter & Search (berbasis marker dari Log_Progres) ===== */
+const index=[]; // {name, marker}
+function rebuildIndex(){
+  index.length=0;
+  cluster.eachLayer(m=>{
+    const n = (m && m.getPopup && (m.getPopup()?.getContent()||'').match(/<b>(.*?)<\/b>/));
+    const diName = n ? n[1] : '';
+    index.push({name: diName, marker: m});
+  });
+}
+map.on('layeradd', rebuildIndex);
+
 function applyFilters(){
-  const fBBWS = norm(document.getElementById('f-bbws').value);
-  const fDI   = norm(document.getElementById('f-di').value);
-  cluster.clearLayers(); const visible=[];
-  allMarkers.forEach(m=>{
-    const {bbws,diName}=m.__meta||{};
-    const passBBWS = !fBBWS || norm(bbws)===fBBWS;
-    const passDI   = !fDI   || norm(diName)===fDI;
-    if(passBBWS && passDI){ cluster.addLayer(m); visible.push(m); }
+  const fBBWS = canon($('#f-bbws').value);
+  const fDI   = canon($('#f-di').value);
+  const visible=[];
+  cluster.clearLayers();
+  // rebuild from stored markers (simple cache via window.__allMarkers if needed)
+  (window.__allMarkers||[]).forEach(m=>{
+    const meta=m.__meta||{};
+    const passB = !fBBWS || canon(meta.bbws)===fBBWS;
+    const passD = !fDI   || canon(meta.di)===fDI;
+    if(passB && passD){ cluster.addLayer(m); visible.push(m); }
   });
   if(visible.length){ const g=L.featureGroup(visible); map.fitBounds(g.getBounds(),{padding:[20,20]}); }
-  rebuildSuggestions();
 }
-document.getElementById('f-bbws').addEventListener('change', applyFilters);
-document.getElementById('f-di').addEventListener('change', applyFilters);
+$('#f-bbws').addEventListener('change', applyFilters);
+$('#f-di').addEventListener('change', applyFilters);
 
-/* ====== SEARCH ====== */
-function rebuildSuggestions(){
-  const fBBWS = norm(document.getElementById('f-bbws').value);
-  const fDI   = norm(document.getElementById('f-di').value);
-  index.length=0;
-  allMarkers.forEach(m=>{
-    const {bbws,diName}=m.__meta||{};
-    const passBBWS = !fBBWS || norm(bbws)===fBBWS;
-    const passDI   = !fDI   || norm(diName)===fDI;
-    if(passBBWS && passDI){ index.push({name:diName, marker:m}); }
-  });
-}
+// simpan marker saat loadLog:
+(function patchClusterAdd(){
+  const _add = cluster.addLayer.bind(cluster);
+  window.__allMarkers = [];
+  cluster.addLayer = function(m){ window.__allMarkers.push(m); return _add(m); };
+})();
+
+// search box
 function showSuggestions(q){
-  const box=document.getElementById('suggestions'); box.innerHTML="";
-  if(!q){ box.style.display="none"; return; }
-  const hits=index.filter(it=>it.name && it.name.toLowerCase().includes(q.toLowerCase()));
-  hits.slice(0,100).forEach(it=>{
+  const box=$('#suggestions'); box.innerHTML='';
+  if(!q){ box.style.display='none'; return; }
+  const hits=index.filter(it=>it.name && it.name.toLowerCase().includes(q.toLowerCase())).slice(0,100);
+  hits.forEach(it=>{
     const d=document.createElement('div'); d.textContent=it.name;
-    d.onclick=()=>{ document.getElementById('search').value=it.name; box.style.display="none";
-      map.setView(it.marker.getLatLng(),14); it.marker.openPopup(); };
+    d.onclick=()=>{ $('#search').value=it.name; box.style.display='none'; map.setView(it.marker.getLatLng(),14); it.marker.openPopup(); };
     box.appendChild(d);
   });
-  box.style.display = hits.length? "block":"none";
+  box.style.display = hits.length ? 'block':'none';
 }
-document.getElementById('search').addEventListener('keydown', e=>{
+$('#search').addEventListener('input', e=> showSuggestions(e.currentTarget.value));
+$('#search').addEventListener('keydown', e=>{
   if(e.key==='Enter'){
     const q=e.currentTarget.value.trim().toLowerCase();
-    const hit = index.find(it=>it.name && it.name.toLowerCase()===q) || index.find(it=>it.name && it.name.toLowerCase().includes(q));
-    if(hit){ map.setView(hit.marker.getLatLng(),14); hit.marker.openPopup(); document.getElementById('suggestions').style.display='none'; }
+    const hit=index.find(it=>it.name && it.name.toLowerCase()===q) || index.find(it=>it.name && it.name.toLowerCase().includes(q));
+    if(hit){ map.setView(hit.marker.getLatLng(),14); hit.marker.openPopup(); $('#suggestions').style.display='none'; }
   }
 });
 </script>
