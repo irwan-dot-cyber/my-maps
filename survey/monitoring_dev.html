@@ -234,17 +234,29 @@ async function loadLog(){
       markers.push(m);
 
       // label mini (muncul saat zoom tinggi)
-      const label = L.marker([r.lat, r.lng], {
-        icon: L.divIcon({
-          className: 'di-label',
-          html: `${r.di} ${r.stage}%`,
-          iconSize: [0,0]
-        }),
-        interactive:false
-      });
-      labelsGroup.addLayer(label);
-    }
+   // label mini (muncul saat zoom tinggi)
+const label = L.marker([r.lat, r.lng], {
+  icon: L.divIcon({
+    className: 'di-label',
+    html: `${r.di} ${r.stage}%`,
+    iconSize: null
+  }),
+  interactive:false
+}).addTo(labelsGroup);
+
+// tampilkan label hanya saat zoom tinggi
+function toggleLabels(){
+  const show = map.getZoom() >= 14;
+  labelsGroup.eachLayer(l=>{
+    const el = l.getElement ? l.getElement() : (l._icon || l._container);
+    if (el) el.style.display = show ? 'block' : 'none';
   });
+}
+map.off('zoomend'); // hapus listener lama
+map.on('zoomend', toggleLabels);
+map.once('moveend', toggleLabels);
+toggleLabels();
+
 
   // tampilkan label hanya saat zoom >= 14
   function toggleLabels(){
