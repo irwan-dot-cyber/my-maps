@@ -2,13 +2,16 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8" />
-<title>Pelaksanaan Inpres 2/2025 Tahap 2— Monitoring</title>
+<title>Pelaksanaan Inpres 2/2025 Tahap 2 — Monitoring</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
 <style>
-  :root{ --brand:#FFD700; --ink:#111827; --mut:#6b7280; --ok1:#16a34a; --ok2:#86efac; --card:#ffffff; --line:#e5e7eb; }
+  :root{
+    --brand:#FFD700; --ink:#111827; --mut:#6b7280;
+    --ok1:#16a34a; --ok2:#86efac; --card:#ffffff; --line:#e5e7eb;
+  }
   *{box-sizing:border-box}
   html,body{height:100%;margin:0;font-family:system-ui,Segoe UI,Roboto,Arial}
   #header{background:var(--brand);color:#000;padding:10px 12px;font-weight:800;font-size:14px;display:flex;align-items:center;gap:10px}
@@ -38,16 +41,17 @@
   table.stats th{background:#f9fafb}
   .btn-small{padding:6px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer}
 
-  /* Label mini untuk stage (muncul saat zoom tinggi) */
+  /* tooltip label permanen di atas marker */
   .di-label{
-    background:rgba(255,255,255,.9);
-    border:1px solid #d1d5db;
-    border-radius:999px;
-    padding:2px 8px;
-    font-size:12px;
-    color:#111827;
-    white-space:nowrap;
-    box-shadow:0 2px 6px rgba(0,0,0,.08);
+    background: rgba(255,255,255,.95);
+    border: 1px solid #d1d5db;
+    border-radius: 999px;
+    padding: 2px 8px;
+    font-size: 12px;
+    color: #111827;
+    white-space: nowrap;
+    box-shadow: 0 2px 6px rgba(0,0,0,.08);
+    pointer-events: none; /* supaya klik tetap ke marker */
   }
 
   @media (max-width:560px){
@@ -90,7 +94,7 @@
 
 <script>
 /* ===== CONFIG ===== */
-const SHEET_ID   = "1LrRWGns6d68uQ7sNy2F7ecGsBrBgGbiO9S4lVXEkpXQ";
+const SHEET_ID     = "1LrRWGns6d68uQ7sNy2F7ecGsBrBgGbiO9S4lVXEkpXQ";
 const URL_BASELINE = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Sheet1`;
 const URL_LOG      = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Log_Progres`;
 
@@ -129,17 +133,23 @@ function fillSelect(el, items, placeholder){
 const osm  = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19, attribution:'© OpenStreetMap'});
 const img  = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19, attribution:'Tiles © Esri/Maxar'});
 const map  = L.map('map', {layers:[osm]}).setView([-2.5,117],5);
-L.control.layers({"OSM":osm, "Esri Imagery":img}, {}, {position:'topright'}).addTo(map);
 
-/* ===== Cluster + Label Layer ===== */
+L.control.layers(
+  {"OSM":osm, "Esri Imagery":img},
+  {}, {position:'topright'}
+).addTo(map);
+
+/* ===== Cluster ===== */
 let cluster = L.markerClusterGroup({ disableClusteringAtZoom: 15 });
 map.addLayer(cluster);
-const labelsGroup = L.layerGroup().addTo(map);
 
-// simpan semua marker untuk filter/search
+// cache semua marker untuk filter/search
 window.__allMarkers = [];
 const __origAdd = cluster.addLayer.bind(cluster);
-cluster.addLayer = function(layer){ window.__allMarkers.push(layer); return __origAdd(layer); };
+cluster.addLayer = function(layer){
+  window.__allMarkers.push(layer);
+  return __origAdd(layer);
+};
 
 /* ===== UI Buttons ===== */
 $('#btnLocate').addEventListener('click', ()=>{
@@ -173,6 +183,7 @@ async function loadLog(){
   const t = await (await fetch(URL_LOG+'&t='+Date.now(),{cache:'no-store'})).text();
   const rows = parseGviz(t);
 
+  // normalisasi baris log
   const out = rows.map(r=>{
     const bws   = r['BWS'] || r['B/BWS'] || r['BBWS'] || r['B/BWS PELAKSANA'] || '';
     const di    = r['NAMA_DI'] || r['Nama DI'] || r['DI'] || '';
@@ -185,60 +196,49 @@ async function loadLog(){
     return {bbws:norm(bws), di:norm(di), lat, lng, stage, file:norm(file), kec:norm(kec), desa:norm(desa)};
   }).filter(r=>r.di);
 
+  // render markers
   cluster.clearLayers();
-  labelsGroup.clearLayers();
-
   const markers=[];
+
   out.forEach(r=>{
-    if(!Number.isFinite(r.lat) || !Number.isFinite(r.lng)) return;
+    if(Number.isFinite(r.lat) && Number.isFinite(r.lng)){
+      const gmaps = `https://www.google.com/maps?q=${r.lat},${r.lng}`;
+      const imgTag = r.file ? `<div style="margin-top:6px"><a href="${r.file}" target="_blank" rel="noopener">
+        <img src="${r.file}" alt="Foto ${r.di}" style="width:220px;height:150px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb"/></a></div>` : '';
+      const popup = `
+        <b>${r.di}</b>
+        <div style="font-size:12px;color:#555;margin:4px 0">
+          B/BWS: ${r.bbws || '-'}<br/>
+          Progres: <b>${r.stage||0}%</b><br/>
+          Lokasi: ${r.kec || '-'}, ${r.desa || '-'}<br/>
+          📍 ${r.lat.toFixed(6)}, ${r.lng.toFixed(6)}
+        </div>
+        <a href="${gmaps}" target="_blank" rel="noopener">Buka di Google Maps</a>
+        ${imgTag}
+      `;
+      const m=L.marker([r.lat,r.lng],{
+        icon:L.icon({
+          iconUrl: (r.stage>=100?'https://maps.google.com/mapfiles/ms/icons/red-dot.png':'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'),
+          iconSize:[25,41],iconAnchor:[12,41],
+          shadowUrl:'https://unpkg.com/leaflet/dist/images/marker-shadow.png',shadowSize:[41,41]
+        })
+      }).bindPopup(popup);
 
-    const gmaps = `https://www.google.com/maps?q=${r.lat},${r.lng}`;
-    const imgTag = r.file ? `<div style="margin-top:6px"><a href="${r.file}" target="_blank" rel="noopener">
-      <img src="${r.file}" alt="Foto ${r.di}" style="width:220px;height:150px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb"/></a></div>` : '';
+      // label permanen di atas marker
+      m.bindTooltip(`${r.di} ${r.stage}%`, {
+        permanent: true,
+        direction: 'top',
+        offset: [0, -6],
+        className: 'di-label'
+      });
 
-    const popup = `
-      <b>${r.di}</b>
-      <div style="font-size:12px;color:#555;margin:4px 0">
-        B/BWS: ${r.bbws || '-'}<br/>
-        Progres: <b>${r.stage||0}%</b><br/>
-        Lokasi: ${r.kec || '-'}, ${r.desa || '-'}<br/>
-        📍 ${r.lat.toFixed(6)}, ${r.lng.toFixed(6)}
-      </div>
-      <a href="${gmaps}" target="_blank" rel="noopener">Buka di Google Maps</a>
-      ${imgTag}
-    `;
+      // untuk filter
+      m.__meta = {bbws:r.bbws, di:r.di, stage:r.stage};
 
-    const m=L.marker([r.lat,r.lng],{
-      icon:L.icon({
-        iconUrl:(r.stage>=100?'https://maps.google.com/mapfiles/ms/icons/red-dot.png':'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'),
-        iconSize:[25,41],iconAnchor:[12,41],
-        shadowUrl:'https://unpkg.com/leaflet/dist/images/marker-shadow.png',shadowSize:[41,41]
-      })
-    }).bindPopup(popup);
-
-    m.__meta = {bbws:r.bbws, di:r.di, stage:r.stage};
-    cluster.addLayer(m);
-    markers.push(m);
-
-    // label mini
-    L.marker([r.lat, r.lng], {
-      icon: L.divIcon({ className:'di-label', html:`${r.di} ${r.stage}%`, iconSize:null }),
-      interactive:false
-    }).addTo(labelsGroup);
+      cluster.addLayer(m);
+      markers.push(m);
+    }
   });
-
-  // --- tampilkan label hanya saat zoom tinggi ---
-  function toggleLabels(){
-    const show = map.getZoom() >= 14;
-    labelsGroup.eachLayer(l=>{
-      const el = l.getElement ? l.getElement() : (l._icon || l._container);
-      if (el) el.style.display = show ? 'block' : 'none';
-    });
-  }
-  map.off('zoomend', toggleLabels);
-  map.on('zoomend', toggleLabels);
-  // panggilan awal setelah render
-  setTimeout(()=>{ toggleLabels(); }, 0);
 
   if(markers.length){
     const g=L.featureGroup(markers); map.fitBounds(g.getBounds(),{padding:[20,20]});
@@ -269,6 +269,7 @@ function buildStatsUI({totalBaseline,totalFilled,percent,byBBWS,missing}){
 
   $('#stats').innerHTML = `<b>Statistik Keterisian Data (Sheet1 vs Log_Progres)</b>${head}${bar}${table}${exportBtn}`;
 
+  // export CSV
   $('#btnExportMissing').onclick = ()=>{
     const header = ["B/BWS","DI","Provinsi","Kabupaten"];
     const lines = [header.join(",")].concat(
@@ -285,10 +286,12 @@ function buildStatsUI({totalBaseline,totalFilled,percent,byBBWS,missing}){
 async function build(){
   try{
     $('#stats').textContent='Memuat statistik…';
-
     const [baseline, logrows] = await Promise.all([loadBaseline(), loadLog()]);
+
+    // set kunci: bbws|di untuk yang sudah upload
     const filledSet = new Set(logrows.map(r => `${canon(r.bbws)}|${canon(r.di)}`));
 
+    // agregasi baseline per B/BWS
     const mapBB = new Map();
     baseline.forEach(b=>{
       const key = b.bbws || '-';
@@ -296,17 +299,23 @@ async function build(){
       mapBB.get(key).total++;
       if (filledSet.has(`${canon(b.bbws)}|${canon(b.di)}`)) mapBB.get(key).filled++;
     });
-    const byBBWS = [...mapBB.values()].map(x=>({ bbws:x.bbws, total:x.total, filled:x.filled, pct: x.total ? Math.round(x.filled/x.total*100) : 0 }));
+    const byBBWS = [...mapBB.values()].map(x=>({
+      bbws:x.bbws, total:x.total, filled:x.filled,
+      pct: x.total ? Math.round(x.filled/x.total*100) : 0
+    }));
 
+    // total unik baseline & filled
     const uniqBaseline = new Set(baseline.map(b => `${canon(b.bbws)}|${canon(b.di)}`));
     const totalBL = uniqBaseline.size;
     const totalFilled = [...uniqBaseline].filter(k => filledSet.has(k)).length;
     const percent = totalBL ? Math.round(totalFilled/totalBL*100) : 0;
 
+    // missing untuk export
     const missing = baseline.filter(b => !filledSet.has(`${canon(b.bbws)}|${canon(b.di)}`));
 
     buildStatsUI({totalBaseline: totalBL, totalFilled, percent, byBBWS, missing});
 
+    // isi filter dari LOG (yang punya marker)
     const uniqBB = Array.from(new Set(logrows.map(r=>r.bbws).filter(Boolean)));
     const uniqDI = Array.from(new Set(logrows.map(r=>r.di).filter(Boolean)));
     fillSelect($('#f-bbws'), uniqBB, '— Semua B/BWS —');
@@ -340,7 +349,8 @@ function applyFilters(){
 $('#f-bbws').addEventListener('change', applyFilters);
 $('#f-di').addEventListener('change', applyFilters);
 
-const index=[];
+// Search suggestions
+const index=[]; // {name, marker}
 function rebuildIndex(){
   index.length=0;
   window.__allMarkers.forEach(m=>{
