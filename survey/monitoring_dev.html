@@ -11,6 +11,7 @@
   :root{
     --brand:#FFD700; --ink:#111827; --mut:#6b7280;
     --ok1:#16a34a; --ok2:#86efac; --card:#ffffff; --line:#e5e7eb;
+    --btn:#2563eb; --btnDis:#9ca3af;
   }
   *{box-sizing:border-box}
   html,body{height:100%;margin:0;font-family:system-ui,Segoe UI,Roboto,Arial}
@@ -41,7 +42,7 @@
   table.stats th{background:#f9fafb}
   .btn-small{padding:6px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer}
 
-  /* Label mini: muncul di atas marker, tidak menutupi pin */
+  /* Label mini di atas marker */
   .di-label{
     background:rgba(255,255,255,.92);
     border:1px solid #d1d5db;
@@ -51,10 +52,15 @@
     color:#111827;
     white-space:nowrap;
     box-shadow:0 2px 6px rgba(0,0,0,.08);
-    transform: translateY(-28px); /* geser ke atas pin */
-    pointer-events:none; /* biar gak ganggu klik pin */
+    transform: translateY(-28px);
+    pointer-events:none;
   }
-  .leaflet-marker-icon, .leaflet-marker-shadow { will-change: transform; }
+
+  /* Tombol foto per stage di popup */
+  .stage-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:6px}
+  .btn-photo{display:inline-block;text-align:center;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:#f3f4f6;color:#6b7280;font-weight:700;text-decoration:none}
+  .btn-photo.active{background:var(--btn);color:#fff;border-color:var(--btn)}
+  .btn-photo.disabled{cursor:not-allowed;background:#f3f4f6;color:#9ca3af;border-color:#e5e7eb}
 
   @media (max-width:560px){
     #map{height:50vh}
@@ -71,11 +77,11 @@
 
 <div class="top-controls">
   <div class="filters">
-    <select id="f-bbws"><option value="">— Semua B/BWS —</option></select>
+    <select id="f-bbws"><option value="">— Semua B/BWS (yang sudah upload) —</option></select>
     <select id="f-di" style="min-width:220px" disabled><option value="">— Pilih B/BWS dulu —</option></select>
   </div>
   <div class="search-box">
-    <input id="search" type="text" placeholder="Cari DI…" />
+    <input id="search" type="text" placeholder="Cari DI (yang sudah upload)…" />
     <div id="suggestions"></div>
   </div>
 </div>
@@ -106,7 +112,6 @@ const norm  = s => (s==null?'':String(s)).trim();
 const canon = s => norm(s).toLowerCase();
 const $     = sel => document.querySelector(sel);
 
-// parsing JSON dari Google Visualization API
 function parseGviz(text){
   text = String(text||'').replace(/^\)\]\}'\s*/, '');
   const m = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]+?)\)\s*;?\s*$/);
@@ -137,10 +142,9 @@ function fillSelect(el, items, placeholder){
 const osm  = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19, attribution:'© OpenStreetMap'});
 const img  = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19, attribution:'Tiles © Esri/Maxar'});
 const map  = L.map('map', {layers:[osm]}).setView([-2.5,117],5);
-
 L.control.layers({"OSM":osm, "Esri Imagery":img}, {}, {position:'topright'}).addTo(map);
 
-// cluster & label layer
+// cluster & label layers
 let cluster = L.markerClusterGroup({ disableClusteringAtZoom: 15 });
 map.addLayer(cluster);
 const labelsGroup = L.layerGroup().addTo(map);
@@ -153,7 +157,7 @@ cluster.addLayer = function(layer){
   return __origAdd(layer);
 };
 
-/* ===== UI Buttons ===== */
+/* ===== Buttons ===== */
 $('#btnLocate').addEventListener('click', ()=>{
   if(!navigator.geolocation) return alert('Geolocation tidak didukung');
   navigator.geolocation.getCurrentPosition(pos=>{
@@ -185,8 +189,8 @@ async function loadLog(){
   const t = await (await fetch(URL_LOG+'&t='+Date.now(),{cache:'no-store'})).text();
   const rows = parseGviz(t);
 
-  // group per DI (per B/BWS) -> ambil satu marker/DI, simpan stage terakhir & foto terakhir
-  const groups = new Map(); // key = bbws|di -> {bbws, di, lat, lng, stage, file}
+  // Kelompokkan per B/BWS+DI; simpan foto per stage (25/50/75/100), koordinat terakhir, stage max
+  const groups = new Map(); // key = bbws|di -> {bbws, di, lat, lng, stageMax, photos:{25:url,50:url,75:url,100:url}}
   rows.forEach(r=>{
     const bbws  = norm(r['BWS'] || r['B/BWS'] || r['BBWS'] || r['B/BWS PELAKSANA'] || '');
     const di    = norm(r['NAMA_DI'] || r['Nama DI'] || r['DI'] || '');
@@ -197,51 +201,62 @@ async function loadLog(){
     const file  = norm(r['FILE_URL'] || r['Foto_URL'] || r['URL'] || '');
 
     const key = `${canon(bbws)}|${canon(di)}`;
-    const prev = groups.get(key);
-    // pilih entri dengan stage terbesar; jika sama, ambil yang punya koordinat valid
-    if(!prev || stage > prev.stage || (!Number.isFinite(prev.lat) && Number.isFinite(lat))){
-      groups.set(key, {bbws, di, lat, lng, stage, file});
-    }
+    if(!groups.has(key)) groups.set(key,{bbws, di, lat:NaN, lng:NaN, stageMax:0, photos:{}});
+    const g = groups.get(key);
+
+    // ambil koordinat yang valid terakhir
+    if (Number.isFinite(lat) && Number.isFinite(lng)) { g.lat = lat; g.lng = lng; }
+    // simpan foto berdasarkan stage bulatan 25/50/75/100 terdekat (atau sesuai nilai mentah jika cocok)
+    const bucket = [25,50,75,100].find(v=>v===stage) ?? stage;
+    if (file) g.photos[bucket] = file;
+    if (stage > g.stageMax) g.stageMax = stage;
   });
 
+  // render marker + label
   cluster.clearLayers();
   labelsGroup.clearLayers();
-
   const markers=[];
+
   groups.forEach(g=>{
     if(!Number.isFinite(g.lat) || !Number.isFinite(g.lng)) return;
     const gmaps = `https://www.google.com/maps?q=${g.lat},${g.lng}`;
-    const imgTag = g.file ? `<div style="margin-top:6px"><a href="${g.file}" target="_blank" rel="noopener">
-      <img src="${g.file}" alt="Foto ${g.di}" style="width:220px;height:150px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb"/></a></div>` : '';
+
+    // tombol per stage (aktif=biru bila ada foto; nonaktif=abu-abu)
+    const stages = [25,50,75,100];
+    const btns = stages.map(s=>{
+      const url = g.photos[s];
+      return url
+        ? `<a class="btn-photo active" href="${url}" target="_blank" rel="noopener">Foto Progres ${s}%</a>`
+        : `<span class="btn-photo disabled" title="Belum ada foto ${s}%">Foto Progres ${s}%</span>`;
+    }).join('');
 
     const popup = `
       <b>${g.di}</b>
       <div style="font-size:12px;color:#555;margin:4px 0">
         B/BWS: ${g.bbws || '-'}<br/>
-        Progres terkini: <b>${g.stage||0}%</b><br/>
-        📍 ${g.lat.toFixed(6)}, ${g.lng.toFixed(6)}
+        Progres terkini: <b>${g.stageMax||0}%</b><br/>
+        📍 ${g.lat.toFixed(6)}, ${g.lng.toFixed(6)} — <a href="${gmaps}" target="_blank" rel="noopener">Google Maps</a>
       </div>
-      <a href="${gmaps}" target="_blank" rel="noopener">Buka di Google Maps</a>
-      ${imgTag}
+      <div class="stage-grid">${btns}</div>
     `;
 
     const m=L.marker([g.lat,g.lng],{
       icon:L.icon({
-        iconUrl:(g.stage>=100?'https://maps.google.com/mapfiles/ms/icons/red-dot.png':'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'),
+        iconUrl:(g.stageMax>=100?'https://maps.google.com/mapfiles/ms/icons/red-dot.png':'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'),
         iconSize:[25,41],iconAnchor:[12,41],
         shadowUrl:'https://unpkg.com/leaflet/dist/images/marker-shadow.png',shadowSize:[41,41]
       })
     }).bindPopup(popup);
 
-    m.__meta = {bbws:g.bbws, di:g.di, stage:g.stage};
+    m.__meta = {bbws:g.bbws, di:g.di, stage:g.stageMax};
     cluster.addLayer(m);
     markers.push(m);
 
-    // label di atas pin (tidak menutup pin)
+    // label mini (tidak menutup pin)
     L.marker([g.lat, g.lng], {
       icon: L.divIcon({
         className: 'di-label',
-        html: `${g.di} ${g.stage||0}%`,
+        html: `${g.di} ${g.stageMax||0}%`,
         iconSize: null
       }),
       interactive:false,
@@ -253,11 +268,11 @@ async function loadLog(){
     const g=L.featureGroup(markers); map.fitBounds(g.getBounds(),{padding:[20,20]});
   }
 
-  // kembalikan array agregat (untuk statistik & filter)
+  // kembalikan array agregat utk filter/cascading
   return Array.from(groups.values());
 }
 
-/* ===== Stats ===== */
+/* ===== Stats (baseline vs log) ===== */
 function buildStatsUI({totalBaseline,totalFilled,percent,byBBWS,missing}){
   const bar  = `<div class="bar"><span style="width:${percent}%"></span></div>`;
   const head = `
@@ -293,8 +308,8 @@ function buildStatsUI({totalBaseline,totalFilled,percent,byBBWS,missing}){
   };
 }
 
-/* ===== Cascading Map (B/BWS -> DI) ===== */
-const bbwsToDi = new Map(); // B/BWS -> Set(DI)
+/* ===== Cascading (hanya DI dari Log_Progres) ===== */
+const bbwsToDiUploaded = new Map(); // B/BWS -> Set(DI) (hanya yg ada di log)
 function updateDiOptions(){
   const bb = $('#f-bbws').value;
   const diSel = $('#f-di');
@@ -303,9 +318,9 @@ function updateDiOptions(){
     diSel.disabled = true;
     return;
   }
-  const list = Array.from(bbwsToDi.get(bb) || []);
+  const list = Array.from(bbwsToDiUploaded.get(bb) || []);
   diSel.disabled = false;
-  fillSelect(diSel, list, '— Semua DI —');
+  fillSelect(diSel, list, '— Semua DI (yang sudah upload) —');
   diSel.value = '';
 }
 
@@ -316,12 +331,12 @@ async function build(){
 
     const [baseline, logAgg] = await Promise.all([loadBaseline(), loadLog()]);
 
-    // mapping B/BWS -> DI (dari baseline, supaya lengkap)
-    bbwsToDi.clear();
-    baseline.forEach(b=>{
-      const key = b.bbws || '-';
-      if(!bbwsToDi.has(key)) bbwsToDi.set(key, new Set());
-      bbwsToDi.get(key).add(b.di);
+    // mapping B/BWS -> DI dari LOG saja (sudah upload)
+    bbwsToDiUploaded.clear();
+    logAgg.forEach(r=>{
+      const key = r.bbws || '-';
+      if(!bbwsToDiUploaded.has(key)) bbwsToDiUploaded.set(key, new Set());
+      bbwsToDiUploaded.get(key).add(r.di);
     });
 
     // set kunci terisi dari log (bbws|di)
@@ -344,14 +359,13 @@ async function build(){
     const totalBL = uniqBaseline.size;
     const totalFilled = [...uniqBaseline].filter(k => filledSet.has(k)).length;
     const percent = totalBL ? Math.round(totalFilled/totalBL*100) : 0;
-
     const missing = baseline.filter(b => !filledSet.has(`${canon(b.bbws)}|${canon(b.di)}`));
 
     buildStatsUI({totalBaseline: totalBL, totalFilled, percent, byBBWS, missing});
 
-    // isi dropdown
-    const uniqBB = Array.from(bbwsToDi.keys());
-    fillSelect($('#f-bbws'), uniqBB, '— Semua B/BWS —');
+    // isi dropdown dari LOG (hanya yang sudah upload)
+    const uniqBB = Array.from(bbwsToDiUploaded.keys());
+    fillSelect($('#f-bbws'), uniqBB, '— Semua B/BWS (yang sudah upload) —');
     updateDiOptions();
 
   }catch(e){
@@ -368,12 +382,27 @@ function applyFilters(){
   const fD = canon($('#f-di').value);
 
   cluster.clearLayers();
+  labelsGroup.clearLayers();
   const visible=[];
   window.__allMarkers.forEach(m=>{
     const meta = m.__meta || {};
     const passB = !fB || canon(meta.bbws)===fB;
     const passD = !fD || canon(meta.di)===fD;
-    if(passB && passD){ cluster.addLayer(m); visible.push(m); }
+    if(passB && passD){
+      cluster.addLayer(m);
+      visible.push(m);
+      // re-spawn label untuk yang visible saja
+      const ll = L.marker(m.getLatLng(), {
+        icon: L.divIcon({
+          className: 'di-label',
+          html: `${meta.di} ${meta.stage||0}%`,
+          iconSize: null
+        }),
+        interactive:false,
+        zIndexOffset: 1000
+      });
+      labelsGroup.addLayer(ll);
+    }
   });
   if(visible.length){
     const g=L.featureGroup(visible); map.fitBounds(g.getBounds(),{padding:[20,20]});
@@ -382,7 +411,7 @@ function applyFilters(){
 $('#f-bbws').addEventListener('change', ()=>{ updateDiOptions(); applyFilters(); });
 $('#f-di').addEventListener('change', applyFilters);
 
-// Search suggestions
+// Search suggestions (hanya DI yang sudah upload—berbasis marker)
 const index=[]; // {name, marker}
 function rebuildIndex(){
   index.length=0;
