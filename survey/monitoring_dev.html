@@ -41,17 +41,17 @@
   table.stats th{background:#f9fafb}
   .btn-small{padding:6px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer}
 
-  /* tooltip label permanen di atas marker */
+  /* label tooltip permanen */
   .di-label{
-    background: rgba(255,255,255,.95);
-    border: 1px solid #d1d5db;
-    border-radius: 999px;
-    padding: 2px 8px;
-    font-size: 12px;
-    color: #111827;
-    white-space: nowrap;
-    box-shadow: 0 2px 6px rgba(0,0,0,.08);
-    pointer-events: none; /* supaya klik tetap ke marker */
+    background:rgba(255,255,255,.95);
+    border:1px solid #d1d5db;
+    border-radius:999px;
+    padding:2px 8px;
+    font-size:12px;
+    color:#111827;
+    white-space:nowrap;
+    box-shadow:0 2px 6px rgba(0,0,0,.08);
+    pointer-events:none;
   }
 
   @media (max-width:560px){
@@ -93,293 +93,168 @@
 <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
 
 <script>
-/* ===== CONFIG ===== */
-const SHEET_ID     = "1LrRWGns6d68uQ7sNy2F7ecGsBrBgGbiO9S4lVXEkpXQ";
-const URL_BASELINE = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Sheet1`;
-const URL_LOG      = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Log_Progres`;
+const SHEET_ID="1LrRWGns6d68uQ7sNy2F7ecGsBrBgGbiO9S4lVXEkpXQ";
+const URL_BASELINE=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Sheet1`;
+const URL_LOG=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Log_Progres`;
 
-/* ===== Helpers ===== */
-const norm  = s => (s==null?'':String(s)).trim();
-const canon = s => norm(s).toLowerCase();
-const $     = sel => document.querySelector(sel);
+const norm=s=>(s==null?'':String(s)).trim();
+const canon=s=>norm(s).toLowerCase();
+const $=sel=>document.querySelector(sel);
 
 function parseGviz(text){
-  text = String(text||'').replace(/^\)\]\}'\s*/, '');
-  const m = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]+?)\)\s*;?\s*$/);
+  text=String(text||'').replace(/^\)\]\}'\s*/,'');
+  const m=text.match(/google\.visualization\.Query\.setResponse\(([\s\S]+?)\)\s*;?\s*$/);
   if(!m) throw new Error('GViz payload tidak dikenali');
-  const j = JSON.parse(m[1]);
-  const cols = (j.table.cols||[]).map(c=>c.label || c.id || '');
-  const out = [];
+  const j=JSON.parse(m[1]);
+  const cols=(j.table.cols||[]).map(c=>c.label||c.id||'');
+  const out=[];
   (j.table.rows||[]).forEach(r=>{
-    const o={};
-    (r.c||[]).forEach((cell,i)=> o[cols[i] || ('C'+i)] = cell ? cell.v : '');
+    const o={}; (r.c||[]).forEach((cell,i)=>o[cols[i]||(i)] = cell?cell.v:'');
     out.push(o);
   });
   return out;
 }
 
-function fillSelect(el, items, placeholder){
-  const cur = el.value;
-  el.innerHTML = '';
-  const opt0 = document.createElement('option'); opt0.value=''; opt0.textContent=placeholder;
+function fillSelect(el,items,placeholder){
+  const cur=el.value;
+  el.innerHTML='';
+  const opt0=document.createElement('option');
+  opt0.value=''; opt0.textContent=placeholder;
   el.appendChild(opt0);
-  items.sort((a,b)=> a.localeCompare(b)).forEach(v=>{
+  items.sort((a,b)=>a.localeCompare(b)).forEach(v=>{
     const o=document.createElement('option'); o.value=v; o.textContent=v; el.appendChild(o);
   });
-  if ([...items,''].includes(cur)) el.value=cur;
+  if([...items,''].includes(cur)) el.value=cur;
 }
 
-/* ===== Map + Basemap Control ===== */
-const osm  = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19, attribution:'© OpenStreetMap'});
-const img  = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19, attribution:'Tiles © Esri/Maxar'});
-const map  = L.map('map', {layers:[osm]}).setView([-2.5,117],5);
+/* Map & basemap */
+const osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19});
+const img=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19});
+const map=L.map('map',{layers:[osm]}).setView([-2.5,117],5);
+L.control.layers({"OSM":osm,"Esri Imagery":img},{}).addTo(map);
 
-L.control.layers(
-  {"OSM":osm, "Esri Imagery":img},
-  {}, {position:'topright'}
-).addTo(map);
-
-/* ===== Cluster ===== */
-let cluster = L.markerClusterGroup({ disableClusteringAtZoom: 15 });
+let cluster=L.markerClusterGroup({disableClusteringAtZoom:15});
 map.addLayer(cluster);
 
-// cache semua marker untuk filter/search
-window.__allMarkers = [];
-const __origAdd = cluster.addLayer.bind(cluster);
-cluster.addLayer = function(layer){
-  window.__allMarkers.push(layer);
-  return __origAdd(layer);
-};
+window.__allMarkers=[];
+const origAdd=cluster.addLayer.bind(cluster);
+cluster.addLayer=function(l){window.__allMarkers.push(l);return origAdd(l);};
 
-/* ===== UI Buttons ===== */
-$('#btnLocate').addEventListener('click', ()=>{
+/* tombol */
+$('#btnLocate').onclick=()=>{
   if(!navigator.geolocation) return alert('Geolocation tidak didukung');
-  navigator.geolocation.getCurrentPosition(pos=>{
-    const lat=pos.coords.latitude, lng=pos.coords.longitude;
-    L.marker([lat,lng],{icon:L.icon({
-      iconUrl:'https://maps.google.com/mapfiles/ms/icons/green-dot.png',
-      iconSize:[25,41],iconAnchor:[12,41],
-      shadowUrl:'https://unpkg.com/leaflet/dist/images/marker-shadow.png',shadowSize:[41,41]
-    })}).addTo(map).bindPopup('Lokasi Anda').openPopup();
+  navigator.geolocation.getCurrentPosition(p=>{
+    const lat=p.coords.latitude,lng=p.coords.longitude;
+    L.marker([lat,lng],{icon:L.icon({iconUrl:'https://maps.google.com/mapfiles/ms/icons/green-dot.png',iconSize:[25,41],iconAnchor:[12,41]})})
+      .addTo(map).bindPopup('Lokasi Anda').openPopup();
     map.setView([lat,lng],13);
-  }, ()=>alert('Tidak dapat mengakses lokasi.'));
-});
-$('#btnResetRoute').addEventListener('click', ()=> map.setView([-2.5,117],5));
+  },()=>alert('Tidak dapat mengakses lokasi'));
+};
+$('#btnResetRoute').onclick=()=>map.setView([-2.5,117],5);
 
-/* ===== Loaders ===== */
 async function loadBaseline(){
-  const t = await (await fetch(URL_BASELINE+'&t='+Date.now(),{cache:'no-store'})).text();
-  const rows = parseGviz(t);
-  return rows.map(r=>{
-    const bb = r['B/BWS PELAKSANA'] || r['B/BWS'] || r['BBWS'] || r['BWS'] || '';
-    const di = r['NAMA DI/DIR'] || r['Nama DI/DIR'] || r['Nama DI'] || r['DI'] || '';
-    const prov = r['PROVINSI'] || r['Provinsi'] || '';
-    const kab  = r['KABUPATEN'] || r['Kabupaten'] || '';
-    return {bbws:norm(bb), di:norm(di), prov:norm(prov), kab:norm(kab)};
-  }).filter(r=>r.di);
+  const t=await (await fetch(URL_BASELINE+'&t='+Date.now())).text();
+  const r=parseGviz(t);
+  return r.map(x=>({
+    bbws:norm(x['B/BWS PELAKSANA']||x['B/BWS']||x['BBWS']||x['BWS']||''),
+    di:norm(x['NAMA DI/DIR']||x['Nama DI']||x['DI']||''),
+    prov:norm(x['PROVINSI']||x['Provinsi']||''),
+    kab:norm(x['KABUPATEN']||x['Kabupaten']||'')
+  })).filter(a=>a.di);
 }
 
 async function loadLog(){
-  const t = await (await fetch(URL_LOG+'&t='+Date.now(),{cache:'no-store'})).text();
-  const rows = parseGviz(t);
+  const t=await (await fetch(URL_LOG+'&t='+Date.now())).text();
+  const r=parseGviz(t);
+  const out=r.map(x=>({
+    bbws:norm(x['BWS']||x['BBWS']||x['B/BWS PELAKSANA']||''),
+    di:norm(x['NAMA_DI']||x['Nama DI']||x['DI']||''),
+    lat:parseFloat(x['LAT']||x['Latitude']||x['lat']),
+    lng:parseFloat(x['LNG']||x['Longitude']||x['lng']),
+    stage:Number(x['STAGE']||x['Progress']||0),
+    file:norm(x['FILE_URL']||x['Foto_URL']||x['URL']||''),
+    kec:norm(x['KECAMATAN']||x['Kecamatan']||''),
+    desa:norm(x['DESA']||x['Desa']||'')
+  })).filter(x=>x.di);
 
-  // normalisasi baris log
-  const out = rows.map(r=>{
-    const bws   = r['BWS'] || r['B/BWS'] || r['BBWS'] || r['B/BWS PELAKSANA'] || '';
-    const di    = r['NAMA_DI'] || r['Nama DI'] || r['DI'] || '';
-    const lat   = parseFloat(r['LAT'] || r['Lat'] || r['Latitude'] || r['lat']);
-    const lng   = parseFloat(r['LNG'] || r['Long'] || r['Longitude'] || r['lng']);
-    const stage = Number(r['STAGE'] || r['Stage'] || r['Progress'] || 0);
-    const file  = r['FILE_URL'] || r['Foto_URL'] || r['URL'] || '';
-    const kec   = r['KECAMATAN'] || r['Kecamatan'] || '';
-    const desa  = r['DESA'] || r['Desa'] || '';
-    return {bbws:norm(bws), di:norm(di), lat, lng, stage, file:norm(file), kec:norm(kec), desa:norm(desa)};
-  }).filter(r=>r.di);
-
-  // render markers
   cluster.clearLayers();
   const markers=[];
-
   out.forEach(r=>{
-    if(Number.isFinite(r.lat) && Number.isFinite(r.lng)){
-      const gmaps = `https://www.google.com/maps?q=${r.lat},${r.lng}`;
-      const imgTag = r.file ? `<div style="margin-top:6px"><a href="${r.file}" target="_blank" rel="noopener">
-        <img src="${r.file}" alt="Foto ${r.di}" style="width:220px;height:150px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb"/></a></div>` : '';
-      const popup = `
-        <b>${r.di}</b>
-        <div style="font-size:12px;color:#555;margin:4px 0">
-          B/BWS: ${r.bbws || '-'}<br/>
-          Progres: <b>${r.stage||0}%</b><br/>
-          Lokasi: ${r.kec || '-'}, ${r.desa || '-'}<br/>
-          📍 ${r.lat.toFixed(6)}, ${r.lng.toFixed(6)}
-        </div>
-        <a href="${gmaps}" target="_blank" rel="noopener">Buka di Google Maps</a>
-        ${imgTag}
-      `;
-      const m=L.marker([r.lat,r.lng],{
-        icon:L.icon({
-          iconUrl: (r.stage>=100?'https://maps.google.com/mapfiles/ms/icons/red-dot.png':'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'),
-          iconSize:[25,41],iconAnchor:[12,41],
-          shadowUrl:'https://unpkg.com/leaflet/dist/images/marker-shadow.png',shadowSize:[41,41]
-        })
-      }).bindPopup(popup);
-
-      // label permanen di atas marker
-      m.bindTooltip(`${r.di} ${r.stage}%`, {
-        permanent: true,
-        direction: 'top',
-        offset: [0, -6],
-        className: 'di-label'
+    if(!isFinite(r.lat)||!isFinite(r.lng)) return;
+    const gmaps=`https://www.google.com/maps?q=${r.lat},${r.lng}`;
+    const foto=r.file?`<div style="margin-top:6px"><a href="${r.file}" target="_blank"><img src="${r.file}" style="width:220px;height:150px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb"/></a></div>`:'';
+    const popup=`<b>${r.di}</b><div style="font-size:12px;color:#555;margin:4px 0">
+      B/BWS: ${r.bbws}<br>Progres: <b>${r.stage}%</b><br>Lokasi: ${r.kec}, ${r.desa}<br>📍 ${r.lat.toFixed(6)}, ${r.lng.toFixed(6)}
+    </div><a href="${gmaps}" target="_blank">Buka di Google Maps</a>${foto}`;
+    const iconUrl=r.stage>=100?'https://maps.google.com/mapfiles/ms/icons/red-dot.png':'https://maps.google.com/mapfiles/ms/icons/blue-dot.png';
+    const m=L.marker([r.lat,r.lng],{icon:L.icon({iconUrl,iconSize:[25,41],iconAnchor:[12,41]})})
+      .bindPopup(popup)
+      .bindTooltip(`${r.di} ${r.stage}%`,{
+        permanent:true,
+        direction:'top',
+        offset:[0,-18],   // geser lebih ke atas biar gak nutup marker
+        className:'di-label'
       });
-
-      // untuk filter
-      m.__meta = {bbws:r.bbws, di:r.di, stage:r.stage};
-
-      cluster.addLayer(m);
-      markers.push(m);
-    }
+    m.__meta={bbws:r.bbws,di:r.di,stage:r.stage};
+    cluster.addLayer(m);
+    markers.push(m);
   });
-
   if(markers.length){
-    const g=L.featureGroup(markers); map.fitBounds(g.getBounds(),{padding:[20,20]});
+    const g=L.featureGroup(markers);map.fitBounds(g.getBounds(),{padding:[20,20]});
   }
   return out;
 }
 
-/* ===== Stats ===== */
 function buildStatsUI({totalBaseline,totalFilled,percent,byBBWS,missing}){
-  const bar  = `<div class="bar"><span style="width:${percent}%"></span></div>`;
-  const head = `
-    <div class="stats-row">
-      <div class="pill">Baseline: ${totalBaseline} DI</div>
-      <div class="pill">Terisi: ${totalFilled} DI</div>
-      <div style="font-weight:800">${percent}% lengkap</div>
-    </div>
-  `;
-  const rows = byBBWS
-    .sort((a,b)=> a.bbws.localeCompare(b.bbws))
-    .map(r=>`<tr><td>${r.bbws||'-'}</td><td>${r.filled}/${r.total}</td><td>${r.pct}%</td></tr>`).join('');
-  const table = `
-    <table class="stats">
-      <thead><tr><th>B/BWS</th><th>Terisi / Total</th><th>%</th></tr></thead>
-      <tbody>${rows || '<tr><td colspan="3">Tidak ada data</td></tr>'}</tbody>
-    </table>
-  `;
-  const exportBtn = `<button class="btn-small" id="btnExportMissing">⬇️ Unduh DI yang belum upload (CSV)</button>`;
-
-  $('#stats').innerHTML = `<b>Statistik Keterisian Data (Sheet1 vs Log_Progres)</b>${head}${bar}${table}${exportBtn}`;
-
-  // export CSV
-  $('#btnExportMissing').onclick = ()=>{
-    const header = ["B/BWS","DI","Provinsi","Kabupaten"];
-    const lines = [header.join(",")].concat(
-      missing.map(m=>[m.bbws,m.di,m.prov,m.kab].map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(","))
-    );
-    const blob = new Blob([lines.join("\n")],{type:"text/csv;charset=utf-8"});
-    const url = URL.createObjectURL(blob);
-    const a=document.createElement('a'); a.href=url; a.download='di-belum-upload.csv';
-    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-  };
+  const bar=`<div class="bar"><span style="width:${percent}%"></span></div>`;
+  const head=`<div class="stats-row"><div class="pill">Baseline: ${totalBaseline} DI</div><div class="pill">Terisi: ${totalFilled} DI</div><div style="font-weight:800">${percent}% lengkap</div></div>`;
+  const rows=byBBWS.sort((a,b)=>a.bbws.localeCompare(b.bbws)).map(r=>`<tr><td>${r.bbws}</td><td>${r.filled}/${r.total}</td><td>${r.pct}%</td></tr>`).join('');
+  const table=`<table class="stats"><thead><tr><th>B/BWS</th><th>Terisi / Total</th><th>%</th></tr></thead><tbody>${rows||'<tr><td colspan="3">Tidak ada data</td></tr>'}</tbody></table>`;
+  $('#stats').innerHTML=`<b>Statistik Keterisian Data (Sheet1 vs Log_Progres)</b>${head}${bar}${table}`;
 }
 
-/* ===== Build ===== */
 async function build(){
-  try{
-    $('#stats').textContent='Memuat statistik…';
-    const [baseline, logrows] = await Promise.all([loadBaseline(), loadLog()]);
-
-    // set kunci: bbws|di untuk yang sudah upload
-    const filledSet = new Set(logrows.map(r => `${canon(r.bbws)}|${canon(r.di)}`));
-
-    // agregasi baseline per B/BWS
-    const mapBB = new Map();
-    baseline.forEach(b=>{
-      const key = b.bbws || '-';
-      if(!mapBB.has(key)) mapBB.set(key,{bbws:key, total:0, filled:0});
-      mapBB.get(key).total++;
-      if (filledSet.has(`${canon(b.bbws)}|${canon(b.di)}`)) mapBB.get(key).filled++;
-    });
-    const byBBWS = [...mapBB.values()].map(x=>({
-      bbws:x.bbws, total:x.total, filled:x.filled,
-      pct: x.total ? Math.round(x.filled/x.total*100) : 0
-    }));
-
-    // total unik baseline & filled
-    const uniqBaseline = new Set(baseline.map(b => `${canon(b.bbws)}|${canon(b.di)}`));
-    const totalBL = uniqBaseline.size;
-    const totalFilled = [...uniqBaseline].filter(k => filledSet.has(k)).length;
-    const percent = totalBL ? Math.round(totalFilled/totalBL*100) : 0;
-
-    // missing untuk export
-    const missing = baseline.filter(b => !filledSet.has(`${canon(b.bbws)}|${canon(b.di)}`));
-
-    buildStatsUI({totalBaseline: totalBL, totalFilled, percent, byBBWS, missing});
-
-    // isi filter dari LOG (yang punya marker)
-    const uniqBB = Array.from(new Set(logrows.map(r=>r.bbws).filter(Boolean)));
-    const uniqDI = Array.from(new Set(logrows.map(r=>r.di).filter(Boolean)));
-    fillSelect($('#f-bbws'), uniqBB, '— Semua B/BWS —');
-    fillSelect($('#f-di'),   uniqDI, '— Semua DI —');
-
-  }catch(e){
-    console.error(e);
-    $('#stats').innerHTML = `<div style="color:#b91c1c">Gagal memuat data. Pastikan kedua sheet publik (Anyone with the link - Viewer).</div>
-                             <div style="font-size:12px;color:#6b7280">Detail: ${e.message||e}</div>`;
-  }
+  const [base,log]=await Promise.all([loadBaseline(),loadLog()]);
+  const set=new Set(log.map(r=>`${canon(r.bbws)}|${canon(r.di)}`));
+  const mapBB=new Map();
+  base.forEach(b=>{
+    const k=b.bbws||'-'; if(!mapBB.has(k)) mapBB.set(k,{bbws:k,total:0,filled:0});
+    mapBB.get(k).total++;
+    if(set.has(`${canon(b.bbws)}|${canon(b.di)}`)) mapBB.get(k).filled++;
+  });
+  const by=[...mapBB.values()].map(x=>({bbws:x.bbws,total:x.total,filled:x.filled,pct:x.total?Math.round(x.filled/x.total*100):0}));
+  const uniqBase=new Set(base.map(b=>`${canon(b.bbws)}|${canon(b.di)}`));
+  const totalBL=uniqBase.size,totalFilled=[...uniqBase].filter(k=>set.has(k)).length;
+  const percent=totalBL?Math.round(totalFilled/totalBL*100):0;
+  buildStatsUI({totalBaseline:totalBL,totalFilled,percent,byBBWS:by,missing:[]});
+  fillSelect($('#f-bbws'),[...new Set(log.map(r=>r.bbws).filter(Boolean))],'— Semua B/BWS —');
+  fillSelect($('#f-di'),[...new Set(log.map(r=>r.di).filter(Boolean))],'— Semua DI —');
 }
 build();
 
-/* ===== Filter & Search ===== */
+/* Filter */
 function applyFilters(){
-  const fB = canon($('#f-bbws').value);
-  const fD = canon($('#f-di').value);
-
-  cluster.clearLayers();
-  const visible=[];
+  const fb=canon($('#f-bbws').value),fd=canon($('#f-di').value);
+  cluster.clearLayers();const v=[];
   window.__allMarkers.forEach(m=>{
-    const meta = m.__meta || {};
-    const passB = !fB || canon(meta.bbws)===fB;
-    const passD = !fD || canon(meta.di)===fD;
-    if(passB && passD){ cluster.addLayer(m); visible.push(m); }
+    const meta=m.__meta||{};const passB=!fb||canon(meta.bbws)===fb;const passD=!fd||canon(meta.di)===fd;
+    if(passB&&passD){cluster.addLayer(m);v.push(m);}
   });
-  if(visible.length){
-    const g=L.featureGroup(visible); map.fitBounds(g.getBounds(),{padding:[20,20]});
-  }
+  if(v.length){const g=L.featureGroup(v);map.fitBounds(g.getBounds(),{padding:[20,20]});}
 }
-$('#f-bbws').addEventListener('change', applyFilters);
-$('#f-di').addEventListener('change', applyFilters);
+$('#f-bbws').onchange=applyFilters;$('#f-di').onchange=applyFilters;
 
-// Search suggestions
-const index=[]; // {name, marker}
-function rebuildIndex(){
-  index.length=0;
-  window.__allMarkers.forEach(m=>{
-    const html = m.getPopup()?.getContent() || '';
-    const mName = (html.match(/<b>(.*?)<\/b>/) || [,''])[1];
-    if (mName) index.push({name:mName, marker:m});
-  });
-}
-setTimeout(rebuildIndex, 1500);
-
+/* Search */
+const idx=[];
+setTimeout(()=>{window.__allMarkers.forEach(m=>{const n=(m.getPopup()?.getContent()||'').match(/<b>(.*?)<\/b>/);if(n)idx.push({name:n[1],marker:m});});},1500);
 function showSuggestions(q){
-  const box=$('#suggestions'); box.innerHTML='';
-  if(!q){ box.style.display='none'; return; }
-  const hits=index.filter(it=>it.name && it.name.toLowerCase().includes(q.toLowerCase())).slice(0,100);
-  hits.forEach(it=>{
-    const d=document.createElement('div'); d.textContent=it.name;
-    d.onclick=()=>{ $('#search').value=it.name; box.style.display='none'; map.setView(it.marker.getLatLng(),14); it.marker.openPopup(); };
-    box.appendChild(d);
-  });
-  box.style.display = hits.length ? 'block':'none';
+  const box=$('#suggestions');box.innerHTML='';if(!q){box.style.display='none';return;}
+  const h=idx.filter(it=>it.name&&it.name.toLowerCase().includes(q.toLowerCase())).slice(0,100);
+  h.forEach(it=>{const d=document.createElement('div');d.textContent=it.name;d.onclick=()=>{map.setView(it.marker.getLatLng(),14);it.marker.openPopup();box.style.display='none';};box.appendChild(d);});
+  box.style.display=h.length?'block':'none';
 }
-$('#search').addEventListener('input', e=> showSuggestions(e.currentTarget.value));
-$('#search').addEventListener('keydown', e=>{
-  if(e.key==='Enter'){
-    const q=e.currentTarget.value.trim().toLowerCase();
-    const hit=index.find(it=>it.name && it.name.toLowerCase()===q) || index.find(it=>it.name && it.name.toLowerCase().includes(q));
-    if(hit){ map.setView(hit.marker.getLatLng(),14); hit.marker.openPopup(); $('#suggestions').style.display='none'; }
-  }
-});
+$('#search').oninput=e=>showSuggestions(e.target.value);
+$('#search').onkeydown=e=>{if(e.key==='Enter'){const q=e.target.value.trim().toLowerCase();const hit=idx.find(it=>it.name.toLowerCase()===q)||idx.find(it=>it.name.toLowerCase().includes(q));if(hit){map.setView(hit.marker.getLatLng(),14);hit.marker.openPopup();$('#suggestions').style.display='none';}}};
 </script>
 </body>
 </html>
