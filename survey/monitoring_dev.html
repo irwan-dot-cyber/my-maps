@@ -207,19 +207,9 @@ function buildStatsUI({totalBaseline,totalFilled,percent,byBBWS,missing}){
     </table>
   `;
 
-  const chart = `
-    <div class="chart-wrap">
-      <div class="chart-head">
-        <div class="chart-title">Mini Chart — % Keterisian per B/BWS (Top 8)</div>
-        <button class="btn-xsmall" id="btnSortChart" data-order="desc">Urut: tertinggi</button>
-      </div>
-      <canvas id="statsChart" height="160" style="width:100%"></canvas>
-    </div>
-  `;
+    const exportBtn = `<button class="btn-small" id="btnExportMissing">⬇️ Unduh DI yang belum upload (CSV)</button>`;
 
-  const exportBtn = `<button class="btn-small" id="btnExportMissing">⬇️ Unduh DI yang belum upload (CSV)</button>`;
-
-  $('#stats').innerHTML = `<b>Statistik Keterisian Data (Sheet1 vs Log_Progres)</b>${head}${bar}${chart}${table}${exportBtn}`;
+  $('#stats').innerHTML = `<b>Statistik Keterisian Data (Sheet1 vs Log_Progres)</b>${head}${bar}${table}${exportBtn}`;
 
   // export CSV
   $('#btnExportMissing').onclick = ()=>{
@@ -255,13 +245,7 @@ function buildStatsUI({totalBaseline,totalFilled,percent,byBBWS,missing}){
     });
   }
   draw('desc');
-  $('#btnSortChart').onclick = (e)=>{
-    const cur=e.currentTarget.getAttribute('data-order'); const next=cur==='desc'?'asc':'desc';
-    e.currentTarget.setAttribute('data-order', next);
-    e.currentTarget.textContent = next==='desc'?'Urut: tertinggi':'Urut: terendah';
-    draw(next);
-  };
-}
+  }
 
 /* ===== Build ===== */
 async function build(){
