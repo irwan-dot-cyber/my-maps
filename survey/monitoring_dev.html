@@ -2,32 +2,35 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8" />
-<title>Monitoring Inpres 2 — Tahap 2</title>
+<title>Pelaksanaan Inpres 2/2025 Tahap 2 — Monitoring</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
 <style>
-  :root{ --brand:#FFD700; --line:#e5e7eb; --ok1:#16a34a; --ok2:#86efac; --blue:#1d4ed8; --blue2:#3b82f6; --mut:#6b7280; }
+  :root{
+    --brand:#FFD700; --ink:#111827; --mut:#6b7280;
+    --ok1:#16a34a; --ok2:#86efac; --card:#ffffff; --line:#e5e7eb;
+  }
   *{box-sizing:border-box}
   html,body{height:100%;margin:0;font-family:system-ui,Segoe UI,Roboto,Arial}
-  #header{background:var(--brand);padding:10px 12px;font-weight:800;display:flex;gap:10px;align-items:center}
+  #header{background:var(--brand);color:#000;padding:10px 12px;font-weight:800;font-size:14px;display:flex;align-items:center;gap:10px}
   #header img{height:40px}
-  .top-controls{position:sticky;top:0;z-index:999;background:#fff;border-bottom:1px solid var(--line);
-    padding:8px 10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .top-controls{position:sticky;top:0;z-index:999;background:#fff;border-bottom:1px solid var(--line);padding:8px 10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
   .filters{display:flex;gap:8px;flex:1;flex-wrap:wrap}
   .filters select,.search-box input{padding:8px 10px;border:1px solid var(--line);border-radius:10px;min-width:160px;background:#fff}
   .search-box{position:relative}
-  #suggestions{position:absolute;top:42px;left:0;right:0;background:#fff;border:1px solid var(--line);
-    border-radius:10px;max-height:220px;overflow:auto;display:none;z-index:1000}
+  #suggestions{position:absolute;top:42px;left:0;right:0;background:#fff;border:1px solid var(--line);border-radius:10px;max-height:220px;overflow:auto;display:none;z-index:1000}
   #suggestions div{padding:8px 10px;cursor:pointer}
   #suggestions div:hover{background:#f3f4f6}
+
   #map{height:54vh}
   .floating-btns{position:fixed;left:10px;bottom:calc(34vh + 10px);display:flex;flex-direction:column;gap:8px;z-index:900}
   .btn{color:#fff;padding:10px 14px;border-radius:12px;font-weight:800;box-shadow:0 6px 14px rgba(0,0,0,.12);text-decoration:none;display:inline-block}
   .btn-home{background:linear-gradient(135deg,#2196F3,#1b7ed0)}
   .btn-reset{background:linear-gradient(135deg,#ff5722,#e24a18)}
   .btn-locate{background:linear-gradient(135deg,#4CAF50,#3f8f44)}
+
   #stats{background:#fafafa;border-top:1px solid var(--line);padding:12px 12px}
   .bar{height:12px;background:#e5e7eb;border-radius:999px;overflow:hidden}
   .bar>span{display:block;height:100%;background:linear-gradient(90deg,var(--ok1),var(--ok2))}
@@ -37,29 +40,39 @@
   table.stats th,table.stats td{border-top:1px solid var(--line);padding:8px 10px;font-size:13px;text-align:left}
   table.stats th{background:#f9fafb}
   .btn-small{padding:6px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;cursor:pointer}
-  /* label permanen di atas marker */
-  .di-label{background:rgba(255,255,255,.95);border:1px solid #d1d5db;border-radius:999px;
-    padding:2px 8px;font-size:12px;color:#111827;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.08)}
-  /* chips foto progres */
-  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-  .chip{display:inline-block;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:700;border:1px solid}
-  .chip.on{background:var(--blue2);color:#fff;border-color:var(--blue)}
-  .chip.off{background:#f3f4f6;color:#6b7280;border-color:#e5e7eb}
-  .chip.on:hover{filter:brightness(0.95)}
-  @media (max-width:560px){ #map{height:50vh} .floating-btns{bottom:calc(38vh + 10px)} }
+
+  /* Label mini: muncul di atas marker, tidak menutupi pin */
+  .di-label{
+    background:rgba(255,255,255,.92);
+    border:1px solid #d1d5db;
+    border-radius:999px;
+    padding:2px 8px;
+    font-size:12px;
+    color:#111827;
+    white-space:nowrap;
+    box-shadow:0 2px 6px rgba(0,0,0,.08);
+    transform: translateY(-28px); /* geser ke atas pin */
+    pointer-events:none; /* biar gak ganggu klik pin */
+  }
+  .leaflet-marker-icon, .leaflet-marker-shadow { will-change: transform; }
+
+  @media (max-width:560px){
+    #map{height:50vh}
+    .floating-btns{bottom:calc(38vh + 10px)}
+  }
 </style>
 </head>
 <body>
 
 <div id="header">
-  <img src="https://iconape.com/wp-content/png_logo_vector/pu-logo.png" alt="PU"/>
-  <div>KEMENTERIAN PEKERJAAN UMUM • DITJEN SDA — DIREKTORAT IRIGASI & RAWA</div>
+  <img src="https://iconape.com/wp-content/png_logo_vector/pu-logo.png" alt="Logo PU"/>
+  <div>KEMENTERIAN PEKERJAAN UMUM • DITJEN SDA — DIREKTORAT IRIGASI & RAWA — MONITORING INPRES TAHAP 2</div>
 </div>
 
 <div class="top-controls">
   <div class="filters">
     <select id="f-bbws"><option value="">— Semua B/BWS —</option></select>
-    <select id="f-di" style="min-width:220px"><option value="">— Semua DI —</option></select>
+    <select id="f-di" style="min-width:220px" disabled><option value="">— Pilih B/BWS dulu —</option></select>
   </div>
   <div class="search-box">
     <input id="search" type="text" placeholder="Cari DI…" />
@@ -69,298 +82,337 @@
 
 <div id="map"></div>
 
+<!-- tombol mengambang -->
 <div class="floating-btns">
   <a class="btn btn-home" href="https://s.pu.go.id/MTI4OA/Pelaksanaan_INPRES2_Tahap1" target="_blank" rel="noopener">Beranda</a>
-  <button class="btn btn-reset" id="btnReset" type="button">Reset Tampilan</button>
+  <button class="btn btn-reset" id="btnResetRoute" type="button">Reset Tampilan</button>
   <button class="btn btn-locate" id="btnLocate" type="button">Posisi Saya</button>
 </div>
 
 <div id="stats">Memuat statistik…</div>
 
+<!-- libs -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
 
 <script>
-/* ===== Guard agar tidak duplikat ===== */
-if (!window.__MONAPP__) { window.__MONAPP__ = true;
+/* ===== CONFIG ===== */
+const SHEET_ID     = "1LrRWGns6d68uQ7sNy2F7ecGsBrBgGbiO9S4lVXEkpXQ";
+const URL_BASELINE = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Sheet1`;
+const URL_LOG      = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Log_Progres`;
 
-  /* ===== CONFIG (namespace global) ===== */
-  const CFG = window.__MONCFG__ || (window.__MONCFG__ = {
-    SHEET_ID : "1LrRWGns6d68uQ7sNy2F7ecGsBrBgGbiO9S4lVXEkpXQ"
+/* ===== Helpers ===== */
+const norm  = s => (s==null?'':String(s)).trim();
+const canon = s => norm(s).toLowerCase();
+const $     = sel => document.querySelector(sel);
+
+// parsing JSON dari Google Visualization API
+function parseGviz(text){
+  text = String(text||'').replace(/^\)\]\}'\s*/, '');
+  const m = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]+?)\)\s*;?\s*$/);
+  if(!m) throw new Error('GViz payload tidak dikenali');
+  const j = JSON.parse(m[1]);
+  const cols = (j.table.cols||[]).map(c=>c.label || c.id || '');
+  const out = [];
+  (j.table.rows||[]).forEach(r=>{
+    const o={};
+    (r.c||[]).forEach((cell,i)=> o[cols[i] || ('C'+i)] = cell ? cell.v : '');
+    out.push(o);
   });
-  const URL_BASELINE = `https://docs.google.com/spreadsheets/d/${CFG.SHEET_ID}/gviz/tq?tqx=out:json&sheet=Sheet1`;
-  const URL_LOG      = `https://docs.google.com/spreadsheets/d/${CFG.SHEET_ID}/gviz/tq?tqx=out:json&sheet=Log_Progres`;
+  return out;
+}
 
-  /* ===== Helpers ===== */
-  const norm  = s => (s==null?'':String(s)).trim();
-  const canon = s => norm(s).toLowerCase();
-  const $     = sel => document.querySelector(sel);
-  function parseGviz(text){
-    text = String(text||'').replace(/^\)\]\}'\s*/, '');
-    const m = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]+?)\)\s*;?\s*$/);
-    if (!m) throw new Error('GViz payload tidak dikenali');
-    const j = JSON.parse(m[1]);
-    const cols = (j.table.cols||[]).map(c=>c.label || c.id || '');
-    const out = [];
-    (j.table.rows||[]).forEach(r=>{
-      const o={};
-      (r.c||[]).forEach((cell,i)=> o[cols[i] || ('C'+i)] = cell ? cell.v : '');
-      out.push(o);
-    });
-    return out;
-  }
-  function fillSelect(el, items, placeholder){
-    const cur = el.value;
-    el.innerHTML = '';
-    const opt0 = document.createElement('option'); opt0.value=''; opt0.textContent=placeholder;
-    el.appendChild(opt0);
-    items.sort((a,b)=> a.localeCompare(b)).forEach(v=>{
-      const o=document.createElement('option'); o.value=v; o.textContent=v; el.appendChild(o);
-    });
-    if ([...items,''].includes(cur)) el.value=cur;
-  }
+function fillSelect(el, items, placeholder){
+  const cur = el.value;
+  el.innerHTML = '';
+  const opt0 = document.createElement('option'); opt0.value=''; opt0.textContent=placeholder;
+  el.appendChild(opt0);
+  items.sort((a,b)=> a.localeCompare(b)).forEach(v=>{
+    const o=document.createElement('option'); o.value=v; o.textContent=v; el.appendChild(o);
+  });
+  if ([...items,''].includes(cur)) el.value=cur;
+}
 
-  /* ===== Map & basemap ===== */
-  const osm  = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19, attribution:'© OpenStreetMap'});
-  const img  = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19, attribution:'Tiles © Esri/Maxar'});
-  const map  = L.map('map', {layers:[osm]}).setView([-2.5,117],5);
-  L.control.layers({"OSM":osm,"Esri Imagery":img},{},{position:'topright'}).addTo(map);
+/* ===== Map + Basemap Control ===== */
+const osm  = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19, attribution:'© OpenStreetMap'});
+const img  = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19, attribution:'Tiles © Esri/Maxar'});
+const map  = L.map('map', {layers:[osm]}).setView([-2.5,117],5);
 
-  let cluster = L.markerClusterGroup({ disableClusteringAtZoom: 18 });
-  map.addLayer(cluster);
-  window.__allMarkers = [];
+L.control.layers({"OSM":osm, "Esri Imagery":img}, {}, {position:'topright'}).addTo(map);
 
-  /* ===== Buttons ===== */
-  $('#btnLocate').addEventListener('click', ()=>{
-    if(!navigator.geolocation) return alert('Geolocation tidak didukung');
-    navigator.geolocation.getCurrentPosition(pos=>{
-      const lat=pos.coords.latitude, lng=pos.coords.longitude;
-      L.marker([lat,lng],{icon:L.icon({
-        iconUrl:'https://maps.google.com/mapfiles/ms/icons/green-dot.png',
+// cluster & label layer
+let cluster = L.markerClusterGroup({ disableClusteringAtZoom: 15 });
+map.addLayer(cluster);
+const labelsGroup = L.layerGroup().addTo(map);
+
+// simpan marker untuk filter/search
+window.__allMarkers = [];
+const __origAdd = cluster.addLayer.bind(cluster);
+cluster.addLayer = function(layer){
+  window.__allMarkers.push(layer);
+  return __origAdd(layer);
+};
+
+/* ===== UI Buttons ===== */
+$('#btnLocate').addEventListener('click', ()=>{
+  if(!navigator.geolocation) return alert('Geolocation tidak didukung');
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const lat=pos.coords.latitude, lng=pos.coords.longitude;
+    L.marker([lat,lng],{icon:L.icon({
+      iconUrl:'https://maps.google.com/mapfiles/ms/icons/green-dot.png',
+      iconSize:[25,41],iconAnchor:[12,41],
+      shadowUrl:'https://unpkg.com/leaflet/dist/images/marker-shadow.png',shadowSize:[41,41]
+    })}).addTo(map).bindPopup('Lokasi Anda').openPopup();
+    map.setView([lat,lng],13);
+  }, ()=>alert('Tidak dapat mengakses lokasi.'));
+});
+$('#btnResetRoute').addEventListener('click', ()=> map.setView([-2.5,117],5));
+
+/* ===== Data Loaders ===== */
+async function loadBaseline(){
+  const t = await (await fetch(URL_BASELINE+'&t='+Date.now(),{cache:'no-store'})).text();
+  const rows = parseGviz(t);
+  return rows.map(r=>{
+    const bb = r['B/BWS PELAKSANA'] || r['B/BWS'] || r['BBWS'] || r['BWS'] || '';
+    const di = r['NAMA DI/DIR'] || r['Nama DI/DIR'] || r['Nama DI'] || r['DI'] || '';
+    const prov = r['PROVINSI'] || r['Provinsi'] || '';
+    const kab  = r['KABUPATEN'] || r['Kabupaten'] || '';
+    return {bbws:norm(bb), di:norm(di), prov:norm(prov), kab:norm(kab)};
+  }).filter(r=>r.di);
+}
+
+async function loadLog(){
+  const t = await (await fetch(URL_LOG+'&t='+Date.now(),{cache:'no-store'})).text();
+  const rows = parseGviz(t);
+
+  // group per DI (per B/BWS) -> ambil satu marker/DI, simpan stage terakhir & foto terakhir
+  const groups = new Map(); // key = bbws|di -> {bbws, di, lat, lng, stage, file}
+  rows.forEach(r=>{
+    const bbws  = norm(r['BWS'] || r['B/BWS'] || r['BBWS'] || r['B/BWS PELAKSANA'] || '');
+    const di    = norm(r['NAMA_DI'] || r['Nama DI'] || r['DI'] || '');
+    if(!di) return;
+    const lat   = parseFloat(r['LAT'] || r['Lat'] || r['Latitude'] || r['lat']);
+    const lng   = parseFloat(r['LNG'] || r['Long'] || r['Longitude'] || r['lng']);
+    const stage = Number(r['STAGE'] || r['Stage'] || r['Progress'] || 0);
+    const file  = norm(r['FILE_URL'] || r['Foto_URL'] || r['URL'] || '');
+
+    const key = `${canon(bbws)}|${canon(di)}`;
+    const prev = groups.get(key);
+    // pilih entri dengan stage terbesar; jika sama, ambil yang punya koordinat valid
+    if(!prev || stage > prev.stage || (!Number.isFinite(prev.lat) && Number.isFinite(lat))){
+      groups.set(key, {bbws, di, lat, lng, stage, file});
+    }
+  });
+
+  cluster.clearLayers();
+  labelsGroup.clearLayers();
+
+  const markers=[];
+  groups.forEach(g=>{
+    if(!Number.isFinite(g.lat) || !Number.isFinite(g.lng)) return;
+    const gmaps = `https://www.google.com/maps?q=${g.lat},${g.lng}`;
+    const imgTag = g.file ? `<div style="margin-top:6px"><a href="${g.file}" target="_blank" rel="noopener">
+      <img src="${g.file}" alt="Foto ${g.di}" style="width:220px;height:150px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb"/></a></div>` : '';
+
+    const popup = `
+      <b>${g.di}</b>
+      <div style="font-size:12px;color:#555;margin:4px 0">
+        B/BWS: ${g.bbws || '-'}<br/>
+        Progres terkini: <b>${g.stage||0}%</b><br/>
+        📍 ${g.lat.toFixed(6)}, ${g.lng.toFixed(6)}
+      </div>
+      <a href="${gmaps}" target="_blank" rel="noopener">Buka di Google Maps</a>
+      ${imgTag}
+    `;
+
+    const m=L.marker([g.lat,g.lng],{
+      icon:L.icon({
+        iconUrl:(g.stage>=100?'https://maps.google.com/mapfiles/ms/icons/red-dot.png':'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'),
         iconSize:[25,41],iconAnchor:[12,41],
         shadowUrl:'https://unpkg.com/leaflet/dist/images/marker-shadow.png',shadowSize:[41,41]
-      })}).addTo(map).bindPopup('Lokasi Anda').openPopup();
-      map.setView([lat,lng],13);
-    }, ()=>alert('Tidak dapat mengakses lokasi.'));
+      })
+    }).bindPopup(popup);
+
+    m.__meta = {bbws:g.bbws, di:g.di, stage:g.stage};
+    cluster.addLayer(m);
+    markers.push(m);
+
+    // label di atas pin (tidak menutup pin)
+    L.marker([g.lat, g.lng], {
+      icon: L.divIcon({
+        className: 'di-label',
+        html: `${g.di} ${g.stage||0}%`,
+        iconSize: null
+      }),
+      interactive:false,
+      zIndexOffset: 1000
+    }).addTo(labelsGroup);
   });
-  $('#btnReset').addEventListener('click', ()=> map.setView([-2.5,117],5));
 
-  /* ===== Loaders ===== */
-  async function loadBaseline(){
-    const t = await (await fetch(URL_BASELINE+'&t='+Date.now(),{cache:'no-store'})).text();
-    const rows = parseGviz(t);
-    return rows.map(r=>{
-      const bb = r['B/BWS PELAKSANA'] || r['B/BWS'] || r['BBWS'] || r['BWS'] || '';
-      const di = r['NAMA DI/DIR'] || r['Nama DI/DIR'] || r['Nama DI'] || r['DI'] || '';
-      const prov = r['PROVINSI'] || r['Provinsi'] || '';
-      const kab  = r['KABUPATEN'] || r['Kabupaten'] || '';
-      return {bbws:norm(bb), di:norm(di), prov:norm(prov), kab:norm(kab)};
-    }).filter(r=>r.di);
+  if(markers.length){
+    const g=L.featureGroup(markers); map.fitBounds(g.getBounds(),{padding:[20,20]});
   }
 
-  // agregasi Log_Progres → 1 record/DI (max stage + kumpulkan foto 25/50/75/100)
-  async function loadLogAggregated(){
-    const t = await (await fetch(URL_LOG+'&t='+Date.now(),{cache:'no-store'})).text();
-    const rows = parseGviz(t);
-    const bucket = new Map(); // key: bbws|di
-    rows.forEach(r=>{
-      const bws   = r['BWS'] || r['B/BWS'] || r['BBWS'] || r['B/BWS PELAKSANA'] || '';
-      const di    = r['NAMA_DI'] || r['Nama DI'] || r['DI'] || '';
-      const lat   = parseFloat(r['LAT'] || r['Lat'] || r['Latitude'] || r['lat']);
-      const lng   = parseFloat(r['LNG'] || r['Long'] || r['Longitude'] || r['lng']);
-      const stage = Number(r['STAGE'] || r['Stage'] || r['Progress'] || 0);
-      const file  = r['FILE_URL'] || r['Foto_URL'] || r['URL'] || '';
-      if (!di) return;
-      const key = `${canon(bws)}|${canon(di)}`;
-      if (!bucket.has(key)){
-        bucket.set(key, {bbws:norm(bws), di:norm(di), lat:lat, lng:lng, maxStage:0, photos:{}});
-      }
-      const obj = bucket.get(key);
-      if (Number.isFinite(lat) && Number.isFinite(lng)){ obj.lat = lat; obj.lng = lng; }
-      if (stage > obj.maxStage) obj.maxStage = stage;
-      if (file && [25,50,75,100].includes(stage)){ obj.photos[stage] = norm(file); }
-    });
-    return [...bucket.values()];
-  }
+  // kembalikan array agregat (untuk statistik & filter)
+  return Array.from(groups.values());
+}
 
-  /* ===== Marker helpers ===== */
-  function makePopup(r){
-    const have = s => !!r.photos[s];
-    const chip = (s) => {
-      if (have(s)) {
-        const url = r.photos[s];
-        return `<a class="chip on" href="${url}" target="_blank" rel="noopener">Foto Progres ${s}%</a>`;
-      } else {
-        return `<span class="chip off">Foto Progres ${s}%</span>`;
-      }
-    };
-    const gmaps = (Number.isFinite(r.lat)&&Number.isFinite(r.lng))
-      ? `https://www.google.com/maps?q=${r.lat},${r.lng}` : null;
+/* ===== Stats ===== */
+function buildStatsUI({totalBaseline,totalFilled,percent,byBBWS,missing}){
+  const bar  = `<div class="bar"><span style="width:${percent}%"></span></div>`;
+  const head = `
+    <div class="stats-row">
+      <div class="pill">Baseline: ${totalBaseline} DI</div>
+      <div class="pill">Terisi: ${totalFilled} DI</div>
+      <div style="font-weight:800">${percent}% lengkap</div>
+    </div>
+  `;
+  const rows = byBBWS
+    .sort((a,b)=> a.bbws.localeCompare(b.bbws))
+    .map(r=>`<tr><td>${r.bbws||'-'}</td><td>${r.filled}/${r.total}</td><td>${r.pct}%</td></tr>`).join('');
+  const table = `
+    <table class="stats">
+      <thead><tr><th>B/BWS</th><th>Terisi / Total</th><th>%</th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="3">Tidak ada data</td></tr>'}</tbody>
+    </table>
+  `;
+  const exportBtn = `<button class="btn-small" id="btnExportMissing">⬇️ Unduh DI yang belum upload (CSV)</button>`;
 
-    return `
-      <b>${r.di}</b>
-      <div style="font-size:12px;color:#555;margin:4px 0">
-        B/BWS: ${r.bbws || '-'}<br/>
-        Progres maksimal: <b>${r.maxStage || 0}%</b><br/>
-        ${(gmaps && r.lat && r.lng) ? ('📍 '+r.lat.toFixed(6)+', '+r.lng.toFixed(6)) : ''}
-      </div>
-      ${ gmaps ? `<a href="${gmaps}" target="_blank" rel="noopener">Buka di Google Maps</a>` : '' }
-      <div class="chips">
-        ${chip(25)} ${chip(50)} ${chip(75)} ${chip(100)}
-      </div>
-    `;
-  }
-  function iconByStage(stage){
-    const url = stage >= 100
-      ? 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
-      : 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png';
-    return L.icon({
-      iconUrl:url, iconSize:[25,41], iconAnchor:[12,41],
-      shadowUrl:'https://unpkg.com/leaflet/dist/images/marker-shadow.png', shadowSize:[41,41]
-    });
-  }
-  function fitToMarkers(markers){
-    try{
-      const valid = markers.filter(m=>{
-        const ll = m.getLatLng && m.getLatLng();
-        return ll && isFinite(ll.lat) && isFinite(ll.lng);
-      });
-      if (valid.length){
-        const g = L.featureGroup(valid);
-        const b = g.getBounds();
-        if (b.isValid && b.isValid()) map.fitBounds(b, {padding:[20,20]});
-      }
-    }catch(_){ /* ignore */ }
-  }
+  $('#stats').innerHTML = `<b>Statistik Keterisian Data (Sheet1 vs Log_Progres)</b>${head}${bar}${table}${exportBtn}`;
 
-  /* ===== Stats ===== */
-  function buildStatsUI({totalBaseline,totalFilled,percent,byBBWS,missing}){
-    const bar  = `<div class="bar"><span style="width:${percent}%"></span></div>`;
-    const head = `
-      <div class="stats-row">
-        <div class="pill">Baseline: ${totalBaseline} DI</div>
-        <div class="pill">Terisi: ${totalFilled} DI</div>
-        <div style="font-weight:800">${percent}% lengkap</div>
-      </div>`;
-    const rows = byBBWS
-      .sort((a,b)=> a.bbws.localeCompare(b.bbws))
-      .map(r=>`<tr><td>${r.bbws||'-'}</td><td>${r.filled}/${r.total}</td><td>${r.pct}%</td></tr>`).join('');
-    const table = `
-      <table class="stats">
-        <thead><tr><th>B/BWS</th><th>Terisi / Total</th><th>%</th></tr></thead>
-        <tbody>${rows || '<tr><td colspan="3">Tidak ada data</td></tr>'}</tbody>
-      </table>`;
-    const exportBtn = `<button class="btn-small" id="btnExportMissing">⬇️ Unduh DI yang belum upload (CSV)</button>`;
-    $('#stats').innerHTML = `<b>Statistik Keterisian Data (Sheet1 vs Log_Progres)</b>${head}${bar}${table}${exportBtn}`;
-    $('#btnExportMissing').onclick = ()=>{
-      const header = ["B/BWS","DI","Provinsi","Kabupaten"];
-      const lines = [header.join(",")].concat(
-        missing.map(m=>[m.bbws,m.di,m.prov,m.kab].map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(","))
-      );
-      const blob = new Blob([lines.join("\n")],{type:"text/csv;charset=utf-8"});
-      const url = URL.createObjectURL(blob);
-      const a=document.createElement('a'); a.href=url; a.download='di-belum-upload.csv';
-      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-    };
-  }
+  // export CSV
+  $('#btnExportMissing').onclick = ()=>{
+    const header = ["B/BWS","DI","Provinsi","Kabupaten"];
+    const lines = [header.join(",")].concat(
+      missing.map(m=>[m.bbws,m.di,m.prov,m.kab].map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(","))
+    );
+    const blob = new Blob([lines.join("\n")],{type:"text/csv;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download='di-belum-upload.csv';
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  };
+}
 
-  /* ===== Build ===== */
-  async function build(){
+/* ===== Cascading Map (B/BWS -> DI) ===== */
+const bbwsToDi = new Map(); // B/BWS -> Set(DI)
+function updateDiOptions(){
+  const bb = $('#f-bbws').value;
+  const diSel = $('#f-di');
+  if(!bb){
+    diSel.innerHTML = '<option value="">— Pilih B/BWS dulu —</option>';
+    diSel.disabled = true;
+    return;
+  }
+  const list = Array.from(bbwsToDi.get(bb) || []);
+  diSel.disabled = false;
+  fillSelect(diSel, list, '— Semua DI —');
+  diSel.value = '';
+}
+
+/* ===== Build ===== */
+async function build(){
+  try{
     $('#stats').textContent='Memuat statistik…';
-    const [baseline, agg] = await Promise.all([loadBaseline(), loadLogAggregated()]);
 
-    // markers: 1 per DI + tooltip label permanen (tidak menutup marker)
-    cluster.clearLayers(); window.__allMarkers.length = 0;
-    const markers=[];
-    agg.forEach(r=>{
-      if (!Number.isFinite(r.lat) || !Number.isFinite(r.lng)) return;
-      const m = L.marker([r.lat, r.lng], {icon: iconByStage(r.maxStage)}).bindPopup(makePopup(r));
-      m.__meta = {bbws:r.bbws, di:r.di, stage:r.maxStage};
-      m.bindTooltip(`${r.di} (${r.maxStage||0}%)`, {
-        permanent:true, direction:'top', offset:[0,-22], className:'di-label'
-      });
-      cluster.addLayer(m);
-      window.__allMarkers.push(m);
-      markers.push(m);
+    const [baseline, logAgg] = await Promise.all([loadBaseline(), loadLog()]);
+
+    // mapping B/BWS -> DI (dari baseline, supaya lengkap)
+    bbwsToDi.clear();
+    baseline.forEach(b=>{
+      const key = b.bbws || '-';
+      if(!bbwsToDi.has(key)) bbwsToDi.set(key, new Set());
+      bbwsToDi.get(key).add(b.di);
     });
-    fitToMarkers(markers);
 
-    // stats
-    const filledSet = new Set(agg.map(r => `${canon(r.bbws)}|${canon(r.di)}`));
+    // set kunci terisi dari log (bbws|di)
+    const filledSet = new Set(logAgg.map(r => `${canon(r.bbws)}|${canon(r.di)}`));
+
+    // agregasi baseline per B/BWS
+    const mapBB = new Map();
+    baseline.forEach(b=>{
+      const key = b.bbws || '-';
+      if(!mapBB.has(key)) mapBB.set(key,{bbws:key, total:0, filled:0});
+      mapBB.get(key).total++;
+      if (filledSet.has(`${canon(b.bbws)}|${canon(b.di)}`)) mapBB.get(key).filled++;
+    });
+    const byBBWS = [...mapBB.values()].map(x=>({
+      bbws:x.bbws, total:x.total, filled:x.filled,
+      pct: x.total ? Math.round(x.filled/x.total*100) : 0
+    }));
+
     const uniqBaseline = new Set(baseline.map(b => `${canon(b.bbws)}|${canon(b.di)}`));
     const totalBL = uniqBaseline.size;
     const totalFilled = [...uniqBaseline].filter(k => filledSet.has(k)).length;
     const percent = totalBL ? Math.round(totalFilled/totalBL*100) : 0;
 
-    const mapBB = new Map();
-    baseline.forEach(b=>{
-      const key = b.bbws || '-';
-      if(!mapBB.has(key)) mapBB.set(key,{bbws:key,total:0,filled:0});
-      mapBB.get(key).total++;
-      if (filledSet.has(`${canon(b.bbws)}|${canon(b.di)}`)) mapBB.get(key).filled++;
-    });
-    const byBBWS = [...mapBB.values()].map(x=>({bbws:x.bbws,total:x.total,filled:x.filled,pct:x.total?Math.round(x.filled/x.total*100):0}));
     const missing = baseline.filter(b => !filledSet.has(`${canon(b.bbws)}|${canon(b.di)}`));
+
     buildStatsUI({totalBaseline: totalBL, totalFilled, percent, byBBWS, missing});
 
-    // filter options
-    const uniqBB = Array.from(new Set(agg.map(r=>r.bbws).filter(Boolean)));
-    const uniqDI = Array.from(new Set(agg.map(r=>r.di).filter(Boolean)));
+    // isi dropdown
+    const uniqBB = Array.from(bbwsToDi.keys());
     fillSelect($('#f-bbws'), uniqBB, '— Semua B/BWS —');
-    fillSelect($('#f-di'),   uniqDI, '— Semua DI —');
+    updateDiOptions();
 
-    rebuildIndex();
+  }catch(e){
+    console.error(e);
+    $('#stats').innerHTML = `<div style="color:#b91c1c">Gagal memuat data. Pastikan kedua sheet publik (Anyone with the link - Viewer).</div>
+                             <div style="font-size:12px;color:#6b7280">Detail: ${e.message||e}</div>`;
   }
-  build();
+}
+build();
 
-  /* ===== Filter & Search ===== */
-  function fitToMarkersSafe(list){ try{ if(list && list.length){ const g=L.featureGroup(list); const b=g.getBounds(); if(b.isValid && b.isValid()) map.fitBounds(b,{padding:[20,20]}); } }catch(e){} }
-  function applyFilters(){
-    const fB = canon($('#f-bbws').value);
-    const fD = canon($('#f-di').value);
-    cluster.clearLayers();
-    const visible=[];
-    window.__allMarkers.forEach(m=>{
-      const meta = m.__meta || {};
-      const passB = !fB || canon(meta.bbws)===fB;
-      const passD = !fD || canon(meta.di)===fD;
-      if(passB && passD){ cluster.addLayer(m); visible.push(m); }
-    });
-    fitToMarkersSafe(visible);
-  }
-  $('#f-bbws').addEventListener('change', applyFilters);
-  $('#f-di').addEventListener('change', applyFilters);
+/* ===== Filter & Search ===== */
+function applyFilters(){
+  const fB = canon($('#f-bbws').value);
+  const fD = canon($('#f-di').value);
 
-  const index=[]; // {name, marker}
-  function rebuildIndex(){
-    index.length=0;
-    window.__allMarkers.forEach(m=>{
-      const html = m.getPopup()?.getContent() || '';
-      const mName = (html.match(/<b>(.*?)<\/b>/) || [,''])[1];
-      if (mName) index.push({name:mName, marker:m});
-    });
-  }
-  function showSuggestions(q){
-    const box=$('#suggestions'); box.innerHTML='';
-    if(!q){ box.style.display='none'; return; }
-    const hits=index.filter(it=>it.name && it.name.toLowerCase().includes(q.toLowerCase())).slice(0,100);
-    hits.forEach(it=>{
-      const d=document.createElement('div'); d.textContent=it.name;
-      d.onclick=()=>{ $('#search').value=it.name; box.style.display='none'; map.setView(it.marker.getLatLng(),14); it.marker.openPopup(); };
-      box.appendChild(d);
-    });
-    box.style.display = hits.length ? 'block':'none';
-  }
-  $('#search').addEventListener('input', e=> showSuggestions(e.currentTarget.value));
-  $('#search').addEventListener('keydown', e=>{
-    if(e.key==='Enter'){
-      const q=e.currentTarget.value.trim().toLowerCase();
-      const hit=index.find(it=>it.name && it.name.toLowerCase()===q) || index.find(it=>it.name && it.name.toLowerCase().includes(q));
-      if(hit){ map.setView(hit.marker.getLatLng(),14); hit.marker.openPopup(); $('#suggestions').style.display='none'; }
-    }
+  cluster.clearLayers();
+  const visible=[];
+  window.__allMarkers.forEach(m=>{
+    const meta = m.__meta || {};
+    const passB = !fB || canon(meta.bbws)===fB;
+    const passD = !fD || canon(meta.di)===fD;
+    if(passB && passD){ cluster.addLayer(m); visible.push(m); }
   });
+  if(visible.length){
+    const g=L.featureGroup(visible); map.fitBounds(g.getBounds(),{padding:[20,20]});
+  }
+}
+$('#f-bbws').addEventListener('change', ()=>{ updateDiOptions(); applyFilters(); });
+$('#f-di').addEventListener('change', applyFilters);
 
-} /* end guard */
+// Search suggestions
+const index=[]; // {name, marker}
+function rebuildIndex(){
+  index.length=0;
+  window.__allMarkers.forEach(m=>{
+    const html = m.getPopup()?.getContent() || '';
+    const mName = (html.match(/<b>(.*?)<\/b>/) || [,''])[1];
+    if (mName) index.push({name:mName, marker:m});
+  });
+}
+setTimeout(rebuildIndex, 1500);
+
+function showSuggestions(q){
+  const box=$('#suggestions'); box.innerHTML='';
+  if(!q){ box.style.display='none'; return; }
+  const hits=index.filter(it=>it.name && it.name.toLowerCase().includes(q.toLowerCase())).slice(0,100);
+  hits.forEach(it=>{
+    const d=document.createElement('div'); d.textContent=it.name;
+    d.onclick=()=>{ $('#search').value=it.name; box.style.display='none'; map.setView(it.marker.getLatLng(),14); it.marker.openPopup(); };
+    box.appendChild(d);
+  });
+  box.style.display = hits.length ? 'block':'none';
+}
+$('#search').addEventListener('input', e=> showSuggestions(e.currentTarget.value));
+$('#search').addEventListener('keydown', e=>{
+  if(e.key==='Enter'){
+    const q=e.currentTarget.value.trim().toLowerCase();
+    const hit=index.find(it=>it.name && it.name.toLowerCase()===q) || index.find(it=>it.name && it.name.toLowerCase().includes(q));
+    if(hit){ map.setView(hit.marker.getLatLng(),14); hit.marker.openPopup(); $('#suggestions').style.display='none'; }
+  }
+});
 </script>
 </body>
 </html>
