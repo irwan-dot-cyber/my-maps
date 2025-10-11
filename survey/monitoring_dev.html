@@ -129,9 +129,37 @@ function fillSelect(el, items, placeholder){
 }
 
 /* ===== Map ===== */
-const map = L.map('map').setView([-2.5,117],5);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
-const cluster = L.markerClusterGroup(); map.addLayer(cluster);
+// ===== Map (dengan pilihan basemap) =====
+const baseOSM = L.tileLayer(
+  'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  {
+    maxZoom: 20,
+    attribution: '© OpenStreetMap contributors'
+  }
+);
+
+const baseImg = L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  {
+    maxZoom: 20,
+    attribution: 'Tiles © Esri — Sources: Esri, Maxar, Earthstar Geographics, and the GIS User Community'
+  }
+);
+
+// set default basemap ke OSM (boleh diganti ke baseImg kalau mau imagery default)
+const map = L.map('map', {
+  center: [-2.5, 117],
+  zoom: 5,
+  layers: [baseOSM]
+});
+
+// tombol pilih basemap
+L.control.layers(
+  { 'OSM': baseOSM, 'Esri Imagery': baseImg }, // base layers
+  {},                                          // overlay layers (kosong)
+  { position: 'topright', collapsed: false }   // biar selalu kelihatan
+).addTo(map);
+
 
 function markerIcon(kind){
   const url = kind==='you' ? 'https://maps.google.com/mapfiles/ms/icons/green-dot.png'
