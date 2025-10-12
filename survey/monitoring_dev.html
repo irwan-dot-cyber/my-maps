@@ -45,7 +45,7 @@
   table.stats th,table.stats td{border-top:1px solid var(--line);padding:8px 10px;font-size:13px;text-align:left}
   table.stats th{background:#f9fafb}
 
-  /* Label mini di atas marker */
+  /* Label mini di atas marker (mulai hidden; diatur via JS) */
   .di-label{
     background:rgba(255,255,255,.92);
     border:1px solid #d1d5db;
@@ -57,6 +57,7 @@
     box-shadow:0 2px 6px rgba(0,0,0,.08);
     transform: translateY(-28px);
     pointer-events:none;
+    display:none;
   }
 
   /* Tombol foto per stage di popup */
@@ -94,7 +95,6 @@
 
 <div id="stats">Memuat statistik…</div>
 
-<!-- libs -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
 
@@ -103,6 +103,7 @@
 const SHEET_ID     = "1LrRWGns6d68uQ7sNy2F7ecGsBrBgGbiO9S4lVXEkpXQ";
 const URL_BASELINE = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Sheet1`;
 const URL_LOG      = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=Log_Progres`;
+const ZOOM_LABEL   = 14; // label tampil mulai zoom 14
 
 /* ===== Helpers ===== */
 const norm  = s => (s==null?'':String(s)).trim();
@@ -172,7 +173,7 @@ async function loadLog(){
   const rows = parseGviz(t);
 
   // Kelompokkan per B/BWS+DI; simpan foto per stage (25/50/75/100), koordinat terakhir, stage max
-  const groups = new Map(); // key = bbws|di -> {bbws, di, lat, lng, stageMax, photos:{25:url,50:url,75:url,100:url}}
+  const groups = new Map();
   rows.forEach(r=>{
     const bbws  = norm(r['BWS'] || r['B/BWS'] || r['BBWS'] || r['B/BWS PELAKSANA'] || '');
     const di    = norm(r['NAMA_DI'] || r['Nama DI'] || r['DI'] || '');
@@ -201,7 +202,6 @@ async function loadLog(){
     if(!Number.isFinite(g.lat) || !Number.isFinite(g.lng)) return;
     const gmaps = `https://www.google.com/maps?q=${g.lat},${g.lng}`;
 
-    // tombol per stage (aktif=biru bila ada foto; nonaktif=abu-abu)
     const stages = [25,50,75,100];
     const btns = stages.map(s=>{
       const url = g.photos[s];
@@ -232,8 +232,8 @@ async function loadLog(){
     cluster.addLayer(m);
     markers.push(m);
 
-    // label mini (tidak menutup pin)
-    L.marker([g.lat, g.lng], {
+    // label mini: dibuat sekarang, tapi visibilitas diatur via refreshLabels()
+    const lbl = L.marker([g.lat, g.lng], {
       icon: L.divIcon({
         className: 'di-label',
         html: `${g.di} ${g.stageMax||0}%`,
@@ -242,17 +242,20 @@ async function loadLog(){
       interactive:false,
       zIndexOffset: 1000
     }).addTo(labelsGroup);
+    m.__label = lbl;
   });
 
   if(markers.length){
     const g=L.featureGroup(markers); map.fitBounds(g.getBounds(),{padding:[20,20]});
   }
 
-  // return agregat utk filter/cascading & suggestions
+  // trigger visibilitas awal
+  setTimeout(refreshLabels, 0);
+
   return Array.from(groups.values());
 }
 
-/* ===== Stats (baseline vs log) + Action Buttons (kanan) ===== */
+/* ===== Stats (baseline vs log) + Action Buttons ===== */
 function buildStatsUI({totalBaseline,totalFilled,percent,byBBWS,missing}){
   const head = `
     <div class="stats-head">
@@ -286,7 +289,6 @@ function buildStatsUI({totalBaseline,totalFilled,percent,byBBWS,missing}){
 
   $('#stats').innerHTML = head + row + bar + table + `<div style="margin-top:8px">${exportBtn}</div>`;
 
-  // attach actions (karena elemen dibuat dinamis)
   $('#btnResetView').onclick = ()=> map.setView([-2.5,117],5);
   $('#btnLocateMini').onclick = ()=>{
     if(!navigator.geolocation) return alert('Geolocation tidak didukung');
@@ -301,7 +303,6 @@ function buildStatsUI({totalBaseline,totalFilled,percent,byBBWS,missing}){
     }, ()=>alert('Tidak dapat mengakses lokasi.'));
   };
 
-  // export CSV
   $('#btnExportMissing').onclick = ()=>{
     const header = ["B/BWS","DI","Provinsi","Kabupaten"];
     const lines = [header.join(",")].concat(
@@ -329,6 +330,21 @@ function updateDiOptions(){
   fillSelect(diSel, list, '— Semua DI (yang sudah upload) —');
   diSel.value = '';
 }
+
+/* ===== Label visibility controller ===== */
+function refreshLabels(){
+  const show = map.getZoom() >= ZOOM_LABEL;
+  window.__allMarkers.forEach(m=>{
+    const lbl = m.__label; if(!lbl) return;
+    const el = lbl.getElement() || lbl._icon; if(!el) return;
+    // tampil hanya bila marker sudah keluar dari cluster & lolos filter (ada di cluster)
+    const vp = cluster.getVisibleParent(m);
+    const visible = (vp === m) && show;
+    el.style.display = visible ? 'block' : 'none';
+  });
+}
+map.on('zoomend moveend', refreshLabels);
+cluster.on('animationend spiderfied unspiderfied', refreshLabels);
 
 /* ===== Build ===== */
 async function build(){
@@ -374,6 +390,9 @@ async function build(){
     fillSelect($('#f-bbws'), uniqBB, '— Semua B/BWS (yang sudah upload) —');
     updateDiOptions();
 
+    // pastikan state label sesuai
+    refreshLabels();
+
   }catch(e){
     console.error(e);
     $('#stats').innerHTML = `<div style="color:#b91c1c">Gagal memuat data. Pastikan kedua sheet publik (Anyone with the link - Viewer).</div>
@@ -388,31 +407,18 @@ function applyFilters(){
   const fD = canon($('#f-di').value);
 
   cluster.clearLayers();
-  labelsGroup.clearLayers();
   const visible=[];
   window.__allMarkers.forEach(m=>{
     const meta = m.__meta || {};
     const passB = !fB || canon(meta.bbws)===fB;
     const passD = !fD || canon(meta.di)===fD;
-    if(passB && passD){
-      cluster.addLayer(m);
-      visible.push(m);
-      // label visible
-      const ll = L.marker(m.getLatLng(), {
-        icon: L.divIcon({
-          className: 'di-label',
-          html: `${meta.di} ${meta.stage||0}%`,
-          iconSize: null
-        }),
-        interactive:false,
-        zIndexOffset: 1000
-      });
-      labelsGroup.addLayer(ll);
-    }
+    if(passB && passD){ cluster.addLayer(m); visible.push(m); }
   });
   if(visible.length){
     const g=L.featureGroup(visible); map.fitBounds(g.getBounds(),{padding:[20,20]});
   }
+  // setelah filter, sinkronkan visibilitas label
+  refreshLabels();
 }
 $('#f-bbws').addEventListener('change', ()=>{ updateDiOptions(); applyFilters(); });
 $('#f-di').addEventListener('change', applyFilters);
