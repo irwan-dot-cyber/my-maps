@@ -1,0 +1,366 @@
+/* Pengaturan Dasar */
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f0f2f5; /* Latar belakang halaman */
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Pusatkan konten utama */
+}
+
+/* Header Utama */
+.main-header {
+    background-color: #0d47a1; /* Biru tua seperti di gambar */
+    width: 100%;
+    padding: 15px 0;
+    color: white;
+    text-align: left; /* Sesuaikan untuk logo dan teks */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.header-content {
+    max-width: 900px; /* Lebar konten header */
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+}
+
+.logo-text {
+    display: flex;
+    align-items: center;
+}
+
+.logo {
+    width: 60px;
+    height: 60px;
+    margin-right: 15px;
+    /* Background untuk placeholder logo */
+    background-color: #ffc107; /* Warna kuning seperti logo di gambar */
+    border-radius: 5px;
+}
+
+.text-info p {
+    margin: 0;
+    font-size: 0.85em;
+    line-height: 1.3;
+}
+
+.text-info .instansi {
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.text-info .unit {
+    font-size: 0.9em;
+}
+
+.text-info .alamat {
+    font-size: 0.8em;
+    opacity: 0.9;
+}
+
+
+/* Navigasi Utama (Tombol Monitoring, Form Survey, dll.) */
+.main-nav {
+    background-color: #0d47a1; /* Warna sama dengan header */
+    width: 100%;
+    padding: 10px 0;
+    display: flex;
+    justify-content: center; /* Pusatkan tombol */
+    gap: 15px; /* Jarak antar tombol */
+    margin-bottom: 20px; /* Jarak dengan konten utama */
+}
+
+.nav-button {
+    background-color: #ff9800; /* Warna oranye untuk Monitoring */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    min-width: 120px; /* Ukuran minimum tombol */
+}
+
+.nav-button:nth-child(2) { /* Tombol "TAHAP 2" atau "Form Survey" */
+    background-color: #4CAF50; /* Hijau */
+}
+/* Jika ada tombol lain, bisa ditambahkan nth-child() atau class spesifik */
+.nav-button:nth-child(3) { /* Contoh untuk Statistik */
+    background-color: #FFC107; /* Kuning */
+}
+.nav-button:nth-child(4) { /* Contoh untuk Rute */
+    background-color: #F44336; /* Merah */
+}
+
+
+.nav-button:hover,
+.nav-button.active {
+    filter: brightness(1.1); /* Sedikit lebih terang saat di-hover atau aktif */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+/* Konten Utama */
+.main-content {
+    max-width: 900px; /* Lebar konten utama */
+    width: 100%;
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    box-sizing: border-box; /* Pastikan padding dihitung dalam width */
+}
+
+/* Container Carousel/Image Slider */
+.image-carousel-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9; /* Rasio aspek gambar */
+    background-color: #e0e0e0; /* Latar belakang placeholder */
+    border-radius: 8px;
+    overflow: hidden; /* Pastikan gambar tidak keluar dari container */
+    margin-bottom: 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.carousel-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Pastikan gambar mengisi container tanpa terdistorsi */
+    display: block;
+}
+
+.kemenpu-logo {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 10;
+}
+
+.kemenpu-logo img {
+    height: 30px; /* Sesuaikan tinggi logo KemenPU */
+    background-color: #2196f3; /* Latar belakang placeholder */
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+
+.carousel-overlay {
+    position: absolute;
+    top: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #ffc107; /* Warna kuning seperti di gambar */
+    color: #333;
+    padding: 10px 20px;
+    border-radius: 8px;
+    text-align: center;
+    max-width: 80%;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    z-index: 5;
+}
+
+.carousel-overlay .instruksi-title {
+    font-weight: bold;
+    font-size: 1.1em;
+    margin-bottom: 5px;
+}
+
+.carousel-overlay .instruksi-desc {
+    font-size: 0.9em;
+    line-height: 1.4;
+    margin: 0;
+}
+
+.carousel-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: rgba(0,0,0,0.5);
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.2em;
+    z-index: 6;
+}
+
+.left-arrow {
+    left: 10px;
+}
+
+.right-arrow {
+    right: 10px;
+}
+
+.image-caption {
+    position: absolute;
+    bottom: 15px;
+    left: 15px;
+    background-color: rgba(0,0,0,0.6);
+    color: white;
+    padding: 8px 15px;
+    border-radius: 5px;
+    font-size: 0.8em;
+    line-height: 1.3;
+    z-index: 5;
+}
+
+.image-caption p {
+    margin: 0;
+}
+
+.carousel-dots {
+    position: absolute;
+    bottom: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 5;
+}
+
+.dot {
+    width: 10px;
+    height: 10px;
+    background-color: rgba(255,255,255,0.5);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.dot.active {
+    background-color: white;
+}
+
+
+.copyright-year {
+    text-align: center;
+    margin-top: 15px;
+    font-size: 0.9em;
+    color: #555;
+    font-weight: bold;
+}
+
+/* Visitor Counter */
+.visitor-counter {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 25px;
+    font-size: 1.1em;
+    color: #444;
+}
+
+.visitor-counter p {
+    margin: 0 10px 0 0;
+    font-weight: bold;
+}
+
+.counter-digits {
+    display: flex;
+    gap: 5px;
+}
+
+.counter-digits span {
+    background-color: #ddd;
+    border: 1px solid #ccc;
+    padding: 5px 8px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace; /* Font monospasi untuk angka */
+    font-weight: bold;
+    font-size: 1.2em;
+}
+
+/* Footer (kosong, bisa diisi nanti) */
+footer {
+    width: 100%;
+    background-color: #0d47a1; /* Biru tua */
+    color: white;
+    padding: 15px 0;
+    text-align: center;
+    margin-top: 30px;
+    font-size: 0.85em;
+    box-shadow: 0 -2px 4px rgba(0,0,0,0.2);
+}
+
+
+/* Responsif Dasar */
+@media (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        text-align: center;
+    }
+    .logo-text {
+        flex-direction: column;
+        margin-bottom: 10px;
+    }
+    .logo {
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+    .text-info p {
+        font-size: 0.8em;
+    }
+    .text-info .instansi {
+        font-size: 1em;
+    }
+
+    .main-nav {
+        flex-wrap: wrap; /* Tombol bisa turun baris jika layar kecil */
+        gap: 10px;
+    }
+    .nav-button {
+        min-width: unset;
+        width: 45%; /* Dua tombol per baris */
+    }
+
+    .carousel-overlay {
+        font-size: 0.9em;
+        padding: 8px 15px;
+        max-width: 90%;
+    }
+    .carousel-overlay .instruksi-title {
+        font-size: 1em;
+    }
+    .carousel-overlay .instruksi-desc {
+        font-size: 0.8em;
+    }
+
+    .image-caption {
+        font-size: 0.7em;
+        padding: 5px 10px;
+        bottom: 10px;
+        left: 10px;
+    }
+    .carousel-arrow {
+        padding: 8px 12px;
+        font-size: 1em;
+    }
+    .carousel-dots {
+        bottom: 10px;
+    }
+
+    .visitor-counter {
+        flex-direction: column;
+    }
+    .visitor-counter p {
+        margin-bottom: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .main-content {
+        padding: 15px;
+    }
+    .nav-button {
+        width: 80%; /* Satu tombol per baris */
+    }
+    .counter-digits span {
+        padding: 3px 6px;
+        font-size: 1em;
+    }
+}
