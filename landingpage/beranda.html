@@ -4,17 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KEMENTERIAN PEKERJAAN UMUM</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     
     <style>
-        /* CSS DARI style.css DIGABUNG DI SINI */
+        /* CSS Gabungan */
         
         /* Pengaturan Dasar */
         body {
             font-family: 'Arial', sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #f0f2f5; /* Latar belakang halaman */
+            background-color: #f0f2f5;
             color: #333;
             display: flex;
             flex-direction: column;
@@ -23,7 +27,7 @@
 
         /* Header Utama */
         .main-header {
-            background-color: #0d47a1; /* Biru tua seperti di gambar */
+            background-color: #0d47a1;
             width: 100%;
             padding: 15px 0;
             color: white;
@@ -84,7 +88,7 @@
         }
 
         .nav-button {
-            background-color: #ff9800; /* Warna oranye */
+            background-color: #ff9800;
             color: white;
             border: none;
             padding: 10px 20px;
@@ -95,9 +99,8 @@
             min-width: 120px;
         }
         
-        /* Tombol TAHAP 2 (diberi warna berbeda seperti contoh CSS sebelumnya) */
         .dropdown-menu:nth-child(2) .nav-button {
-            background-color: #4CAF50; /* Hijau */
+            background-color: #4CAF50;
         }
         
         .nav-button:hover,
@@ -159,11 +162,6 @@
         .nav-button i {
             margin-left: 8px;
             transition: transform 0.3s ease;
-        }
-
-        /* Mengubah arah panah saat dropdown terbuka (opsional) */
-        .nav-button[aria-expanded="true"] i {
-            transform: rotate(180deg);
         }
 
         /* Konten Utama */
@@ -449,9 +447,8 @@
         
         <div class="visitor-counter">
             <p>Jumlah Pengunjung :</p>
-            <div class="counter-digits">
-                <span>0</span><span>6</span><span>9</span><span>8</span><span>7</span>
-            </div>
+            <div class="counter-digits" id="visitor-counter-display">
+                </div>
         </div>
     </main>
 
@@ -460,39 +457,81 @@
     </footer>
 
     <script>
-        // FUNGSI JAVASCRIPT UNTUK DROP DOWN
+        // =========================================================================
+        // !!! HARAP GANTI DENGAN KREDENSIAL FIREBASE ASLI PROYEK SI-IRWAN KAMU !!!
+        // =========================================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyCneclHzudWnN8-bifmq4UeIu5PSknAsRI", 
+            authDomain: "si-irwan.firebaseapp.com", // Sesuaikan dengan proyek Anda
+            databaseURL: "https://si-irwan-default-rtdb.firebaseio.com", // Sesuaikan URL database Anda
+            projectId: "si-irwan",
+            // Tambahkan kredensial lain jika diberikan oleh Firebase...
+        };
+
+        // Inisialisasi Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.database();
+        const counterRef = db.ref('visits/total'); 
+        
+        // --- FUNGSI DROP DOWN ---
         function toggleDropdown(buttonElement) {
             const dropdownContent = buttonElement.nextElementSibling;
             
-            // Tutup semua dropdown lain
             document.querySelectorAll('.dropdown-content').forEach(content => {
                 if (content !== dropdownContent) {
                     content.classList.remove('show');
-                    // Reset aria-expanded
                     content.previousElementSibling.setAttribute('aria-expanded', 'false');
                 }
             });
 
-            // Toggle (tampilkan/sembunyikan) dropdown yang diklik
             const isExpanded = dropdownContent.classList.toggle('show');
             buttonElement.setAttribute('aria-expanded', isExpanded);
         }
 
-        // Menutup dropdown jika user klik di luar area dropdown
         window.onclick = function(event) {
-            // Periksa apakah yang diklik BUKAN tombol dropdown
             if (!event.target.matches('.nav-button')) {
                 document.querySelectorAll('.dropdown-content').forEach(content => {
                     if (content.classList.contains('show')) {
                         content.classList.remove('show');
-                        // Reset aria-expanded pada tombol di atasnya
                         content.previousElementSibling.setAttribute('aria-expanded', 'false');
                     }
                 });
             }
         }
         
-        // Catatan: Fungsionalitas slider/carousel dan counter real-time memerlukan JS lebih lanjut.
+        // --- FUNGSI REAL-TIME COUNTER ---
+        async function updateVisitorCounter() {
+            const counterDisplay = document.getElementById('visitor-counter-display');
+            
+            try {
+                // 1. Transaksi: Tambah nilai 1 di database
+                const snapshot = await counterRef.transaction(currentCount => {
+                    return (currentCount || 0) + 1; 
+                });
+
+                if (snapshot.committed) {
+                    // 2. Ambil nilai yang sudah diupdate
+                    let countNumber = snapshot.snapshot.val();
+                    const countString = String(countNumber).padStart(5, '0'); 
+                    
+                    // 3. Tampilkan digit
+                    counterDisplay.innerHTML = '';
+                    for (const digit of countString) {
+                        const span = document.createElement('span');
+                        span.textContent = digit;
+                        counterDisplay.appendChild(span);
+                    }
+                }
+            } catch (error) {
+                console.error("Error Counter:", error);
+                counterDisplay.innerHTML = '<span>E</span><span>R</span><span>R</span><span>O</span><span>R</span>';
+            }
+        }
+
+        // Panggil fungsi counter saat halaman dimuat
+        document.addEventListener('DOMContentLoaded', updateVisitorCounter);
     </script>
 </body>
 </html>
