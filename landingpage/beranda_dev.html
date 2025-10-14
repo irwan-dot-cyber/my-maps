@@ -5,11 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>KEMENTERIAN PEKERJAAN UMUM</title>
 
-  <!-- Font Awesome (ikon) -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"/>
 
   <style>
-    /* ====== Dasar Halaman ====== */
     body{
       font-family: Arial, sans-serif; margin:0; padding:0;
       background:#f0f2f5; color:#333; display:flex; flex-direction:column; align-items:center;
@@ -41,42 +39,40 @@
     .carousel-overlay{position:absolute; top:15px; left:50%; transform:translateX(-50%); background:#ffc107; color:#333; padding:10px 20px; border-radius:8px; text-align:center; max-width:80%; box-shadow:0 2px 5px rgba(0,0,0,.3); z-index:5}
     .carousel-overlay .instruksi-title{font-weight:700; font-size:1.1em; margin-bottom:5px}
     .carousel-overlay .instruksi-desc{font-size:.9em; line-height:1.4; margin:0}
-    .carousel-arrow{position:absolute; top:50%; transform:translateY(-50%); background:rgba(0,0,0,.5); color:#fff; border:0; padding:10px 15px; border-radius:50%; cursor:pointer; font-size:1.2em; z-index:6}
-    .left-arrow{left:10px} .right-arrow{right:10px}
-    .carousel-dots{position:absolute; bottom:15px; left:50%; transform:translateX(-50%); display:flex; gap:8px; z-index:5}
-    .dot{width:10px; height:10px; background:rgba(255,255,255,.5); border-radius:50%; cursor:pointer}
-    .dot.active{background:#fff}
 
     .copyright-year{text-align:center; margin-top:15px; font-size:.9em; color:#555; font-weight:700}
-
     .visitor-counter{display:flex; justify-content:center; align-items:center; margin-top:25px; font-size:1.1em; color:#444; text-align:center; gap:10px; flex-wrap:wrap}
     .visitor-counter p{margin:0; font-weight:700}
-
     footer{width:100%; background:#0d47a1; color:#fff; padding:15px 0; text-align:center; margin-top:30px; font-size:.85em; box-shadow:0 -2px 4px rgba(0,0,0,.2)}
 
-    /* ====== AIR GPTs Floating (Kotak + Glow + Bubble + Bounce) ====== */
-    .air-fab-wrap{position:fixed; right:20px; bottom:20px; z-index:9999;}
+    /* ====== AIR GPTs Floating (Bigger + Always-visible Tip) ====== */
+    .air-fab-wrap{position:fixed; right:28px; bottom:28px; z-index:9999;}
     .air-fab{
-      position:relative; width:84px; height:84px; border-radius:14px;
-      background:#fff; border:1px solid #e2e8f0; box-shadow:0 8px 24px rgba(2,6,23,.35);
+      position:relative; width:110px; height:110px; border-radius:18px;
+      background:#fff; border:1px solid #e2e8f0; box-shadow:0 10px 30px rgba(2,6,23,.4);
       display:grid; place-items:center; cursor:pointer; overflow:hidden;
       animation:floatBounce 4.2s ease-in-out infinite;
     }
     .air-fab::after{
-      content:""; position:absolute; inset:0; border-radius:14px; pointer-events:none;
+      content:""; position:absolute; inset:0; border-radius:18px; pointer-events:none;
       box-shadow:0 0 0 0 rgba(14,165,233,.55); animation:pulseGlow 2.8s ease-out infinite;
     }
     .air-fab img{width:100%; height:100%; object-fit:contain; border-radius:0;}
+
+    /* Bubble selalu tampil */
     .air-tip{
-      position:absolute; right:0; bottom:96px; background:#0ea5e9; color:#fff; font-weight:700;
-      padding:8px 10px; border-radius:10px; font-size:12px; box-shadow:0 8px 20px rgba(2,6,23,.28);
-      opacity:0; transform:translateY(6px); transition:.2s ease; pointer-events:none; max-width:220px;
+      position:absolute; right:0; bottom:150px;
+      background:#0ea5e9; color:#fff; font-weight:700;
+      padding:8px 10px; border-radius:10px; font-size:12px;
+      box-shadow:0 8px 20px rgba(2,6,23,.28);
+      opacity:1;                /* tampil terus */
+      transform:translateY(0);  /* posisi stabil */
+      pointer-events:none; max-width:220px;
     }
     .air-tip::after{content:""; position:absolute; right:16px; top:100%; border:7px solid transparent; border-top-color:#0ea5e9;}
-    .air-fab-wrap:hover .air-tip{opacity:1; transform:translateY(0)}
 
     .air-card{
-      position:fixed; right:20px; bottom:122px; width:300px; max-width:calc(100vw - 40px);
+      position:fixed; right:28px; bottom:150px; width:300px; max-width:calc(100vw - 40px);
       background:#fff; color:#0f172a; border-radius:14px; box-shadow:0 12px 36px rgba(2,6,23,.35);
       padding:12px; border:1px solid #e2e8f0; display:none; z-index:9999;
     }
@@ -87,52 +83,34 @@
     .air-desc{font-size:13px; color:#475569; margin:6px 0 10px}
     .air-actions{display:grid; gap:8px}
     .air-actions a{display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:10px 12px; border-radius:10px; border:1px solid #e2e8f0; background:#0ea5e9; color:#fff; font-weight:700; text-decoration:none}
-    .air-actions a.ghost{background:#fff; color:#0f172a}
 
     /* Animations */
-    @keyframes pulseGlow{0%{box-shadow:0 0 0 0 rgba(14,165,233,.55)}70%{box-shadow:0 0 0 22px rgba(14,165,233,0)}100%{box-shadow:0 0 0 0 rgba(14,165,233,0)}}
+    @keyframes pulseGlow{0%{box-shadow:0 0 0 0 rgba(14,165,233,.55)}70%{box-shadow:0 0 0 25px rgba(14,165,233,0)}100%{box-shadow:0 0 0 0 rgba(14,165,233,0)}}
     @keyframes floatBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
     @keyframes airSlide{from{opacity:0; transform:translateY(8px)}to{opacity:1; transform:translateY(0)}}
 
-    /* ====== Responsif ====== */
+    /* Responsive */
     @media (max-width:768px){
       .header-content{flex-direction:column; text-align:center}
       .logo-text{flex-direction:column; margin-bottom:10px}
       .logo{margin-right:0; margin-bottom:10px}
-      .text-info p{font-size:.8em} .text-info .instansi{font-size:1em}
 
-      /* --- FIX tombol mobile: dua kolom seragam --- */
-      .main-nav{
-        flex-wrap:wrap; gap:10px; padding:12px 10px; justify-content:center;
-      }
-      .dropdown-menu{
-        position:relative;             /* tetap untuk dropdown */
-        display:flex;                  /* biar anaknya (button) bisa full width */
-        flex:1 1 calc(50% - 10px);     /* dua kolom */
-        justify-content:center;
-      }
-      .nav-button{
-        width:100%; min-width:0;       /* hilangkan shrink ke 45% */
-        font-size:15px; padding:12px 0;
-      }
+      /* tombol dua kolom di HP */
+      .main-nav{flex-wrap:wrap; gap:10px; padding:12px 10px; justify-content:center;}
+      .dropdown-menu{flex:1 1 calc(50% - 10px); display:flex; justify-content:center;}
+      .nav-button{width:100%; min-width:0; font-size:15px; padding:12px 0;}
 
-      .carousel-overlay{font-size:.9em; padding:8px 15px; max-width:90%}
-      .carousel-overlay .instruksi-title{font-size:1em}
-      .carousel-overlay .instruksi-desc{font-size:.8em}
-      .carousel-arrow{padding:8px 12px; font-size:1em}
-      .carousel-dots{bottom:10px}
-      .visitor-counter{flex-direction:column} .visitor-counter p{margin-bottom:10px}
-      .air-card{right:16px; bottom:120px}
-      .air-fab-wrap{right:16px; bottom:16px}
+      .air-fab{width:84px; height:84px; border-radius:14px;}
+      .air-fab-wrap{right:16px; bottom:16px;}
+      .air-tip{bottom:120px;}   /* geser bubble lebih dekat */
+      .air-card{right:16px; bottom:120px;}
     }
     @media (max-width:420px){
-      /* layar sangat sempit: satu kolom full */
-      .dropdown-menu{flex:1 1 100%}
+      .dropdown-menu{flex:1 1 100%} /* tombol 1 kolom di layar sangat kecil */
     }
   </style>
 </head>
 <body>
-  <!-- ===== Header ===== -->
   <header class="main-header">
     <div class="header-content">
       <div class="logo-text">
@@ -147,7 +125,6 @@
     </div>
   </header>
 
-  <!-- ===== Nav ===== -->
   <nav class="main-nav">
     <div class="dropdown-menu">
       <button class="nav-button active" onclick="toggleDropdown(this)" role="button" aria-expanded="false">
@@ -170,20 +147,13 @@
     </div>
   </nav>
 
-  <!-- ===== Main ===== -->
   <main class="main-content">
     <div class="image-carousel-container">
       <div class="carousel-overlay">
         <p class="instruksi-title">Instruksi Presiden No. 2 Tahun 2025</p>
-        <p class="instruksi-desc">Tentang Percepatan Pembangunan, Peningkatan, Rehabilitasi, Serta Operasi dan Pemeliharaan Jaringan Irigasi untuk Mendukung Swasembada Pangan</p>
+        <p class="instruksi-desc">Tentang Percepatan Pembangunan, Peningkatan, Rehabilitasi, serta Operasi dan Pemeliharaan Jaringan Irigasi untuk Mendukung Swasembada Pangan</p>
       </div>
       <img src="https://irwan-dot-cyber.github.io/my-maps/assets/bg_irigasi.jpg" alt="Gambar Irigasi" class="carousel-image">
-
-      <button class="carousel-arrow left-arrow"><i class="fas fa-chevron-left"></i></button>
-      <button class="carousel-arrow right-arrow"><i class="fas fa-chevron-right"></i></button>
-      <div class="carousel-dots">
-        <span class="dot active"></span><span class="dot"></span><span class="dot"></span>
-      </div>
     </div>
 
     <p class="copyright-year">@2025</p>
@@ -193,72 +163,66 @@
     </div>
     <div class="visitor-counter" style="margin-top:8px;">
       <a href="https://www.freecounterstat.com">
-        <img src="https://counter1.optistats.ovh/private/freecounterstat.php?c=1pbxhz1xshl9e262gkrm74ltq3mgwc8w"
-             alt="free hit counter code" style="height:28px;border:0;">
+        <img src="https://counter1.optistats.ovh/private/freecounterstat.php?c=1pbxhz1xshl9e262gkrm74ltq3mgwc8w" alt="free hit counter code" style="height:28px;border:0;">
       </a>
     </div>
   </main>
 
   <footer>© 2025 • Kementerian Pekerjaan Umum</footer>
 
-  <!-- ===== AIR GPTs Floating Widget ===== -->
+  <!-- Floating AIR GPTs Avatar -->
   <div class="air-fab-wrap" aria-label="AIR Assistant">
     <div id="airFab" class="air-fab" title="Buka AIR">
       <img src="https://irwan-dot-cyber.github.io/my-maps/assets/air_avatar.png" alt="AIR Assistant">
     </div>
-    <div class="air-tip">Hai, saya Si-Irwan!</div>
+    <!-- Teks bubble SELALU tampil -->
+    <div class="air-tip">Tanya Saya!</div>
   </div>
 
-  <!-- Kartu info AIR -->
   <div id="airCard" class="air-card" role="dialog" aria-modal="false" aria-labelledby="airTitle">
     <div class="air-head">
-      <img src="https://irwan-dot-cyber.github.io/my-maps/assets/air_avatar.png"
-           alt="" style="width:36px;height:36px;border-radius:6px;border:1px solid #e2e8f0;object-fit:contain">
+      <img src="https://irwan-dot-cyber.github.io/my-maps/assets/air_avatar.png" alt="" style="width:36px;height:36px;border-radius:6px;border:1px solid #e2e8f0;object-fit:contain">
       <div>
-        <div id="airTitle" class="air-title">Si Irwan – Asisten Irigasi & Rawa Nasional</div>
+        <div id="airTitle" class="air-title">Si-Irwan – Asisten Irigasi & Rawa Nasional</div>
         <span class="badge">GPTs</span>
       </div>
     </div>
-    <div class="air-desc">Tanya apa saja tentang Irigasi, Inpres 2/2025, Ketahanan Pangan dll.</div>
+    <div class="air-desc">Tanya apa saja tentang Irigasi, Inpres 2/2025, Ketahanan Pangan, dan lainnya.</div>
     <div class="air-actions">
       <a href="https://chatgpt.com/g/g-68e0ae2bb8c081919205a701721b07da-a-i-r" target="_blank" rel="noopener">
-        <i class="fas fa-rocket"></i> Buka Si Irwan di ChatGPT
+        <i class="fas fa-rocket"></i> Buka Si-Irwan di ChatGPT
       </a>
     </div>
   </div>
 
   <script>
-    // Dropdown nav
     function toggleDropdown(btn){
       const wrap = btn.nextElementSibling;
       document.querySelectorAll('.dropdown-content').forEach(el=>{
-        if(el !== wrap){ el.classList.remove('show'); el.previousElementSibling?.setAttribute('aria-expanded','false'); }
+        if(el!==wrap){el.classList.remove('show'); el.previousElementSibling?.setAttribute('aria-expanded','false');}
       });
       const is = wrap.classList.toggle('show');
       btn.setAttribute('aria-expanded', is);
     }
-    window.addEventListener('click', e=>{
+    window.addEventListener('click',e=>{
       if(!e.target.closest('.dropdown-menu')){
         document.querySelectorAll('.dropdown-content').forEach(el=>{
-          el.classList.remove('show'); el.previousElementSibling?.setAttribute('aria-expanded','false');
+          el.classList.remove('show');
+          el.previousElementSibling?.setAttribute('aria-expanded','false');
         });
       }
     });
 
-    // AIR toggle card
     (function(){
-      const fab  = document.getElementById('airFab');
-      const card = document.getElementById('airCard');
-
+      const fab=document.getElementById('airFab');
+      const card=document.getElementById('airCard');
       function toggleCard(show){
-        const willShow = (typeof show==='boolean') ? show : !card.classList.contains('show');
-        card.classList.toggle('show', willShow);
+        const willShow=(typeof show==='boolean')?show:!card.classList.contains('show');
+        card.classList.toggle('show',willShow);
       }
-      fab.addEventListener('click', e=>{ e.stopPropagation(); toggleCard(); });
-      document.addEventListener('click', e=>{
-        if(!card.contains(e.target) && !fab.contains(e.target)) toggleCard(false);
-      });
-      document.addEventListener('keydown', e=>{ if(e.key==='Escape') toggleCard(false); });
+      fab.addEventListener('click',e=>{e.stopPropagation();toggleCard();});
+      document.addEventListener('click',e=>{if(!card.contains(e.target)&&!fab.contains(e.target))toggleCard(false);});
+      document.addEventListener('keydown',e=>{if(e.key==='Escape')toggleCard(false);});
     })();
   </script>
 </body>
