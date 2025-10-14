@@ -24,6 +24,14 @@
     .text-info .unit{font-size:.86em; opacity:.95}
     .text-info .alamat{font-size:.78em; opacity:.9}
 
+    /* tagline baru di bawah alamat */
+    .text-info .tagline{
+      margin-top:8px;               /* jarak dari alamat */
+      line-height:1.35;
+      font-size:.82em;
+    }
+    .text-info .tagline b{display:block; margin-bottom:2px} /* baris pertama bold */
+
     /* ====== Nav ====== */
     .main-nav{background:#0d47a1; width:100%; padding:10px 0; display:flex; justify-content:center; gap:15px; margin-bottom:18px}
     .nav-button{background:#ff9800; color:#fff; border:0; padding:10px 20px; border-radius:6px; font-weight:700; cursor:pointer; transition:.25s; min-width:120px}
@@ -54,10 +62,10 @@
     .air-fab-wrap{position:fixed; right:26px; bottom:40px; z-index:9999;}
     .air-fab{
       position:relative;
-      width:115px;                 /* lebih ramping agar tidak nabrak */
-      height:150px;                /* tinggi cukup agar kaki tidak kepotong */
+      width:115px;                 
+      height:150px;                
       border-radius:20px;
-      padding:8px;                 /* ruang dalam supaya gambar tidak mentok */
+      padding:8px;                 
       background:#fff;
       border:1px solid #e2e8f0;
       box-shadow:0 10px 30px rgba(2,6,23,.4);
@@ -72,8 +80,8 @@
     .air-fab img{
       width:100%;
       height:100%;
-      object-fit:contain;          /* jaga proporsi */
-      object-position:bottom center;  /* pastikan kaki terlihat */
+      object-fit:contain;          
+      object-position:bottom center; 
       border-radius:0;
       display:block;
     }
@@ -119,7 +127,6 @@
       .dropdown-menu{flex:1 1 calc(50% - 10px); display:flex; justify-content:center;}
       .nav-button{width:100%; min-width:0; font-size:15px; padding:12px 0;}
 
-      /* Avatar mobile – box lebih kecil tapi tinggi cukup, dan dinaikkan */
       .air-fab{width:100px; height:135px; border-radius:18px; padding:8px;}
       .air-fab-wrap{right:16px; bottom:88px;}
       .air-tip{bottom:158px;}
@@ -141,9 +148,11 @@
           <p class="unit">DIREKTORAT JENDERAL SUMBER DAYA AIR</p>
           <p class="unit">DIREKTORAT IRIGASI DAN RAWA</p>
           <p class="alamat">Jl. Pattimura No. 20, Kebayoran Baru, Jakarta Selatan</p>
-          <p></p>
-          <p class="instansi">KEMENTERIAN PEKERJAAN UMUM</p>
-          <p class="unit">DIREKTORAT JENDERAL SUMBER DAYA AIR</p>
+          <!-- Tambahan yang diminta -->
+          <p class="tagline">
+            <b>Sistem Informasi Irigasi dan Rawa Nasional (Si-Irwan)</b>
+            Monitoring Pelaksanaan Inpres No. 25/2025
+          </p>
         </div>
       </div>
     </div>
@@ -197,7 +206,6 @@
   <!-- ===== Floating AIR GPTs ===== -->
   <div class="air-fab-wrap" aria-label="AIR Assistant">
     <div id="airFab" class="air-fab" title="Klik untuk info">
-      <!-- Pakai PNG/WEBP full-body -->
       <img src="https://irwan-dot-cyber.github.io/my-maps/assets/air_avatar.png" alt="AIR Assistant">
     </div>
     <div class="air-tip">Tanya Saya!</div>
