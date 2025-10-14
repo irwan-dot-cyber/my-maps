@@ -40,39 +40,42 @@
     .carousel-overlay .instruksi-title{font-weight:700; font-size:1.1em; margin-bottom:5px}
     .carousel-overlay .instruksi-desc{font-size:.9em; line-height:1.4; margin:0}
 
-    .copyright-year{text-align:center; margin-top:15px; font-size:.9em; color:#555; font-weight:700}
     .visitor-counter{display:flex; justify-content:center; align-items:center; margin-top:25px; font-size:1.1em; color:#444; text-align:center; gap:10px; flex-wrap:wrap}
     .visitor-counter p{margin:0; font-weight:700}
+
     footer{width:100%; background:#0d47a1; color:#fff; padding:15px 0; text-align:center; margin-top:30px; font-size:.85em; box-shadow:0 -2px 4px rgba(0,0,0,.2)}
 
-    /* ====== AIR GPTs Floating (Bigger + Always-visible Tip) ====== */
-    .air-fab-wrap{position:fixed; right:28px; bottom:28px; z-index:9999;}
+    /* ====== AIR GPTs Floating (Bigger Avatar + Glow + Bubble) ====== */
+    .air-fab-wrap{position:fixed; right:30px; bottom:35px; z-index:9999;}
     .air-fab{
-      position:relative; width:110px; height:110px; border-radius:18px;
-      background:#fff; border:1px solid #e2e8f0; box-shadow:0 10px 30px rgba(2,6,23,.4);
-      display:grid; place-items:center; cursor:pointer; overflow:hidden;
+      position:relative;
+      width:150px; height:170px;           /* avatar lebih besar */
+      border-radius:22px;
+      background:#fff;
+      border:1px solid #e2e8f0;
+      box-shadow:0 10px 30px rgba(2,6,23,.4);
+      display:grid; place-items:center;
+      cursor:pointer; overflow:hidden;
       animation:floatBounce 4.2s ease-in-out infinite;
     }
     .air-fab::after{
-      content:""; position:absolute; inset:0; border-radius:18px; pointer-events:none;
+      content:""; position:absolute; inset:0; border-radius:22px; pointer-events:none;
       box-shadow:0 0 0 0 rgba(14,165,233,.55); animation:pulseGlow 2.8s ease-out infinite;
     }
-    .air-fab img{width:110%; height:110%; object-fit:contain; border-radius:0;}
+    .air-fab img{width:100%; height:130%; object-fit:contain; border-radius:0;}
 
-    /* Bubble selalu tampil */
     .air-tip{
-      position:absolute; right:0; bottom:150px;
+      position:absolute; right:0; bottom:180px;
       background:#0ea5e9; color:#fff; font-weight:700;
-      padding:8px 10px; border-radius:10px; font-size:12px;
+      padding:8px 10px; border-radius:10px; font-size:13px;
       box-shadow:0 8px 20px rgba(2,6,23,.28);
-      opacity:1;                /* tampil terus */
-      transform:translateY(0);  /* posisi stabil */
+      opacity:1; transform:translateY(0);
       pointer-events:none; max-width:220px;
     }
     .air-tip::after{content:""; position:absolute; right:16px; top:100%; border:7px solid transparent; border-top-color:#0ea5e9;}
 
     .air-card{
-      position:fixed; right:28px; bottom:150px; width:300px; max-width:calc(100vw - 40px);
+      position:fixed; right:30px; bottom:200px; width:300px; max-width:calc(100vw - 40px);
       background:#fff; color:#0f172a; border-radius:14px; box-shadow:0 12px 36px rgba(2,6,23,.35);
       padding:12px; border:1px solid #e2e8f0; display:none; z-index:9999;
     }
@@ -91,22 +94,13 @@
 
     /* Responsive */
     @media (max-width:768px){
-      .header-content{flex-direction:column; text-align:center}
-      .logo-text{flex-direction:column; margin-bottom:10px}
-      .logo{margin-right:0; margin-bottom:10px}
-
-      /* tombol dua kolom di HP */
       .main-nav{flex-wrap:wrap; gap:10px; padding:12px 10px; justify-content:center;}
       .dropdown-menu{flex:1 1 calc(50% - 10px); display:flex; justify-content:center;}
       .nav-button{width:100%; min-width:0; font-size:15px; padding:12px 0;}
-
-      .air-fab{width:84px; height:84px; border-radius:14px;}
-      .air-fab-wrap{right:16px; bottom:16px;}
-      .air-tip{bottom:110px;}   /* geser bubble lebih dekat */
-      .air-card{right:16px; bottom:110px;}
-    }
-    @media (max-width:420px){
-      .dropdown-menu{flex:1 1 100%} /* tombol 1 kolom di layar sangat kecil */
+      .air-fab{width:110px; height:150px; border-radius:18px;}
+      .air-fab-wrap{right:18px; bottom:80px;}   /* avatar naik di mobile */
+      .air-tip{bottom:160px;}
+      .air-card{right:16px; bottom:170px;}
     }
   </style>
 </head>
@@ -117,7 +111,7 @@
         <img src="https://irwan-dot-cyber.github.io/my-maps/assets/LogoPUPR.png" alt="Logo PU" class="logo">
         <div class="text-info">
           <p class="instansi">KEMENTERIAN PEKERJAAN UMUM</p>
-          <p class="unit">SEKRETARIAT JENDERAL SUMBER DAYA AIR</p>
+          <p class="unit">DIREKTORAT JENDERAL SUMBER DAYA AIR</p>
           <p class="unit">DIREKTORAT IRIGASI DAN RAWA</p>
           <p class="alamat">Jl. Pattimura No. 20, Kebayoran Baru, Jakarta Selatan</p>
         </div>
@@ -156,8 +150,6 @@
       <img src="https://irwan-dot-cyber.github.io/my-maps/assets/bg_irigasi.jpg" alt="Gambar Irigasi" class="carousel-image">
     </div>
 
-    <p class="copyright-year">@2025</p>
-
     <div class="visitor-counter">
       <p>Jumlah Pengunjung :</p>
     </div>
@@ -168,41 +160,40 @@
     </div>
   </main>
 
-  <footer>© 2025</footer>
+  <footer>© 2025 • Kementerian Pekerjaan Umum</footer>
 
-  <!-- Floating AIR GPTs Avatar -->
+  <!-- Floating AIR GPTs -->
   <div class="air-fab-wrap" aria-label="AIR Assistant">
-    <div id="airFab" class="air-fab" title="Buka AIR">
+    <div id="airFab" class="air-fab" title="Klik Saya">
       <img src="https://irwan-dot-cyber.github.io/my-maps/assets/air_avatar.png" alt="AIR Assistant">
     </div>
-    <!-- Teks bubble SELALU tampil -->
     <div class="air-tip">Tanya Saya!</div>
   </div>
 
   <div id="airCard" class="air-card" role="dialog" aria-modal="false" aria-labelledby="airTitle">
     <div class="air-head">
-      <img src="https://irwan-dot-cyber.github.io/my-maps/assets/air_avatar.png" alt="" style="width:36px;height:36px;border-radius:6px;border:1px solid #e2e8f0;object-fit:contain">
+      <img src="https://irwan-dot-cyber.github.io/my-maps/assets/air_avatar.png" alt="" style="width:36px;height:55px;border-radius:6px;border:1px solid #e2e8f0;object-fit:contain">
       <div>
-        <div id="airTitle" class="air-title">Si Irwan – aSisten Irigasi & Rawa Nasional</div>
+        <div id="airTitle" class="air-title">Si-Irwan – Asisten Irigasi & Rawa Nasional</div>
         <span class="badge">GPTs</span>
       </div>
     </div>
-    <div class="air-desc">Tanya apa saja tentang Irigasi, Inpres 2/2025, Ketahanan Pangan, dan lainnya.</div>
+    <div class="air-desc">Tanya apa saja tentang Irigasi, Inpres 2/2025, dan Ketahanan Pangan.</div>
     <div class="air-actions">
       <a href="https://chatgpt.com/g/g-68e0ae2bb8c081919205a701721b07da-a-i-r" target="_blank" rel="noopener">
-        <i class="fas fa-rocket"></i> Buka Si Irwan di ChatGPT
+        <i class="fas fa-rocket"></i> Buka Si-Irwan di ChatGPT
       </a>
     </div>
   </div>
 
   <script>
     function toggleDropdown(btn){
-      const wrap = btn.nextElementSibling;
+      const wrap=btn.nextElementSibling;
       document.querySelectorAll('.dropdown-content').forEach(el=>{
         if(el!==wrap){el.classList.remove('show'); el.previousElementSibling?.setAttribute('aria-expanded','false');}
       });
-      const is = wrap.classList.toggle('show');
-      btn.setAttribute('aria-expanded', is);
+      const is=wrap.classList.toggle('show');
+      btn.setAttribute('aria-expanded',is);
     }
     window.addEventListener('click',e=>{
       if(!e.target.closest('.dropdown-menu')){
