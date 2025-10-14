@@ -54,8 +54,8 @@
     .air-fab-wrap{position:fixed; right:26px; bottom:40px; z-index:9999;}
     .air-fab{
       position:relative;
-      width:128px;                 /* lebih ramping agar tidak nabrak */
-      height:188px;                /* tinggi cukup agar kaki tidak kepotong */
+      width:115px;                 /* lebih ramping agar tidak nabrak */
+      height:180px;                /* tinggi cukup agar kaki tidak kepotong */
       border-radius:20px;
       padding:8px;                 /* ruang dalam supaya gambar tidak mentok */
       background:#fff;
@@ -107,7 +107,7 @@
     @keyframes airSlide{from{opacity:0; transform:translateY(8px)}to{opacity:1; transform:translateY(0)}}
 
     /* ====== Responsive ====== */
-    @media (max-width:768px){
+    @media (max-width:750px){
       .header-content{flex-direction:column; text-align:center}
       .logo-text{flex-direction:column}
       .logo{margin-right:0; margin-bottom:8px}
@@ -120,7 +120,7 @@
       .nav-button{width:100%; min-width:0; font-size:15px; padding:12px 0;}
 
       /* Avatar mobile – box lebih kecil tapi tinggi cukup, dan dinaikkan */
-      .air-fab{width:100px; height:165px; border-radius:18px; padding:8px;}
+      .air-fab{width:100px; height:155px; border-radius:18px; padding:8px;}
       .air-fab-wrap{right:16px; bottom:88px;}
       .air-tip{bottom:188px;}
       .air-card{right:16px; bottom:198px;}
@@ -208,7 +208,7 @@
         <span class="badge">GPTs</span>
       </div>
     </div>
-    <div class="air-desc">Tanya apa saja tentang Irigasi, Inpres 2/2025, dan Ketahanan Pangan.</div>
+    <div class="air-desc">Tanya apa saja tentang Irigasi, Inpres 2/2025, atau Ketahanan Pangan.</div>
     <div class="air-actions">
       <a href="https://chatgpt.com/g/g-68e0ae2bb8c081919205a701721b07da-a-i-r" target="_blank" rel="noopener">
         <i class="fas fa-rocket"></i> Buka Si-Irwan di ChatGPT
