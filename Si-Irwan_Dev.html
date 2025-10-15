@@ -6,24 +6,34 @@
     <title>Sistem Informasi Air & Irigasi Nasional | Direktorat Irigasi & Rawa</title>
     <meta name="description" content="Portal data terintegrasi: dashboard, peta interaktif, pelaporan lapangan, dan dokumen teknis irigasi & rawa." />
     <link rel="icon" href="assets/LogoPUPR.png" />
+
+    <!-- Tailwind (CDN) + Config -->
+    <script>
+      window.tailwind = {
+        config: {
+          theme: {
+            extend: {
+              fontFamily: {
+                sans: ['Inter', 'sans-serif'],
+              },
+              colors: {
+                'pupr-blue': '#1e3a8a', /* Biru PUPR */
+                'water-teal': '#06b6d4', /* Teal untuk aksen air/data */
+                'water-green': '#10b981', /* Hijau untuk irigasi/pertanian */
+              }
+            }
+          }
+        }
+      }
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
     <style>
-        /* Konfigurasi Tailwind Custom */
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    colors: {
-                        'pupr-blue': '#1e3a8a', /* Biru PUPR */
-                        'water-teal': '#06b6d4', /* Teal untuk aksen air/data */
-                        'water-green': '#10b981', /* Hijau untuk irigasi/pertanian */
-                    }
-                }
-            }
-        }
         /* Smooth scroll */
         html { scroll-behavior: smooth; }
         /* Hero background effect - gelombang air/alur data */
@@ -160,7 +170,7 @@
         </div>
     </section>
 
-    ---
+    <div class="px-4"><hr class="max-w-screen-2xl mx-auto border-slate-200"/></div>
 
     <section id="peta" class="py-16 md:py-24 bg-white">
         <div class="max-w-screen-2xl mx-auto px-4">
@@ -173,7 +183,7 @@
                 </div>
                 <div class="p-6 rounded-2xl border bg-slate-50 shadow-md">
                     <div class="font-bold text-xl mb-4 text-pupr-blue">Fokus Lokasi Cepat 📍</div>
-                    <p class="text-sm text-slate-600 mb-4">Pilih area untuk *zoom* cepat atau masukkan koordinat manual.</p>
+                    <p class="text-sm text-slate-600 mb-4">Pilih area untuk <em>zoom</em> cepat atau masukkan koordinat manual.</p>
                     <form id="quickForm" class="space-y-4 text-base font-medium">
                         <label class="flex items-center gap-3 p-3 rounded-lg bg-white border hover:bg-blue-50/50 cursor-pointer">
                             <input type="radio" name="loc" value="indonesia" checked class="w-4 h-4 text-water-teal focus:ring-water-teal">
@@ -208,7 +218,7 @@
         </div>
     </section>
 
-    ---
+    <div class="px-4"><hr class="max-w-screen-2xl mx-auto border-slate-200"/></div>
 
     <section id="tools" class="py-16 md:py-24 bg-water-teal/10">
         <div class="max-w-screen-2xl mx-auto px-4">
@@ -241,7 +251,7 @@
         </div>
     </section>
 
-    ---
+    <div class="px-4"><hr class="max-w-screen-2xl mx-auto border-slate-200"/></div>
 
     <section id="airbot" class="py-16 md:py-24 bg-pupr-blue">
         <div class="max-w-screen-2xl mx-auto px-4 grid lg:grid-cols-[2fr,1fr] gap-12 items-center">
@@ -254,7 +264,7 @@
                     </div>
                 </div>
                 <p class="mt-6 text-xl text-slate-200 max-w-xl">
-                    Tanyakan regulasi, cari data progres, atau minta ringkasan laporan. Chatbot A.I.R terintegrasi dengan semua **Dokumen Teknis** dan **Indeks Peta** kami.
+                    Tanyakan regulasi, cari data progres, atau minta ringkasan laporan. Chatbot A.I.R terintegrasi dengan semua <strong>Dokumen Teknis</strong> dan <strong>Indeks Peta</strong> kami.
                 </p>
                 <div class="mt-8 flex flex-wrap gap-4">
                     <a href="air-bot/index.html" class="px-6 py-3 rounded-full bg-water-green text-white font-bold text-lg hover:bg-water-teal shadow-2xl transition">
@@ -277,7 +287,7 @@
         </div>
     </section>
 
-    ---
+    <div class="px-4"><hr class="max-w-screen-2xl mx-auto border-slate-200"/></div>
 
     <section id="dokumen" class="py-16 md:py-24 bg-white">
         <div class="max-w-screen-2xl mx-auto px-4">
@@ -310,7 +320,7 @@
         </div>
     </section>
 
-    ---
+    <div class="px-4"><hr class="max-w-screen-2xl mx-auto border-slate-200"/></div>
 
     <section id="kontak" class="py-16 md:py-24 bg-pupr-blue/5">
         <div class="max-w-screen-2xl mx-auto px-4">
@@ -335,7 +345,7 @@
                         <div class="mt-2 text-base text-slate-700 space-y-1">
                             <p>📍 Gedung SDA, Jakarta, Indonesia</p>
                             <p>📧 <a href="mailto:irigasi.rawa@pu.go.id" class="text-water-teal hover:underline">irigasi.rawa@pu.go.id</a></p>
-                            <p>🔗 Portal internal terhubung ke **GitLab PUPR** untuk *source code*.</p>
+                            <p>🔗 Portal internal terhubung ke <strong>GitLab PUPR</strong> untuk <em>source code</em>.</p>
                         </div>
                         <a href="my-maps.html" class="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 border hover:bg-water-teal hover:text-white font-medium transition">
                             🌐 Akses My-Maps
@@ -382,13 +392,13 @@
         // Quick focus locations
         const locs = {
             indonesia: { lat: -2.5, lon: 117, z: 5, label: 'Indonesia (Pusat)' },
-            jakarta: 	 { lat: -6.2, lon: 106.8, z: 10, label: 'DKI Jakarta' },
-            jawaTengah: { lat: -7.2, lon: 110.3, z: 9, label: 'Jawa Tengah' },
-            sumsel: 	 { lat: -3.2, lon: 104.7, z: 8, label: 'Sumatera Selatan' }
+            jakarta:   { lat: -6.2, lon: 106.8, z: 10, label: 'DKI Jakarta' },
+            jawaTengah:{ lat: -7.2, lon: 110.3, z: 9, label: 'Jawa Tengah' },
+            sumsel:    { lat: -3.2, lon: 104.7, z: 8, label: 'Sumatera Selatan' }
         };
 
         // Handle quick form change
-        document.getElementById('quickForm').addEventListener('change', (e) => {
+        document.getElementById('quickForm').addEventListener('change', () => {
             const v = document.querySelector('input[name="loc"]:checked').value;
             const t = locs[v];
             map.setView([t.lat, t.lon], t.z, { animate: true, duration: 0.5 });
