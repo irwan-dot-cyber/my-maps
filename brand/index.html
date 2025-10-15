@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Brand Guideline · Si-Irwan</title>
+  <meta name="description" content="Panduan identitas visual Si-Irwan: logo, warna, tipografi, dan tata letak."/>
+  <link rel="icon" href="../assets/LogoPUPR.png"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme:{extend:{colors:{pupr:{blue:'#1e3a8a',yellow:'#FFD700'},ink:'#0f172a'}}}
+    }
+  </script>
+  <style>
+    .dot{width:.5rem;height:.5rem;border-radius:999px;display:inline-block;margin-right:.5rem}
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <header class="border-b bg-white">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <a href="../index.html" class="flex items-center gap-3">
+        <img src="../assets/LogoPUPR.png" class="w-9 h-9" alt="PUPR"/>
+        <div class="font-bold leading-tight">
+          <div>Kementerian Pekerjaan Umum</div>
+          <div>Ditjen SDA · Direktorat Irigasi & Rawa</div>
+        </div>
+      </a>
+      <a href="../index.html#dokumen" class="text-sm text-slate-600 hover:text-slate-900">Kembali ke Portal</a>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-10">
+    <h1 class="text-3xl md:text-4xl font-extrabold">Brand Guideline Si-Irwan</h1>
+    <p class="mt-2 text-slate-600 max-w-3xl">
+      Panduan resmi identitas visual Sistem Informasi Irigasi & Rawa Nasional (Si-Irwan). Gunakan panduan ini pada seluruh
+      materi digital dan cetak di lingkungan Direktorat Irigasi & Rawa.
+    </p>
+
+    <!-- Logo -->
+    <section class="mt-10 grid md:grid-cols-[1.2fr,1fr] gap-6">
+      <div class="p-6 rounded-2xl border bg-white">
+        <h2 class="text-xl font-bold">Logo</h2>
+        <p class="text-sm text-slate-600 mt-1">Versi utama & invers, clear space, dan ukuran minimum.</p>
+        <div class="mt-4 grid sm:grid-cols-2 gap-4 items-center">
+          <div class="p-4 rounded-xl border bg-slate-50">
+            <img src="../assets/logo-si-irwan-h-dark.png" alt="Logo Si-Irwan (dark on light)" class="w-full h-auto"/>
+            <div class="text-xs text-slate-500 mt-2">Utama (gelap di latar terang)</div>
+          </div>
+          <div class="p-4 rounded-xl border bg-slate-900">
+            <img src="../assets/logo-si-irwan-h-light.png" alt="Logo Si-Irwan (light on dark)" class="w-full h-auto"/>
+            <div class="text-xs text-slate-400 mt-2">Invers (terang di latar gelap)</div>
+          </div>
+        </div>
+        <ul class="mt-4 text-sm list-disc pl-5 text-slate-700">
+          <li>Clear space = tinggi huruf “S” di sekeliling logo.</li>
+          <li>Ukuran minimum layar: tinggi 28px. Cetak: 12 mm.</li>
+          <li>Jangan merotasi, mengubah rasio, atau mengganti warna logo.</li>
+        </ul>
+      </div>
+
+      <div class="p-6 rounded-2xl border bg-white">
+        <h2 class="text-xl font-bold">Unduhan Aset</h2>
+        <p class="text-sm text-slate-600 mt-1">Paket siap pakai untuk web & cetak.</p>
+        <div class="mt-4 space-y-2">
+          <a class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border bg-white hover:shadow"
+             href="../assets/brand/si-irwan-logos.zip" download>📦 Logo Pack (PNG+SVG)</a><br/>
+          <a class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border bg-white hover:shadow"
+             href="../assets/brand/si-irwan-templates.pptx" download>📑 Template PPT</a><br/>
+          <a class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border bg-white hover:shadow"
+             href="../assets/brand/si-irwan-brand-guideline.pdf" download>📘 Brand Guideline (PDF)</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Colors & Typography -->
+    <section class="mt-10 grid md:grid-cols-2 gap-6">
+      <div class="p-6 rounded-2xl border bg-white">
+        <h2 class="text-xl font-bold">Warna</h2>
+        <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+          <div class="p-4 rounded-xl border">
+            <div class="h-12 rounded bg-[#1e3a8a]"></div>
+            <div class="mt-2 font-semibold">PUPR Blue</div>
+            <div class="text-slate-500">#1E3A8A</div>
+            <div class="text-slate-500">Tailwind: <code>blue-800</code></div>
+          </div>
+          <div class="p-4 rounded-xl border">
+            <div class="h-12 rounded bg-[#FFD700]"></div>
+            <div class="mt-2 font-semibold">PUPR Yellow</div>
+            <div class="text-slate-500">#FFD700</div>
+            <div class="text-slate-500">Brand token: <code>pupr.yellow</code></div>
+          </div>
+          <div class="p-4 rounded-xl border">
+            <div class="h-12 rounded bg-[#0f172a]"></div>
+            <div class="mt-2 font-semibold">Ink</div>
+            <div class="text-slate-500">#0F172A</div>
+            <div class="text-slate-500">Tailwind: <code>slate-900</code></div>
+          </div>
+          <div class="p-4 rounded-xl border">
+            <div class="h-12 rounded bg-[#06b6d4]"></div>
+            <div class="mt-2 font-semibold">Water Teal (aksen)</div>
+            <div class="text-slate-500">#06B6D4</div>
+            <div class="text-slate-500">Tailwind: <code>cyan-500</code></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-6 rounded-2xl border bg-white">
+        <h2 class="text-xl font-bold">Tipografi</h2>
+        <p class="text-sm text-slate-600 mt-1">Gunakan Inter untuk UI, dan alternatif sistem jika tidak tersedia.</p>
+        <div class="mt-4 space-y-2">
+          <div class="text-3xl font-extrabold">Heading Bold — Inter ExtraBold</div>
+          <div class="text-lg font-semibold">Subheading — Inter SemiBold</div>
+          <div class="text-base">Body — Inter Regular 16px/24px</div>
+          <div class="text-sm text-slate-500">Kaki Halaman — Inter 12–14px</div>
+        </div>
+        <ul class="mt-4 text-sm list-disc pl-5 text-slate-700">
+          <li>Rasio skala: 12 / 14 / 16 / 20 / 24 / 30 / 36 px.</li>
+          <li>Kontras teks minimum WCAG AA.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Layout components -->
+    <section class="mt-10 p-6 rounded-2xl border bg-white">
+      <h2 class="text-xl font-bold">Komponen UI</h2>
+      <div class="mt-4 grid md:grid-cols-3 gap-4 text-sm">
+        <div class="p-4 border rounded-xl">
+          <div class="font-semibold mb-2">Tombol Utama</div>
+          <button class="px-4 py-2 rounded-xl bg-slate-900 text-white">Aksi</button>
+        </div>
+        <div class="p-4 border rounded-xl">
+          <div class="font-semibold mb-2">Kartu</div>
+          <div class="p-4 rounded-xl border bg-slate-50">Judul • Deskripsi singkat</div>
+        </div>
+        <div class="p-4 border rounded-xl">
+          <div class="font-semibold mb-2">Badge Status</div>
+          <div><span class="dot bg-emerald-500"></span>On track</div>
+          <div><span class="dot bg-amber-400"></span>Monitoring</div>
+          <div><span class="dot bg-rose-500"></span>Perlu perhatian</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Do & Don't -->
+    <section class="mt-10 grid md:grid-cols-2 gap-6">
+      <div class="p-6 rounded-2xl border bg-white">
+        <h2 class="text-xl font-bold">Do</h2>
+        <ul class="mt-2 list-disc pl-5 text-sm text-slate-700">
+          <li>Gunakan logo versi resmi dan proporsi asli.</li>
+          <li>Pastikan clear space dan kontras memadai.</li>
+          <li>Ikuti palet warna & tipografi yang ditetapkan.</li>
+        </ul>
+      </div>
+      <div class="p-6 rounded-2xl border bg-white">
+        <h2 class="text-xl font-bold">Don't</h2>
+        <ul class="mt-2 list-disc pl-5 text-sm text-slate-700">
+          <li>Jangan ubah warna/rasio logo.</li>
+          <li>Jangan tumpuk logo di latar yang ramai tanpa bidang pelindung.</li>
+          <li>Jangan gunakan font berbeda untuk heading utama.</li>
+        </ul>
+      </div>
+    </section>
+
+    <div class="mt-10">
+      <a href="../index.html" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 text-white">Kembali ke Portal</a>
+    </div>
+  </main>
+
+  <footer class="mt-10 border-t">
+    <div class="max-w-7xl mx-auto px-4 py-8 text-sm text-slate-600">
+      © 2025 Si-Irwan · Direktorat Irigasi & Rawa — Kementerian PUPR
+    </div>
+  </footer>
+</body>
+</html>
