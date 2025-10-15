@@ -7,7 +7,28 @@
   <meta name="description" content="Portal Irigasi & Rawa: dashboard, peta, form pelaporan, dokumen teknis." />
   <link rel="icon" href="assets/LogoPUPR.png" />
   <!-- Tailwind CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  // Brand color: SURVEY BLUE
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Inter','ui-sans-serif','system-ui'] },
+        colors: {
+          survey:      '#0d47a1',   // biru utama (header)
+          surveyDark:  '#0a3a85',   // hover / bar mobile
+          surveyLight: '#1d5fd1',   // garis / accent
+          water:       '#06b6d4',   // aksen (ikon / badge)
+          puprYellow:  '#FFD700'    // aksen PUPR
+        },
+        boxShadow: {
+          header: '0 4px 14px rgba(13,71,161,.18)'
+        }
+      }
+    }
+  }
+</script>
+
   <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -35,50 +56,66 @@
   </div>
 
   <!-- Navbar -->
-  <header class="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-slate-200">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+  <header id="topbar" class="sticky top-0 z-40 bg-survey text-white transition-shadow">
+  <div class="max-w-7xl mx-auto px-4 py-2 border-b border-white/10">
+    <div class="flex items-center justify-between">
+      <!-- Brand left -->
       <a href="#" class="flex items-center gap-3">
-        <img src="assets/LogoPUPR.png" alt="PU" class="w-9 h-9" />
-        <div>
-          <div class="font-bold tracking-wide">Kementerian Pekerjaan Umum</div>
-          <div class="font-bold tracking-wide">Direktorat Jenderal Sumber Daya Air</div>
-          <div class="text-xs text-slate-500">Direktorat Irigasi & Rawa</div>
+        <img src="assets/LogoPUPR.png" alt="Logo Kementerian PUPR" class="w-9 h-9" />
+        <div class="leading-tight">
+          <div class="text-xs uppercase tracking-wider/5 text-white/80">Kementerian Pekerjaan Umum</div>
+          <div class="font-semibold">Ditjen Sumber Daya Air</div>
+          <div class="text-xs text-white/80">Direktorat Irigasi & Rawa</div>
         </div>
       </a>
+
+      <!-- Desktop nav -->
       <nav class="hidden md:flex items-center gap-6 text-sm">
-        <a href="#dashboard" class="hover:text-slate-900 text-slate-600">Dashboard</a>
-        <a href="#peta" class="hover:text-slate-900 text-slate-600">Peta</a>
-        <a href="#form" class="hover:text-slate-900 text-slate-600">Form</a>
-        <a href="#dokumen" class="hover:text-slate-900 text-slate-600">Dokumen</a>
-        <a href="#tim" class="hover:text-slate-900 text-slate-600">Tim</a>
-        <a href="#kontak" class="hover:text-slate-900 text-slate-600">Kontak</a>
+        <a href="#dashboard" class="hover:underline underline-offset-4">Dashboard</a>
+        <a href="#peta" class="hover:underline underline-offset-4">Peta</a>
+        <a href="#form" class="hover:underline underline-offset-4">Form</a>
+        <a href="#dokumen" class="hover:underline underline-offset-4">Dokumen</a>
+        <a href="#tim" class="hover:underline underline-offset-4">Tim</a>
+        <a href="#kontak" class="hover:underline underline-offset-4">Kontak</a>
       </nav>
-      <a href="#airbot" class="hidden md:inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900 text-white text-sm">
-        <img src="assets/A.I.R, the Water Droplet Mascot.png" alt="AIR-bot" class="w-5 h-5"> Chatbot A.I.R
-      </a>
-      <button id="btnMenu" class="md:hidden inline-flex items-center p-2 rounded-lg border">
-        ☰
-      </button>
+
+      <!-- CTA + burger -->
+      <div class="flex items-center gap-2">
+        <a href="#airbot" class="hidden md:inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white text-survey text-sm font-semibold hover:opacity-90">
+          <img src="assets/A.I.R, the Water Droplet Mascot.png" alt="Maskot A.I.R" class="w-5 h-5"> Chatbot A.I.R
+        </a>
+        <button id="btnMenu" aria-controls="mobileMenu" aria-expanded="false"
+                class="md:hidden inline-flex items-center p-2 rounded-lg bg-surveyDark/70 border border-white/20">
+          ☰
+        </button>
+      </div>
     </div>
-    <!-- Mobile menu -->
-    <div id="mobileMenu" class="hidden md:hidden border-t border-slate-200">
-      <nav class="px-4 py-3 flex flex-col gap-2 text-sm">
-        <a href="#dashboard" class="py-2">Dashboard</a>
-        <a href="#peta" class="py-2">Survey</a>
-        <a href="#form" class="py-2">Form</a>
-        <a href="#dokumen" class="py-2">Dokumen</a>
-        <a href="#tim" class="py-2">Tim</a>
-        <a href="#kontak" class="py-2">Kontak</a>
-        <a href="#airbot" class="py-2 font-semibold">Chatbot Si Irwan</a>
-      </nav>
-    </div>
-  </header>
+  </div>
+
+  <!-- Mobile menu -->
+  <div id="mobileMenu" class="hidden md:hidden border-t border-white/10 bg-surveyDark">
+    <nav class="px-4 py-3 flex flex-col gap-1 text-sm">
+      <a href="#dashboard" class="py-2 text-white/95 hover:text-white">Dashboard</a>
+      <a href="#peta" class="py-2 text-white/95 hover:text-white">Peta</a>
+      <a href="#form" class="py-2 text-white/95 hover:text-white">Form</a>
+      <a href="#dokumen" class="py-2 text-white/95 hover:text-white">Dokumen</a>
+      <a href="#tim" class="py-2 text-white/95 hover:text-white">Tim</a>
+      <a href="#kontak" class="py-2 text-white/95 hover:text-white">Kontak</a>
+      <a href="#airbot" class="py-2 mt-1 font-semibold text-white">Chatbot Si-Irwan</a>
+    </nav>
+  </div>
+</header>
+
 
   <!-- Hero -->
   <section class="relative">
-    <div class="absolute inset-0">
-      <img src="assets/bg_irigasi.jpg" alt="Hero Irigasi & Rawa" class="w-full h-[56vh] md:h-[72vh] object-cover mask-gradient">
-    </div>
+    <!-- Hero background -->
+<div class="absolute inset-0">
+  <img src="assets/bg_irigasi.jpg" alt="Hero Irigasi & Rawa"
+       class="w-full h-[56vh] md:h-[72vh] object-cover">
+  <div class="absolute inset-0 bg-gradient-to-b from-survey/80 via-survey/40 to-transparent"></div>
+</div>
+
     <div class="relative z-10">
       <div class="max-w-7xl mx-auto px-4 pt-14 md:pt-20 pb-10 md:pb-20">
         <div class="max-w-3xl glass rounded-3xl p-6 md:p-10 text-white bg-slate-900/60">
@@ -358,10 +395,29 @@
 
   <!-- Scripts -->
   <script>
-    // Mobile menu
-    const btnMenu = document.getElementById('btnMenu');
-    const mobileMenu = document.getElementById('mobileMenu');
-    btnMenu?.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
+  // Mobile menu toggle + ARIA
+  (function(){
+    const btn = document.getElementById('btnMenu');
+    const menu = document.getElementById('mobileMenu');
+    btn?.addEventListener('click', () => {
+      const hidden = menu.classList.toggle('hidden');
+      btn.setAttribute('aria-expanded', hidden ? 'false' : 'true');
+    });
+  })();
+
+  // Header shadow saat scroll
+  (function(){
+    const topbar = document.getElementById('topbar');
+    const onScroll = () => {
+      if (window.scrollY > 6) {
+        topbar.classList.add('shadow-header');
+      } else {
+        topbar.classList.remove('shadow-header');
+      }
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+  })();
 
     // Leaflet mini map
     let map = L.map('map', { zoomControl: true }).setView([-2.5, 117], 5);
