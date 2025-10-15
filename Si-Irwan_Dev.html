@@ -1,421 +1,405 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Sistem Informasi Air & Irigasi Nasional | Direktorat Irigasi & Rawa</title>
-    <meta name="description" content="Portal data terintegrasi: dashboard, peta interaktif, pelaporan lapangan, dan dokumen teknis irigasi & rawa." />
-    <link rel="icon" href="assets/LogoPUPR.png" />
-
-    <!-- Tailwind (CDN) + Config -->
-    <script>
-      window.tailwind = {
-        config: {
-          theme: {
-            extend: {
-              fontFamily: {
-                sans: ['Inter', 'sans-serif'],
-              },
-              colors: {
-                'pupr-blue': '#1e3a8a', /* Biru PUPR */
-                'water-teal': '#06b6d4', /* Teal untuk aksen air/data */
-                'water-green': '#10b981', /* Hijau untuk irigasi/pertanian */
-              }
-            }
-          }
-        }
-      }
-    </script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-
-    <!-- Leaflet -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-    <style>
-        /* Smooth scroll */
-        html { scroll-behavior: smooth; }
-        /* Hero background effect - gelombang air/alur data */
-        .hero-wave {
-            background-image: linear-gradient(180deg, rgba(30, 58, 138, 0.9) 0%, rgba(6, 182, 212, 0.7) 100%), url('assets/bg_irigasi.jpg');
-            background-size: cover;
-            background-position: center;
-        }
-        /* Animasi Marquee yang lebih halus */
-        @keyframes marquee {
-            0% { transform: translateX(100%); }
-            100% { transform: translateX(-100%); }
-        }
-        .animate-marquee {
-            animation: marquee 20s linear infinite;
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Kementerian Pekerjaan Umum, Direktorat Jenderal Sumber Daya Air. Direktorat Irigasi & Rawa</title>
+  <meta name="description" content="Portal Irigasi & Rawa: dashboard, peta, form pelaporan, dokumen teknis." />
+  <link rel="icon" href="assets/LogoPUPR.png" />
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    /* Smooth scroll & small polish */
+    html { scroll-behavior: smooth; }
+    .glass { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
+    .mask-gradient { mask-image: linear-gradient(to bottom, black 70%, transparent); }
+  </style>
 </head>
-<body class="text-slate-800 antialiased bg-white font-sans">
+<body class="text-slate-800 antialiased bg-slate-50">
 
-    <div class="bg-water-teal text-white overflow-hidden">
-        <div class="max-w-screen-2xl mx-auto px-4 py-2 text-sm flex items-center gap-2">
-            <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white text-water-teal font-bold">💡</span>
-            <div class="whitespace-nowrap flex-1">
-                <div class="animate-marquee inline-block">
-                    <span class="mr-12 font-semibold">📢 Update 02 Okt 2025: Integrasi dashboard “Pelaksanaan Inpres 2/2025 Tahap 1 dan 2” sudah rampung.</span>
-                    <span class="mr-12 font-semibold">🌦️ Rainfall Radar & Telemetri Realtime sudah sinkron per Balai Wilayah Sungai (BWS).</span>
-                    <span class="mr-12 font-semibold">🌾 Peta Produksi Padi Per Provinsi Tahun 2024 telah dirilis.</span>
-                </div>
-            </div>
+  <!-- Top Announce -->
+  <div class="bg-amber-50 border-b border-amber-200">
+    <div class="max-w-7xl mx-auto px-4 py-2 text-sm flex items-center gap-2">
+      <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-200">📢</span>
+      <div class="overflow-hidden whitespace-nowrap">
+        <div class="animate-[scroll_22s_linear_infinite] inline-block">
+          <span class="mr-10">Update 02 Okt 2025: Integrasi dashboard “Pelaksanaan Inpres 2/2025 Tahap 1 dan 2”.</span>
+          <span class="mr-10">Rainfall Radar & Telemetri sudah sinkron per BWS.</span>
+          <span class="mr-10">Peta Produksi Padi Per Provinsi Tahun 2024</span>
         </div>
+      </div>
     </div>
+  </div>
 
-    <header class="sticky top-0 z-50 bg-white/95 backdrop-blur-sm shadow-md">
-        <div class="max-w-screen-2xl mx-auto px-4 py-4 flex items-center justify-between">
-            <a href="#" class="flex items-center gap-3">
-                <img src="assets/LogoPUPR.png" alt="Logo PUPR" class="w-10 h-10" />
-                <div class="hidden sm:block">
-                    <div class="font-extrabold text-lg text-pupr-blue tracking-tighter">Sistem Air & Irigasi</div>
-                    <div class="text-xs text-slate-500 tracking-wider">Direktorat Irigasi & Rawa, Ditjen SDA</div>
-                </div>
-            </a>
-            <nav class="hidden md:flex items-center gap-8 text-sm font-semibold">
-                <a href="#data" class="hover:text-water-teal transition">Data Realtime</a>
-                <a href="#peta" class="hover:text-water-teal transition">Peta Interaktif</a>
-                <a href="#tools" class="hover:text-water-teal transition">Form & Tools</a>
-                <a href="#dokumen" class="hover:text-water-teal transition">Regulasi</a>
-                <a href="#kontak" class="hover:text-water-teal transition">Kontak</a>
-            </nav>
-            <a href="#airbot" class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-water-teal text-white text-sm font-semibold hover:bg-water-green transition">
-                <span class="text-lg">🤖</span> Chatbot A.I.R
-            </a>
-            <button id="btnMenu" class="md:hidden inline-flex items-center p-2 rounded-lg border">☰</button>
+  <!-- Navbar -->
+  <header class="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <a href="#" class="flex items-center gap-3">
+        <img src="assets/LogoPUPR.png" alt="PU" class="w-9 h-9" />
+        <div>
+          <div class="font-bold tracking-wide">Kementerian Pekerjaan Umum</div>
+          <div class="font-bold tracking-wide">Direktorat Jenderal Sumber Daya Air</div>
+          <div class="text-xs text-slate-500">Direktorat Irigasi & Rawa</div>
         </div>
-        <div id="mobileMenu" class="hidden md:hidden border-t border-slate-200">
-            <nav class="px-4 py-3 flex flex-col gap-2 text-sm font-medium">
-                <a href="#data" class="py-2 hover:bg-slate-50">Data Realtime</a>
-                <a href="#peta" class="py-2 hover:bg-slate-50">Peta Interaktif</a>
-                <a href="#tools" class="py-2 hover:bg-slate-50">Form & Tools</a>
-                <a href="#dokumen" class="py-2 hover:bg-slate-50">Regulasi</a>
-                <a href="#kontak" class="py-2 hover:bg-slate-50">Kontak</a>
-            </nav>
-        </div>
-    </header>
-
-    <section class="relative hero-wave h-[70vh] flex items-center justify-center text-center">
-        <div class="max-w-5xl mx-auto px-4 relative z-10 text-white">
-            <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight drop-shadow-lg">
-                Mengalirkan Data, Mengairi Negeri
-            </h1>
-            <p class="mt-4 text-xl md:text-2xl font-light text-white/90 drop-shadow-md max-w-3xl mx-auto">
-                Sistem terintegrasi untuk monitoring progres, aset, dan sumber daya air irigasi & rawa nasional.
-            </p>
-            <div class="mt-8 flex flex-wrap justify-center gap-4">
-                <a href="#data" class="px-8 py-3 rounded-full bg-white text-pupr-blue font-bold text-lg shadow-xl hover:bg-slate-100 transition duration-300">
-                    Lihat Dashboard
-                </a>
-                <a href="my-maps.html" class="px-8 py-3 rounded-full border border-white/60 text-white font-semibold text-lg hover:bg-white/20 transition duration-300">
-                    Buka Peta Interaktif →
-                </a>
-            </div>
-        </div>
-    </section>
-
-    <div class="bg-pupr-blue py-8 text-white">
-        <div class="max-w-screen-2xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-            <div class="p-3">
-                <div class="text-3xl md:text-5xl font-extrabold text-water-green">34</div>
-                <div class="text-sm md:text-base opacity-90 mt-1">Provinsi Terjangkau</div>
-            </div>
-            <div class="p-3">
-                <div class="text-3xl md:text-5xl font-extrabold text-water-green">Realtime</div>
-                <div class="text-sm md:text-base opacity-90 mt-1">Data Telemetri & Radar</div>
-            </div>
-            <div class="p-3">
-                <div class="text-3xl md:text-5xl font-extrabold text-water-green">1.2K+</div>
-                <div class="text-sm md:text-base opacity-90 mt-1">Aset Irigasi Terdokumentasi</div>
-            </div>
-            <div class="p-3">
-                <div class="text-3xl md:text-5xl font-extrabold text-water-green">100%</div>
-                <div class="text-sm md:text-base opacity-90 mt-1">Cakupan Inpres 2/2025</div>
-            </div>
-        </div>
+      </a>
+      <nav class="hidden md:flex items-center gap-6 text-sm">
+        <a href="#dashboard" class="hover:text-slate-900 text-slate-600">Dashboard</a>
+        <a href="#peta" class="hover:text-slate-900 text-slate-600">Peta</a>
+        <a href="#form" class="hover:text-slate-900 text-slate-600">Form</a>
+        <a href="#dokumen" class="hover:text-slate-900 text-slate-600">Dokumen</a>
+        <a href="#tim" class="hover:text-slate-900 text-slate-600">Tim</a>
+        <a href="#kontak" class="hover:text-slate-900 text-slate-600">Kontak</a>
+      </nav>
+      <a href="#airbot" class="hidden md:inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900 text-white text-sm">
+        <img src="assets/A.I.R, the Water Droplet Mascot.png" alt="AIR-bot" class="w-5 h-5"> Chatbot A.I.R
+      </a>
+      <button id="btnMenu" class="md:hidden inline-flex items-center p-2 rounded-lg border">
+        ☰
+      </button>
     </div>
+    <!-- Mobile menu -->
+    <div id="mobileMenu" class="hidden md:hidden border-t border-slate-200">
+      <nav class="px-4 py-3 flex flex-col gap-2 text-sm">
+        <a href="#dashboard" class="py-2">Dashboard</a>
+        <a href="#peta" class="py-2">Survey</a>
+        <a href="#form" class="py-2">Form</a>
+        <a href="#dokumen" class="py-2">Dokumen</a>
+        <a href="#tim" class="py-2">Tim</a>
+        <a href="#kontak" class="py-2">Kontak</a>
+        <a href="#airbot" class="py-2 font-semibold">Chatbot Si Irwan</a>
+      </nav>
+    </div>
+  </header>
 
-    <section id="data" class="py-16 md:py-24 bg-slate-50">
-        <div class="max-w-screen-2xl mx-auto px-4">
-            <h2 class="text-3xl md:text-4xl font-extrabold text-pupr-blue border-l-4 border-water-teal pl-4 mb-10">
-                Akses Data & Dashboard Kritis
-            </h2>
-
-            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                <a href="dashboards/pelaksanaan-inpres-2025.html" class="block p-6 rounded-2xl bg-white border border-water-green/20 shadow-lg hover:shadow-xl transition duration-300 group">
-                    <div class="text-3xl text-water-green mb-3">📈</div>
-                    <div class="text-sm text-slate-600 font-semibold">MONITORING</div>
-                    <div class="mt-1 font-bold text-xl group-hover:text-water-green transition">Pelaksanaan Inpres 2/2025</div>
-                    <p class="mt-2 text-base text-slate-600">Progress fisik, keuangan, dan status per BWS/Provinsi. Filter interaktif.</p>
-                </a>
-
-                <a href="dashboards/rainfall.html" class="block p-6 rounded-2xl bg-white border border-water-teal/20 shadow-lg hover:shadow-xl transition duration-300 group">
-                    <div class="text-3xl text-water-teal mb-3">🌧️</div>
-                    <div class="text-sm text-slate-600 font-semibold">PERINGATAN DINI</div>
-                    <div class="mt-1 font-bold text-xl group-hover:text-water-teal transition">Radar Hujan (RainViewer)</div>
-                    <p class="mt-2 text-base text-slate-600">Animasi radar cuaca, kecepatan dapat diatur, termasuk data petir.</p>
-                </a>
-
-                <a href="dashboards/telemetri.html" class="block p-6 rounded-2xl bg-white border border-pupr-blue/20 shadow-lg hover:shadow-xl transition duration-300 group">
-                    <div class="text-3xl text-pupr-blue mb-3">🌊</div>
-                    <div class="text-sm text-slate-600 font-semibold">REALTIME</div>
-                    <div class="mt-1 font-bold text-xl group-hover:text-pupr-blue transition">Telemetri Irigasi & Rawa</div>
-                    <p class="mt-2 text-base text-slate-600">Grafik ketinggian muka air, debit, dan status stasiun dari seluruh BWS.</p>
-                </a>
+  <!-- Hero -->
+  <section class="relative">
+    <div class="absolute inset-0">
+      <img src="assets/bg_irigasi.jpg" alt="Hero Irigasi & Rawa" class="w-full h-[56vh] md:h-[72vh] object-cover mask-gradient">
+    </div>
+    <div class="relative z-10">
+      <div class="max-w-7xl mx-auto px-4 pt-14 md:pt-20 pb-10 md:pb-20">
+        <div class="max-w-3xl glass rounded-3xl p-6 md:p-10 text-white bg-slate-900/60">
+          <div class="inline-flex items-center gap-2 text-xs md:text-sm text-emerald-200 mb-3">
+            <span class="w-2 h-2 rounded-full bg-emerald-300"></span>
+            Membangun basis data nasional irigasi dan rawa yang akurat, konsisten, dan terintegrasi
+          </div>
+          <h1 class="text-3xl md:text-5xl font-extrabold leading-tight">
+            Sistem Informasi Irigasi dan Rawa Nasional
+          </h1>
+          <!--<p class="mt-4 text-slate-200">
+            //Akses cepat ke dashboard pelaksanaan, radar hujan, telemetri, serta form Survey123
+            dengan dropdown provinsi–kabupaten otomatis dan unggah foto lokasi.
+          </p> -->
+           <!--<div class="mt-6 flex flex-wrap items-center gap-3">
+            <a href="my-maps.html" class="px-5 py-3 rounded-xl bg-white text-slate-900 font-semibold">Buka My-Maps</a>
+            <a href="inpres-2-2025.html" class="px-5 py-3 rounded-xl border border-white/60 text-white">Pelaksanaan Inpres 2/2025</a>
+            <a href="#dashboard" class="px-5 py-3 rounded-xl border border-white/30 text-white/90">Lihat Semua</a>
+          </div>
+          <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+            <div class="rounded-xl bg-white/10 p-3">
+              <div class="text-xl font-bold">34</div>
+              <div class="text-xs opacity-80">Provinsi</div>
             </div>
+            <div class="rounded-xl bg-white/10 p-3">
+              <div class="text-xl font-bold">200+</div>
+              <div class="text-xs opacity-80">Kab/Kota</div>
+            </div>
+            <div class="rounded-xl bg-white/10 p-3">
+              <div class="text-xl font-bold">1.2K</div>
+              <div class="text-xs opacity-80">Asset Irigasi</div>
+            </div>
+            <div class="rounded-xl bg-white/10 p-3">
+              <div class="text-xl font-bold">Realtime</div>
+              <div class="text-xs opacity-80">Radar & Telemetri</div>
+            </div> -->
+          </div>
         </div>
-    </section>
+      </div>
+    </div>
+  </section>
 
-    <div class="px-4"><hr class="max-w-screen-2xl mx-auto border-slate-200"/></div>
+  <!-- Quick tiles -->
+  <section id="dashboard" class="py-12 md:py-16">
+    <div class="max-w-7xl mx-auto px-4">
+      <div class="flex items-end justify-between gap-4">
+        <h2 class="text-2xl md:text-3xl font-bold">Dashboard & Peta</h2>
+        <a href="my-maps.html" class="text-sm text-slate-600 hover:text-slate-900">Lihat semua →</a>
+      </div>
 
-    <section id="peta" class="py-16 md:py-24 bg-white">
-        <div class="max-w-screen-2xl mx-auto px-4">
-            <h2 class="text-3xl md:text-4xl font-extrabold text-pupr-blue border-l-4 border-water-teal pl-4 mb-10">
-                Peta Cepat & Portal Geospasial
-            </h2>
-            <div class="mt-4 grid lg:grid-cols-[2fr,1fr] gap-8">
-                <div class="rounded-2xl overflow-hidden border border-slate-200 shadow-xl">
-                    <div id="map" class="h-[500px]"></div>
-                </div>
-                <div class="p-6 rounded-2xl border bg-slate-50 shadow-md">
-                    <div class="font-bold text-xl mb-4 text-pupr-blue">Fokus Lokasi Cepat 📍</div>
-                    <p class="text-sm text-slate-600 mb-4">Pilih area untuk <em>zoom</em> cepat atau masukkan koordinat manual.</p>
-                    <form id="quickForm" class="space-y-4 text-base font-medium">
-                        <label class="flex items-center gap-3 p-3 rounded-lg bg-white border hover:bg-blue-50/50 cursor-pointer">
-                            <input type="radio" name="loc" value="indonesia" checked class="w-4 h-4 text-water-teal focus:ring-water-teal">
-                            Indonesia (Pusat)
-                        </label>
-                        <label class="flex items-center gap-3 p-3 rounded-lg bg-white border hover:bg-blue-50/50 cursor-pointer">
-                            <input type="radio" name="loc" value="jakarta" class="w-4 h-4 text-water-teal focus:ring-water-teal">
-                            DKI Jakarta
-                        </label>
-                        <label class="flex items-center gap-3 p-3 rounded-lg bg-white border hover:bg-blue-50/50 cursor-pointer">
-                            <input type="radio" name="loc" value="jawaTengah" class="w-4 h-4 text-water-teal focus:ring-water-teal">
-                            Jawa Tengah
-                        </label>
-                        <label class="flex items-center gap-3 p-3 rounded-lg bg-white border hover:bg-blue-50/50 cursor-pointer">
-                            <input type="radio" name="loc" value="sumsel" class="w-4 h-4 text-water-teal focus:ring-water-teal">
-                            Sumatera Selatan
-                        </label>
-                        <div class="pt-4 border-t border-slate-200">
-                            <div class="font-bold mb-3">Lon/Lat Manual</div>
-                            <div class="grid grid-cols-2 gap-3">
-                                <input id="lon" type="number" step="0.000001" placeholder="Longitude" class="px-4 py-3 rounded-xl border focus:border-water-teal">
-                                <input id="lat" type="number" step="0.000001" placeholder="Latitude" class="px-4 py-3 rounded-xl border focus:border-water-teal">
-                            </div>
-                            <button type="button" id="btnGo" class="mt-3 w-full px-4 py-3 rounded-xl bg-pupr-blue text-white font-semibold hover:bg-water-teal transition">Tampilkan di Peta</button>
-                        </div>
-                        <a href="my-maps.html" class="inline-flex items-center gap-2 text-water-teal hover:text-pupr-blue font-bold pt-3">
-                            <span class="text-xl">🗺️</span> Buka Portal Peta Lengkap
-                        </a>
-                    </form>
-                </div>
-            </div>
+      <div class="mt-6 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <!-- Card -->
+        <a href="dashboards/pelaksanaan-inpres-2025.html" class="block p-5 rounded-2xl bg-white border hover:shadow-lg transition">
+          <div class="text-sm text-emerald-600 font-semibold">Pelaksanaan</div>
+          <div class="mt-1 font-bold text-lg">Inpres 2/2025 • Tahap 1</div>
+          <p class="mt-2 text-sm text-slate-600">Progress fisik & keuangan, filter per BWS/Provinsi.</p>
+        </a>
+
+        <a href="dashboards/rainfall.html" class="block p-5 rounded-2xl bg-white border hover:shadow-lg transition">
+          <div class="text-sm text-blue-600 font-semibold">Cuaca</div>
+          <div class="mt-1 font-bold text-lg">Radar Hujan (RainViewer)</div>
+          <p class="mt-2 text-sm text-slate-600">Animasi radar, kecepatan dapat diatur, peringatan petir.</p>
+        </a>
+
+        <a href="dashboards/telemetri.html" class="block p-5 rounded-2xl bg-white border hover:shadow-lg transition">
+          <div class="text-sm text-violet-600 font-semibold">Realtime</div>
+          <div class="mt-1 font-bold text-lg">Telemetri Irigasi</div>
+          <p class="mt-2 text-sm text-slate-600">Grafik ketinggian muka air, debit, dan status stasiun.</p>
+        </a>
+
+        <a href="my-maps.html" class="block p-5 rounded-2xl bg-white border hover:shadow-lg transition">
+          <div class="text-sm text-rose-600 font-semibold">Peta</div>
+          <div class="mt-1 font-bold text-lg">Portal Peta (Leaflet/ArcGIS)</div>
+          <p class="mt-2 text-sm text-slate-600">Layer jaringan irigasi, jalan akses, dan aset.</p>
+        </a>
+
+        <a href="experience-builder/index.html" class="block p-5 rounded-2xl bg-white border hover:shadow-lg transition">
+          <div class="text-sm text-sky-600 font-semibold">Apps</div>
+          <div class="mt-1 font-bold text-lg">Experience Builder</div>
+          <p class="mt-2 text-sm text-slate-600">Template EB kustom + widget filter progres.</p>
+        </a>
+
+        <a href="#airbot" class="block p-5 rounded-2xl bg-slate-900 text-white hover:shadow-xl transition">
+          <div class="text-sm text-emerald-300 font-semibold">AI</div>
+          <div class="mt-1 font-bold text-lg">Chatbot A.I.R</div>
+          <p class="mt-2 text-sm text-slate-200">Asisten Irigasi & Rawa: tanya jawab dokumen & peta.</p>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Mini Map -->
+  <section id="peta" class="py-12 md:py-16 bg-white">
+    <div class="max-w-7xl mx-auto px-4">
+      <div class="flex items-end justify-between gap-4">
+        <h2 class="text-2xl md:text-3xl font-bold">Peta Singkat</h2>
+        <div class="text-sm text-slate-600">Centang untuk fokus area cepat</div>
+      </div>
+      <div class="mt-4 grid lg:grid-cols-[1fr,320px] gap-5">
+        <div class="rounded-2xl overflow-hidden border">
+          <div id="map" class="h-[380px]"></div>
         </div>
-    </section>
-
-    <div class="px-4"><hr class="max-w-screen-2xl mx-auto border-slate-200"/></div>
-
-    <section id="tools" class="py-16 md:py-24 bg-water-teal/10">
-        <div class="max-w-screen-2xl mx-auto px-4">
-            <h2 class="text-3xl md:text-4xl font-extrabold text-pupr-blue border-l-4 border-water-teal pl-4 mb-10">
-                Form Pelaporan Lapangan (Survey123)
-            </h2>
-            <p class="mt-2 text-lg text-slate-700 max-w-3xl">
-                Tools digital untuk input data lapangan cepat: dukungan GPS, unggah foto, dan dropdown wilayah otomatis.
-            </p>
-
-            <div class="mt-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                <a href="forms/monitoring-progres.html" class="block p-6 rounded-2xl bg-white border border-water-green/20 shadow-lg hover:shadow-xl transition group">
-                    <div class="text-3xl text-water-green mb-3">🏗️</div>
-                    <div class="font-bold text-xl group-hover:text-water-green">Monitoring Progres Fisik</div>
-                    <p class="mt-2 text-base text-slate-600">Laporan status pekerjaan, bukti foto, dan titik koordinat akurat.</p>
-                </a>
-
-                <a href="forms/telemetri-laporan.html" class="block p-6 rounded-2xl bg-white border border-water-teal/20 shadow-lg hover:shadow-xl transition group">
-                    <div class="text-3xl text-water-teal mb-3">⚙️</div>
-                    <div class="font-bold text-xl group-hover:text-water-teal">Laporan Stasiun Telemetri</div>
-                    <p class="mt-2 text-base text-slate-600">Dokumentasi kondisi perangkat, anomali pembacaan, dan perawatan.</p>
-                </a>
-
-                <a href="forms/inspeksi-aset.html" class="block p-6 rounded-2xl bg-white border border-pupr-blue/20 shadow-lg hover:shadow-xl transition group">
-                    <div class="text-3xl text-pupr-blue mb-3">🏛️</div>
-                    <div class="font-bold text-xl group-hover:text-pupr-blue">Inspeksi Aset Irigasi</div>
-                    <p class="mt-2 text-base text-slate-600">Pencatatan kondisi BM/patok, jaringan, pintu air, dan jalan akses.</p>
-                </a>
+        <div class="rounded-2xl border bg-slate-50 p-4">
+          <div class="font-semibold mb-3">Lokasi Cepat</div>
+          <form id="quickForm" class="space-y-3 text-sm">
+            <label class="flex items-center gap-2"><input type="radio" name="loc" value="indonesia" checked> Indonesia (pusat)</label>
+            <label class="flex items-center gap-2"><input type="radio" name="loc" value="jakarta"> DKI Jakarta</label>
+            <label class="flex items-center gap-2"><input type="radio" name="loc" value="jawaTengah"> Jawa Tengah</label>
+            <label class="flex items-center gap-2"><input type="radio" name="loc" value="sumsel"> Sumatera Selatan</label>
+            <div class="pt-3 border-t">
+              <div class="font-semibold mb-2">Lon/Lat manual</div>
+              <div class="grid grid-cols-2 gap-2">
+                <input id="lon" type="number" step="0.000001" placeholder="Longitude" class="px-3 py-2 rounded-lg border">
+                <input id="lat" type="number" step="0.000001" placeholder="Latitude" class="px-3 py-2 rounded-lg border">
+              </div>
+              <button type="button" id="btnGo" class="mt-2 w-full px-3 py-2 rounded-lg bg-slate-900 text-white">Go</button>
             </div>
+            <a href="my-maps.html" class="inline-flex items-center gap-2 text-slate-700 hover:text-slate-900 pt-2">
+              ➜ Buka Portal Peta Lengkap
+            </a>
+          </form>
         </div>
-    </section>
+      </div>
+    </div>
+  </section>
 
-    <div class="px-4"><hr class="max-w-screen-2xl mx-auto border-slate-200"/></div>
+  <!-- Forms -->
+  <section id="form" class="py-12 md:py-16">
+    <div class="max-w-7xl mx-auto px-4">
+      <h2 class="text-2xl md:text-3xl font-bold">Form Pelaporan (Survey123)</h2>
+      <p class="mt-2 text-slate-600">Dropdown Provinsi/Kabupaten otomatis, unggah foto (kamera/galeri), progress & koordinat.</p>
 
-    <section id="airbot" class="py-16 md:py-24 bg-pupr-blue">
-        <div class="max-w-screen-2xl mx-auto px-4 grid lg:grid-cols-[2fr,1fr] gap-12 items-center">
-            <div class="text-white">
-                <div class="flex items-center gap-4">
-                    <img src="assets/logo-air-bot.png" alt="AIR-bot" class="w-12 h-12">
-                    <div>
-                        <div class="text-water-green text-lg font-semibold">ASISTEN IRIGASI & RAWA</div>
-                        <h3 class="text-4xl md:text-5xl font-extrabold tracking-tight">Chatbot A.I.R</h3>
-                    </div>
-                </div>
-                <p class="mt-6 text-xl text-slate-200 max-w-xl">
-                    Tanyakan regulasi, cari data progres, atau minta ringkasan laporan. Chatbot A.I.R terintegrasi dengan semua <strong>Dokumen Teknis</strong> dan <strong>Indeks Peta</strong> kami.
-                </p>
-                <div class="mt-8 flex flex-wrap gap-4">
-                    <a href="air-bot/index.html" class="px-6 py-3 rounded-full bg-water-green text-white font-bold text-lg hover:bg-water-teal shadow-2xl transition">
-                        Mulai Chat Sekarang →
-                    </a>
-                    <a href="air-bot/docs-unggah.html" class="px-6 py-3 rounded-full border border-white/60 text-white font-semibold text-lg hover:bg-white/20 transition">
-                        Unggah Dokumen Baru
-                    </a>
-                </div>
-            </div>
-            <div class="p-6 rounded-2xl border-2 border-water-teal bg-white/10 shadow-xl hidden lg:block">
-                <div class="font-bold text-xl mb-4 text-water-green">Contoh Pertanyaan Terbaik</div>
-                <ul class="space-y-3 text-sm text-slate-200">
-                    <li class="p-3 bg-white/10 rounded-lg hover:bg-white/20 transition">"Tampilkan progres D.I. Kalibawang minggu ini dan bandingkan dengan target."</li>
-                    <li class="p-3 bg-white/10 rounded-lg hover:bg-white/20 transition">"Cari detail HPS terbaru untuk sewa drone dan spesifikasi patok BM."</li>
-                    <li class="p-3 bg-white/10 rounded-lg hover:bg-white/20 transition">"Layer peta apa yang paling relevan untuk Balai Progo-Opak-Serang?"</li>
-                    <li class="p-3 bg-white/10 rounded-lg hover:bg-white/20 transition">"Buatkan ringkasan data telemetri 3 bulan terakhir di Jawa Tengah."</li>
-                </ul>
-            </div>
+      <div class="mt-6 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <a href="forms/monitoring-progres.html" class="block p-5 rounded-2xl bg-white border hover:shadow-lg">
+          <div class="text-sm text-emerald-600 font-semibold">Lapangan</div>
+          <div class="mt-1 font-bold">Monitoring Progres</div>
+          <p class="mt-2 text-sm text-slate-600">Status pekerjaan, foto bukti, titik koordinat.</p>
+        </a>
+
+        <a href="forms/telemetri-laporan.html" class="block p-5 rounded-2xl bg-white border hover:shadow-lg">
+          <div class="text-sm text-blue-600 font-semibold">Telemetri</div>
+          <div class="mt-1 font-bold">Laporan Stasiun</div>
+          <p class="mt-2 text-sm text-slate-600">Kondisi perangkat, anomali bacaan, dokumentasi.</p>
+        </a>
+
+        <a href="forms/inspeksi-aset.html" class="block p-5 rounded-2xl bg-white border hover:shadow-lg">
+          <div class="text-sm text-violet-600 font-semibold">Aset</div>
+          <div class="mt-1 font-bold">Inspeksi Aset</div>
+          <p class="mt-2 text-sm text-slate-600">BM/patok, jaringan, pintu air, akses jalan.</p>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Dokumen -->
+  <section id="dokumen" class="py-12 md:py-16 bg-white">
+    <div class="max-w-7xl mx-auto px-4">
+      <div class="flex items-end justify-between">
+        <h2 class="text-2xl md:text-3xl font-bold">Dokumen Penting</h2>
+        <span class="text-sm text-slate-500">Referensi RAB, HPS, SBM, SK BIG</span>
+      </div>
+      <div class="mt-6 grid md:grid-cols-2 gap-5">
+        <div class="p-5 rounded-2xl border bg-slate-50">
+          <div class="font-semibold">Regulasi & Standar</div>
+          <ul class="mt-3 space-y-2 text-sm list-disc pl-5">
+            <li><a href="docs/SK-BIG.pdf" class="text-slate-700 hover:text-slate-900">SK BIG (Geospasial & ketentuan peta)</a></li>
+            <li><a href="docs/SBM-terbaru.pdf" class="text-slate-700 hover:text-slate-900">SBM (Standar Biaya Masukan)</a></li>
+            <li><a href="docs/HPS-pedoman.pdf" class="text-slate-700 hover:text-slate-900">Pedoman HPS & contoh</a></li>
+          </ul>
         </div>
-    </section>
-
-    <div class="px-4"><hr class="max-w-screen-2xl mx-auto border-slate-200"/></div>
-
-    <section id="dokumen" class="py-16 md:py-24 bg-white">
-        <div class="max-w-screen-2xl mx-auto px-4">
-            <h2 class="text-3xl md:text-4xl font-extrabold text-pupr-blue border-l-4 border-water-teal pl-4 mb-10">
-                Pusat Regulasi & Referensi Teknis
-            </h2>
-            <p class="mt-2 text-lg text-slate-700 max-w-3xl">
-                Akses cepat ke Standar Biaya Masukan (SBM), Harga Perkiraan Sendiri (HPS), dan ketentuan Geospasial (SK BIG).
-            </p>
-
-            <div class="mt-8 grid md:grid-cols-2 gap-8">
-                <div class="p-6 rounded-2xl border bg-slate-50 shadow-md">
-                    <div class="font-bold text-xl text-pupr-blue flex items-center gap-3">📜 Regulasi & Standar Utama</div>
-                    <ul class="mt-4 space-y-3 text-base font-medium list-disc pl-5">
-                        <li><a href="docs/SK-BIG.pdf" class="text-slate-700 hover:text-water-teal transition">SK BIG (Ketentuan Geospasial & Peta)</a></li>
-                        <li><a href="docs/SBM-terbaru.pdf" class="text-slate-700 hover:text-water-teal transition">SBM (Standar Biaya Masukan) Terbaru</a></li>
-                        <li><a href="docs/HPS-pedoman.pdf" class="text-slate-700 hover:text-water-teal transition">Pedoman Penyusunan HPS & Contoh</a></li>
-                    </ul>
-                </div>
-
-                <div class="p-6 rounded-2xl border bg-slate-50 shadow-md">
-                    <div class="font-bold text-xl text-pupr-blue flex items-center gap-3">🗂️ Template & Referensi Lapangan</div>
-                    <ul class="mt-4 space-y-3 text-base font-medium list-disc pl-5">
-                        <li><a href="docs/template-RAB-survei.xlsx" class="text-slate-700 hover:text-water-teal transition">Template RAB Survei & Pemetaan (Excel)</a></li>
-                        <li><a href="docs/contoh-laporan.pdf" class="text-slate-700 hover:text-water-teal transition">Contoh Laporan Pekerjaan Komprehensif</a></li>
-                        <li><a href="docs/daftar-harga-satuan.xlsx" class="text-slate-700 hover:text-water-teal transition">Daftar Harga Satuan (HPS) Referensi</a></li>
-                    </ul>
-                </div>
-            </div>
+        <div class="p-5 rounded-2xl border bg-slate-50">
+          <div class="font-semibold">Template & Contoh</div>
+          <ul class="mt-3 space-y-2 text-sm list-disc pl-5">
+            <li><a href="docs/template-RAB-survei.xlsx" class="text-slate-700 hover:text-slate-900">Template RAB Survei & Pemetaan (Excel)</a></li>
+            <li><a href="docs/contoh-laporan.pdf" class="text-slate-700 hover:text-slate-900">Contoh Laporan Pekerjaan</a></li>
+            <li><a href="docs/daftar-harga-satuan.xlsx" class="text-slate-700 hover:text-slate-900">Daftar Harga Satuan (HPS)</a></li>
+          </ul>
         </div>
-    </section>
+      </div>
+    </div>
+  </section>
 
-    <div class="px-4"><hr class="max-w-screen-2xl mx-auto border-slate-200"/></div>
-
-    <section id="kontak" class="py-16 md:py-24 bg-pupr-blue/5">
-        <div class="max-w-screen-2xl mx-auto px-4">
-            <h2 class="text-3xl md:text-4xl font-extrabold text-pupr-blue border-l-4 border-water-teal pl-4 mb-10">
-                Kontak & Kolaborasi
-            </h2>
-            <div class="mt-8 grid md:grid-cols-2 gap-8">
-                <form class="p-8 rounded-2xl border bg-white shadow-xl">
-                    <div class="font-bold text-xl mb-4">Kirim Pesan Langsung</div>
-                    <div class="grid sm:grid-cols-2 gap-4">
-                        <input type="text" placeholder="Nama Lengkap" class="px-4 py-3 rounded-xl border focus:border-water-teal">
-                        <input type="tel" placeholder="No. HP (628…)" class="px-4 py-3 rounded-xl border focus:border-water-teal">
-                    </div>
-                    <input type="email" placeholder="Email (Wajib)" class="mt-4 w-full px-4 py-3 rounded-xl border focus:border-water-teal">
-                    <textarea rows="5" placeholder="Pesan atau Permintaan Dukungan Teknis…" class="mt-4 w-full px-4 py-3 rounded-xl border focus:border-water-teal"></textarea>
-                    <button type="button" class="mt-4 px-6 py-3 rounded-xl bg-pupr-blue text-white font-semibold hover:bg-water-teal transition shadow-lg">Kirim Pesan</button>
-                </form>
-
-                <div class="space-y-6">
-                    <div class="p-6 rounded-2xl border bg-white shadow-xl">
-                        <div class="font-bold text-xl text-pupr-blue mb-2">Informasi Kantor Pusat</div>
-                        <div class="mt-2 text-base text-slate-700 space-y-1">
-                            <p>📍 Gedung SDA, Jakarta, Indonesia</p>
-                            <p>📧 <a href="mailto:irigasi.rawa@pu.go.id" class="text-water-teal hover:underline">irigasi.rawa@pu.go.id</a></p>
-                            <p>🔗 Portal internal terhubung ke <strong>GitLab PUPR</strong> untuk <em>source code</em>.</p>
-                        </div>
-                        <a href="my-maps.html" class="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 border hover:bg-water-teal hover:text-white font-medium transition">
-                            🌐 Akses My-Maps
-                        </a>
-                    </div>
-
-                    <div id="tim" class="p-6 rounded-2xl border bg-white shadow-xl">
-                        <div class="font-bold text-xl text-pupr-blue mb-4">Tim Kolaborasi Utama</div>
-                        <div class="grid grid-cols-3 gap-4 text-center text-sm font-medium">
-                            <div class="p-3 bg-water-teal/10 rounded-lg">Direktorat Irigasi & Rawa</div>
-                            <div class="p-3 bg-water-teal/10 rounded-lg">BWS / BBWS (Wilayah)</div>
-                            <div class="p-3 bg-water-teal/10 rounded-lg">Mitra Teknis GIS & Survei</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+  <!-- AIR-bot -->
+  <section id="airbot" class="py-12 md:py-16">
+    <div class="max-w-7xl mx-auto px-4 grid lg:grid-cols-[1fr,380px] gap-6">
+      <div class="p-6 md:p-8 rounded-3xl bg-slate-900 text-white">
+        <div class="flex items-center gap-3">
+          <img src="assets/logo-air-bot.png" alt="AIR-bot" class="w-9 h-9">
+          <div>
+            <div class="text-emerald-300 text-sm font-semibold">Asisten Irigasi & Rawa</div>
+            <h3 class="text-2xl md:text-3xl font-extrabold">Chatbot A.I.R</h3>
+          </div>
         </div>
-    </section>
-
-    <footer class="border-t border-slate-200 bg-slate-800 text-white">
-        <div class="max-w-screen-2xl mx-auto px-4 py-8 text-sm flex flex-col md:flex-row items-center justify-between gap-3">
-            <div>© 2025 Direktorat Irigasi & Rawa • Kementerian PUPR. Hak Cipta Dilindungi.</div>
-            <div class="flex items-center gap-4 font-semibold">
-                <a class="hover:text-water-teal transition" href="#dokumen">Dokumen</a>
-                <a class="hover:text-water-teal transition" href="#tools">Form Lapangan</a>
-                <a class="hover:text-water-teal transition" href="#airbot">Chatbot A.I.R</a>
-            </div>
+        <p class="mt-4 text-slate-200">
+          Tanyakan apa saja soal dokumen, peta, progres, hingga troubleshooting.
+          Terintegrasi dengan indeks PDF internal & endpoint lokal.
+        </p>
+        <div class="mt-6 flex flex-wrap gap-3">
+          <a href="air-bot/index.html" class="px-5 py-3 rounded-xl bg-white text-slate-900 font-semibold">Buka Chat</a>
+          <a href="air-bot/docs-unggah.html" class="px-5 py-3 rounded-xl border border-white/40">Unggah Dokumen</a>
         </div>
-    </footer>
+      </div>
+      <div class="p-6 rounded-3xl border bg-white">
+        <div class="font-semibold">Contoh Pertanyaan</div>
+        <ul class="mt-3 text-sm space-y-2 text-slate-700">
+          <li>• “Tampilkan progres D.I. Kalibawang minggu ini.”</li>
+          <li>• “Cari HPS untuk sewa laptop dan patok BM.”</li>
+          <li>• “Layer peta yang relevan untuk Progo-Opak-Serang?”</li>
+          <li>• “Buat ringkasannya jadi laporan 1 halaman.”</li>
+        </ul>
+      </div>
+    </div>
+  </section>
 
-    <script>
-        // Mobile menu
-        const btnMenu = document.getElementById('btnMenu');
-        const mobileMenu = document.getElementById('mobileMenu');
-        btnMenu?.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
+  <!-- Tim -->
+  <section id="tim" class="py-12 md:py-16 bg-white">
+    <div class="max-w-7xl mx-auto px-4">
+      <h2 class="text-2xl md:text-3xl font-bold">Tim & Kolaborator</h2>
+      <p class="mt-2 text-slate-600">Koordinasi lintas BWS, konsultan, dan pengelola aset.</p>
+      <div class="mt-6 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div class="p-5 rounded-2xl border bg-slate-50">
+          <div class="font-semibold">Direktorat Irigasi & Rawa</div>
+          <div class="text-sm text-slate-600 mt-1">Koordinasi kebijakan & monitoring nasional</div>
+        </div>
+        <div class="p-5 rounded-2xl border bg-slate-50">
+          <div class="font-semibold">BWS/BBWS</div>
+          <div class="text-sm text-slate-600 mt-1">Pelaksanaan & pelaporan wilayah sungai</div>
+        </div>
+        <div class="p-5 rounded-2xl border bg-slate-50">
+          <div class="font-semibold">Mitra Teknis</div>
+          <div class="text-sm text-slate-600 mt-1">GIS, telemetri, survei & pemetaan</div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-        // Leaflet mini map setup
-        let map = L.map('map', { zoomControl: true }).setView([-2.5, 117], 5);
-        const base = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19, attribution: '&copy; OpenStreetMap'
-        }).addTo(map);
-        let marker = L.marker([-2.5, 117]).addTo(map).bindPopup('Indonesia').openPopup(); // Marker awal
+  <!-- Kontak -->
+  <section id="kontak" class="py-12 md:py-16">
+    <div class="max-w-7xl mx-auto px-4">
+      <h2 class="text-2xl md:text-3xl font-bold">Kontak</h2>
+      <div class="mt-4 grid md:grid-cols-2 gap-6">
+        <form class="p-6 rounded-2xl border bg-white">
+          <div class="grid sm:grid-cols-2 gap-3">
+            <input type="text" placeholder="Nama" class="px-4 py-3 rounded-xl border">
+            <input type="tel" placeholder="No. HP (628…)" class="px-4 py-3 rounded-xl border">
+          </div>
+          <input type="email" placeholder="Email" class="mt-3 w-full px-4 py-3 rounded-xl border">
+          <textarea rows="4" placeholder="Pesan…" class="mt-3 w-full px-4 py-3 rounded-xl border"></textarea>
+          <button type="button" class="mt-4 px-5 py-3 rounded-xl bg-slate-900 text-white">Kirim</button>
+        </form>
+        <div class="p-6 rounded-2xl border bg-slate-50">
+          <div class="font-semibold">Info</div>
+          <div class="mt-2 text-sm text-slate-700">
+            📍 Jakarta, Indonesia<br/>
+            📧 irigasi.rawa@pu.go.id<br/>
+            🔗 Portal internal & dashboard terhubung ke repo GitLab
+          </div>
+          <div class="mt-4">
+            <a href="my-maps.html" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border hover:shadow">🌐 Buka My-Maps</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-        // Quick focus locations
-        const locs = {
-            indonesia: { lat: -2.5, lon: 117, z: 5, label: 'Indonesia (Pusat)' },
-            jakarta:   { lat: -6.2, lon: 106.8, z: 10, label: 'DKI Jakarta' },
-            jawaTengah:{ lat: -7.2, lon: 110.3, z: 9, label: 'Jawa Tengah' },
-            sumsel:    { lat: -3.2, lon: 104.7, z: 8, label: 'Sumatera Selatan' }
-        };
+  <!-- Footer -->
+  <footer class="border-t border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 py-8 text-sm text-slate-600 flex flex-col md:flex-row items-center justify-between gap-3">
+      <div>© 2025 Direktorat Irigasi & Rawa • Kementerian PUPR</div>
+      <div class="flex items-center gap-4">
+        <a class="hover:text-slate-900" href="#dokumen">Dokumen</a>
+        <a class="hover:text-slate-900" href="#form">Form</a>
+        <a class="hover:text-slate-900" href="#airbot">Chatbot A.I.R</a>
+      </div>
+    </div>
+  </footer>
 
-        // Handle quick form change
-        document.getElementById('quickForm').addEventListener('change', () => {
-            const v = document.querySelector('input[name="loc"]:checked').value;
-            const t = locs[v];
-            map.setView([t.lat, t.lon], t.z, { animate: true, duration: 0.5 });
-            marker.setLatLng([t.lat, t.lon]).setPopupContent(t.label).openPopup();
-        });
+  <!-- Scripts -->
+  <script>
+    // Mobile menu
+    const btnMenu = document.getElementById('btnMenu');
+    const mobileMenu = document.getElementById('mobileMenu');
+    btnMenu?.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
 
-        // Go to entered lon/lat
-        document.getElementById('btnGo').addEventListener('click', () => {
-            const lon = parseFloat(document.getElementById('lon').value);
-            const lat = parseFloat(document.getElementById('lat').value);
-            if (Number.isFinite(lon) && Number.isFinite(lat)) {
-                map.setView([lat, lon], 12, { animate: true, duration: 0.7 }); // Zoom lebih dekat
-                marker.setLatLng([lat, lon]).setPopupContent(`Lon ${lon.toFixed(5)}, Lat ${lat.toFixed(5)}`).openPopup();
-            } else {
-                alert('Input Longitude & Latitude harus berupa angka.');
-            }
-        });
-    </script>
+    // Leaflet mini map
+    let map = L.map('map', { zoomControl: true }).setView([-2.5, 117], 5);
+    const base = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19, attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+    let marker = L.marker([-2.5, 117]).addTo(map).bindPopup('Indonesia');
+
+    // Quick focus handlers
+    const locs = {
+      indonesia: { lat: -2.5, lon: 117, z: 5, label: 'Indonesia' },
+      jakarta:   { lat: -6.2, lon: 106.8, z: 10, label: 'DKI Jakarta' },
+      jawaTengah:{ lat: -7.2, lon: 110.3, z: 9, label: 'Jawa Tengah' },
+      sumsel:    { lat: -3.2, lon: 104.7, z: 8, label: 'Sumatera Selatan' }
+    };
+    document.getElementById('quickForm').addEventListener('change', (e) => {
+      const v = document.querySelector('input[name="loc"]:checked').value;
+      const t = locs[v];
+      map.setView([t.lat, t.lon], t.z);
+      marker.setLatLng([t.lat, t.lon]).setPopupContent(t.label);
+    });
+
+    // Go to entered lon/lat
+    document.getElementById('btnGo').addEventListener('click', () => {
+      const lon = parseFloat(document.getElementById('lon').value);
+      const lat = parseFloat(document.getElementById('lat').value);
+      if (Number.isFinite(lon) && Number.isFinite(lat)) {
+        map.setView([lat, lon], 11);
+        marker.setLatLng([lat, lon]).setPopupContent(`Lon ${lon.toFixed(5)}, Lat ${lat.toFixed(5)}`);
+      } else {
+        alert('Isi Longitude & Latitude dengan benar.');
+      }
+    });
+
+    // Simple marquee keyframes
+    const style = document.createElement('style');
+    style.textContent = `@keyframes scroll { 0%{transform:translateX(0)} 100%{transform:translateX(-100%)} }`;
+    document.head.appendChild(style);
+  </script>
 </body>
 </html>
