@@ -6,44 +6,85 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
-  :root { --hdrH: 100px; }
-  html, body {height:100%; margin:0; font-family: system-ui, Arial}
-  /* Header */
+  /* ===== THEME (samain dengan landing) ===== */
+  :root{
+    --bg: #0b1222;         /* body gelap */
+    --text: #e5e7eb;       /* slate-200 */
+    --muted: #cbd5e1;      /* slate-300 */
+    --muted-2:#94a3b8;     /* slate-400 */
+    --survey:#0d47a1;      /* header biru */
+    --survey-dark:#0a3a85;
+    --accent:#1d5fd1;      /* aksen link */
+    --panel: rgba(11,18,34,.92); /* dock gelap transparan */
+    --border: rgba(255,255,255,.12);
+    --hdrH: 88px;          /* tinggi header (sedikit lebih ringkas) */
+    --radius: 12px;
+  }
+
+  html, body {height:100%; margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, "Inter", sans-serif; background: var(--bg); color: var(--text)}
+
+  /* ===== Header (biru survey) ===== */
   .header {
     position: fixed; top:0; left:0; right:0; z-index: 900;
-    background: #fff; border-bottom: 1px solid #e5e5e5;
-    padding: 8px 12px; display:flex; align-items:center; gap:12px;
+    background: var(--survey);
+    border-bottom: 1px solid rgba(255,255,255,.18);
+    padding: 10px 14px; display:flex; align-items:center; gap:14px;
+    box-shadow: 0 6px 18px rgba(13,71,161,.25);
   }
-  .header img {height:60px}
-  .header .text {flex:1}
-  .header .title {font-weight: 800; font-size: 14px; line-height:1.3; color:#111}
-  .header .subtitle {font-weight: 600; font-size: 12px; color:#555; margin-top:4px}
+  .header img {height:54px; filter: drop-shadow(0 1px 0 rgba(0,0,0,.15));}
+  .header .text {flex:1; color:#fff}
+  .header .title {font-weight: 800; font-size: 14px; line-height:1.35; color:#fff}
+  .header .subtitle {font-weight: 600; font-size: 12px; color: rgba(255,255,255,.9); margin-top:4px}
   .spacer {height: var(--hdrH);}
   #map {height: calc(100vh - var(--hdrH));}
 
-  /* Bottom dock */
+  /* ===== Bottom dock (panel gelap transparan) ===== */
   .dock {
     position: fixed; left: 0; right: 0; bottom: 0;
-    background: #fff; border-top: 1px solid #ddd;
-    max-height: 45vh; overflow: auto; padding: 10px 12px;
-    box-shadow: 0 -8px 16px rgba(0,0,0,.06); z-index: 950;
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    max-height: 46vh; overflow: auto; padding: 12px 14px;
+    box-shadow: 0 -10px 22px rgba(0,0,0,.28); z-index: 950;
+    backdrop-filter: blur(6px);
   }
-  .dock h2 {font-size: 14px; margin: 0 0 6px; font-weight: 700}
-  .grid {display: grid; grid-template-columns: 1fr 1fr; gap: 8px}
-  label {font-size: 12px; color:#333}
-  select {width:100%; padding:8px; font-size: 14px}
-  .meta {font-size: 13px; border-collapse: collapse; width: 100%}
-  .meta td {border-bottom: 1px dashed #eee; padding: 4px 2px; vertical-align: top}
-  .key {color:#666; width: 40%}
-  .row {display:grid; grid-template-columns:1fr auto; gap:6px; font-size:13px}
-  .err {color:#b00020; font-size:12px; margin-top:6px}
+  .dock h2 {font-size: 14px; margin: 0 0 8px; font-weight: 800; color:#fff}
+  .grid {display: grid; grid-template-columns: 1fr 1fr; gap: 10px}
+  label {font-size: 12px; color: var(--muted)}
+  select {
+    width:100%; padding:10px 12px; font-size: 14px;
+    background: rgba(255,255,255,.06);
+    color:#fff; border: 1px solid var(--border); border-radius: var(--radius);
+    outline: none;
+  }
+  select:focus { border-color: rgba(255,255,255,.28); box-shadow: 0 0 0 2px rgba(29,95,209,.25) }
+  .meta {
+    font-size: 13px; border-collapse: collapse; width: 100%;
+    color: var(--text);
+  }
+  .meta td {border-bottom: 1px dashed rgba(255,255,255,.08); padding: 6px 2px; vertical-align: top}
+  .key {color: var(--muted-2); width: 42%}
+  .row {display:grid; grid-template-columns:1fr auto; gap:8px; font-size:13px; color:var(--muted)}
+  .row b {color:#fff}
+  .err {color:#fca5a5; font-size:12px; margin-top:6px}
+
+  /* Label DI di atas peta (tetap terang agar terbaca di imagery) */
   .di-label {
-    background: rgba(255,255,255,.85);
-    border: 1px solid #ccc;
+    background: rgba(255,255,255,.9);
+    border: 1px solid #d1d5db;
     padding: 2px 6px;
     border-radius: 6px;
     font-size: 12px;
     color:#111;
+  }
+
+  /* Link gaya aksen */
+  a { color: var(--accent); text-decoration: none }
+  a:hover { text-decoration: underline }
+
+  /* Responsif kecil */
+  @media (max-width: 680px){
+    .grid {grid-template-columns: 1fr}
+    :root{ --hdrH: 96px }
   }
 </style>
 </head>
@@ -57,6 +98,8 @@
       Direktorat Jenderal Sumber Daya Air — Direktorat Irigasi dan Rawa</div>
     <div class="subtitle">Daerah Irigasi Kewenangan BBWS Serayu Opak</div>
   </div>
+  <!-- (opsional) tombol kembali -->
+  <!-- <a href="../index.html" style="background:#fff;color:var(--survey);padding:8px 12px;border-radius:10px;font-weight:700">← Beranda</a> -->
 </div>
 <div class="spacer"></div>
 
@@ -69,24 +112,24 @@
 
   <div class="grid">
     <div>
-      <label>Pilih Daerah Irigasi</label>
+      <label for="diSel">Pilih Daerah Irigasi</label>
       <select id="diSel"><option value="">— Semua —</option></select>
     </div>
     <div>
-      <label>Cluster Informasi</label>
+      <label for="clusterSel">Cluster Informasi</label>
       <select id="clusterSel"><option value="__ALL__">— Semua —</option></select>
     </div>
   </div>
 
   <div id="msg" class="err"></div>
-  <hr/>
+  <hr style="border:none;border-top:1px solid var(--border);margin:10px 0"/>
   <div id="stats" class="row"></div>
-  <div id="detail"></div>
+  <div id="detail" style="margin-top:8px"></div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-// ========= KONFIG =========
+/* ========= KONFIG ========= */
 const GEOJSON_URL = "LuasBaku_SerayuOpak_3.geojson";
 const GAS_URL = "https://script.google.com/macros/s/AKfycbybsLoQu-8S-MlR_kB2989FZV0C-c1gRzUqcIZWBWuYb-_We03B_BShX8Q3AQqWhOTvzg/exec?sheet=SO_Integrasi&t=" + Date.now();
 
@@ -97,12 +140,12 @@ const detailEl = document.getElementById('detail');
 const msgEl = document.getElementById('msg');
 function note(msg){ msgEl.textContent = msg || ""; }
 
-// Map pakai basemap imagery (Esri World Imagery)
+/* ===== Map (Esri World Imagery + gaya highlight sama) ===== */
 const map = L.map('map').setView([-2,118], 5);
 L.tileLayer(
   'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
   {
-    attribution: 'Tiles © Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community'
+    attribution: 'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community'
   }
 ).addTo(map);
 
@@ -110,7 +153,7 @@ let lookup={}, rows=[], groups={}, headers=[];
 let geoLayer, joined=[];
 const labelLayer = L.layerGroup().addTo(map);
 
-// Helper nama DI
+/* Helper nama DI */
 function getNamaDI(obj){
   return obj?.Nama_DI || obj?.["Nama Aset"] || obj?.["Nama aset"] || obj?.["Nama DI"] || "";
 }
@@ -147,7 +190,7 @@ function makeLookup(arr){
   }); return out;
 }
 
-// Cluster mapping berdasarkan index kolom
+/* Cluster mapping berdasarkan index kolom */
 function buildFixedGroups(headers){
   const g = {};
   g["Informasi"]         = headers.slice(1,14);   // B..N
@@ -162,7 +205,7 @@ function buildFixedGroups(headers){
   return g;
 }
 
-// ====== LOAD ======
+/* ====== LOAD ====== */
 Promise.all([
   fetch(GEOJSON_URL).then(r=>r.json()),
   fetch(GAS_URL).then(r=>r.json())
@@ -173,19 +216,19 @@ Promise.all([
   headers= norm.headers|| [];
   groups = buildFixedGroups(headers);
 
-  // Cluster dropdown
+  /* Cluster dropdown */
   Object.keys(groups).forEach(g=>{
     clusterSel.insertAdjacentHTML('beforeend', `<option value="${g}">${g}</option>`);
   });
 
-  // Dropdown DI
+  /* Dropdown DI */
   const diNames = new Set();
   Object.values(lookup).forEach(o => { const nm=getNamaDI(o); if(nm) diNames.add(nm); });
   [...diNames].sort().forEach(nm=>{
     diSel.insertAdjacentHTML('beforeend', `<option value="${nm}">${nm}</option>`);
   });
 
-  // Layer
+  /* Layer */
   geoLayer = L.geoJSON(gj, {
     style: () => ({ stroke:false, fillColor:"#3388ff", fillOpacity:0.5 }),
     onEachFeature:(f,layer)=>{
@@ -199,15 +242,15 @@ Promise.all([
 
   if (geoLayer.getLayers().length) map.fitBounds(geoLayer.getBounds());
   refreshView();
-  detailEl.innerHTML = '<i>Tap/klik poligon atau pilih dari menu untuk lihat detail.</i>';
+  detailEl.innerHTML = '<i style="color:#cbd5e1">Tap/klik poligon atau pilih dari menu untuk lihat detail.</i>';
 }).catch(err=>{console.error(err); note('Gagal load data.');});
 
-// ====== RENDER ======
+/* ====== RENDER ====== */
 function renderDetail(info, title, key){
   const g = clusterSel.value || "__ALL__";
   detailEl.innerHTML = `
-    <h3 style="margin:6px 0">${title}</h3>
-    <div style="font-size:12px;color:#666;margin-bottom:6px">Kd_Inf: ${key}</div>
+    <h3 style="margin:6px 0;color:#fff">${title}</h3>
+    <div style="font-size:12px;color:#cbd5e1;margin-bottom:6px">Kd_Inf: ${key}</div>
     ${buildTable(info, g)}
   `;
 }
@@ -227,11 +270,11 @@ function refreshView(){
   statsEl.innerHTML = `<span>Total DI tampil</span><b>${total}</b>`;
 }
 
-// ====== EVENTS ======
+/* ====== EVENTS ====== */
 diSel.addEventListener('change', ()=>{
   const selNama = (diSel.value||"").trim().toLowerCase();
   refreshView();
-  if (!selNama){ detailEl.innerHTML='<i>Pilih DI untuk lihat detail.</i>'; return; }
+  if (!selNama){ detailEl.innerHTML='<i style="color:#cbd5e1">Pilih DI untuk lihat detail.</i>'; return; }
   const hit = joined.find(o=>o.nama===selNama);
   if (hit){
     map.fitBounds(hit.layer.getBounds(), { maxZoom:14, animate:true });
