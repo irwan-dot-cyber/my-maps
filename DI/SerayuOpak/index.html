@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
-  /* ===== THEME (samain dengan landing) ===== */
+  /* ===== THEME (selaras landing) ===== */
   :root{
     --bg: #0b1222;         /* body gelap */
     --text: #e5e7eb;       /* slate-200 */
@@ -17,7 +17,7 @@
     --accent:#1d5fd1;      /* aksen link */
     --panel: rgba(11,18,34,.92); /* dock gelap transparan */
     --border: rgba(255,255,255,.12);
-    --hdrH: 88px;          /* tinggi header (sedikit lebih ringkas) */
+    --hdrH: 88px;          /* tinggi header */
     --radius: 12px;
   }
 
@@ -67,7 +67,7 @@
   .row b {color:#fff}
   .err {color:#fca5a5; font-size:12px; margin-top:6px}
 
-  /* Label DI di atas peta (tetap terang agar terbaca di imagery) */
+  /* Label DI di atas peta (terang) */
   .di-label {
     background: rgba(255,255,255,.9);
     border: 1px solid #d1d5db;
@@ -77,11 +77,11 @@
     color:#111;
   }
 
-  /* Link gaya aksen */
+  /* Link */
   a { color: var(--accent); text-decoration: none }
   a:hover { text-decoration: underline }
 
-  /* Responsif kecil */
+  /* Responsif */
   @media (max-width: 680px){
     .grid {grid-template-columns: 1fr}
     :root{ --hdrH: 96px }
@@ -94,12 +94,10 @@
 <div class="header">
   <img src="assets/LogoPUPR.png" alt="Logo PU"/>
   <div class="text">
-    <div class="title">Kementerian Pekerjaan Umum<br>
+    <div class="title">Kementerian Pekerjaan Umum dan Perumahan Rakyat<br>
       Direktorat Jenderal Sumber Daya Air — Direktorat Irigasi dan Rawa</div>
     <div class="subtitle">Daerah Irigasi Kewenangan BBWS Serayu Opak</div>
   </div>
-  <!-- (opsional) tombol kembali -->
-  <!-- <a href="../index.html" style="background:#fff;color:var(--survey);padding:8px 12px;border-radius:10px;font-weight:700">← Beranda</a> -->
 </div>
 <div class="spacer"></div>
 
@@ -140,7 +138,7 @@ const detailEl = document.getElementById('detail');
 const msgEl = document.getElementById('msg');
 function note(msg){ msgEl.textContent = msg || ""; }
 
-/* ===== Map (Esri World Imagery + gaya highlight sama) ===== */
+/* ===== Map (Esri World Imagery) ===== */
 const map = L.map('map').setView([-2,118], 5);
 L.tileLayer(
   'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -153,7 +151,11 @@ let lookup={}, rows=[], groups={}, headers=[];
 let geoLayer, joined=[];
 const labelLayer = L.layerGroup().addTo(map);
 
-/* Helper nama DI */
+// ⬇️ state aktif untuk render detail saat ganti cluster
+let activeKey = null;      // Kd_Inf yang sedang dipilih
+let activeTitle = null;    // Nama DI yang sedang dipilih
+
+/* Helpers */
 function getNamaDI(obj){
   return obj?.Nama_DI || obj?.["Nama Aset"] || obj?.["Nama aset"] || obj?.["Nama DI"] || "";
 }
@@ -193,6 +195,7 @@ function makeLookup(arr){
 /* Cluster mapping berdasarkan index kolom */
 function buildFixedGroups(headers){
   const g = {};
+  g["__ALL__"]          = headers;          // ⬅️ default semua kolom
   g["Informasi"]         = headers.slice(1,14);   // B..N
   g["Area"]              = headers.slice(14,19);  // O..S
   g["Teknis"]            = headers.slice(19,24);  // T..X
@@ -218,7 +221,7 @@ Promise.all([
 
   /* Cluster dropdown */
   Object.keys(groups).forEach(g=>{
-    clusterSel.insertAdjacentHTML('beforeend', `<option value="${g}">${g}</option>`);
+    clusterSel.insertAdjacentHTML('beforeend', `<option value="${g}">${g.replace('__ALL__','Semua Kolom')}</option>`);
   });
 
   /* Dropdown DI */
@@ -236,7 +239,19 @@ Promise.all([
       const info  = lookup[key] || {};
       const title = getNamaDI(info) || key || "(tanpa nama)";
       layer.bindPopup(`<b>${title}</b><br/>Kd_Inf: ${key}`);
+
+      // simpan untuk filter
       joined.push({ layer, key, title, nama:title.toLowerCase(), dataObj:info });
+
+      // klik poligon -> set state & render detail
+      layer.on('click', () => {
+        activeKey = key;
+        activeTitle = title;
+        renderDetail(info, title, key);
+        // sinkronkan dropdown jika ada
+        const opt = [...diSel.options].find(o => o.value.toLowerCase() === title.toLowerCase());
+        if (opt) diSel.value = opt.value;
+      });
     }
   }).addTo(map);
 
@@ -274,18 +289,24 @@ function refreshView(){
 diSel.addEventListener('change', ()=>{
   const selNama = (diSel.value||"").trim().toLowerCase();
   refreshView();
-  if (!selNama){ detailEl.innerHTML='<i style="color:#cbd5e1">Pilih DI untuk lihat detail.</i>'; return; }
+  if (!selNama){
+    activeKey = null; activeTitle = null;
+    detailEl.innerHTML = '<i style="color:#cbd5e1">Pilih DI untuk lihat detail.</i>';
+    return;
+  }
   const hit = joined.find(o=>o.nama===selNama);
   if (hit){
+    activeKey = hit.key;
+    activeTitle = hit.title;
     map.fitBounds(hit.layer.getBounds(), { maxZoom:14, animate:true });
-    renderDetail(lookup[hit.key]||{}, hit.title, hit.key);
+    renderDetail(lookup[activeKey]||{}, activeTitle, activeKey);
   }
 });
 clusterSel.addEventListener('change', ()=>{
-  const line = detailEl.querySelector('div[style*="Kd_Inf"]');
-  const key  = line ? (line.textContent.split(':').pop()||'').trim() : null;
-  if (key && lookup[key]){
-    renderDetail(lookup[key], getNamaDI(lookup[key])||key, key);
+  if (activeKey && lookup[activeKey]){
+    renderDetail(lookup[activeKey], activeTitle || getNamaDI(lookup[activeKey]) || activeKey, activeKey);
+  } else {
+    detailEl.innerHTML = '<i style="color:#cbd5e1">Pilih DI terlebih dahulu.</i>';
   }
 });
 </script>
