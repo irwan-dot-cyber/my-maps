@@ -2,72 +2,79 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8" />
-<title>Dashboard DI — SO_Integrasi × GeoJSON (Kd_Inf)</title>
+<title>Dashboard DI — BBWS Serayu Opak</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
-  /* ===== THEME (selaras landing) ===== */
   :root{
-    --bg: #0b1222;         /* body gelap */
-    --text: #e5e7eb;       /* slate-200 */
-    --muted: #cbd5e1;      /* slate-300 */
-    --muted-2:#94a3b8;     /* slate-400 */
-    --survey:#0d47a1;      /* header biru */
-    --survey-dark:#0a3a85;
-    --accent:#1d5fd1;      /* aksen link */
-    --panel: rgba(11,18,34,.92); /* dock gelap transparan */
+    --bg: #0b1222;
+    --text: #e5e7eb;
+    --muted: #cbd5e1;
+    --muted-2:#94a3b8;
+    --survey:#0d47a1;
+    --accent:#1d5fd1;
+    --panel: rgba(11,18,34,.92);
     --border: rgba(255,255,255,.12);
-    --hdrH: 88px;          /* tinggi header */
+    --hdrH: 88px;
     --radius: 12px;
   }
 
-  html, body {height:100%; margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, "Inter", sans-serif; background: var(--bg); color: var(--text)}
+  html, body {
+    height:100%; margin:0;
+    font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    background: var(--bg); color: var(--text);
+  }
 
-  /* ===== Header (biru survey) ===== */
+  /* ===== Header ===== */
   .header {
-    position: fixed; top:0; left:0; right:0; z-index: 900;
+    position: fixed; top:0; left:0; right:0; z-index:900;
     background: var(--survey);
     border-bottom: 1px solid rgba(255,255,255,.18);
-    padding: 10px 14px; display:flex; align-items:center; gap:14px;
+    padding: 10px 16px; display:flex; align-items:center; gap:14px;
     box-shadow: 0 6px 18px rgba(13,71,161,.25);
   }
-  .header img {height:54px; filter: drop-shadow(0 1px 0 rgba(0,0,0,.15));}
+  .header img {height:54px}
   .header .text {flex:1; color:#fff}
-  .header .title {font-weight: 800; font-size: 14px; line-height:1.35; color:#fff}
-  .header .subtitle {font-weight: 600; font-size: 12px; color: rgba(255,255,255,.9); margin-top:4px}
+  .header .title {font-weight: 800; font-size: 14px; line-height:1.35}
+  .header .subtitle {font-weight:600; font-size:12px; color:rgba(255,255,255,.9); margin-top:4px}
+  .btn-home {
+    background:#fff; color:var(--survey); font-weight:700;
+    padding:8px 14px; border-radius:10px;
+    text-decoration:none; font-size:13px;
+  }
+  .btn-home:hover {background:#f1f5f9; text-decoration:none;}
   .spacer {height: var(--hdrH);}
   #map {height: calc(100vh - var(--hdrH));}
 
-  /* ===== Bottom dock (panel gelap transparan) ===== */
+  /* ===== Dock ===== */
   .dock {
     position: fixed; left: 0; right: 0; bottom: 0;
     background: var(--panel);
     border-top: 1px solid var(--border);
-    max-height: 46vh; overflow: auto; padding: 12px 14px;
-    box-shadow: 0 -10px 22px rgba(0,0,0,.28); z-index: 950;
-    backdrop-filter: blur(6px);
+    max-height: 46vh; overflow:auto;
+    padding: 12px 14px;
+    box-shadow: 0 -10px 22px rgba(0,0,0,.28);
+    z-index: 950; backdrop-filter: blur(6px);
   }
-  .dock h2 {font-size: 14px; margin: 0 0 8px; font-weight: 800; color:#fff}
-  .grid {display: grid; grid-template-columns: 1fr 1fr; gap: 10px}
-  label {font-size: 12px; color: var(--muted)}
+  .dock h2 {font-size:14px; margin:0 0 8px; font-weight:800; color:#fff}
+  .grid {display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  label {font-size:12px; color:var(--muted)}
   select {
-    width:100%; padding:10px 12px; font-size: 14px;
+    width:100%; padding:10px 12px; font-size:14px;
     background: rgba(255,255,255,.06);
-    color:#fff; border: 1px solid var(--border); border-radius: var(--radius);
-    outline: none;
+    color:#fff; border:1px solid var(--border);
+    border-radius: var(--radius);
+    outline:none;
+    appearance:none;
   }
-  select:focus { border-color: rgba(255,255,255,.28); box-shadow: 0 0 0 2px rgba(29,95,209,.25) }
-  .meta {
-    font-size: 13px; border-collapse: collapse; width: 100%;
-    color: var(--text);
-  }
-  .meta td {border-bottom: 1px dashed rgba(255,255,255,.08); padding: 6px 2px; vertical-align: top}
-  .key {color: var(--muted-2); width: 42%}
+  option {color:#000; background:#fff;} /* dropdown item hitam-putih */
+  .meta {font-size:13px; border-collapse:collapse; width:100%; color:var(--text);}
+  .meta td {border-bottom:1px dashed rgba(255,255,255,.08); padding:6px 2px;}
+  .key {color:var(--muted-2); width:42%}
   .row {display:grid; grid-template-columns:1fr auto; gap:8px; font-size:13px; color:var(--muted)}
   .row b {color:#fff}
   .err {color:#fca5a5; font-size:12px; margin-top:6px}
 
-  /* Label DI di atas peta (terang) */
   .di-label {
     background: rgba(255,255,255,.9);
     border: 1px solid #d1d5db;
@@ -76,15 +83,9 @@
     font-size: 12px;
     color:#111;
   }
-
-  /* Link */
-  a { color: var(--accent); text-decoration: none }
-  a:hover { text-decoration: underline }
-
-  /* Responsif */
-  @media (max-width: 680px){
-    .grid {grid-template-columns: 1fr}
-    :root{ --hdrH: 96px }
+  @media(max-width:680px){
+    .grid{grid-template-columns:1fr}
+    :root{--hdrH:96px}
   }
 </style>
 </head>
@@ -92,12 +93,13 @@
 
 <!-- HEADER -->
 <div class="header">
-  <img src="assets/LogoPUPR.png" alt="Logo PU"/>
+  <img src="../../assets/LogoPUPR.png" alt="Logo PU"/>
   <div class="text">
     <div class="title">Kementerian Pekerjaan Umum dan Perumahan Rakyat<br>
       Direktorat Jenderal Sumber Daya Air — Direktorat Irigasi dan Rawa</div>
     <div class="subtitle">Daerah Irigasi Kewenangan BBWS Serayu Opak</div>
   </div>
+  <a href="../../index.html" class="btn-home">🏠 Beranda</a>
 </div>
 <div class="spacer"></div>
 
@@ -107,18 +109,16 @@
 <!-- DOCK -->
 <div class="dock">
   <h2>Dashboard Daerah Irigasi</h2>
-
   <div class="grid">
     <div>
-      <label for="diSel">Pilih Daerah Irigasi</label>
+      <label>Pilih Daerah Irigasi</label>
       <select id="diSel"><option value="">— Semua —</option></select>
     </div>
     <div>
-      <label for="clusterSel">Cluster Informasi</label>
+      <label>Cluster Informasi</label>
       <select id="clusterSel"><option value="__ALL__">— Semua —</option></select>
     </div>
   </div>
-
   <div id="msg" class="err"></div>
   <hr style="border:none;border-top:1px solid var(--border);margin:10px 0"/>
   <div id="stats" class="row"></div>
@@ -138,175 +138,115 @@ const detailEl = document.getElementById('detail');
 const msgEl = document.getElementById('msg');
 function note(msg){ msgEl.textContent = msg || ""; }
 
-/* ===== Map (Esri World Imagery) ===== */
-const map = L.map('map').setView([-2,118], 5);
+const map = L.map('map').setView([-7.5,110.3], 8);
 L.tileLayer(
   'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-  {
-    attribution: 'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community'
-  }
+  { attribution: 'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics' }
 ).addTo(map);
 
 let lookup={}, rows=[], groups={}, headers=[];
 let geoLayer, joined=[];
 const labelLayer = L.layerGroup().addTo(map);
+let activeKey=null, activeTitle=null;
 
-// ⬇️ state aktif untuk render detail saat ganti cluster
-let activeKey = null;      // Kd_Inf yang sedang dipilih
-let activeTitle = null;    // Nama DI yang sedang dipilih
-
-/* Helpers */
-function getNamaDI(obj){
-  return obj?.Nama_DI || obj?.["Nama Aset"] || obj?.["Nama aset"] || obj?.["Nama DI"] || "";
-}
-function addLabel(latlng, text){
-  L.tooltip({ permanent:true, direction:'center', className:'di-label' })
-    .setLatLng(latlng).setContent(text).addTo(labelLayer);
-}
-function buildTable(obj, activeGroup){
-  const useAll = (activeGroup==="__ALL__");
-  const fields = useAll ? headers : (groups[activeGroup]||[]);
-  const html = (fields||[])
-    .filter(k => k && k!=="Kd_Inf")
-    .map(k => {
-      const v = obj[k];
-      if (v===null || v===undefined || v==="") return "";
-      return `<tr><td class="key">${k}</td><td>${v}</td></tr>`;
-    }).join("");
-  return `<table class="meta">${html || '<tr><td>(tidak ada data)</td></tr>'}</table>`;
+function getNamaDI(obj){return obj?.Nama_DI||obj?.["Nama Aset"]||obj?.["Nama DI"]||"";}
+function addLabel(latlng,text){L.tooltip({permanent:true,direction:'center',className:'di-label'}).setLatLng(latlng).setContent(text).addTo(labelLayer);}
+function buildTable(obj,g){
+  const useAll=(g==="__ALL__");
+  const fields=useAll?headers:(groups[g]||[]);
+  const html=(fields||[]).filter(k=>k&&k!=="Kd_Inf").map(k=>{
+    const v=obj[k]; if(v==null||v==="")return "";
+    return `<tr><td class="key">${k}</td><td>${v}</td></tr>`;
+  }).join("");
+  return `<table class="meta">${html||'<tr><td>(tidak ada data)</td></tr>'}</table>`;
 }
 function normalizeGas(json){
-  if (json && json.lookup && json.rows && json.headers && json.groups) return json;
-  let _rows = [];
-  if (Array.isArray(json)) _rows = json;
-  else if (json && Array.isArray(json.rows)) _rows = json.rows;
-  else if (json && json.lookup) _rows = Object.values(json.lookup);
-  const _headers = _rows.length ? Object.keys(_rows[0]) : [];
-  const _groups  = {"Semua Kolom": _headers};
-  return { rows:_rows, headers:_headers, groups:_groups, lookup:(json.lookup||makeLookup(_rows)) };
+  if(json&&json.lookup&&json.rows)return json;
+  let _rows=Array.isArray(json)?json:(json?.rows||Object.values(json.lookup||{}));
+  const _headers=_rows.length?Object.keys(_rows[0]):[];
+  return {rows:_rows,headers:_headers,lookup:Object.fromEntries(_rows.map(r=>[r.Kd_Inf,r]))};
 }
-function makeLookup(arr){
-  const out={}; (arr||[]).forEach(o=>{
-    const key = String((o.Kd_Inf||"")).trim();
-    if (key) out[key] = o;
-  }); return out;
-}
-
-/* Cluster mapping berdasarkan index kolom */
 function buildFixedGroups(headers){
-  const g = {};
-  g["__ALL__"]          = headers;          // ⬅️ default semua kolom
-  g["Informasi"]         = headers.slice(1,14);   // B..N
-  g["Area"]              = headers.slice(14,19);  // O..S
-  g["Teknis"]            = headers.slice(19,24);  // T..X
-  g["Saluran Primer"]    = headers.slice(24,33);  // Y..AG
-  g["Saluran Sekunder"]  = headers.slice(33,40);  // AH..AN
-  g["Hidrologi"]         = headers.slice(40,42);  // AO..AP
-  g["Organisasi Petani"] = headers.slice(42,45);  // AQ..AS
-  g["Manfaat"]           = headers.slice(45,49);  // AT..AW
-  g["Tanggal Perubahan"] = headers.slice(49,50);  // AX
+  const g={};
+  g["__ALL__"]=headers;
+  g["Informasi"]=headers.slice(1,14);
+  g["Area"]=headers.slice(14,19);
+  g["Teknis"]=headers.slice(19,24);
+  g["Saluran Primer"]=headers.slice(24,33);
+  g["Saluran Sekunder"]=headers.slice(33,40);
+  g["Hidrologi"]=headers.slice(40,42);
+  g["Organisasi Petani"]=headers.slice(42,45);
+  g["Manfaat"]=headers.slice(45,49);
+  g["Tanggal Perubahan"]=headers.slice(49,50);
   return g;
 }
 
-/* ====== LOAD ====== */
 Promise.all([
   fetch(GEOJSON_URL).then(r=>r.json()),
   fetch(GAS_URL).then(r=>r.json())
-]).then(([gj, data])=>{
-  const norm = normalizeGas(data);
-  lookup = norm.lookup || {};
-  rows   = norm.rows   || [];
-  headers= norm.headers|| [];
-  groups = buildFixedGroups(headers);
+]).then(([gj,data])=>{
+  const norm=normalizeGas(data);
+  lookup=norm.lookup; rows=norm.rows; headers=norm.headers; groups=buildFixedGroups(headers);
 
-  /* Cluster dropdown */
-  Object.keys(groups).forEach(g=>{
-    clusterSel.insertAdjacentHTML('beforeend', `<option value="${g}">${g.replace('__ALL__','Semua Kolom')}</option>`);
+  Object.keys(groups).forEach(k=>{
+    clusterSel.insertAdjacentHTML('beforeend',`<option value="${k}">${k.replace('__ALL__','Semua Kolom')}</option>`);
   });
 
-  /* Dropdown DI */
-  const diNames = new Set();
-  Object.values(lookup).forEach(o => { const nm=getNamaDI(o); if(nm) diNames.add(nm); });
-  [...diNames].sort().forEach(nm=>{
-    diSel.insertAdjacentHTML('beforeend', `<option value="${nm}">${nm}</option>`);
-  });
+  const diNames=[...new Set(rows.map(r=>getNamaDI(r)).filter(Boolean))].sort();
+  diNames.forEach(nm=>diSel.insertAdjacentHTML('beforeend',`<option value="${nm}">${nm}</option>`));
 
-  /* Layer */
-  geoLayer = L.geoJSON(gj, {
-    style: () => ({ stroke:false, fillColor:"#3388ff", fillOpacity:0.5 }),
+  geoLayer=L.geoJSON(gj,{
+    style:()=>({stroke:false,fillColor:"#3388ff",fillOpacity:0.5}),
     onEachFeature:(f,layer)=>{
-      const key   = String((f.properties?.Kd_Inf||"")).trim();
-      const info  = lookup[key] || {};
-      const title = getNamaDI(info) || key || "(tanpa nama)";
-      layer.bindPopup(`<b>${title}</b><br/>Kd_Inf: ${key}`);
-
-      // simpan untuk filter
-      joined.push({ layer, key, title, nama:title.toLowerCase(), dataObj:info });
-
-      // klik poligon -> set state & render detail
-      layer.on('click', () => {
-        activeKey = key;
-        activeTitle = title;
-        renderDetail(info, title, key);
-        // sinkronkan dropdown jika ada
-        const opt = [...diSel.options].find(o => o.value.toLowerCase() === title.toLowerCase());
-        if (opt) diSel.value = opt.value;
+      const key=String(f.properties?.Kd_Inf||"").trim();
+      const info=lookup[key]||{};
+      const title=getNamaDI(info)||key;
+      joined.push({layer,key,title,nama:title.toLowerCase(),dataObj:info});
+      layer.on('click',()=>{
+        activeKey=key; activeTitle=title;
+        renderDetail(info,title,key);
+        const opt=[...diSel.options].find(o=>o.value.toLowerCase()===title.toLowerCase());
+        if(opt)diSel.value=opt.value;
       });
     }
   }).addTo(map);
 
-  if (geoLayer.getLayers().length) map.fitBounds(geoLayer.getBounds());
+  if(geoLayer.getLayers().length) map.fitBounds(geoLayer.getBounds());
   refreshView();
-  detailEl.innerHTML = '<i style="color:#cbd5e1">Tap/klik poligon atau pilih dari menu untuk lihat detail.</i>';
-}).catch(err=>{console.error(err); note('Gagal load data.');});
+  detailEl.innerHTML='<i style="color:#cbd5e1">Klik poligon atau pilih DI untuk lihat detail.</i>';
+}).catch(e=>{console.error(e);note('Gagal load data.')});
 
-/* ====== RENDER ====== */
-function renderDetail(info, title, key){
-  const g = clusterSel.value || "__ALL__";
-  detailEl.innerHTML = `
-    <h3 style="margin:6px 0;color:#fff">${title}</h3>
-    <div style="font-size:12px;color:#cbd5e1;margin-bottom:6px">Kd_Inf: ${key}</div>
-    ${buildTable(info, g)}
-  `;
+function renderDetail(info,title,key){
+  const g=clusterSel.value||"__ALL__";
+  detailEl.innerHTML=`<h3 style="margin:6px 0;color:#fff">${title}</h3>
+  <div style="font-size:12px;color:#cbd5e1;margin-bottom:6px">Kd_Inf: ${key}</div>${buildTable(info,g)}`;
 }
 function refreshView(){
-  const selNama = (diSel?.value||"").trim().toLowerCase();
+  const sel=(diSel.value||"").toLowerCase();
   labelLayer.clearLayers();
   let total=0;
   joined.forEach(o=>{
-    const match = !selNama || (o.nama === selNama);
-    o.layer.setStyle({opacity: match?1:0, fillOpacity: match?0.5:0});
-    if (match){
-      total++;
-      const center = o.layer.getBounds().getCenter();
-      addLabel(center, o.title);
-    }
+    const match=!sel||(o.nama===sel);
+    o.layer.setStyle({opacity:match?1:0,fillOpacity:match?0.5:0});
+    if(match){total++;addLabel(o.layer.getBounds().getCenter(),o.title);}
   });
-  statsEl.innerHTML = `<span>Total DI tampil</span><b>${total}</b>`;
+  statsEl.innerHTML=`<span>Total DI tampil</span><b>${total}</b>`;
 }
 
-/* ====== EVENTS ====== */
-diSel.addEventListener('change', ()=>{
-  const selNama = (diSel.value||"").trim().toLowerCase();
+diSel.addEventListener('change',()=>{
+  const sel=(diSel.value||"").toLowerCase();
   refreshView();
-  if (!selNama){
-    activeKey = null; activeTitle = null;
-    detailEl.innerHTML = '<i style="color:#cbd5e1">Pilih DI untuk lihat detail.</i>';
-    return;
-  }
-  const hit = joined.find(o=>o.nama===selNama);
-  if (hit){
-    activeKey = hit.key;
-    activeTitle = hit.title;
-    map.fitBounds(hit.layer.getBounds(), { maxZoom:14, animate:true });
-    renderDetail(lookup[activeKey]||{}, activeTitle, activeKey);
-  }
+  if(!sel){activeKey=null;activeTitle=null;detailEl.innerHTML='<i style="color:#cbd5e1">Pilih DI untuk lihat detail.</i>';return;}
+  const hit=joined.find(o=>o.nama===sel);
+  if(hit){activeKey=hit.key;activeTitle=hit.title;
+    map.fitBounds(hit.layer.getBounds(),{maxZoom:14});
+    renderDetail(lookup[activeKey]||{},activeTitle,activeKey);}
 });
-clusterSel.addEventListener('change', ()=>{
-  if (activeKey && lookup[activeKey]){
-    renderDetail(lookup[activeKey], activeTitle || getNamaDI(lookup[activeKey]) || activeKey, activeKey);
+clusterSel.addEventListener('change',()=>{
+  if(activeKey&&lookup[activeKey]){
+    renderDetail(lookup[activeKey],activeTitle||getNamaDI(lookup[activeKey])||activeKey,activeKey);
   } else {
-    detailEl.innerHTML = '<i style="color:#cbd5e1">Pilih DI terlebih dahulu.</i>';
+    detailEl.innerHTML='<i style="color:#cbd5e1">Pilih DI terlebih dahulu.</i>';
   }
 });
 </script>
