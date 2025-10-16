@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Si-Irwan • Link Peta Daerah Irigasi per Balai</title>
+  <meta name="description" content="Daftar tautan peta Daerah Irigasi per Balai/BBWS/BWS."/>
+  <link rel="icon" href="assets/LogoPUPR.png"/>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme:{extend:{
+        fontFamily:{sans:['Inter','ui-sans-serif','system-ui']},
+        colors:{survey:'#0d47a1',surveyDark:'#0a3a85',surveyLight:'#1d5fd1'},
+        boxShadow:{header:'0 4px 14px rgba(13,71,161,.18)'}
+      }}
+    }
+  </script>
+
+  <style>
+    html{scroll-behavior:smooth}
+    :focus-visible{outline:2px solid #1d5fd1;outline-offset:2px}
+  </style>
+</head>
+<body class="font-sans antialiased bg-[#0b1222] text-slate-100">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-40 bg-survey text-white">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <a href="index.html" class="flex items-center gap-3">
+        <img src="assets/LogoPUPR.png" class="w-9 h-9" alt="PUPR"/>
+        <div class="leading-tight">
+          <div class="text-xs uppercase tracking-wide text-white/80">Kementerian Pekerjaan Umum</div>
+          <div class="font-semibold">Ditjen Sumber Daya Air</div>
+          <div class="text-xs text-white/80">Direktorat Irigasi & Rawa</div>
+        </div>
+      </a>
+      <nav class="hidden md:flex items-center gap-6 text-sm">
+        <a href="index.html#dashboard" class="hover:underline underline-offset-4">Dashboard</a>
+        <a href="index.html#dokumen" class="hover:underline underline-offset-4">Dokumen</a>
+      </nav>
+      <a href="index.html" class="text-sm bg-white text-survey px-3 py-2 rounded-lg font-semibold">← Beranda</a>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="bg-gradient-to-b from-[#0b1222] via-[#0b1222]/60 to-transparent">
+    <div class="max-w-7xl mx-auto px-4 py-8">
+      <h1 class="text-2xl md:text-3xl font-extrabold">Link Peta Daerah Irigasi per Balai</h1>
+      <p class="mt-2 text-slate-300">Pilih salah satu Balai/BBWS/BWS untuk membuka peta DI wilayahnya.</p>
+    </div>
+  </section>
+
+  <!-- Toolbar -->
+  <section class="py-4">
+    <div class="max-w-7xl mx-auto px-4">
+      <div class="flex flex-col md:flex-row md:items-center gap-3">
+        <div class="flex-1">
+          <label class="sr-only" for="q">Cari</label>
+          <input id="q" type="search" placeholder="Cari balai… (mis. ‘Brantas’, ‘Serayu’, ‘Papua’)"
+            class="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/10 placeholder:text-slate-400 text-white"/>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <select id="wilayah" class="px-3 py-3 rounded-xl border border-white/10 bg-white/10 text-white">
+            <option value="">Semua Wilayah</option>
+            <option>Sumatera</option>
+            <option>Jawa</option>
+            <option>Kalimantan</option>
+            <option>Sulawesi</option>
+            <option>Bali–Nusa</option>
+            <option>Maluku</option>
+            <option>Papua</option>
+          </select>
+          <button id="reset" class="px-4 py-3 rounded-xl border border-white/15 text-white/90 hover:text-white">Reset</button>
+        </div>
+      </div>
+      <div class="mt-3 text-sm text-slate-300" id="countInfo">Menampilkan 38 balai</div>
+    </div>
+  </section>
+
+  <!-- Grid -->
+  <section class="py-6">
+    <div class="max-w-7xl mx-auto px-4">
+      <div id="grid" class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="border-t border-white/10 mt-10">
+    <div class="max-w-7xl mx-auto px-4 py-8 text-sm text-slate-300 flex items-center justify-between">
+      <span>© 2025 Si-Irwan • Direktorat Irigasi & Rawa</span>
+      <a href="index.html" class="hover:text-white">Kembali ke Beranda</a>
+    </div>
+  </footer>
+
+  <script>
+    // Set base URL untuk semua link (opsional). Kosongkan "" untuk pakai '#'
+    const BASE_URL = ""; // contoh: "/my-maps/balai/"
+
+    // Helper bikin slug dari nama
+    const slugify = s => s.toLowerCase()
+      .replace(/&/g,'-dan-').replace(/[\s\n]+/g,'-')
+      .replace(/[^\w\-]+/g,'').replace(/\-+/g,'-').replace(/^\-|\-$/g,'');
+
+    // Data 38 balai (dari kamu) + wilayah
+    const BALAI = [
+      { nama:'BWS Sumatera I - Banda Aceh', wilayah:'Sumatera' },
+      { nama:'BBWS Sumatera II - Medan', wilayah:'Sumatera' },
+      { nama:'BWS Sumatera III - Pekanbaru', wilayah:'Sumatera' },
+      { nama:'BWS Sumatera IV - Batam', wilayah:'Sumatera' },
+      { nama:'BWS Sumatera V - Padang', wilayah:'Sumatera' },
+      { nama:'BWS Sumatera VI - Jambi', wilayah:'Sumatera' },
+      { nama:'BWS Sumatera VII - Bengkulu', wilayah:'Sumatera' },
+      { nama:'BBWS Sumatera VIII - Palembang', wilayah:'Sumatera' },
+      { nama:'BWS Bangka Belitung', wilayah:'Sumatera' },
+      { nama:'BBWS Mesuji Sekampung', wilayah:'Sumatera' },
+
+      { nama:'BBWS Cidanau, Ciujung, Cidurian', wilayah:'Jawa' },
+      { nama:'BBWS Ciliwung Cisadane', wilayah:'Jawa' },
+      { nama:'BBWS Citarum', wilayah:'Jawa' },
+      { nama:'BBWS Cimanuk Cisanggarung', wilayah:'Jawa' },
+      { nama:'BBWS Citanduy', wilayah:'Jawa' },
+      { nama:'BBWS Pemali Juana', wilayah:'Jawa' },
+      { nama:'BBWS Bengawan Solo', wilayah:'Jawa' },
+      { nama:'BBWS Serayu Opak', wilayah:'Jawa' },
+      { nama:'BBWS Brantas', wilayah:'Jawa' },
+
+      { nama:'BWS Kalimantan I - Pontianak', wilayah:'Kalimantan' },
+      { nama:'BWS Kalimantan II - Palangkaraya', wilayah:'Kalimantan' },
+      { nama:'BWS Kalimantan III - Banjarmasin', wilayah:'Kalimantan' },
+      { nama:'BWS Kalimantan IV - Samarinda', wilayah:'Kalimantan' },
+      { nama:'BWS Kalimantan V - Tanjung Selor', wilayah:'Kalimantan' },
+
+      { nama:'BWS Sulawesi I - Manado', wilayah:'Sulawesi' },
+      { nama:'BWS Sulawesi II - Gorontalo', wilayah:'Sulawesi' },
+      { nama:'BWS Sulawesi III - Palu', wilayah:'Sulawesi' },
+      { nama:'BWS Sulawesi IV - Kendari', wilayah:'Sulawesi' },
+      { nama:'BWS Sulawesi V - Mamuju', wilayah:'Sulawesi' },
+      { nama:'BBWS Pompengan Jeneberang', wilayah:'Sulawesi' },
+
+      { nama:'BWS Maluku', wilayah:'Maluku' },
+      { nama:'BWS Maluku Utara', wilayah:'Maluku' },
+
+      { nama:'BWS Bali-Penida', wilayah:'Bali–Nusa' },
+      { nama:'BBWS Nusa Tenggara I - Mataram', wilayah:'Bali–Nusa' },
+      { nama:'BBWS Nusa Tenggara II - Kupang', wilayah:'Bali–Nusa' },
+
+      { nama:'BWS Papua', wilayah:'Papua' },
+      { nama:'BWS Papua Barat', wilayah:'Papua' },
+      { nama:'BWS Papua Merauke', wilayah:'Papua' },
+    ].map(b => ({...b, slug: slugify(b.nama)}));
+
+    // Render
+    const grid = document.getElementById('grid');
+    const q = document.getElementById('q');
+    const wilayah = document.getElementById('wilayah');
+    const resetBtn = document.getElementById('reset');
+    const countInfo = document.getElementById('countInfo');
+
+    const makeUrl = slug => BASE_URL ? (BASE_URL + slug + '.html') : '#';
+
+    const card = b => `
+      <a href="${makeUrl(b.slug)}" class="group block p-4 rounded-2xl bg-white text-slate-800 border hover:shadow-lg transition">
+        <div class="text-xs font-semibold text-slate-500">${b.wilayah}</div>
+        <div class="mt-1 font-bold text-lg leading-snug">${b.nama}</div>
+        <div class="mt-3 inline-flex items-center gap-1 text-surveyLight text-sm">
+          Buka peta <span class="transition -translate-x-0 group-hover:translate-x-0.5">→</span>
+        </div>
+      </a>`;
+
+    function render(){
+      const term = (q.value||'').toLowerCase().trim();
+      const w = wilayah.value;
+      const list = BALAI.filter(b=>{
+        const okW = !w || b.wilayah===w;
+        const okT = !term || b.nama.toLowerCase().includes(term) || b.wilayah.toLowerCase().includes(term);
+        return okW && okT;
+      });
+      grid.innerHTML = list.map(card).join('');
+      countInfo.textContent = `Menampilkan ${list.length} balai`;
+    }
+    q.addEventListener('input',render);
+    wilayah.addEventListener('change',render);
+    resetBtn.addEventListener('click',()=>{ q.value=''; wilayah.value=''; render(); });
+    render();
+  </script>
+</body>
+</html>
