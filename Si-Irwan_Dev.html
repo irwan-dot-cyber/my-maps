@@ -37,8 +37,6 @@
     html { scroll-behavior: smooth; }
     .glass { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
     .mask-gradient { mask-image: linear-gradient(to bottom, black 70%, transparent); }
-
-    /* animasi halus buat tombol floating */
     @keyframes floaty { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
     @keyframes pulseRing {
       0%{box-shadow:0 0 0 0 rgba(14,165,233,.45)}
@@ -47,12 +45,12 @@
     }
   </style>
 </head>
-<body class="text-slate-800 antialiased bg-#0b1222">
+<body class="font-sans antialiased bg-[#0b1222] text-slate-100">
 
-  <!-- Top Announce -->
-  <div class="bg-amber-50 border-b border-amber-200">
-    <div class="max-w-7xl mx-auto px-4 py-2 text-sm flex items-center gap-2">
-      <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-200">📢</span>
+  <!-- Top Announce (amber transparan biar nyatu dengan gelap) -->
+  <div class="bg-amber-50/10 border-b border-amber-200/20">
+    <div class="max-w-7xl mx-auto px-4 py-2 text-sm flex items-center gap-2 text-amber-100">
+      <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-200/30">📢</span>
       <div class="overflow-hidden whitespace-nowrap">
         <div class="animate-[scroll_22s_linear_infinite] inline-block">
           <span class="mr-10">Update 02 Okt 2025: Integrasi dashboard “Pelaksanaan Inpres 2/2025 Tahap 1 dan 2”.</span>
@@ -72,7 +70,7 @@
           <img src="assets/LogoPUPR.png" alt="Logo Kementerian PUPR" class="w-9 h-9" />
           <div class="leading-tight">
             <div class="text-xs uppercase tracking-wider/5 text-white/80">Kementerian Pekerjaan Umum</div>
-            <div class="font-semibold">Ditjen Sumber Daya Air</div>
+            <div class="font-semibold">Direktorat Jenderal Sumber Daya Air</div>
             <div class="text-xs text-white/80">Direktorat Irigasi & Rawa</div>
           </div>
         </a>
@@ -89,9 +87,6 @@
 
         <!-- CTA + burger -->
         <div class="flex items-center gap-2">
-           <!--<a href="#airbot" class="hidden md:inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white text-survey text-sm font-semibold hover:opacity-90">
-            <img src="assets/air_avatar.png" alt="Maskot Si-Irwan" class="w-5 h-5"> Chatbot Si-Irwan
-          </a>-->
           <button id="btnMenu" aria-controls="mobileMenu" aria-expanded="false"
                   class="md:hidden inline-flex items-center p-2 rounded-lg bg-surveyDark/70 border border-white/20">
             ☰
@@ -118,7 +113,7 @@
   <section class="relative">
     <div class="absolute inset-0">
       <img src="assets/bg_irigasi.jpg" alt="Hero Irigasi & Rawa" class="w-full h-[56vh] md:h-[72vh] object-cover">
-      <div class="absolute inset-0 bg-gradient-to-b from-survey/80 via-survey/40 to-transparent"></div>
+      <div class="absolute inset-0 bg-gradient-to-b from-[#0b1222]/85 via-[#0b1222]/45 to-transparent"></div>
     </div>
 
     <div class="relative z-10">
@@ -137,33 +132,33 @@
   </section>
 
   <!-- Quick tiles -->
-  <section id="dashboard" class="py-12 md:py-16">
+  <section id="dashboard" class="py-12 md:py-16 bg-transparent">
     <div class="max-w-7xl mx-auto px-4">
       <div class="flex items-end justify-between gap-4">
-        <h2 class="text-2xl md:text-3xl font-bold">Dashboard & Peta</h2>
-        <a href="my-maps.html" class="text-sm text-slate-600 hover:text-slate-900">Lihat semua →</a>
+        <h2 class="text-2xl md:text-3xl font-bold text-white">Dashboard & Peta</h2>
+        <a href="my-maps.html" class="text-sm text-slate-300 hover:text-white">Lihat semua →</a>
       </div>
 
       <div class="mt-6 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        <a href="https://irwan-dot-cyber.github.io/my-maps/landingpage/beranda.html" class="block p-5 rounded-2xl bg-white border hover:shadow-lg transition">
+        <a href="https://irwan-dot-cyber.github.io/my-maps/landingpage/beranda.html" class="block p-5 rounded-2xl bg-white border hover:shadow-lg transition text-slate-800">
           <div class="text-sm text-emerald-600 font-semibold">Pelaksanaan</div>
           <div class="mt-1 font-bold text-lg">Survey & Monitoring Inpres 2/2025</div>
           <p class="mt-2 text-sm text-slate-600">Progress fisik & keuangan, filter per BWS/Provinsi.</p>
         </a>
 
-        <a href="https://irwan-dot-cyber.github.io/my-maps/hujan/index.html" class="block p-5 rounded-2xl bg-white border hover:shadow-lg transition">
+        <a href="https://irwan-dot-cyber.github.io/my-maps/hujan/index.html" class="block p-5 rounded-2xl bg-white border hover:shadow-lg transition text-slate-800">
           <div class="text-sm text-blue-600 font-semibold">Cuaca</div>
           <div class="mt-1 font-bold text-lg">Radar Hujan (RainViewer)</div>
           <p class="mt-2 text-sm text-slate-600">Animasi radar, kecepatan dapat diatur, peringatan petir.</p>
         </a>
 
-        <a href="dashboards/telemetri.html" class="block p-5 rounded-2xl bg-white border hover:shadow-lg transition">
+        <a href="dashboards/telemetri.html" class="block p-5 rounded-2xl bg-white border hover:shadow-lg transition text-slate-800">
           <div class="text-sm text-violet-600 font-semibold">Realtime</div>
           <div class="mt-1 font-bold text-lg">Telemetri Irigasi</div>
           <p class="mt-2 text-sm text-slate-600">Grafik ketinggian muka air, debit, dan status stasiun.</p>
         </a>
 
-        <a href="https://irwan-dot-cyber.github.io/my-maps/padi/index.html" class="block p-5 rounded-2xl bg-white border hover:shadow-lg transition">
+        <a href="https://irwan-dot-cyber.github.io/my-maps/padi/index.html" class="block p-5 rounded-2xl bg-white border hover:shadow-lg transition text-slate-800">
           <div class="text-sm text-rose-600 font-semibold">Peta</div>
           <div class="mt-1 font-bold text-lg">Portal Peta</div>
           <p class="mt-2 text-sm text-slate-600">Peta Produksi Padi Per Provinsi 2024</p>
@@ -179,14 +174,14 @@
   </section>
 
   <!-- Dokumen -->
-  <section id="dokumen" class="py-12 md:py-16 bg-white">
+  <section id="dokumen" class="py-12 md:py-16 bg-transparent">
     <div class="max-w-7xl mx-auto px-4">
-      <!--<div class="flex items-end justify-between">
-        <h2 class="text-2xl md:text-3xl font-bold">Dokumen Penting</h2>
-        <span class="text-sm text-slate-500">Referensi RAB, HPS, SBM, SK BIG</span>
-      </div>-->
+      <div class="flex items-end justify-between">
+        <h2 class="text-2xl md:text-3xl font-bold text-white">Dokumen Penting</h2>
+        <span class="text-sm text-slate-300">Referensi RAB, HPS, SBM, SK BIG</span>
+      </div>
       <div class="mt-6 grid md:grid-cols-2 gap-5">
-        <div class="p-5 rounded-2xl border bg-slate-50">
+        <div class="p-5 rounded-2xl border bg-white text-slate-800">
           <div class="font-semibold">Regulasi & Standar</div>
           <ul class="mt-3 space-y-2 text-sm list-disc pl-5">
             <li><a href="docs/SK-BIG.pdf" class="text-slate-700 hover:text-slate-900">SK BIG (Geospasial & ketentuan peta)</a></li>
@@ -194,7 +189,7 @@
             <li><a href="docs/HPS-pedoman.pdf" class="text-slate-700 hover:text-slate-900">Pedoman HPS & contoh</a></li>
           </ul>
         </div>
-        <div class="p-5 rounded-2xl border bg-slate-50">
+        <div class="p-5 rounded-2xl border bg-white text-slate-800">
           <div class="font-semibold">Template & Contoh</div>
           <ul class="mt-3 space-y-2 text-sm list-disc pl-5">
             <li><a href="docs/template-RAB-survei.xlsx" class="text-slate-700 hover:text-slate-900">Template RAB Survei & Pemetaan (Excel)</a></li>
@@ -207,7 +202,7 @@
   </section>
 
   <!-- AIR-bot -->
-  <section id="airbot" class="py-12 md:py-16">
+  <section id="airbot" class="py-12 md:py-16 bg-transparent">
     <div class="max-w-7xl mx-auto px-4 grid lg:grid-cols-[1fr,380px] gap-6">
       <div class="p-6 md:p-8 rounded-3xl bg-slate-900 text-white">
         <div class="flex items-center gap-3">
@@ -225,24 +220,24 @@
           <a href="https://chatgpt.com/g/g-68e0ae2bb8c081919205a701721b07da-si-irwan" class="px-5 py-3 rounded-xl bg-white text-slate-900 font-semibold">Buka Chat</a>
         </div>
       </div>
-      <div class="p-6 rounded-3xl border bg-white">
+      <div class="p-6 rounded-3xl border bg-white text-slate-800">
         <div class="font-semibold">Contoh Pertanyaan</div>
-        <ul class="mt-3 text-sm space-y-2 text-slate-700">
-          <li>• “Apa yang dimaksud dengan Irigasi?.”</li>
+        <ul class="mt-3 text-sm space-y-2">
+          <li>• “Apa yang dimaksud dengan Irigasi?”</li>
           <li>• “Kebijakan terkait Irigasi”</li>
-          <li>• “Peraturan Menteri PUPR No. 14 Tahun 2015 Kriteria dan Penetapan Status Daerah Irigasi ?”</li>
-          <li>• “Intruksi Presiden No. 2 Tahun 2025”</li>
+          <li>• “Peraturan Menteri PUPR No. 14 Tahun 2015 Kriteria dan Penetapan Status Daerah Irigasi?”</li>
+          <li>• “Instruksi Presiden No. 2 Tahun 2025”</li>
         </ul>
       </div>
     </div>
   </section>
 
   <!-- Kontak -->
-  <section id="kontak" class="py-12 md:py-16">
+  <section id="kontak" class="py-12 md:py-16 bg-transparent">
     <div class="max-w-7xl mx-auto px-4">
-      <h2 class="text-2xl md:text-3xl font-bold">Kontak</h2>
+      <h2 class="text-2xl md:text-3xl font-bold text-white">Kontak</h2>
       <div class="mt-4 grid md:grid-cols-2 gap-6">
-        <form class="p-6 rounded-2xl border bg-white">
+        <form class="p-6 rounded-2xl border bg-white text-slate-800">
           <div class="grid sm:grid-cols-2 gap-3">
             <input type="text" placeholder="Nama" class="px-4 py-3 rounded-xl border">
             <input type="tel" placeholder="No. HP (628…)" class="px-4 py-3 rounded-xl border">
@@ -251,9 +246,9 @@
           <textarea rows="4" placeholder="Pesan…" class="mt-3 w-full px-4 py-3 rounded-xl border"></textarea>
           <button type="button" class="mt-4 px-5 py-3 rounded-xl bg-slate-900 text-white">Kirim</button>
         </form>
-        <div class="p-6 rounded-2xl border bg-slate-50">
-          <div class="font-semibold">Info</div>
-          <div class="mt-2 text-sm text-slate-700">
+        <div class="p-6 rounded-2xl border border-white/10 bg-white/5">
+          <div class="font-semibold text-white">Info</div>
+          <div class="mt-2 text-sm text-slate-200">
             📍 Jakarta, Indonesia<br/>
             📧 sugiharto@pu.go.id<br/>
           </div>
@@ -263,33 +258,16 @@
   </section>
 
   <!-- Footer -->
-  <footer class="border-t border-slate-200">
-    <div class="max-w-7xl mx-auto px-4 py-8 text-sm text-slate-600 flex flex-col md:flex-row items-center justify-between gap-3">
+  <footer class="border-t border-white/10">
+    <div class="max-w-7xl mx-auto px-4 py-8 text-sm text-slate-300 flex flex-col md:flex-row items-center justify-between gap-3">
       <div>© 2025</div>
       <div class="flex items-center gap-4">
-        <a class="hover:text-slate-900" href="#dokumen">Dokumen</a>
-        <a class="hover:text-slate-900" href="#form">Form</a>
-        <a class="hover:text-slate-900" href="#airbot">Chatbot A.I.R</a>
+        <a class="hover:text-white" href="#dokumen">Dokumen</a>
+        <a class="hover:text-white" href="#form">Form</a>
+        <a class="hover:text-white" href="#airbot">Chatbot A.I.R</a>
       </div>
     </div>
   </footer>
-
-  <!-- ===== Floating Chatbot Si-Irwan (hovering, kanan bawah) ===== 
-  <a id="chatFloat"
-     class="fixed md:bottom-10 bottom-24 right-4 z-50 inline-flex items-center gap-2
-            rounded-xl bg-survey text-white font-semibold px-3 py-2 border border-white/20
-            shadow-xl hover:shadow-2xl transition
-            [animation:floaty_4s_ease-in-out_infinite]"
-     href="#"
-     aria-label="Buka Chatbot Si-Irwan">-->
-    <!-- ring pulse tipis 
-    <span class="absolute inset-0 rounded-xl pointer-events-none"
-          style="animation:pulseRing 2.8s ease-out infinite;"></span>
-    <span class="relative inline-grid place-items-center w-6 h-6 rounded-md bg-white border border-slate-200 overflow-hidden">
-      <img src="assets/air_avatar.png" alt="" class="w-full h-full object-contain">
-    </span>
-    <span class="relative">Chatbot Si-Irwan</span>
-  </a>-->
 
   <!-- Scripts -->
   <script>
@@ -359,45 +337,29 @@
       style.textContent = `@keyframes scroll { 0%{transform:translateX(0)} 100%{transform:translateX(-100%)} }`;
       document.head.appendChild(style);
     })();
-
-    // Action tombol floating Chatbot
-    (function(){
-      const btn = document.getElementById('chatFloat');
-      btn.addEventListener('click', (e)=>{
-        e.preventDefault();
-        const target = document.getElementById('airbot');
-        if (target) {
-          target.scrollIntoView({behavior:'smooth', block:'start'});
-        } else {
-          window.open('https://chatgpt.com/g/g-68e0ae2bb8c081919205a701721b07da-si-irwan', '_blank', 'noopener');
-        }
-      });
-    })();
   </script>
+
   <!-- Floating Assistant (Avatar + Bubble) -->
-<div class="fixed right-4 bottom-24 md:right-8 md:bottom-10 z-[60] flex flex-col items-end gap-3 select-none">
-
-  <!-- Bubble "Tanya Saya!" -->
-  <a href="air-bot/index.html" aria-label="Buka Chatbot A.I.R"
-     class="relative inline-flex items-center px-4 py-2 rounded-full text-white text-sm font-semibold
-            shadow-lg shadow-[rgba(2,32,71,.25)] hover:shadow-[rgba(2,32,71,.35)]
-            bg-[#1d5fd1] hover:bg-[#0d47a1] transition">
-    Tanya Saya!
-    <!-- ekor balon -->
-    <span class="absolute -bottom-2 right-6 w-0 h-0
-                 border-l-8 border-l-transparent border-r-8 border-r-transparent border-t-8"
-          style="border-top-color:#1d5fd1"></span>
-  </a>
-
-  <!-- Avatar Card -->
-  <a href="air-bot/index.html" aria-label="Buka Chatbot A.I.R"
-     class="block rounded-[22px] bg-white p-3
-            shadow-[0_12px_30px_rgba(2,32,71,.18)] hover:shadow-[0_16px_38px_rgba(2,32,71,.26)]
-            border border-slate-100 transition">
-    <img src="assets/air_avatar.png" alt="Si-Irwan Assistant"
-         class="w-28 h-28 md:w-36 md:h-36 object-contain" loading="lazy"/>
-  </a>
-</div>
+  <div class="fixed right-4 bottom-24 md:right-8 md:bottom-10 z-[60] flex flex-col items-end gap-3 select-none">
+    <!-- Bubble "Tanya Saya!" -->
+    <a href="air-bot/index.html" aria-label="Buka Chatbot A.I.R"
+       class="relative inline-flex items-center px-4 py-2 rounded-full text-white text-sm font-semibold
+              shadow-lg shadow-[rgba(2,32,71,.25)] hover:shadow-[rgba(2,32,71,.35)]
+              bg-[#1d5fd1] hover:bg-[#0d47a1] transition">
+      Tanya Saya!
+      <span class="absolute -bottom-2 right-6 w-0 h-0
+                   border-l-8 border-l-transparent border-r-8 border-r-transparent border-t-8"
+            style="border-top-color:#1d5fd1"></span>
+    </a>
+    <!-- Avatar Card -->
+    <a href="air-bot/index.html" aria-label="Buka Chatbot A.I.R"
+       class="block rounded-[22px] bg-white p-3
+              shadow-[0_12px_30px_rgba(2,32,71,.18)] hover:shadow-[0_16px_38px_rgba(2,32,71,.26)]
+              border border-slate-100 transition">
+      <img src="assets/air_avatar.png" alt="Si-Irwan Assistant"
+           class="w-28 h-28 md:w-36 md:h-36 object-contain" loading="lazy"/>
+    </a>
+  </div>
 
 </body>
 </html>
