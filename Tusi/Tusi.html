@@ -3,70 +3,77 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Tugas & Fungsi — Direktorat Irigasi dan Rawa • Ditjen SDA • Kementerian PUPR</title>
-  <meta name="description" content="Tugas dan fungsi Direktorat Irigasi dan Rawa, Direktorat Jenderal Sumber Daya Air, Kementerian Pekerjaan Umum dan Perumahan Rakyat." />
+  <title>Tugas & Fungsi — Direktorat Irigasi dan Rawa • Diirektorat Jenderal Sumber Daya Air • Kementerian Pekerjaan Umum</title>
   <link rel="icon" href="assets/LogoPUPR.png" />
-
   <style>
     :root{
       --bg:#0b1222; --text:#e5e7eb; --muted:#cbd5e1; --muted2:#94a3b8;
-      --survey:#0d47a1; --surveyDark:#0a3a85; --accent:#1d5fd1;
-      --card:#0f1830; --border:rgba(255,255,255,.12); --radius:14px;
-      --container: 1120px; --hdrH: 82px;
+      --survey:#0d47a1; --accent:#1d5fd1; --card:#0f1830; --border:rgba(255,255,255,.12);
+      --radius:14px; --container:1100px;
     }
-    html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
-      font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif}
+    html,body{
+      margin:0; height:100%;
+      font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:var(--bg); color:var(--text);
+    }
     a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
 
-    /* Header biru */
-    .header{position:sticky;top:0;z-index:40;background:var(--survey);
-      border-bottom:1px solid rgba(255,255,255,.18);
-      box-shadow:0 6px 18px rgba(13,71,161,.25)}
-    .hdr-inner{max-width:var(--container);margin:auto;display:flex;gap:14px;
-      align-items:center;padding:10px 16px}
+    /* Header */
+    .header{position:sticky;top:0;z-index:50;background:var(--survey);
+      box-shadow:0 6px 18px rgba(13,71,161,.25);border-bottom:1px solid rgba(255,255,255,.18)}
+    .hdr-inner{max-width:var(--container);margin:auto;display:flex;align-items:center;gap:14px;padding:10px 16px}
     .logo{height:50px}
-    .brand{line-height:1.2}
-    .brand .l1{font-size:13px;letter-spacing:.2px;opacity:.95;font-weight:800}
-    .brand .l2{font-size:12px;opacity:.95;font-weight:700}
+    .brand .l1{font-size:13px;font-weight:800}
+    .brand .l2{font-size:12px;font-weight:700;opacity:.95}
     .brand .l3{font-size:12px;opacity:.9}
-    .btn-home{margin-left:auto;background:#fff;color:var(--survey);
-      font-weight:700;border-radius:10px;padding:8px 12px}
+    .btn-home{margin-left:auto;background:#fff;color:var(--survey);font-weight:700;
+      border-radius:10px;padding:8px 12px}
     .btn-home:hover{background:#f1f5f9;text-decoration:none}
 
-    /* Hero kecil */
-    .hero{background:linear-gradient(180deg, rgba(13,71,161,.18), transparent 60%)}
+    /* Hero */
+    .hero{background:linear-gradient(180deg,rgba(13,71,161,.18),transparent 60%)}
     .hero-inner{max-width:var(--container);margin:auto;padding:18px 16px 8px}
     .title{font-size:26px;font-weight:900;margin:4px 0}
     .subtitle{color:var(--muted)}
 
-    /* Kartu konten */
+    /* Konten */
     .container{max-width:var(--container);margin:14px auto;padding:0 16px}
     .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
-      box-shadow:0 10px 24px rgba(0,0,0,.24)}
+      box-shadow:0 10px 24px rgba(0,0,0,.24);position:relative;overflow:hidden}
     .section{padding:18px 18px 8px}
     .section h2{margin:0 0 8px;font-size:18px;font-weight:800}
     .lead{color:var(--muted);font-size:14px;margin:0 0 12px}
-
-    /* List styling */
     details{border-top:1px solid var(--border)}
     details[open]{background:rgba(255,255,255,.02)}
-    summary{list-style:none;cursor:pointer;display:flex;align-items:center;
-      gap:10px;padding:14px 18px}
+    summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:14px 18px}
     summary::-webkit-details-marker{display:none}
     .chev{width:18px;height:18px;border-radius:6px;background:#132143;display:grid;place-items:center}
     .chev span{display:inline-block;transform:rotate(-90deg);transition:.2s}
     details[open] .chev span{transform:rotate(0)}
     .content{padding:0 18px 18px}
-    .content p{margin:0 0 10px}
     ol{margin:6px 0 0 20px;padding:0}
     li{margin:8px 0}
     .foot{color:var(--muted2);font-size:12px;margin-top:16px;border-top:1px dashed var(--border);padding-top:10px}
 
-    /* Responsif */
-    @media (max-width:720px){
-      .title{font-size:22px}
-      .brand .l1{font-size:12px}.brand .l2,.brand .l3{font-size:11px}
-      .logo{height:44px}
+    /* Watermark logo */
+    .card::after{
+      content:""; position:absolute; right:30px; bottom:30px;
+      width:160px; height:160px;
+      background:url('assets/LogoPUPR.png') center/contain no-repeat;
+      opacity:.05; pointer-events:none;
+    }
+
+    /* Cetak */
+    @media print{
+      body{background:#fff;color:#000}
+      .header,.btn-home{display:none!important}
+      .card{background:#fff;border:1px solid #ccc;box-shadow:none;color:#000}
+      .section h2{color:#000}
+      .lead{color:#333}
+      .foot{color:#555;border-top:1px dashed #ccc}
+      summary,.chev{color:#000}
+      details[open]{background:transparent}
+      .card::after{opacity:.1}
     }
   </style>
 </head>
@@ -77,11 +84,11 @@
     <div class="hdr-inner">
       <img class="logo" src="assets/LogoPUPR.png" alt="Logo PUPR">
       <div class="brand">
-        <div class="l1">Kementerian Pekerjaan Umum dan Perumahan Rakyat</div>
+        <div class="l1">Kementerian Pekerjaan Umum</div>
         <div class="l2">Direktorat Jenderal Sumber Daya Air</div>
         <div class="l3">Direktorat Irigasi dan Rawa</div>
       </div>
-      <a class="btn-home" href="index.html">🏠 Beranda</a>
+      <a class="btn-home" href="../my-maps/Si-Irwan_Dev.html">🏠 Beranda</a>
     </div>
   </header>
 
@@ -93,20 +100,19 @@
     </div>
   </section>
 
-  <!-- Content -->
+  <!-- Konten -->
   <main class="container">
     <article class="card">
-      <!-- TUGAS -->
       <section class="section">
         <h2>Tugas</h2>
         <p class="lead">
-          Direktorat Irigasi dan Rawa mempunyai tugas melaksanakan pembinaan pelaksanaan norma, standar, prosedur dan kriteria,
-          pengembangan jaringan irigasi dan pengelolaan jaringan irigasi sebagai satu kesatuan sistem termasuk pencetakan sawah
-          pada daerah irigasi yang menjadi kewenangan pemerintah pusat, serta persiapan operasi dan pemeliharaan irigasi dan rawa.
+          Direktorat Irigasi dan Rawa mempunyai tugas melaksanakan pembinaan pelaksanaan norma, standar,
+          prosedur dan kriteria, pengembangan jaringan irigasi dan pengelolaan jaringan irigasi sebagai satu kesatuan sistem
+          termasuk pencetakan sawah pada daerah irigasi yang menjadi kewenangan pemerintah pusat, serta persiapan operasi
+          dan pemeliharaan irigasi dan rawa.
         </p>
       </section>
 
-      <!-- FUNGSI (collapsible) -->
       <details open>
         <summary>
           <div class="chev"><span>▶</span></div>
@@ -115,19 +121,16 @@
         </summary>
         <div class="content">
           <ol>
-            <li><strong>Pembinaan pelaksanaan</strong> norma, standar, prosedur, dan kriteria irigasi dan rawa serta pencetakan sawah pada daerah irigasi yang menjadi kewenangan pemerintah pusat;</li>
-            <li><strong>Penilaian kesiapan pelaksanaan kegiatan</strong> pada irigasi dan rawa serta pencetakan sawah pada daerah irigasi yang menjadi kewenangan pemerintah pusat;</li>
-            <li><strong>Penyusunan perencanaan</strong> irigasi dan rawa serta pencetakan sawah pada daerah irigasi yang menjadi kewenangan pemerintah pusat;</li>
-            <li><strong>Pembinaan satu kesatuan pengelolaan sistem</strong> irigasi atau rawa serta pencetakan sawah pada daerah irigasi yang menjadi kewenangan pemerintah pusat sesuai ketentuan peraturan perundang-undangan;</li>
-            <li><strong>Pembinaan persiapan pelaksanaan O&amp;P</strong> (operasi dan pemeliharaan) sarana dan prasarana pada irigasi dan rawa serta pencetakan sawah pada daerah irigasi yang menjadi kewenangan pemerintah pusat;</li>
-            <li><strong>Fasilitasi pembinaan &amp; bantuan teknik</strong> dalam pengelolaan irigasi dan rawa pada wilayah administratif provinsi dan kabupaten/kota sesuai ketentuan peraturan perundang-undangan;</li>
-            <li><strong>Pelaksanaan urusan tata usaha</strong> Direktorat.</li>
+            <li>Pembinaan pelaksanaan norma, standar, prosedur, dan kriteria irigasi dan rawa serta pencetakan sawah pada daerah irigasi yang menjadi kewenangan pemerintah pusat;</li>
+            <li>Penilaian kesiapan pelaksanaan kegiatan pada irigasi dan rawa serta pencetakan sawah pada daerah irigasi yang menjadi kewenangan pemerintah pusat;</li>
+            <li>Penyusunan perencanaan irigasi dan rawa serta pencetakan sawah pada daerah irigasi yang menjadi kewenangan pemerintah pusat;</li>
+            <li>Pembinaan satu kesatuan pengelolaan sistem irigasi atau rawa serta pencetakan sawah pada daerah irigasi yang menjadi kewenangan pemerintah pusat sesuai dengan ketentuan peraturan perundang-undangan;</li>
+            <li>Pembinaan persiapan pelaksanaan operasi dan pemeliharaan sarana dan prasarana pada irigasi dan rawa serta pencetakan sawah pada daerah irigasi yang menjadi kewenangan pemerintah pusat;</li>
+            <li>Pelaksanaan kegiatan fasilitasi pembinaan dan bantuan teknik dalam pengelolaan irigasi dan rawa pada wilayah administratif daerah provinsi dan daerah kabupaten/kota sesuai dengan ketentuan peraturan perundang-undangan;</li>
+            <li>Pelaksanaan urusan tata usaha Direktorat.</li>
           </ol>
 
-          <div class="foot">
-            Sumber: Ringkasan tugas & fungsi Direktorat Irigasi dan Rawa (Ditjen SDA, Kementerian PUPR).
           </div>
-        </div>
       </details>
     </article>
   </main>
