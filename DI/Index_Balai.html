@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Link Peta Daerah Irigasi per Balai</title>
   <meta name="description" content="Daftar tautan peta Daerah Irigasi per Balai/BBWS/BWS."/>
-  <link rel="icon" href="assets/LogoPUPR.png" />
+  <link rel="icon" href="../assets/LogoPUPR.png" />
 
   <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -30,17 +30,17 @@
   <header class="sticky top-0 z-40 bg-survey text-white">
     <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
       <a href="index.html" class="flex items-center gap-3">
-        <img src="assets/LogoPUPR.png" class="w-9 h-9" alt="PUPR"/>
+        <img src="../assets/LogoPUPR.png" class="w-9 h-9" alt="PUPR"/>
         <div class="leading-tight">
           <div class="text-xs uppercase tracking-wide text-white/80">Kementerian Pekerjaan Umum</div>
           <div class="font-semibold">Ditjen Sumber Daya Air</div>
           <div class="text-xs text-white/80">Direktorat Irigasi & Rawa</div>
         </div>
       </a>
-      <nav class="hidden md:flex items-center gap-6 text-sm">
+      <!--<nav class="hidden md:flex items-center gap-6 text-sm">
         <a href="index.html#dashboard" class="hover:underline underline-offset-4">Dashboard</a>
         <a href="index.html#dokumen" class="hover:underline underline-offset-4">Dokumen</a>
-      </nav>
+      </nav> -->
       <a href="index.html" class="text-sm bg-white text-survey px-3 py-2 rounded-lg font-semibold">← Beranda</a>
     </div>
   </header>
@@ -63,7 +63,7 @@
             class="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/10 placeholder:text-slate-400 text-white"/>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
-          <select id="wilayah" class="px-3 py-3 rounded-xl border border-white/10 bg-white/10 text-black">
+          <select id="wilayah" class="px-3 py-3 rounded-xl border border-white/10 bg-white/10 text-white">
             <option value="">Semua Wilayah</option>
             <option>Sumatera</option>
             <option>Jawa</option>
@@ -102,6 +102,50 @@
     const slugify = s => s.toLowerCase()
       .replace(/&/g,'-dan-').replace(/[\s\n]+/g,'-')
       .replace(/[^\w\-]+/g,'').replace(/\-+/g,'-').replace(/^\-|\-$/g,'');
+    
+ //<!-- Dropdown Wilayah (tema gelap Si-Irwan) -->
+<div class="relative inline-block text-left">
+  <button id="dropWilayahBtn"
+    class="inline-flex justify-between items-center px-4 py-3 bg-white/10 border border-white/10 rounded-xl text-white w-48 font-medium hover:bg-white/20 transition">
+    Semua Wilayah ▾
+  </button>
+
+  //<!-- Menu -->
+  <div id="dropWilayahMenu"
+       class="hidden absolute mt-2 w-48 bg-white rounded-xl shadow-lg ring-1 ring-black/10 z-50">
+    <div class="py-1 text-sm text-slate-800">
+      <div class="px-4 py-2 hover:bg-blue-50 cursor-pointer">Sumatera</div>
+      <div class="px-4 py-2 hover:bg-blue-50 cursor-pointer">Jawa</div>
+      <div class="px-4 py-2 hover:bg-blue-50 cursor-pointer">Kalimantan</div>
+      <div class="px-4 py-2 hover:bg-blue-50 cursor-pointer">Sulawesi</div>
+      <div class="px-4 py-2 hover:bg-blue-50 cursor-pointer">Bali–Nusa</div>
+      <div class="px-4 py-2 hover:bg-blue-50 cursor-pointer">Maluku</div>
+      <div class="px-4 py-2 hover:bg-blue-50 cursor-pointer">Papua</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const btnW = document.getElementById('dropWilayahBtn');
+  const menuW = document.getElementById('dropWilayahMenu');
+
+  btnW.addEventListener('click', () => menuW.classList.toggle('hidden'));
+
+  // Tutup menu kalau klik di luar
+  document.addEventListener('click', (e) => {
+    if (!btnW.contains(e.target) && !menuW.contains(e.target)) {
+      menuW.classList.add('hidden');
+    }
+  });
+
+  // Update teks tombol saat pilih wilayah
+  menuW.querySelectorAll('div').forEach(opt => {
+    opt.addEventListener('click', () => {
+      btnW.innerHTML = opt.textContent + ' ▾';
+      menuW.classList.add('hidden');
+    });
+  });
+
 
     // Data 38 balai (dari kamu) + wilayah
     const BALAI = [
