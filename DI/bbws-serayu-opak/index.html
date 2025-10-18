@@ -5,7 +5,8 @@
 <title>Dashboard DI — BBWS Serayu Opak</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<link rel="icon" href="../assets/LogoPUPR.png" />
+<link rel="icon" href="../../assets/LogoPUPR.png" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 
 <style>
   :root{
@@ -94,7 +95,7 @@
   .badge-irwan{
     position: fixed;
     right: 12px;
-    bottom: 12px;              /* selalu di atas elemen lain */
+    bottom: 96px;             /* di atas panel bawah */
     z-index: 1200;
     background: rgba(13,71,161,.85);
     border: 1px solid rgba(255,255,255,.25);
@@ -153,7 +154,7 @@
 
 <!-- BADGE -->
 <div class="badge-irwan" title="Sistem Informasi Irigasi & Rawa Nasional">
-  Portal Nasional <span>Si-Irwan v1.0</span>
+  <span>Si-Irwan v1.0</span>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -219,9 +220,12 @@ Promise.all([
   const norm=normalizeGas(data);
   lookup=norm.lookup; rows=norm.rows; headers=norm.headers; groups=buildFixedGroups(headers);
 
-  Object.keys(groups).forEach(k=>{
-    clusterSel.insertAdjacentHTML('beforeend',`<option value="${k}">${k.replace('__ALL__','Semua Kolom')}</option>`);
-  });
+  // Hindari duplikasi opsi "__ALL__" (sudah ada di HTML)
+  Object.keys(groups)
+    .filter(k => k !== '__ALL__')
+    .forEach(k=>{
+      clusterSel.insertAdjacentHTML('beforeend', `<option value="${k}">${k}</option>`);
+    });
 
   const diNames=[...new Set(rows.map(r=>getNamaDI(r)).filter(Boolean))].sort();
   diNames.forEach(nm=>diSel.insertAdjacentHTML('beforeend',`<option value="${nm}">${nm}</option>`));
@@ -259,10 +263,16 @@ function refreshView(){
   joined.forEach(o=>{
     const match=!sel||(o.nama===sel);
     o.layer.setStyle({opacity:match?1:0,fillOpacity:match?0.5:0});
-    if(match){total++;addLabel(o.layer.getBounds().getCenter(),o.title);}
+    if(match){
+      total++;
+      if (map.getZoom() >= 10) { // tampilkan label hanya saat cukup dekat
+        addLabel(o.layer.getBounds().getCenter(),o.title);
+      }
+    }
   });
   statsEl.innerHTML=`<span>Total DI tampil</span><b>${total}</b>`;
 }
+map.on('zoomend', refreshView);
 
 diSel.addEventListener('change',()=>{
   const sel=(diSel.value||"").toLowerCase();
