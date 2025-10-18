@@ -29,21 +29,18 @@
     }
   </script>
 
-  <!-- Leaflet (kalau diperlukan oleh section peta mini) -->
+  <!-- (Opsional) Leaflet CSS jika nanti pakai mini peta -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
     html { scroll-behavior: smooth; }
     .glass { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
-    .mask-gradient { mask-image: linear-gradient(to bottom, black 70%, transparent); }
     @keyframes floaty { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
     @keyframes pulseRing {
       0%{box-shadow:0 0 0 0 rgba(14,165,233,.45)}
       70%{box-shadow:0 0 0 18px rgba(14,165,233,0)}
       100%{box-shadow:0 0 0 0 rgba(14,165,233,0)}
     }
-
     /* Badge Si-Irwan */
     .badge-irwan {
       position: fixed;
@@ -75,7 +72,7 @@
 </head>
 <body class="font-sans antialiased bg-[#0b1222] text-slate-100">
 
-  <!-- Top Announce (amber transparan biar nyatu dengan gelap) -->
+  <!-- Top Announce -->
   <div class="bg-amber-50/10 border-b border-amber-200/20">
     <div class="max-w-7xl mx-auto px-4 py-2 text-sm flex items-center gap-2 text-amber-100">
       <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-200/30">📢</span>
@@ -94,7 +91,7 @@
   <header id="topbar" class="sticky top-0 z-40 bg-survey text-white transition-shadow">
     <div class="max-w-7xl mx-auto px-4 py-2 border-b border-white/10">
       <div class="flex items-center justify-between">
-        <!-- Brand left -->
+        <!-- Brand -->
         <a href="#" class="flex items-center gap-3">
           <img src="assets/LogoPUPR.png" alt="Logo Kementerian PUPR" class="w-9 h-9" />
           <div class="leading-tight">
@@ -104,14 +101,17 @@
           </div>
         </a>
 
-        <!-- Desktop nav -->
-        <nav class="hidden md:flex items-center gap-6 text-sm">
-          <a href="../my-maps/Tusi/Tusi.html" class="hover:underline underline-offset-4">Tugas & Fungsi</a>
-          <a href="mailto:sugiharto@pu.go.id" class="hover:underline underline-offset-4">Kontak</a>
-        </nav>
+        <!-- Kanan: menu + tanggal + burger -->
+        <div class="flex items-center gap-4">
+          <nav class="hidden md:flex items-center gap-6 text-sm">
+            <a href="../my-maps/Tusi/Tusi.html" class="hover:underline underline-offset-4">Tugas & Fungsi</a>
+            <a href="mailto:sugiharto@pu.go.id" class="hover:underline underline-offset-4">Kontak</a>
+          </nav>
 
-        <!-- CTA + burger -->
-        <div class="flex items-center gap-2">
+          <!-- Tanggal kanan atas (desktop) -->
+          <span id="today" class="hidden md:inline text-xs text-white/80"></span>
+
+          <!-- Burger -->
           <button id="btnMenu" aria-controls="mobileMenu" aria-expanded="false"
                   class="md:hidden inline-flex items-center p-2 rounded-lg bg-surveyDark/70 border border-white/20">
             ☰
@@ -120,11 +120,12 @@
       </div>
     </div>
 
-    <!-- Mobile menu -->
+    <!-- Mobile menu (tanggal juga tampil di sini) -->
     <div id="mobileMenu" class="hidden md:hidden border-t border-white/10 bg-surveyDark">
       <nav class="px-4 py-3 flex flex-col gap-1 text-sm">
         <a href="mailto:sugiharto@pu.go.id" class="py-2 text-white/95 hover:text-white">Kontak</a>
         <a href="https://chatgpt.com/g/g-68e0ae2bb8c081919205a701721b07da-si-irwan" class="py-2 mt-1 font-semibold text-white">Chatbot Si-Irwan</a>
+        <span id="today-mobile" class="mt-2 text-xs text-white/70"></span>
       </nav>
     </div>
   </header>
@@ -249,15 +250,13 @@
     </div>
   </section>
 
-  <!-- Footer (counter di TENGAH) -->
+  <!-- Footer (counter di tengah) -->
   <footer class="border-t border-white/10">
     <div class="max-w-7xl mx-auto px-4 py-8 text-sm text-slate-300 flex flex-col items-center gap-3 text-center">
       <div class="flex items-center gap-2">
         <span>© 2025</span>
         <span>•</span>
         <span>Si-Irwan v1.0</span>
-        <span>•</span>
-        <span id="today">—</span>
       </div>
 
       <!-- Visitor counter di tengah -->
@@ -271,7 +270,6 @@
         </a>
       </div>
 
-      <!-- Link cepat (opsional) -->
       <div class="flex items-center gap-4 mt-2">
         <a class="hover:text-white" href="#dokumen">Dokumen</a>
         <a class="hover:text-white" href="#airbot">Chatbot A.I.R</a>
@@ -302,26 +300,29 @@
       window.addEventListener('scroll', onScroll, { passive: true });
     })();
 
-    // Marquee keyframes
+    // Marquee keyframes (untuk pengumuman jalan)
     (function(){
       const style = document.createElement('style');
       style.textContent = `@keyframes scroll { 0%{transform:translateX(0)} 100%{transform:translateX(-100%)} }`;
       document.head.appendChild(style);
     })();
 
-    // Tanggal hari ini (locale Indonesia)
+    // Tanggal (desktop & mobile)
     (function(){
       const el = document.getElementById('today');
+      const elM = document.getElementById('today-mobile');
       try {
         const opts = { weekday:'long', year:'numeric', month:'long', day:'numeric' };
-        el.textContent = new Date().toLocaleDateString('id-ID', opts);
-      } catch(e) { el.textContent = ''; }
+        const txt  = new Date().toLocaleDateString('id-ID', opts);
+        if (el)  el.textContent  = txt;
+        if (elM) elM.textContent = txt;
+      } catch(e) {}
     })();
   </script>
 
   <!-- Floating Assistant (Avatar + Bubble) -->
   <div class="fixed right-4 bottom-24 md:right-8 md:bottom-10 z-[60] flex flex-col items-end gap-3 select-none">
-    <!-- Bubble "Tanya Saya!" -->
+    <!-- Bubble -->
     <a href="https://chatgpt.com/g/g-68e0ae2bb8c081919205a701721b07da-si-irwan" aria-label="Buka Chatbot A.I.R"
        class="relative inline-flex items-center px-4 py-2 rounded-full text-white text-sm font-semibold
               shadow-lg shadow-[rgba(2,32,71,.25)] hover:shadow-[rgba(2,32,71,.35)]
@@ -346,5 +347,7 @@
     <span>Si-Irwan v1.0</span>
   </div>
 
+  <!-- (Opsional) Leaflet JS jika pakai peta mini -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </body>
 </html>
