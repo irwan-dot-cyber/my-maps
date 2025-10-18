@@ -2,61 +2,148 @@
 <html lang="id">
 <head>
 <meta charset="utf-8" />
-<title>Compare Citra Sentinel-2 (Inpres 2/2025)</title>
+<title>Compare Citra Sentinel-2 (Inpres 2/2025) | Si-Irwan v1.0</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
-  html,body {height:100%; margin:0}
-  #header{background:#FFD700;color:#000;padding:10px;font-weight:700;display:flex;align-items:center;gap:10px}
-  #header img{height:36px}
+  :root{
+    --survey:#0d47a1; --surveyDark:#0a3a85; --surveyLight:#1d5fd1;
+    --bg:#0b1222; --card:#141b2e;
+    --text:#e5e7eb; --muted:#9aa3b2;
+    --puprYellow:#FFD700;
+  }
+
+  html,body{
+    height:100%;margin:0;
+    font-family:'Inter',system-ui,sans-serif;
+    background:var(--bg);color:var(--text);
+  }
+
+  /* HEADER */
+  #header{
+    background:var(--survey);
+    color:#fff;
+    padding:10px 16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    border-bottom:1px solid rgba(255,255,255,.15);
+    box-shadow:0 4px 14px rgba(13,71,161,.25);
+  }
+  #header .left{display:flex;align-items:center;gap:10px;}
+  #header img{height:42px;}
+  #header span{font-size:14px;line-height:1.4;}
+  .btn-home{
+    background:#fff;color:var(--survey);
+    font-weight:700;font-size:13px;
+    border-radius:8px;padding:6px 12px;
+    text-decoration:none;transition:.25s;
+  }
+  .btn-home:hover{background:#f9fafb;color:#000;}
+
+  /* TOOLBAR */
   #toolbar{
-    position:absolute; top:64px; left:10px; z-index:1000;
-    background:#fff; padding:10px; border-radius:10px; box-shadow:0 6px 14px rgba(0,0,0,.15);
-    display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; max-width:900px
+    position:absolute;top:72px;left:16px;z-index:1000;
+    background:rgba(20,27,46,.9);
+    padding:14px 16px;border-radius:14px;
+    box-shadow:0 8px 22px rgba(0,0,0,.45);
+    display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;
+    max-width:940px;border:1px solid rgba(255,255,255,.12);
   }
-  #toolbar .col{display:flex; flex-direction:column; gap:4px}
-  #toolbar label{font-size:12px; color:#333}
-  #toolbar select,#toolbar input{padding:6px 8px; font-size:13px; min-width:180px}
-  #toolbar .btn{background:#222;color:#fff;border:none;border-radius:8px;padding:8px 12px;font-weight:700;cursor:pointer}
-  #toolbar .btn.alt{background:#666}
-  #map{height:calc(100% - 56px)}
-  .hint{font-size:11px;color:#666}
+  #toolbar .col{display:flex;flex-direction:column;gap:4px;}
+  #toolbar label{font-size:12px;color:var(--muted);}
+  #toolbar select,#toolbar input{
+    background:#1e263d;color:var(--text);
+    border:1px solid rgba(255,255,255,.1);
+    border-radius:8px;padding:6px 10px;
+    font-size:13px;min-width:180px;
+  }
+  #toolbar select:focus,#toolbar input:focus{outline:none;border-color:var(--surveyLight);}
+  #toolbar .btn{
+    background:var(--surveyLight);color:#fff;border:none;
+    border-radius:8px;padding:8px 14px;font-weight:700;cursor:pointer;
+    box-shadow:0 4px 10px rgba(29,95,209,.4);
+  }
+  #toolbar .btn:hover{background:var(--survey);}
+  #toolbar .btn.alt{background:var(--puprYellow);color:#111;box-shadow:none;}
+  .hint{font-size:11px;color:var(--muted);}
 
-  /* search DI */
-  .search-box{position:relative}
-  .search-box input{min-width:260px}
+  /* SEARCH */
+  .search-box{position:relative;}
+  .search-box input{min-width:260px;}
   .suggestions{
-    position:absolute; top:64px; left:0; right:0; background:#fff; border:1px solid #ccc; border-top:none;
-    max-height:220px; overflow:auto; display:none; z-index:2000; border-radius:0 0 6px 6px
+    position:absolute;top:62px;left:0;right:0;
+    background:#1e263d;border:1px solid rgba(255,255,255,.1);
+    max-height:220px;overflow:auto;display:none;
+    z-index:2000;border-radius:0 0 8px 8px;
   }
-  .suggestions div{padding:6px 8px; cursor:pointer}
-  .suggestions div:hover{background:#f2f2f2}
+  .suggestions div{padding:6px 8px;cursor:pointer;color:var(--text);font-size:13px;}
+  .suggestions div:hover{background:#2a3554;}
 
-  /* marker bounce */
-  .leaflet-marker-icon.bounce{animation:marker-bounce 600ms cubic-bezier(.28,.84,.42,1) 1;transform-origin:bottom center}
-  @keyframes marker-bounce{0%{transform:translateY(0)}25%{transform:translateY(-14px)}55%{transform:translateY(0)}75%{transform:translateY(-7px)}100%{transform:translateY(0)}}
+  /* MAP */
+  #map{height:calc(100% - 58px);}
+  .leaflet-container{background:#000;}
+  .leaflet-control-attribution{color:#ccc;background:rgba(0,0,0,.4)!important;}
+
+  /* MARKER bounce */
+  .leaflet-marker-icon.bounce{
+    animation:marker-bounce 600ms cubic-bezier(.28,.84,.42,1) 1;
+    transform-origin:bottom center;
+  }
+  @keyframes marker-bounce{
+    0%{transform:translateY(0)}
+    25%{transform:translateY(-14px)}
+    55%{transform:translateY(0)}
+    75%{transform:translateY(-7px)}
+    100%{transform:translateY(0)}
+  }
+
+  /* BADGE SI-IRWAN */
+ .badge{
+    position:fixed;right:12px;bottom:10px;z-index:1200;
+    background:rgba(13,71,161,.85);
+    border:1px solid rgba(255,255,255,.2);
+    color:#fff;font-size:12px;font-weight:700;
+    padding:6px 10px;border-radius:10px;
+    box-shadow:0 0 10px rgba(13,71,161,.6);
+    backdrop-filter:blur(6px);
+    animation:glow 2.8s ease-in-out infinite;
+  }
+  .badge span{color:var(--puprYellow);}
+  @keyframes glow {
+    0%,100% {box-shadow:0 0 8px rgba(13,71,161,.6);}
+    50%     {box-shadow:0 0 18px rgba(255,215,0,.8);}
+  }
 </style>
 </head>
 <body>
+
+  <!-- HEADER -->
   <div id="header">
-    <img src="https://iconape.com/wp-content/png_logo_vector/pu-logo.png" alt="PU"/>
-    KEMENTERIAN PEKERJAAN UMUM — DIREKTORAT SDA — DIREKTORAT IRIGASI & RAWA
+    <div class="left">
+      <img src="assets/LogoPUPR.png" alt="Logo PU">
+      <span>Kementerian Pekerjaan Umum dan Perumahan Rakyat<br>Direktorat Jenderal Sumber Daya Air — Direktorat Irigasi &amp; Rawa</span>
+    </div>
+    <a href="index.html" class="btn-home">🏠 Beranda</a>
   </div>
 
+  <!-- TOOLBAR -->
   <div id="toolbar">
     <div class="col search-box">
-      <label>Cari DI (dari survey.csv)</label>
-      <input id="search" placeholder="ketik nama DI…">
+      <label>Cari Daerah Irigasi (survey.csv)</label>
+      <input id="search" placeholder="Ketik nama DI…">
       <div id="suggestions" class="suggestions"></div>
-      <small class="hint">klik hasil → peta & ‘Lokasi fokus’ terisi otomatis</small>
+      <small class="hint">Klik hasil untuk fokus &amp; auto isi lokasi</small>
     </div>
 
     <div class="col">
-      <label>Lokasi fokus (lat, lng)</label>
-      <input id="center" placeholder="-6.175392, 106.827153" value="-6.175392, 106.827153"/>
-      <small class="hint">contoh: -6.175392, 106.827153 (Monas)</small>
+      <label>Lokasi Fokus (lat, lng)</label>
+      <input id="center" value="-6.175392, 106.827153">
+      <small class="hint">Contoh: -6.175392, 106.827153 (Monas)</small>
     </div>
 
     <div class="col">
@@ -68,8 +155,8 @@
 
     <div class="col">
       <label>Maksimum Cloud Cover (%)</label>
-      <input id="cloud" type="number" min="0" max="100" step="5" value="50"/>
-      <small class="hint">awal bagus di 50–80 biar pasti muncul</small>
+      <input id="cloud" type="number" min="0" max="100" step="5" value="50">
+      <small class="hint">Rekomendasi 50–80 agar cepat muncul</small>
     </div>
 
     <div class="col" style="gap:6px">
@@ -80,7 +167,10 @@
 
   <div id="map"></div>
 
-  <!-- Libs -->
+  <!-- BADGE -->
+  <div class="badge">Portal Nasional <span>Si-Irwan v1.0</span></div>
+
+  <!-- Libraries -->
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
   <script src="https://unpkg.com/esri-leaflet@3.0.12/dist/esri-leaflet.js"></script>
@@ -88,181 +178,88 @@
   <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 
   <script>
-  // ====== KONFIG ======
-  const CSV_URL = "https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/data/survey.csv";
-  const S2_URL  = "https://sentinel.arcgis.com/arcgis/rest/services/Sentinel2/ImageServer";
+  /* JS tetap sama seperti versi sebelumnya */
+  const CSV_URL="https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/data/survey.csv";
+  const S2_URL="https://sentinel.arcgis.com/arcgis/rest/services/Sentinel2/ImageServer";
 
-  // ====== PETA ======
-  const map = L.map('map', {center: [-6.175392,106.827153], zoom: 11});
+  const map=L.map('map',{center:[-6.175392,106.827153],zoom:11});
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
 
-  // ====== Helper bulan ======
-  function fmtMonth(date){ const y=date.getFullYear(), m=String(date.getMonth()+1).padStart(2,'0'); return `${y}-${m}`; }
-  function monthStartEnd(ym){
-    const [y,m]=ym.split('-').map(Number);
-    const start=new Date(y,m-1,1), end=new Date(y,m,1);
-    const s=`${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,'0')}-01`;
-    const e=`${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-01`;
-    return [s,e];
-  }
-  function fillMonths(selId, defYm){
-    const sel=document.getElementById(selId); sel.innerHTML="";
-    const now=new Date();
-    for(let i=0;i<24;i++){
-      const d=new Date(now.getFullYear(), now.getMonth()-i, 1);
-      const ym=fmtMonth(d); const opt=document.createElement('option');
-      opt.value=ym; opt.textContent=ym; if(ym===defYm) opt.selected=true; sel.appendChild(opt);
-    }
-  }
-  const today=new Date(), thisYm=fmtMonth(today), prevYm=fmtMonth(new Date(today.getFullYear(), today.getMonth()-1, 1));
-  fillMonths('leftMonth', prevYm);
-  fillMonths('rightMonth', thisYm);
+  function fmtMonth(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0');return`${y}-${m}`;}
+  function monthStartEnd(ym){const[y,m]=ym.split('-').map(Number);const s=new Date(y,m-1,1),e=new Date(y,m,1);
+    return[`${y}-${String(m).padStart(2,'0')}-01`,`${e.getFullYear()}-${String(e.getMonth()+1).padStart(2,'0')}-01`];}
+  function fillMonths(id,def){const sel=document.getElementById(id);sel.innerHTML="";const now=new Date();
+    for(let i=0;i<24;i++){const d=new Date(now.getFullYear(),now.getMonth()-i,1);const ym=fmtMonth(d);
+      const o=document.createElement('option');o.value=ym;o.textContent=ym;if(ym===def)o.selected=true;sel.appendChild(o);}}
+  const t=new Date(),ymNow=fmtMonth(t),ymPrev=fmtMonth(new Date(t.getFullYear(),t.getMonth()-1,1));
+  fillMonths('leftMonth',ymPrev);fillMonths('rightMonth',ymNow);
 
-  // ====== Sentinel-2 layer builder ======
-  function buildS2Layer(ym, cloudMax){
-    const [start,end]=monthStartEnd(ym);
-    const where=`acquisitiondate >= DATE '${start} 00:00:00' AND acquisitiondate < DATE '${end} 00:00:00' AND cloudcover <= ${Number(cloudMax)||100}`;
-    return L.esri.imageMapLayer({
-      url:S2_URL,
-      mosaicRule:{ where, mosaicMethod:"attribute", ascending:true },
-      renderingRule:{ "rasterFunction":"Natural Color with DRA" },
-      opacity:1
-    });
-  }
+  function buildS2Layer(ym,cloud){const[s,e]=monthStartEnd(ym);
+    const where=`acquisitiondate >= DATE '${s} 00:00:00' AND acquisitiondate < DATE '${e} 00:00:00' AND cloudcover <= ${Number(cloud)||100}`;
+    return L.esri.imageMapLayer({url:S2_URL,mosaicRule:{where,mosaicMethod:"attribute",ascending:true},
+      renderingRule:{"rasterFunction":"Natural Color with DRA"},opacity:1});}
 
-  let leftLayer=null, rightLayer=null, sbs=null;
+  let leftLayer,rightLayer,sbs;
   function applyCompare(){
-    // set center dari input
     const c=document.getElementById('center').value.trim();
-    if(c){
-      const parts=c.split(',').map(v=>parseFloat(v.trim()));
-      if(parts.length===2 && parts.every(n=>!isNaN(n))) map.setView([parts[0],parts[1]], Math.max(map.getZoom(), 12));
-    }
-    const ymL=document.getElementById('leftMonth').value;
-    const ymR=document.getElementById('rightMonth').value;
-    const cc =document.getElementById('cloud').value;
-
-    clearCompare(false);
-    leftLayer = buildS2Layer(ymL, cc).addTo(map);
-    rightLayer= buildS2Layer(ymR, cc).addTo(map);
-    sbs=L.control.sideBySide(leftLayer, rightLayer).addTo(map);
-
+    if(c){const p=c.split(',').map(v=>parseFloat(v.trim()));if(p.length===2&&!p.some(isNaN))map.setView([p[0],p[1]],12);}
+    const ymL=document.getElementById('leftMonth').value,ymR=document.getElementById('rightMonth').value,cc=document.getElementById('cloud').value;
+    clearCompare(false);leftLayer=buildS2Layer(ymL,cc).addTo(map);rightLayer=buildS2Layer(ymR,cc).addTo(map);
+    sbs=L.control.sideBySide(leftLayer,rightLayer).addTo(map);
     document.getElementById('applyBtn').textContent="Perbarui";
     document.getElementById('clearBtn').style.display="inline-block";
   }
   function clearCompare(remove=true){
-    if(sbs){ sbs.remove(); sbs=null; }
-    if(remove){
-      if(leftLayer){ map.removeLayer(leftLayer); leftLayer=null; }
-      if(rightLayer){ map.removeLayer(rightLayer); rightLayer=null; }
-    }
+    if(sbs){sbs.remove();sbs=null;}
+    if(remove){if(leftLayer){map.removeLayer(leftLayer);leftLayer=null;}
+      if(rightLayer){map.removeLayer(rightLayer);rightLayer=null;}}
     document.getElementById('clearBtn').style.display="none";
     document.getElementById('applyBtn').textContent="Terapkan";
   }
-  document.getElementById('applyBtn').addEventListener('click', applyCompare);
-  document.getElementById('clearBtn').addEventListener('click', ()=>clearCompare(true));
+  document.getElementById('applyBtn').onclick=applyCompare;
+  document.getElementById('clearBtn').onclick=()=>clearCompare(true);
 
-  // ====== Tampilkan TAGGING dari CSV ======
-  const cluster = L.markerClusterGroup();
-  const idx = []; // {name, lat, lng, marker}
+  const cluster=L.markerClusterGroup();const idx=[];
+  function getIcon(nm){const url=(nm&&nm.startsWith('D.I.R.'))?'https://maps.google.com/mapfiles/ms/icons/red-dot.png':'https://maps.google.com/mapfiles/ms/icons/blue-dot.png';
+    return L.icon({iconUrl:url,iconSize:[25,41],iconAnchor:[12,41],popupAnchor:[1,-34],
+      shadowUrl:'https://unpkg.com/leaflet/dist/images/marker-shadow.png',shadowSize:[41,41]});}
 
-  function getIcon(name){
-    const url = (name && name.startsWith('D.I.R.')) ? 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
-              : 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png';
-    return L.icon({
-      iconUrl:url, iconSize:[25,41], iconAnchor:[12,41], popupAnchor:[1,-34],
-      shadowUrl:'https://unpkg.com/leaflet/dist/images/marker-shadow.png', shadowSize:[41,41]
-    });
-  }
+  Papa.parse(CSV_URL,{download:true,header:true,skipEmptyLines:true,complete:r=>{
+    (r.data||[]).forEach(d=>{
+      const nm=(d.nama_di||d.Nama||"").trim(),lat=parseFloat(d.y||d.lat),lng=parseFloat(d.x||d.lng);
+      if(!nm||isNaN(lat)||isNaN(lng))return;
+      const prov=d.provinsi||d.Provinsi||"-",kab=d.kabupaten||d.Kabupaten||"-",bbws=d.bbws||d.BBWS||"-",note=d.catatan||d.Catatan||"-";
+      const html=`<b>${nm}</b><br><div style="color:#aaa;font-size:12px">📍 <b>Koordinat:</b> ${lat.toFixed(6)}, ${lng.toFixed(6)}</div>
+      Provinsi: ${prov}<br>Kabupaten: ${kab}<br>BBWS: ${bbws}<br>Catatan: ${note}<br>
+      <a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank">Buka di Google Maps</a><br>
+      <a href="#" onclick="focusAndApply(${lat},${lng});return false;">Fokus &amp; Perbarui Compare</a>`;
+      const m=L.marker([lat,lng],{icon:getIcon(nm)}).bindPopup(html);
+      m.on('popupopen',()=>{const el=m.getElement();if(el){el.classList.remove('bounce');void el.offsetWidth;el.classList.add('bounce');}});
+      cluster.addLayer(m);idx.push({name:nm,lat,lng,marker:m});
+    });map.addLayer(cluster);
+  }});
 
-  Papa.parse(CSV_URL,{
-    download:true, header:true, skipEmptyLines:true,
-    complete: res=>{
-      (res.data||[]).forEach(r=>{
-        const nm  = (r.nama_di||r.Nama||"").toString().trim();
-        const lat = parseFloat(r.y||r.lat||r.latitude);
-        const lng = parseFloat(r.x||r.lng||r.longitude);
-        if(!nm || isNaN(lat)||isNaN(lng)) return;
+  window.focusAndApply=(lat,lng)=>{document.getElementById('center').value=`${lat}, ${lng}`;map.setView([lat,lng],13);applyCompare();};
 
-        const prov=(r.provinsi||r.Provinsi||"-").toString();
-        const kab =(r.kabupaten||r.Kabupaten||"-").toString();
-        const bbws=(r.bbws||r.BBWS||"-").toString();
-        const note=(r.catatan||r.Catatan||"-").toString();
-
-        const popupHtml = `
-          <b>${nm}</b><br>
-          <div style="color:#555;font-size:12px;margin:2px 0;">📍 <b>Koordinat:</b> ${lat.toFixed(6)}, ${lng.toFixed(6)}</div>
-          Provinsi: ${prov}<br>Kabupaten: ${kab}<br>BBWS: ${bbws}<br>Catatan: ${note}<br>
-          <a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank" rel="noopener">Buka di Google Maps</a><br>
-          <a href="#" onclick="focusAndApply(${lat},${lng});return false;">Fokus & Perbarui Compare</a>
-        `;
-
-        const m=L.marker([lat,lng],{icon:getIcon(nm)}).bindPopup(popupHtml);
-        m.on('popupopen',()=>{ const el=m.getElement(); if(el){ el.classList.remove('bounce'); void el.offsetWidth; el.classList.add('bounce'); }});
-        cluster.addLayer(m);
-        idx.push({name:nm, lat, lng, marker:m});
-      });
-      map.addLayer(cluster);
-    },
-    error: ()=>alert("Gagal memuat CSV untuk tagging.")
-  });
-
-  // klik di popup "Fokus & Perbarui Compare"
-  window.focusAndApply = function(lat,lng){
-    document.getElementById('center').value = `${lat}, ${lng}`;
-    map.setView([lat,lng], 13);
-    applyCompare();
-  }
-
-  // ====== Pencarian nama DI ======
-  const sInput=document.getElementById('search');
-  const sBox =document.getElementById('suggestions');
-  sInput.addEventListener('input', ()=>{
-    const q=sInput.value.trim().toLowerCase(); sBox.innerHTML="";
-    if(!q){ sBox.style.display="none"; return; }
+  const sInput=document.getElementById('search'),sBox=document.getElementById('suggestions');
+  sInput.oninput=()=>{const q=sInput.value.trim().toLowerCase();sBox.innerHTML="";
+    if(!q){sBox.style.display="none";return;}
     const hits=idx.filter(it=>it.name.toLowerCase().includes(q)).slice(0,100);
-    hits.forEach(it=>{
-      const d=document.createElement('div'); d.textContent=it.name;
-      d.onclick=()=>{
-        sInput.value=it.name; sBox.style.display="none";
-        document.getElementById('center').value=`${it.lat}, ${it.lng}`;
-        map.setView([it.lat,it.lng], 13);
-        it.marker.openPopup();
-        applyCompare();
-      };
-      sBox.appendChild(d);
-    });
-    sBox.style.display=hits.length?"block":"none";
-  });
+    hits.forEach(it=>{const d=document.createElement('div');d.textContent=it.name;d.onclick=()=>{
+      sInput.value=it.name;sBox.style.display="none";
+      document.getElementById('center').value=`${it.lat}, ${it.lng}`;map.setView([it.lat,it.lng],13);
+      it.marker.openPopup();applyCompare();};sBox.appendChild(d);});
+    sBox.style.display=hits.length?"block":"none";};
 
-  // ====== Dukung URL param dari mymaps.html ======
-  // contoh: sentinel.html?lat=-6.2&lng=106.8  atau  sentinel.html?name=D.I.%20Alue%20Peudeung
-  function getParam(n){ return new URLSearchParams(location.search).get(n); }
+  function getParam(n){return new URLSearchParams(location.search).get(n);}
   function tryCenterFromParams(){
-    const plat=getParam('lat'), plng=getParam('lng'), pname=getParam('name');
-    if(plat && plng){
-      const lat=parseFloat(plat), lng=parseFloat(plng);
-      if(!isNaN(lat)&&!isNaN(lng)){
-        document.getElementById('center').value=`${lat}, ${lng}`;
-        map.setView([lat,lng], 13);
-        applyCompare(); return;
-      }
-    }
-    if(pname && idx.length){
-      const dec=decodeURIComponent(pname).toLowerCase();
-      const it=idx.find(i=>i.name.toLowerCase()===dec);
-      if(it){
-        document.getElementById('center').value=`${it.lat}, ${it.lng}`;
-        map.setView([it.lat,it.lng], 13);
-        it.marker.openPopup();
-        applyCompare();
-      }
-    }
+    const latp=getParam('lat'),lngp=getParam('lng'),namep=getParam('name');
+    if(latp&&lngp){const lat=parseFloat(latp),lng=parseFloat(lngp);
+      if(!isNaN(lat)&&!isNaN(lng)){document.getElementById('center').value=`${lat}, ${lng}`;map.setView([lat,lng],13);applyCompare();return;}}
+    if(namep&&idx.length){const dec=decodeURIComponent(namep).toLowerCase();const it=idx.find(i=>i.name.toLowerCase()===dec);
+      if(it){document.getElementById('center').value=`${it.lat}, ${it.lng}`;map.setView([it.lat,it.lng],13);it.marker.openPopup();applyCompare();}}
   }
-
-  // apply awal & coba param setelah beberapa saat (nunggu CSV selesai)
-  applyCompare();
-  setTimeout(tryCenterFromParams, 800);
+  applyCompare();setTimeout(tryCenterFromParams,800);
   </script>
 </body>
 </html>
