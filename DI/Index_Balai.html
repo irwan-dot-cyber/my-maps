@@ -22,6 +22,22 @@
   <style>
     html{scroll-behavior:smooth}
     :focus-visible{outline:2px solid #1d5fd1;outline-offset:2px}
+    /* Badge Si-Irwan */
+    .badge-irwan{
+      position:fixed; right:16px; bottom:12px; z-index:80;
+      background:rgba(13,71,161,.85);
+      border:1px solid rgba(255,255,255,.25);
+      color:#fff; font-size:13px; font-weight:700;
+      padding:6px 12px; border-radius:10px;
+      box-shadow:0 0 10px rgba(13,71,161,.6);
+      backdrop-filter:blur(6px);
+      animation:glow 2.8s ease-in-out infinite;
+    }
+    .badge-irwan span{ color:#FFD700; }
+    @keyframes glow{
+      0%,100%{ box-shadow:0 0 8px rgba(13,71,161,.6); }
+      50%    { box-shadow:0 0 18px rgba(255,215,0,.8); }
+    }
   </style>
 </head>
 <body class="font-sans antialiased bg-[#0b1222] text-slate-100">
@@ -33,7 +49,7 @@
         <img src="../assets/LogoPUPR.png" class="w-9 h-9" alt="PUPR"/>
         <div class="leading-tight">
           <div class="text-xs uppercase tracking-wide text-white/80">Kementerian Pekerjaan Umum</div>
-          <div class="font-semibold">Ditjen Sumber Daya Air</div>
+          <div class="font-semibold">Direktorat Jenderal Sumber Daya Air</div>
           <div class="text-xs text-white/80">Direktorat Irigasi & Rawa</div>
         </div>
       </a>
@@ -60,20 +76,21 @@
 
         <!-- Dropdown Custom -->
         <div class="relative inline-block text-left">
-          <button id="dropWilayahBtn"
+          <button id="dropWilayahBtn" aria-haspopup="true" aria-expanded="false"
             class="inline-flex justify-between items-center px-4 py-3 bg-white/10 border border-white/10 rounded-xl text-white w-48 font-medium hover:bg-white/20 transition">
             Semua Wilayah ▾
           </button>
           <div id="dropWilayahMenu"
             class="hidden absolute mt-2 w-48 bg-white rounded-xl shadow-lg ring-1 ring-black/10 z-50">
             <div class="py-1 text-sm text-slate-800">
-              <div class="px-4 py-2 hover:bg-blue-50 cursor-pointer">Sumatera</div>
-              <div class="px-4 py-2 hover:bg-blue-50 cursor-pointer">Jawa</div>
-              <div class="px-4 py-2 hover:bg-blue-50 cursor-pointer">Kalimantan</div>
-              <div class="px-4 py-2 hover:bg-blue-50 cursor-pointer">Sulawesi</div>
-              <div class="px-4 py-2 hover:bg-blue-50 cursor-pointer">Bali–Nusa</div>
-              <div class="px-4 py-2 hover:bg-blue-50 cursor-pointer">Maluku</div>
-              <div class="px-4 py-2 hover:bg-blue-50 cursor-pointer">Papua</div>
+              <!-- beri class .opt agar selector JS tidak kena wrapper -->
+              <div class="opt px-4 py-2 hover:bg-blue-50 cursor-pointer">Sumatera</div>
+              <div class="opt px-4 py-2 hover:bg-blue-50 cursor-pointer">Jawa</div>
+              <div class="opt px-4 py-2 hover:bg-blue-50 cursor-pointer">Kalimantan</div>
+              <div class="opt px-4 py-2 hover:bg-blue-50 cursor-pointer">Sulawesi</div>
+              <div class="opt px-4 py-2 hover:bg-blue-50 cursor-pointer">Bali–Nusa</div>
+              <div class="opt px-4 py-2 hover:bg-blue-50 cursor-pointer">Maluku</div>
+              <div class="opt px-4 py-2 hover:bg-blue-50 cursor-pointer">Papua</div>
             </div>
           </div>
         </div>
@@ -94,9 +111,14 @@
 
   <footer class="border-t border-white/10 mt-10">
     <div class="max-w-7xl mx-auto px-4 py-8 text-sm text-slate-300 flex items-center justify-between">
-      <span>© 2025 Si-Irwan</span>
+      <span>© 2025</span>
     </div>
   </footer>
+
+  <!-- Badge Si-Irwan -->
+  <div class="badge-irwan" title="Sistem Informasi Irigasi & Rawa Nasional">
+    <span>Si-Irwan v1.0</span>
+  </div>
 
   <script>
     // === DATA BALAI ===
@@ -156,11 +178,15 @@
     let selectedWilayah = "";
 
     // === DROPDOWN ===
-    btnW.addEventListener('click', ()=>menuW.classList.toggle('hidden'));
+    btnW.addEventListener('click', ()=>{
+      const open = menuW.classList.toggle('hidden');
+      btnW.setAttribute('aria-expanded', open ? 'false':'true');
+    });
     document.addEventListener('click', e=>{
       if(!btnW.contains(e.target) && !menuW.contains(e.target)) menuW.classList.add('hidden');
     });
-    menuW.querySelectorAll('div').forEach(opt=>{
+    // pilih HANYA item .opt, bukan wrapper
+    menuW.querySelectorAll('.opt').forEach(opt=>{
       opt.addEventListener('click', ()=>{
         selectedWilayah = opt.textContent.trim();
         btnW.innerHTML = selectedWilayah + ' ▾';
