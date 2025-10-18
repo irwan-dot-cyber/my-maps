@@ -13,14 +13,12 @@
         extend: {
           fontFamily: { sans: ['Inter','ui-sans-serif','system-ui'] },
           colors: {
-            puprYellow: '#FFD700',
-            survey:     '#0d47a1',
-            surveyDark: '#0a3a85',
+            puprYellow:'#FFD700',
+            survey:'#0d47a1',
+            surveyDark:'#0a3a85',
             surveyLight:'#1d5fd1'
           },
-          boxShadow: {
-            brand: '0 2px 14px rgba(13,71,161,.18)'
-          }
+          boxShadow:{ brand:'0 2px 14px rgba(13,71,161,.18)' }
         }
       }
     }
@@ -33,20 +31,20 @@
 </head>
 <body class="font-sans bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100">
 
-  <!-- Header / Navbar (Tema Si-Irwan) -->
+  <!-- NAV: PUPR Yellow + Survey Blue (match Si-Irwan_Dev) -->
   <header class="sticky top-0 z-30 border-b border-slate-200/70 dark:border-slate-800">
+    <!-- top strip -->
     <div class="bg-puprYellow text-black">
       <div class="max-w-6xl mx-auto px-4">
         <div class="flex items-center justify-between py-2">
-          <!-- Brand -->
+          <!-- Brand (hover) -->
           <a href="#" class="group flex items-center gap-2 no-underline select-none">
             <img src="assets/LogoPUPR.png" alt="Logo PUPR" class="h-8 w-8 object-contain">
             <div class="leading-tight">
               <div class="flex items-center gap-2">
                 <span class="font-extrabold tracking-tight text-base sm:text-lg transition
-                             group-hover:underline group-hover:underline-offset-4
-                             group-hover:text-slate-900 group-hover:drop-shadow"
-                      style="text-shadow:0 0 0 rgba(0,0,0,0)">Si-Irwan</span>
+                  group-hover:underline group-hover:underline-offset-4 group-hover:text-slate-900
+                  group-hover:drop-shadow group-hover:scale-[1.02]">Si-Irwan</span>
                 <span class="hidden sm:inline text-[10px] px-2 py-0.5 rounded-full border border-black/20">
                   Sistem Informasi Irigasi & Rawa Nasional
                 </span>
@@ -66,10 +64,9 @@
         </div>
       </div>
     </div>
-
-    <!-- Sub-bar (Survey Blue) -->
+    <!-- sub-bar -->
     <div class="bg-survey text-white">
-      <div class="max-w-6xl mx-auto px-4 py-2 flex items-center gap-3 text-sm">
+      <div class="max-w-6xl mx-auto px-4 py-2 flex items-center gap-3 text-xs sm:text-sm">
         <span class="opacity-90">Daftar Jurnal: Pengaruh Irigasi terhadap Produksi Padi</span>
       </div>
     </div>
@@ -78,13 +75,11 @@
   <!-- Controls -->
   <section class="max-w-6xl mx-auto px-4 mt-5">
     <div class="grid gap-3 sm:grid-cols-3">
-      <!-- Search -->
       <label class="sm:col-span-2 block">
         <span class="text-xs font-semibold text-slate-600 dark:text-slate-400">Cari</span>
-        <input id="search" type="text" placeholder="ketik judul/keyword (mis. AWD, drip, Indonesia, meta-analisis)"
+        <input id="search" type="text" placeholder="mis. AWD, drip, Indonesia, meta-analisis"
                class="mt-1 w-full rounded-xl border card bg-white/60 dark:bg-slate-900 px-3 py-2 outline-none focus:ring-2 focus:ring-survey">
       </label>
-      <!-- Filters -->
       <div class="flex flex-wrap items-end gap-3">
         <div class="flex items-center gap-2">
           <input id="flt-lokal" type="checkbox" class="h-4 w-4 accent-survey" checked>
@@ -110,34 +105,27 @@
   <!-- Lists -->
   <main class="max-w-6xl mx-auto px-4 my-6">
     <div class="grid md:grid-cols-2 gap-6">
-      <!-- Lokal -->
+      <!-- 🇮🇩 Lokal -->
       <section aria-labelledby="lokal-title" class="card rounded-2xl p-4">
         <div class="flex items-center justify-between mb-2">
           <h2 id="lokal-title" class="text-base font-bold">🇮🇩 Lokal <span id="count-lokal" class="text-slate-500 font-normal"></span></h2>
           <span class="text-xs text-slate-500">Klik judul untuk membuka</span>
         </div>
         <ul id="list-lokal" class="space-y-3 text-sm">
-          <!-- ITEM -->
           <li class="item" data-cat="lokal" data-tags="Observasional">
             <a class="block hover:underline font-semibold text-survey hover:text-surveyLight" target="_blank" rel="noopener"
                href="https://media.neliti.com/media/publications/248601-pengaruh-irigasi-terhadap-produksi-usaha-a212677b.pdf">
               Pengaruh Irigasi terhadap Produksi Usahatani Padi Sawah (Desa Sidera, Sigi Biromaru) – PDF
             </a>
-            <div class="mt-1 flex flex-wrap gap-2 text-slate-500">
-              <span class="tag">Observasional</span>
-            </div>
+            <div class="mt-1 flex flex-wrap gap-2 text-slate-500"><span class="tag">Observasional</span></div>
           </li>
-
           <li class="item" data-cat="lokal" data-tags="Observasional">
             <a class="block hover:underline font-semibold text-survey hover:text-surveyLight" target="_blank" rel="noopener"
                href="https://digilibadmin.unismuh.ac.id/upload/1038-Full_Text.pdf">
               Pengaruh Irigasi terhadap Produktifitas Usahatani Padi Sawah – PDF
             </a>
-            <div class="mt-1 flex flex-wrap gap-2 text-slate-500">
-              <span class="tag">Observasional</span>
-            </div>
+            <div class="mt-1 flex flex-wrap gap-2 text-slate-500"><span class="tag">Observasional</span></div>
           </li>
-
           <li class="item" data-cat="lokal" data-tags="Review">
             <a class="block hover:underline font-semibold text-survey hover:text-surveyLight" target="_blank" rel="noopener"
                href="https://repository.ub.ac.id/id/eprint/224482/">
@@ -145,7 +133,6 @@
             </a>
             <div class="mt-1 flex flex-wrap gap-2"><span class="tag">Review</span></div>
           </li>
-
           <li class="item" data-cat="lokal" data-tags="Eksperimen">
             <a class="block hover:underline font-semibold text-survey hover:text-surveyLight" target="_blank" rel="noopener"
                href="https://repo.unand.ac.id/id/eprint/8788/contents">
@@ -153,7 +140,6 @@
             </a>
             <div class="mt-1 flex flex-wrap gap-2"><span class="tag">Eksperimen</span></div>
           </li>
-
           <li class="item" data-cat="lokal" data-tags="Review Tradisional">
             <a class="block hover:underline font-semibold text-survey hover:text-surveyLight" target="_blank" rel="noopener"
                href="https://journal.ipb.ac.id/jagbi/article/download/38607/24580">
@@ -161,7 +147,6 @@
             </a>
             <div class="mt-1 flex flex-wrap gap-2"><span class="tag">Tradisional</span><span class="tag">Review</span></div>
           </li>
-
           <li class="item" data-cat="lokal" data-tags="IoT Efisiensi">
             <a class="block hover:underline font-semibold text-survey hover:text-surveyLight" target="_blank" rel="noopener"
                href="https://journal.ittelkom-pwt.ac.id/index.php/ledger/article/download/736/246/">
@@ -169,7 +154,6 @@
             </a>
             <div class="mt-1 flex flex-wrap gap-2"><span class="tag">IoT</span><span class="tag">Efisiensi</span></div>
           </li>
-
           <li class="item" data-cat="lokal" data-tags="Spasial RemoteSensing">
             <a class="block hover:underline font-semibold text-survey hover:text-surveyLight" target="_blank" rel="noopener"
                href="https://jurnal.poligon.ac.id/index.php/jtpg/article/download/1268/733/">
@@ -177,7 +161,6 @@
             </a>
             <div class="mt-1 flex flex-wrap gap-2"><span class="tag">Spasial</span><span class="tag">RemoteSensing</span></div>
           </li>
-
           <li class="item" data-cat="lokal" data-tags="Observasional Kebijakan">
             <a class="block hover:underline font-semibold text-survey hover:text-surveyLight" target="_blank" rel="noopener"
                href="https://ppjp.ulm.ac.id/journals/index.php/fag/article/view/5980">
@@ -188,7 +171,7 @@
         </ul>
       </section>
 
-      <!-- Internasional -->
+      <!-- 🌏 Internasional -->
       <section aria-labelledby="intl-title" class="card rounded-2xl p-4">
         <div class="flex items-center justify-between mb-2">
           <h2 id="intl-title" class="text-base font-bold">🌏 Internasional <span id="count-intl" class="text-slate-500 font-normal"></span></h2>
@@ -201,7 +184,6 @@
             </a>
             <div class="mt-1 flex flex-wrap gap-2"><span class="tag">Guideline</span><span class="tag">AWD</span><span class="tag">Review</span></div>
           </li>
-
           <li class="item" data-cat="intl" data-tags="Guideline AWD">
             <a class="block hover:underline font-semibold text-survey hover:text-surveyLight" target="_blank" rel="noopener"
                href="https://books.irri.org/DPS29_content.pdf">
@@ -209,7 +191,6 @@
             </a>
             <div class="mt-1 flex flex-wrap gap-2"><span class="tag">Guideline</span><span class="tag">AWD</span></div>
           </li>
-
           <li class="item" data-cat="intl" data-tags="AWD Meta-analisis GHG">
             <a class="block hover:underline font-semibold text-survey hover:text-surveyLight" target="_blank" rel="noopener"
                href="https://linquist.ucdavis.edu/sites/g/files/dgvnsk6581/files/inline-files/LaHue-et-al.-2016-AEE.pdf">
@@ -217,7 +198,6 @@
             </a>
             <div class="mt-1 flex flex-wrap gap-2"><span class="tag">AWD</span><span class="tag">GHG</span></div>
           </li>
-
           <li class="item" data-cat="intl" data-tags="Meta-analisis AWD GHG Review">
             <a class="block hover:underline font-semibold text-survey hover:text-surveyLight" target="_blank" rel="noopener"
                href="https://linquist.ucdavis.edu/sites/g/files/dgvnsk6581/files/inline-files/2019%20Yu%20et%20Water%20managment%20and%20GHG%20emissions.pdf">
@@ -225,15 +205,13 @@
             </a>
             <div class="mt-1 flex flex-wrap gap-2"><span class="tag">Meta-analisis</span><span class="tag">AWD</span><span class="tag">GHG</span></div>
           </li>
-
           <li class="item" data-cat="intl" data-tags="Meta-analisis AWD">
             <a class="block hover:underline font-semibold text-survey hover:text-surveyLight" target="_blank" rel="noopener"
                href="https://ntrs.nasa.gov/api/citations/20240015316/downloads/JJagermeyrNatFoodImprovingAccepted.pdf">
-              Improving AWD Increases Rice Yields (syntesis 1,187 observasi, 2024/2025) – PDF
+              Improving AWD Increases Rice Yields (sintesis 1,187 observasi, 2024/2025) – PDF
             </a>
             <div class="mt-1 flex flex-wrap gap-2"><span class="tag">Meta-analisis</span><span class="tag">AWD</span></div>
           </li>
-
           <li class="item" data-cat="intl" data-tags="Drip Efisiensi">
             <a class="block hover:underline font-semibold text-survey hover:text-surveyLight" target="_blank" rel="noopener"
                href="https://www.researchgate.net/profile/Babloo-Sharma-2/publication/348465874_WATER_MANAGEMENT_IN_RICE_FARMING/links/60005a2345851553a041a867/WATER-MANAGEMENT-IN-RICE-FARMING.pdf">
@@ -241,7 +219,6 @@
             </a>
             <div class="mt-1 flex flex-wrap gap-2"><span class="tag">Drip</span><span class="tag">Efisiensi</span></div>
           </li>
-
           <li class="item" data-cat="intl" data-tags="Guideline Furrow">
             <a class="block hover:underline font-semibold text-survey hover:text-surveyLight" target="_blank" rel="noopener"
                href="https://extension.missouri.edu/media/wysiwyg/Extensiondata/Pub/pdf/agguides/crops/g04361.pdf">
@@ -249,7 +226,6 @@
             </a>
             <div class="mt-1 flex flex-wrap gap-2"><span class="tag">Guideline</span><span class="tag">Furrow</span></div>
           </li>
-
           <li class="item" data-cat="intl" data-tags="Pivot Guideline">
             <a class="block hover:underline font-semibold text-survey hover:text-surveyLight" target="_blank" rel="noopener"
                href="https://www.ars.usda.gov/ARSUserFiles/50701000/6910_Vories.pdf">
@@ -274,47 +250,40 @@
   </footer>
 
   <script>
-    // Simple filter logic
-    const q = document.getElementById('search');
-    const fltLokal = document.getElementById('flt-lokal');
-    const fltIntl  = document.getElementById('flt-intl');
-    const tagFilter= document.getElementById('tagFilter');
-    const lists = [...document.querySelectorAll('.item')];
+    // Filter
+    const q=document.getElementById('search');
+    const fltLokal=document.getElementById('flt-lokal');
+    const fltIntl=document.getElementById('flt-intl');
+    const tagFilter=document.getElementById('tagFilter');
+    const items=[...document.querySelectorAll('.item')];
 
     function applyFilter(){
-      const text = q.value.toLowerCase().trim();
-      const showLokal = fltLokal.checked;
-      const showIntl  = fltIntl.checked;
-      const tag = (tagFilter.value || '').toLowerCase();
+      const text=q.value.toLowerCase().trim();
+      const showL=fltLokal.checked, showI=fltIntl.checked;
+      const tag=(tagFilter.value||'').toLowerCase();
+      let cL=0,cI=0;
 
-      let cntLokal=0, cntIntl=0;
-
-      lists.forEach(li=>{
-        const cat = li.dataset.cat; // 'lokal' | 'intl'
-        const tags = (li.dataset.tags||'').toLowerCase();
-        const title = li.querySelector('a')?.textContent.toLowerCase() || '';
-
-        let visible = true;
-        if(cat==='lokal' && !showLokal) visible=false;
-        if(cat==='intl'  && !showIntl)  visible=false;
-        if(text && !(title.includes(text) || tags.includes(text))) visible=false;
-        if(tag && !tags.split(/\s+/).includes(tag.toLowerCase())) visible=false;
-
-        li.style.display = visible ? '' : 'none';
-        if(visible){
-          if(cat==='lokal') cntLokal++;
-          else cntIntl++;
-        }
+      items.forEach(li=>{
+        const cat=li.dataset.cat;
+        const tags=(li.dataset.tags||'').toLowerCase();
+        const title=li.querySelector('a')?.textContent.toLowerCase()||'';
+        let visible=true;
+        if(cat==='lokal'&&!showL) visible=false;
+        if(cat==='intl'&&!showI) visible=false;
+        if(text && !(title.includes(text)||tags.includes(text))) visible=false;
+        if(tag && !tags.split(/\s+/).includes(tag)) visible=false;
+        li.style.display=visible?'':'none';
+        if(visible){ if(cat==='lokal') cL++; else cI++; }
       });
 
-      document.getElementById('count-lokal').textContent = `(${cntLokal})`;
-      document.getElementById('count-intl').textContent  = `(${cntIntl})`;
+      document.getElementById('count-lokal').textContent=`(${cL})`;
+      document.getElementById('count-intl').textContent=`(${cI})`;
     }
 
-    [q,fltLokal,fltIntl,tagFilter].forEach(el=>el.addEventListener('input', applyFilter));
-    window.addEventListener('DOMContentLoaded', ()=>{
-      document.getElementById('last-updated').textContent =
-        new Date().toLocaleString('id-ID', { dateStyle:'medium', timeStyle:'short' });
+    [q,fltLokal,fltIntl,tagFilter].forEach(el=>el.addEventListener('input',applyFilter));
+    window.addEventListener('DOMContentLoaded',()=>{
+      document.getElementById('last-updated').textContent=
+        new Date().toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'});
       applyFilter();
     });
   </script>
