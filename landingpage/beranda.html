@@ -3,114 +3,171 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>KEMENTERIAN PEKERJAAN UMUM</title>
+  <title>KEMENTERIAN PEKERJAAN UMUM — Direktorat SDA · Direktorat Irigasi & Rawa</title>
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"/>
 
   <style>
-    /* ====== Dasar ====== */
-    body{
-      font-family: Arial, sans-serif; margin:0; padding:0;
-      background:#f0f2f5; color:#333; display:flex; flex-direction:column; align-items:center;
+    :root{
+      --bg: #0b1222;          /* body gelap */
+      --panel: #0f172a;       /* panel utama */
+      --text: #e5e7eb;
+      --muted:#cbd5e1;
+      --survey:#0d47a1;       /* biru survey */
+      --survey-dark:#0a3a85;
+      --accent:#1d5fd1;       /* aksen biru terang */
+      --yellow:#ffb300;       /* badge/overlay */
+      --green:#27b06e;        /* tahap 2 */
+      --shadow: 0 12px 28px rgba(2,6,23,.32);
+      --radius: 12px;
     }
 
-    /* ====== Header (font dikecilkan rapi) ====== */
-    .main-header{background:#0d47a1; width:100%; padding:14px 0; color:#fff; box-shadow:0 2px 4px rgba(0,0,0,.2)}
-    .header-content{max-width:900px; margin:0 auto; display:flex; align-items:center; gap:14px; padding:0 20px}
-    .logo-text{display:flex; align-items:center}
-    .logo{width:56px; height:56px; margin-right:12px; border-radius:5px}
+    /* ====== Dasar ====== */
+    html,body{height:100%}
+    body{
+      font-family: Inter, ui-sans-serif, system-ui, Arial, sans-serif;
+      margin:0; padding:0; background:var(--bg); color:var(--text);
+      display:flex; flex-direction:column; align-items:center;
+    }
+
+    /* ====== Header ====== */
+    .main-header{
+      background:var(--survey); width:100%; color:#fff;
+      box-shadow:0 6px 18px rgba(13,71,161,.25); position:sticky; top:0; z-index:50;
+    }
+    .header-content{
+      max-width:1100px; margin:0 auto; display:flex; align-items:center; gap:14px; padding:10px 20px;
+    }
+    .logo{width:56px; height:56px; margin-right:8px; border-radius:6px; background:#fff; object-fit:contain}
     .text-info p{margin:0; line-height:1.25}
     .text-info .instansi{font-weight:800; font-size:1.02em; letter-spacing:.2px}
     .text-info .unit{font-size:.86em; opacity:.95}
     .text-info .alamat{font-size:.78em; opacity:.9}
 
-    /* ====== Nav ====== */
-    .main-nav{background:#0d47a1; width:100%; padding:10px 0; display:flex; justify-content:center; gap:15px; margin-bottom:18px}
-    .nav-button{background:#ff9800; color:#fff; border:0; padding:10px 20px; border-radius:6px; font-weight:700; cursor:pointer; transition:.25s; min-width:120px}
-    .dropdown-menu:nth-child(2) .nav-button{background:#4CAF50}
-    .nav-button:hover,.nav-button.active{filter:brightness(1.1); box-shadow:0 2px 5px rgba(0,0,0,.3)}
+    .header-right{
+      margin-left:auto; display:flex; align-items:center; gap:10px;
+    }
+    .btn-home{
+      background:#fff; color:var(--survey); font-weight:800; border:0;
+      padding:10px 14px; border-radius:10px; cursor:pointer; text-decoration:none;
+      box-shadow:0 6px 16px rgba(2,6,23,.25);
+    }
+    .btn-home:hover{filter:brightness(0.98)}
+
+    /* ====== Nav (match header) ====== */
+    .main-nav{
+      background:linear-gradient(0deg, #0b1a37 0%, rgba(13,71,161,.0) 100%), var(--survey);
+      width:100%; padding:12px 0; display:flex; justify-content:center; gap:14px; border-top:1px solid rgba(255,255,255,.12);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+    }
     .dropdown-menu{position:relative; display:inline-block}
+    .nav-button{
+      color:#fff; border:1px solid rgba(255,255,255,.22);
+      padding:10px 16px; border-radius:10px; font-weight:800; cursor:pointer; transition:.25s; min-width:140px;
+      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+      backdrop-filter: blur(2px);
+    }
+    .dropdown-menu:nth-child(1) .nav-button{ /* Tahap 1 */
+      background:linear-gradient(180deg, rgba(255,193,7,.25), rgba(255,193,7,.08));
+      border-color:rgba(255,193,7,.45);
+    }
+    .dropdown-menu:nth-child(2) .nav-button{ /* Tahap 2 */
+      background:linear-gradient(180deg, rgba(39,176,110,.25), rgba(39,176,110,.08));
+      border-color:rgba(39,176,110,.45);
+    }
+    .nav-button:hover,.nav-button.active{box-shadow:0 6px 16px rgba(0,0,0,.35); transform:translateY(-1px)}
     .dropdown-menu .nav-button{padding-right:30px}
-    .dropdown-content{display:none; position:absolute; background:#f9f9f9; min-width:180px; box-shadow:0 8px 16px rgba(0,0,0,.2); z-index:100; border-radius:6px; overflow:hidden; left:50%; transform:translateX(-50%); top:100%; border:1px solid #ccc}
-    .dropdown-content a{color:#333; padding:12px 16px; text-decoration:none; display:block; font-size:.9em; border-bottom:1px solid #eee}
+
+    .dropdown-content{
+      display:none; position:absolute; min-width:220px; z-index:100; border-radius:10px; overflow:hidden;
+      left:50%; transform:translateX(-50%); top:110%;
+      background:#0f172a; border:1px solid rgba(255,255,255,.12); box-shadow:var(--shadow);
+    }
+    .dropdown-content a{
+      color:#e2e8f0; padding:12px 14px; text-decoration:none; display:block; font-size:.92em; border-bottom:1px solid rgba(255,255,255,.06)
+    }
     .dropdown-content a:last-child{border-bottom:none}
-    .dropdown-content a:hover{background:#ddd; color:#0d47a1}
+    .dropdown-content a:hover{background:rgba(29,95,209,.2); color:#fff}
     .dropdown-content.show{display:block}
 
     /* ====== Main ====== */
-    .main-content{max-width:900px; width:100%; background:#fff; padding:18px; border-radius:10px; box-shadow:0 4px 8px rgba(0,0,0,.1); box-sizing:border-box}
-    .image-carousel-container{position:relative; width:100%; aspect-ratio:16/9; background:#e0e0e0; border-radius:10px; overflow:hidden; margin-bottom:18px; box-shadow:0 2px 5px rgba(0,0,0,.2)}
-    .carousel-image{width:100%; height:100%; object-fit:cover; display:block}
-    .carousel-overlay{position:absolute; top:15px; left:50%; transform:translateX(-50%); background:#ffc107; color:#333; padding:10px 18px; border-radius:10px; text-align:center; max-width:80%; box-shadow:0 2px 5px rgba(0,0,0,.3); z-index:5}
-    .carousel-overlay .instruksi-title{font-weight:800; font-size:1.05em; margin-bottom:4px}
-    .carousel-overlay .instruksi-desc{font-size:.88em; line-height:1.35; margin:0}
+    .main-wrap{width:100%; display:flex; justify-content:center; padding:20px 16px}
+    .main-content{
+      width:100%; max-width:1100px; background:var(--panel); padding:18px; border-radius:14px;
+      box-shadow:var(--shadow); border:1px solid rgba(255,255,255,.06);
+    }
 
-    .visitor-counter{display:flex; justify-content:center; align-items:center; margin-top:22px; font-size:1.05em; color:#444; gap:10px; flex-wrap:wrap}
-    .visitor-counter p{margin:0; font-weight:700}
+    .image-carousel-container{
+      position:relative; width:100%; aspect-ratio:16/9; background:#0b1a37;
+      border-radius:12px; overflow:hidden; margin-bottom:18px; box-shadow:0 8px 22px rgba(2,6,23,.36);
+      border:1px solid rgba(255,255,255,.06);
+    }
+    .carousel-image{width:100%; height:100%; object-fit:cover; display:block; filter:saturate(1.02)}
+    .carousel-overlay{
+      position:absolute; top:18px; left:50%; transform:translateX(-50%);
+      background:rgba(255,193,7,.9); color:#111; padding:10px 16px; border-radius:12px;
+      text-align:center; max-width:86%; box-shadow:0 10px 24px rgba(0,0,0,.35); border:1px solid rgba(0,0,0,.12)
+    }
+    .carousel-overlay .instruksi-title{font-weight:900; font-size:1.02em; margin-bottom:4px}
+    .carousel-overlay .instruksi-desc{font-size:.92em; line-height:1.35; margin:0}
 
-    footer{width:100%; background:#0d47a1; color:#fff; padding:14px 0; text-align:center; margin-top:26px; font-size:.85em; box-shadow:0 -2px 4px rgba(0,0,0,.2)}
+    .visitor-counter{
+      display:flex; justify-content:center; align-items:center; margin-top:22px;
+      font-size:1.05em; color:var(--muted); gap:10px; flex-wrap:wrap
+    }
+    .visitor-counter p{margin:0; font-weight:800; color:#e2e8f0}
 
-    /* ====== AIR GPTs Floating (box lebih ramping, gambar full-body aman) ====== */
+    footer{
+      width:100%; background:#0b1a37; color:#cbd5e1; padding:14px 0; text-align:center; margin-top:26px; font-size:.9em;
+      border-top:1px solid rgba(255,255,255,.08);
+    }
+
+    /* ====== AIR GPTs Floating ====== */
     .air-fab-wrap{position:fixed; right:26px; bottom:40px; z-index:9999;}
     .air-fab{
-      position:relative;
-      width:115px;                 /* lebih ramping agar tidak nabrak */
-      height:150px;                /* tinggi cukup agar kaki tidak kepotong */
-      border-radius:20px;
-      padding:8px;                 /* ruang dalam supaya gambar tidak mentok */
-      background:#fff;
-      border:1px solid #e2e8f0;
-      box-shadow:0 10px 30px rgba(2,6,23,.4);
-      display:grid; place-items:center;
-      cursor:pointer; overflow:hidden;
-      animation:floatBounce 4.2s ease-in-out infinite;
+      position:relative; width:115px; height:150px; border-radius:20px; padding:8px;
+      background:#fff; border:1px solid #e2e8f0; box-shadow:0 10px 30px rgba(2,6,23,.4);
+      display:grid; place-items:center; cursor:pointer; overflow:hidden; animation:floatBounce 4.2s ease-in-out infinite;
     }
-    .air-fab::after{
-      content:""; position:absolute; inset:0; border-radius:20px; pointer-events:none;
-      box-shadow:0 0 0 0 rgba(14,165,233,.55); animation:pulseGlow 2.8s ease-out infinite;
-    }
-    .air-fab img{
-      width:100%;
-      height:100%;
-      object-fit:contain;          /* jaga proporsi */
-      object-position:bottom center;  /* pastikan kaki terlihat */
-      border-radius:0;
-      display:block;
-    }
+    .air-fab::after{content:""; position:absolute; inset:0; border-radius:20px; pointer-events:none;
+      box-shadow:0 0 0 0 rgba(29,95,209,.55); animation:pulseGlow 2.8s ease-out infinite;}
+    .air-fab img{width:100%; height:100%; object-fit:contain; object-position:bottom center; display:block;}
 
     .air-tip{
-      position:absolute; right:0; bottom:200px;
-      background:#0ea5e9; color:#fff; font-weight:800;
-      padding:8px 10px; border-radius:10px; font-size:12px;
-      box-shadow:0 8px 20px rgba(2,6,23,.28);
-      opacity:1; transform:translateY(0);
-      pointer-events:none; max-width:220px;
+      position:absolute; right:0; bottom:200px; background:#1d5fd1; color:#fff; font-weight:900;
+      padding:8px 10px; border-radius:10px; font-size:12px; box-shadow:0 8px 20px rgba(2,6,23,.28);
+      opacity:1; transform:translateY(0); pointer-events:none; max-width:220px;
     }
-    .air-tip::after{content:""; position:absolute; right:16px; top:100%; border:7px solid transparent; border-top-color:#0ea5e9;}
+    .air-tip::after{content:""; position:absolute; right:16px; top:100%; border:7px solid transparent; border-top-color:#1d5fd1;}
 
     .air-card{
       position:fixed; right:26px; bottom:215px; width:300px; max-width:calc(100vw - 40px);
-      background:#fff; color:#0f172a; border-radius:14px; box-shadow:0 12px 36px rgba(2,6,23,.35);
-      padding:12px; border:1px solid #e2e8f0; display:none; z-index:9999;
+      background:#0f172a; color:#e2e8f0; border-radius:14px; box-shadow:0 12px 36px rgba(2,6,23,.5);
+      padding:12px; border:1px solid rgba(255,255,255,.12); display:none; z-index:9999;
     }
     .air-card.show{display:block; animation:airSlide .18s ease-out}
     .air-head{display:flex; align-items:center; gap:10px; margin-bottom:8px}
-    .air-head .badge{font-size:12px; color:#0ea5e9; background:#e0f2fe; border:1px solid #bae6fd; padding:2px 8px; border-radius:999px}
-    .air-title{font-weight:800; font-size:16px; line-height:1.1}
-    .air-desc{font-size:13px; color:#475569; margin:6px 0 10px}
+    .air-head .badge{font-size:12px; color:#1d5fd1; background:rgba(29,95,209,.15); border:1px solid rgba(29,95,209,.35); padding:2px 8px; border-radius:999px}
+    .air-title{font-weight:900; font-size:16px; line-height:1.1}
+    .air-desc{font-size:13px; color:#94a3b8; margin:6px 0 10px}
     .air-actions{display:grid; gap:8px}
-    .air-actions a{display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:10px 12px; border-radius:10px; border:1px solid #e2e8f0; background:#0ea5e9; color:#fff; font-weight:700; text-decoration:none}
+    .air-actions a{
+      display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:10px 12px; border-radius:10px;
+      border:1px solid rgba(255,255,255,.14); background:#1d5fd1; color:#fff; font-weight:800; text-decoration:none
+    }
 
     /* Animations */
-    @keyframes pulseGlow{0%{box-shadow:0 0 0 0 rgba(14,165,233,.55)}70%{box-shadow:0 0 0 25px rgba(14,165,233,0)}100%{box-shadow:0 0 0 0 rgba(14,165,233,0)}}
+    @keyframes pulseGlow{0%{box-shadow:0 0 0 0 rgba(29,95,209,.55)}70%{box-shadow:0 0 0 25px rgba(29,95,209,0)}100%{box-shadow:0 0 0 0 rgba(29,95,209,0)}}
     @keyframes floatBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
     @keyframes airSlide{from{opacity:0; transform:translateY(8px)}to{opacity:1; transform:translateY(0)}}
 
     /* ====== Responsive ====== */
+    @media (max-width:900px){
+      .header-content{gap:10px}
+    }
     @media (max-width:750px){
       .header-content{flex-direction:column; text-align:center}
-      .logo-text{flex-direction:column}
-      .logo{margin-right:0; margin-bottom:1px}
+      .logo{margin-right:0}
       .text-info .instansi{font-size:.98em}
       .text-info .unit{font-size:.84em}
       .text-info .alamat{font-size:.76em}
@@ -119,7 +176,6 @@
       .dropdown-menu{flex:1 1 calc(50% - 10px); display:flex; justify-content:center;}
       .nav-button{width:100%; min-width:0; font-size:15px; padding:12px 0;}
 
-      /* Avatar mobile – box lebih kecil tapi tinggi cukup, dan dinaikkan */
       .air-fab{width:100px; height:135px; border-radius:18px; padding:8px;}
       .air-fab-wrap{right:16px; bottom:88px;}
       .air-tip{bottom:188px;}
@@ -134,7 +190,7 @@
   <!-- ===== Header ===== -->
   <header class="main-header">
     <div class="header-content">
-      <div class="logo-text">
+      <div style="display:flex; align-items:center">
         <img src="https://irwan-dot-cyber.github.io/my-maps/assets/LogoPUPR.png" alt="Logo PU" class="logo">
         <div class="text-info">
           <p class="instansi">KEMENTERIAN PEKERJAAN UMUM</p>
@@ -142,6 +198,12 @@
           <p class="unit">DIREKTORAT IRIGASI DAN RAWA</p>
           <p class="alamat">Jl. Pattimura No. 20, Kebayoran Baru, Jakarta Selatan</p>
         </div>
+      </div>
+
+      <div class="header-right">
+        <a class="btn-home" href="https://irwan-dot-cyber.github.io/my-maps/si-irwan.html" target="_self" rel="noopener">
+          Beranda
+        </a>
       </div>
     </div>
   </header>
@@ -170,31 +232,32 @@
   </nav>
 
   <!-- ===== Main ===== -->
-  <main class="main-content">
-    <div class="image-carousel-container">
-      <div class="carousel-overlay">
-        <p class="instruksi-title">Instruksi Presiden No. 2 Tahun 2025</p>
-        <p class="instruksi-desc">Tentang Percepatan Pembangunan, Peningkatan, Rehabilitasi, serta Operasi dan Pemeliharaan Jaringan Irigasi untuk Mendukung Swasembada Pangan</p>
+  <div class="main-wrap">
+    <main class="main-content">
+      <div class="image-carousel-container">
+        <div class="carousel-overlay">
+          <p class="instruksi-title">Instruksi Presiden No. 2 Tahun 2025</p>
+          <p class="instruksi-desc">Tentang Percepatan Pembangunan, Peningkatan, Rehabilitasi, serta Operasi dan Pemeliharaan Jaringan Irigasi untuk Mendukung Swasembada Pangan</p>
+        </div>
+        <img src="https://irwan-dot-cyber.github.io/my-maps/assets/bg_irigasi.jpg" alt="Gambar Irigasi" class="carousel-image">
       </div>
-      <img src="https://irwan-dot-cyber.github.io/my-maps/assets/bg_irigasi.jpg" alt="Gambar Irigasi" class="carousel-image">
-    </div>
 
-    <div class="visitor-counter">
-      <p>Jumlah Pengunjung :</p>
-    </div>
-    <div class="visitor-counter" style="margin-top:8px;">
-      <a href="https://www.freecounterstat.com">
-        <img src="https://counter1.optistats.ovh/private/freecounterstat.php?c=1pbxhz1xshl9e262gkrm74ltq3mgwc8w" alt="free hit counter code" style="height:28px;border:0;">
-      </a>
-    </div>
-  </main>
+      <div class="visitor-counter">
+        <p>Jumlah Pengunjung :</p>
+      </div>
+      <div class="visitor-counter" style="margin-top:8px;">
+        <a href="https://www.freecounterstat.com" target="_blank" rel="noopener">
+          <img src="https://counter1.optistats.ovh/private/freecounterstat.php?c=1pbxhz1xshl9e262gkrm74ltq3mgwc8w" alt="free hit counter code" style="height:28px;border:0;">
+        </a>
+      </div>
+    </main>
+  </div>
 
-  <footer>© 2025 </footer>
+  <footer>© 2025 • Si-Irwan v1.0</footer>
 
   <!-- ===== Floating AIR GPTs ===== -->
   <div class="air-fab-wrap" aria-label="AIR Assistant">
     <div id="airFab" class="air-fab" title="Klik untuk info">
-      <!-- Pakai PNG/WEBP full-body -->
       <img src="https://irwan-dot-cyber.github.io/my-maps/assets/air_avatar.png" alt="AIR Assistant">
     </div>
     <div class="air-tip">Tanya Saya!</div>
@@ -202,9 +265,9 @@
 
   <div id="airCard" class="air-card" role="dialog" aria-modal="false" aria-labelledby="airTitle">
     <div class="air-head">
-      <img src="https://irwan-dot-cyber.github.io/my-maps/assets/air_avatar.png" alt="" style="width:36px;height:55px;border-radius:8px;border:1px solid #e2e8f0;object-fit:contain">
+      <img src="https://irwan-dot-cyber.github.io/my-maps/assets/air_avatar.png" alt="" style="width:36px;height:55px;border-radius:8px;border:1px solid rgba(255,255,255,.12);object-fit:contain">
       <div>
-        <div id="airTitle" class="air-title">Si Irwan – aSisten Irigasi & Rawa Nasional</div>
+        <div id="airTitle" class="air-title">Si-Irwan — aSisten Irigasi & Rawa Nasional</div>
         <span class="badge">GPTs</span>
       </div>
     </div>
