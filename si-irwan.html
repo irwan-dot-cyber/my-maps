@@ -29,7 +29,7 @@
     }
   </script>
 
-  <!-- Leaflet (jaga-jaga kalau dipakai di halaman ini) -->
+  <!-- Leaflet (kalau diperlukan oleh section peta mini) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -43,7 +43,8 @@
       70%{box-shadow:0 0 0 18px rgba(14,165,233,0)}
       100%{box-shadow:0 0 0 0 rgba(14,165,233,0)}
     }
-    /* Badge versi */
+
+    /* Badge Si-Irwan */
     .badge-irwan {
       position: fixed;
       right: 16px;
@@ -74,7 +75,7 @@
 </head>
 <body class="font-sans antialiased bg-[#0b1222] text-slate-100">
 
-  <!-- Top Announce -->
+  <!-- Top Announce (amber transparan biar nyatu dengan gelap) -->
   <div class="bg-amber-50/10 border-b border-amber-200/20">
     <div class="max-w-7xl mx-auto px-4 py-2 text-sm flex items-center gap-2 text-amber-100">
       <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-200/30">📢</span>
@@ -92,7 +93,7 @@
   <!-- Navbar -->
   <header id="topbar" class="sticky top-0 z-40 bg-survey text-white transition-shadow">
     <div class="max-w-7xl mx-auto px-4 py-2 border-b border-white/10">
-      <div class="flex items-center justify-between gap-3">
+      <div class="flex items-center justify-between">
         <!-- Brand left -->
         <a href="#" class="flex items-center gap-3">
           <img src="assets/LogoPUPR.png" alt="Logo Kementerian PUPR" class="w-9 h-9" />
@@ -103,18 +104,10 @@
           </div>
         </a>
 
-        <!-- Today badge (desktop) -->
-        <div class="hidden md:flex items-center">
-          <div id="todayDate"
-               class="px-3 py-1 rounded-lg bg-white/15 border border-white/20 text-white text-sm">
-            <!-- diisi via JS -->
-          </div>
-        </div>
-
         <!-- Desktop nav -->
         <nav class="hidden md:flex items-center gap-6 text-sm">
-          <a href="../my-maps/Tusi/Tusi.html" class="hover:underline underline-offset-4">Tugas & Fungsi</a> 
-          <a href="email:sugiharto@pu.go.id" class="hover:underline underline-offset-4">Kontak</a>
+          <a href="../my-maps/Tusi/Tusi.html" class="hover:underline underline-offset-4">Tugas & Fungsi</a>
+          <a href="mailto:sugiharto@pu.go.id" class="hover:underline underline-offset-4">Kontak</a>
         </nav>
 
         <!-- CTA + burger -->
@@ -130,12 +123,7 @@
     <!-- Mobile menu -->
     <div id="mobileMenu" class="hidden md:hidden border-t border-white/10 bg-surveyDark">
       <nav class="px-4 py-3 flex flex-col gap-1 text-sm">
-        <!-- Today badge (mobile) -->
-        <div id="todayDateMobile"
-             class="mb-2 inline-block px-3 py-1 rounded-lg bg-white/15 border border-white/20 text-white">
-          <!-- diisi via JS -->
-        </div>
-        <a href="email:sugiharto@pu.go.id" class="py-2 text-white/95 hover:text-white">Kontak</a>
+        <a href="mailto:sugiharto@pu.go.id" class="py-2 text-white/95 hover:text-white">Kontak</a>
         <a href="https://chatgpt.com/g/g-68e0ae2bb8c081919205a701721b07da-si-irwan" class="py-2 mt-1 font-semibold text-white">Chatbot Si-Irwan</a>
       </nav>
     </div>
@@ -177,13 +165,13 @@
           <div class="mt-1 font-bold text-lg">Survey & Monitoring Inpres 2/2025</div>
           <p class="mt-2 text-sm text-slate-600">Tahap 1 dan Tahap 2</p>
         </a>
-        
+
         <a href="https://irwan-dot-cyber.github.io/my-maps/maintenance.html" class="block p-5 rounded-2xl bg-white border hover:shadow-lg transition text-slate-800">
           <div class="text-sm text-blue-600 font-semibold">Peta Tematik</div>
           <div class="mt-1 font-bold text-lg">Daerah Irigasi Permukaan, Rawa dan Tambak</div>
           <p class="mt-2 text-sm text-slate-600">Kewenangan Pusat</p>
         </a>
-        
+
         <a href="https://irwan-dot-cyber.github.io/my-maps/hujan/index.html" class="block p-5 rounded-2xl bg-white border hover:shadow-lg transition text-slate-800">
           <div class="text-sm text-blue-600 font-semibold">Cuaca</div>
           <div class="mt-1 font-bold text-lg">Radar Hujan (RainViewer)</div>
@@ -205,7 +193,7 @@
         <a href="../my-maps/Sentinel.html" class="block p-5 rounded-2xl bg-slate-900 text-white hover:shadow-xl transition">
           <div class="text-sm text-emerald-300 font-semibold">Sentinel</div>
           <div class="mt-1 font-bold text-lg">Monitoring Perubahan Lahan</div>
-          <p class="mt-2 text-sm text-slate-300">Menggunakan Data Citra Sentinel</p>
+          <p class="mt-2 text-sm text-slate-400">Menggunakan Data Citra Sentinel</p>
         </a>
       </div>
     </div>
@@ -261,67 +249,38 @@
     </div>
   </section>
 
-  <!-- Kontak -->
-  <section id="kontak" class="py-12 md:py-16 bg-transparent">
-    <div class="max-w-7xl mx-auto px-4">
-      <h2 class="text-2xl md:text-3xl font-bold text-white">Kontak</h2>
-      <div class="mt-4 grid md:grid-cols-2 gap-6">
-        <form class="p-6 rounded-2xl border bg-white text-slate-800">
-          <div class="grid sm:grid-cols-2 gap-3">
-            <input type="text" placeholder="Nama" class="px-4 py-3 rounded-xl border">
-            <input type="tel" placeholder="No. HP (628…)" class="px-4 py-3 rounded-xl border">
-          </div>
-          <input type="email" placeholder="Email" class="mt-3 w-full px-4 py-3 rounded-xl border">
-          <textarea rows="4" placeholder="Pesan…" class="mt-3 w-full px-4 py-3 rounded-xl border"></textarea>
-          <button type="button" class="mt-4 px-5 py-3 rounded-xl bg-slate-900 text-white">Kirim</button>
-        </form>
-        <div class="p-6 rounded-2xl border border-white/10 bg-white/5">
-          <div class="font-semibold text-white">Info</div>
-          <div class="mt-2 text-sm text-slate-200">
-            📍 Jakarta, Indonesia<br/>
-            📧 sugiharto@pu.go.id<br/>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Footer + Visitor Counter -->
+  <!-- Footer (counter di TENGAH) -->
   <footer class="border-t border-white/10">
-    <div class="max-w-7xl mx-auto px-4 py-8 text-sm text-slate-300 grid md:grid-cols-2 gap-4 items-center">
-      <div class="flex items-center gap-3">
+    <div class="max-w-7xl mx-auto px-4 py-8 text-sm text-slate-300 flex flex-col items-center gap-3 text-center">
+      <div class="flex items-center gap-2">
         <span>© 2025</span>
-        <span class="hidden md:inline">•</span>
-        <span class="hidden md:inline">Si-Irwan v1.0</span>
+        <span>•</span>
+        <span>Si-Irwan v1.0</span>
+        <span>•</span>
+        <span id="today">—</span>
       </div>
-      <div class="flex md:justify-end items-center gap-4">
-        <div class="text-right">
-          <div class="visitor-counter">
-            <p class="text-slate-300">Jumlah Pengunjung :</p>
-          </div>
-          <div class="visitor-counter mt-2">
-            <a href="https://www.freecounterstat.com">
-              <img src="https://counter1.optistats.ovh/private/freecounterstat.php?c=1pbxhz1xshl9e262gkrm74ltq3mgwc8w"
-                   alt="free hit counter code" style="height:28px;border:0;">
-            </a>
-          </div>
-        </div>
+
+      <!-- Visitor counter di tengah -->
+      <div class="visitor-counter">
+        <p class="text-slate-300">Jumlah Pengunjung :</p>
+      </div>
+      <div class="visitor-counter mt-2">
+        <a href="https://www.freecounterstat.com" target="_blank" rel="noopener">
+          <img src="https://counter1.optistats.ovh/private/freecounterstat.php?c=1pbxhz1xshl9e262gkrm74ltq3mgwc8w"
+               alt="free hit counter code" style="height:28px;border:0;">
+        </a>
+      </div>
+
+      <!-- Link cepat (opsional) -->
+      <div class="flex items-center gap-4 mt-2">
+        <a class="hover:text-white" href="#dokumen">Dokumen</a>
+        <a class="hover:text-white" href="#airbot">Chatbot A.I.R</a>
       </div>
     </div>
   </footer>
 
   <!-- Scripts -->
   <script>
-    // Tanggal (Asia/Jakarta)
-    (function(){
-      const opts = { weekday:'long', year:'numeric', month:'long', day:'numeric' };
-      const nowID = new Intl.DateTimeFormat('id-ID', { ...opts, timeZone:'Asia/Jakarta' }).format(new Date());
-      const today = document.getElementById('todayDate');
-      const todayM = document.getElementById('todayDateMobile');
-      if (today)  today.textContent  = nowID;
-      if (todayM) todayM.textContent = nowID;
-    })();
-
     // Mobile menu toggle + ARIA
     (function(){
       const btn = document.getElementById('btnMenu');
@@ -349,11 +308,20 @@
       style.textContent = `@keyframes scroll { 0%{transform:translateX(0)} 100%{transform:translateX(-100%)} }`;
       document.head.appendChild(style);
     })();
+
+    // Tanggal hari ini (locale Indonesia)
+    (function(){
+      const el = document.getElementById('today');
+      try {
+        const opts = { weekday:'long', year:'numeric', month:'long', day:'numeric' };
+        el.textContent = new Date().toLocaleDateString('id-ID', opts);
+      } catch(e) { el.textContent = ''; }
+    })();
   </script>
 
   <!-- Floating Assistant (Avatar + Bubble) -->
   <div class="fixed right-4 bottom-24 md:right-8 md:bottom-10 z-[60] flex flex-col items-end gap-3 select-none">
-    <!-- Bubble -->
+    <!-- Bubble "Tanya Saya!" -->
     <a href="https://chatgpt.com/g/g-68e0ae2bb8c081919205a701721b07da-si-irwan" aria-label="Buka Chatbot A.I.R"
        class="relative inline-flex items-center px-4 py-2 rounded-full text-white text-sm font-semibold
               shadow-lg shadow-[rgba(2,32,71,.25)] hover:shadow-[rgba(2,32,71,.35)]
@@ -373,9 +341,10 @@
     </a>
   </div>
 
-  <!-- Badge Versi -->
+  <!-- Badge Si-Irwan -->
   <div class="badge-irwan" title="Sistem Informasi Irigasi & Rawa Nasional">
     <span>Si-Irwan v1.0</span>
   </div>
+
 </body>
 </html>
