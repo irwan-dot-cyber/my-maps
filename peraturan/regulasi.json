@@ -1,0 +1,216 @@
+{
+  "_meta": { "last_updated": "20 Okt 2025, 16:10 WIB" },
+
+  "UU": [
+    {
+      "level": "UU",
+      "number": "17",
+      "year": 2019,
+      "title": "Sumber Daya Air",
+      "link": "https://peraturan.bpk.go.id/Details/122742/uu-no-17-tahun-2019",
+      "tags": ["SDA","Irigasi","Pemanfaatan Air"],
+      "note": "Landasan pengelolaan SDA yang berkaitan langsung dengan irigasi."
+    },
+    {
+      "level": "UU",
+      "number": "23",
+      "year": 2014,
+      "title": "Pemerintahan Daerah",
+      "link": "https://peraturan.bpk.go.id/Details/53990/uu-no-23-tahun-2014",
+      "tags": ["Kewenangan","Irigasi"],
+      "note": "Pembagian kewenangan DI pusat/provinsi/kabupaten."
+    },
+    {
+      "level": "UU",
+      "number": "19",
+      "year": 2013,
+      "title": "Perlindungan dan Pemberdayaan Petani",
+      "link": "https://peraturan.bpk.go.id/Details/38893/uu-no-19-tahun-2013",
+      "tags": ["Petani","Perlindungan","Ketahanan"]
+    },
+    {
+      "level": "UU",
+      "number": "18",
+      "year": 2012,
+      "title": "Pangan",
+      "link": "https://peraturan.bpk.go.id/Home/Details/39100",
+      "tags": ["Pangan","Ketahanan","Kemandirian"]
+    },
+    {
+      "level": "UU",
+      "number": "41",
+      "year": 2009,
+      "title": "Perlindungan Lahan Pertanian Pangan Berkelanjutan",
+      "link": "https://peraturan.bpk.go.id/Details/38786/uu-no-41-tahun-2009",
+      "tags": ["PLP2B","Lahan","Sawah"],
+      "note": "Melindungi lahan pertanian pangan termasuk sawah beririgasi."
+    }
+  ],
+
+  "PP": [
+    {
+      "level": "PP",
+      "number": "30",
+      "year": 2024,
+      "title": "Pengelolaan Sumber Daya Air",
+      "link": "https://peraturan.bpk.go.id/Details/295844/pp-no-30-tahun-2024",
+      "tags": ["SDA","Irigasi","Terpadu"]
+    },
+    {
+      "level": "PP",
+      "number": "86",
+      "year": 2019,
+      "title": "Keamanan Pangan",
+      "link": "https://peraturan.bpk.go.id/Details/129230/pp-no-86-tahun-2019",
+      "tags": ["Keamanan Pangan","Mutu"]
+    },
+    {
+      "level": "PP",
+      "number": "17",
+      "year": 2015,
+      "title": "Ketahanan Pangan dan Gizi",
+      "link": "https://peraturan.bpk.go.id/Home/Details/5581",
+      "tags": ["Ketahanan","Gizi"]
+    },
+    {
+      "level": "PP",
+      "number": "20",
+      "year": 2006,
+      "title": "Irigasi",
+      "link": "https://peraturan.bpk.go.id/Details/49088/pp-no-20-tahun-2006",
+      "tags": ["Irigasi","O&P","Jaringan"]
+    }
+  ],
+
+  "PERPRES": [
+    {
+      "level": "Inpres",
+      "number": "2",
+      "year": 2025,
+      "title": "Percepatan Pembangunan, Peningkatan, Rehabilitasi, serta O&P Jaringan Irigasi untuk Mendukung Swasembada Pangan",
+      "link": "https://peraturan.bpk.go.id/Details/313402/inpres-no-2-tahun-2025",
+      "tags": ["Irigasi","Swasembada","Percepatan"]
+    },
+    {
+      "level": "Perpres",
+      "number": "81",
+      "year": 2024,
+      "title": "Percepatan Penganekaragaman Pangan Berbasis Potensi Sumber Daya Lokal",
+      "link": "https://peraturan.bpk.go.id/Details/295850/perpres-no-81-tahun-2024",
+      "tags": ["Diversifikasi","Ketahanan"]
+    },
+    {
+      "level": "Perpres",
+      "number": "125",
+      "year": 2022,
+      "title": "Penyelenggaraan Cadangan Pangan Pemerintah",
+      "link": "https://peraturan.bpk.go.id/Details/230367/perpres-no-125-tahun-2022",
+      "tags": ["Cadangan Pangan","CPP"]
+    },
+    {
+      "level": "Perpres",
+      "number": "66",
+      "year": 2021,
+      "title": "Badan Pangan Nasional",
+      "link": "https://peraturan.bpk.go.id/Details/175819/perpres-no-66-tahun-2021",
+      "tags": ["NFA","Kelembagaan"]
+    }
+  ],
+
+  "PERMEN": [
+    {
+      "level": "Permen PUPR",
+      "number": "4",
+      "year": 2021,
+      "title": "Pedoman Penyelenggaraan Program P3-TGAI",
+      "link": "https://jdih.pu.go.id/detail-dokumen/PermenPUPR-nomor-4-Tahun-2021-tahun-2021-Pedoman-Penyelenggaraan-Program-Percepatan-Peningkatan-Tata-Guna-Air-Irigasi",
+      "tags": ["P3-TGAI","Partisipatif"]
+    },
+    {
+      "level": "Permen PUPR",
+      "number": "23/PRT/M",
+      "year": 2015,
+      "title": "Pengelolaan Aset Irigasi",
+      "link": "https://peraturan.bpk.go.id/Home/Details/159876/permen-pupr-no-23prtm2015-tahun-2015",
+      "tags": ["Aset","Inventaris"]
+    },
+    {
+      "level": "Permen PUPR",
+      "number": "14/PRT/M",
+      "year": 2015,
+      "title": "Kriteria dan Penetapan Status Daerah Irigasi",
+      "link": "https://peraturan.bpk.go.id/Details/159870/permen-pupr-no-14prtm2015-tahun-2015",
+      "tags": ["DI","Kewenangan"]
+    },
+    {
+      "level": "Permen PUPR",
+      "number": "12/PRT/M",
+      "year": 2015,
+      "title": "Eksploitasi dan Pemeliharaan Jaringan Irigasi",
+      "link": "https://peraturan.bpk.go.id/Details/159868/permen-pupr-no-12prtm2015-tahun-2015",
+      "tags": ["O&P","Jaringan"]
+    },
+    {
+      "level": "Permentan",
+      "number": "3",
+      "year": 2025,
+      "title": "Petunjuk Teknis Penggunaan DAK Nonfisik Dana Ketahanan Pangan dan Pertanian TA 2025",
+      "link": "https://peraturan.bpk.go.id/Details/313796/permentan-no-3-tahun-2025",
+      "tags": ["DAK","Ketahanan","Pembiayaan"]
+    },
+    {
+      "level": "Permentan",
+      "number": "4",
+      "year": 2025,
+      "title": "Perubahan Kedua atas Permentan 10/2022 tentang Alokasi & HET Pupuk Bersubsidi Sektor Pertanian",
+      "link": "https://peraturan.bpk.go.id/Details/313799/permentan-no-4-tahun-2025",
+      "tags": ["Pupuk","Subsidi","Produksi"]
+    }
+  ],
+
+  "BAPANAS": [
+    {
+      "level": "Peraturan Bapanas",
+      "number": "10",
+      "year": 2022,
+      "title": "Tata Cara Penyusunan Peta Ketahanan dan Kerentanan Pangan",
+      "link": "https://badanpangan.go.id/storage/app/media/2022/Regulasi%20NFA%202022/Peraturan%20Badan%20Pangan%20Nomor%2010%20Tahun%202022%20tentang%20Tata%20Cara%20Penyusunan%20Peta%20Ketahanan%20Dan%20Kerentanan%20Pangan.pdf",
+      "tags": ["FSVA","Ketahanan","Kerentanan"]
+    }
+  ],
+
+  "PERDA": [
+    {
+      "level": "Perda Prov.",
+      "number": "1",
+      "year": 2022,
+      "title": "Sulawesi Utara — Irigasi",
+      "link": "https://peraturan.bpk.go.id/Details/234764/perda-prov-sulawesi-utara-no-1-tahun-2022",
+      "tags": ["Daerah","Irigasi"]
+    },
+    {
+      "level": "Perda Prov.",
+      "number": "7",
+      "year": 2022,
+      "title": "DI Yogyakarta — Pengembangan & Pengelolaan Sistem Irigasi",
+      "link": "https://peraturan.bpk.go.id/Details/225366/perda-no-7-tahun-2022",
+      "tags": ["Daerah","Irigasi"]
+    },
+    {
+      "level": "Perda Kab.",
+      "number": "4",
+      "year": 2022,
+      "title": "Kabupaten Batang Hari — Irigasi",
+      "link": "https://peraturan.bpk.go.id/Details/294407/perda-kab-batang-hari-no-4-tahun-2022",
+      "tags": ["Daerah","Irigasi"]
+    },
+    {
+      "level": "Perda Kab.",
+      "number": "1",
+      "year": 2022,
+      "title": "Kabupaten Muara Enim — Irigasi",
+      "link": "https://peraturan.bpk.go.id/Home/Details/211807/perda-kab-muara-enim-no-1-tahun-2022",
+      "tags": ["Daerah","Irigasi"]
+    }
+  ]
+}
