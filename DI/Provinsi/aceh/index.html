@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Peta DI Kewenangan Provinsi - Aceh</title>
+  <meta name="description" content="Peta Daerah Irigasi Kewenangan Provinsi Aceh."/>
+  <link rel="icon" href="../../assets/LogoPUPR.png" />
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    html,body,#map { height:100%; margin:0; }
+    .header { position:fixed; top:0; left:0; right:0; z-index:1000;
+               background:#0d47a1; color:#fff; padding:10px 14px; font-family:Inter,ui-sans-serif,system-ui; }
+    .header a { color:#fff; text-decoration:none; font-weight:700; }
+    .badge { position:fixed; right:14px; bottom:12px; z-index:1000;
+              background:rgba(13,71,161,.85); color:#fff; padding:6px 10px; border-radius:10px; font-weight:700; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div style="display:flex;align-items:center;gap:10px;max-width:1100px;margin:0 auto;">
+      <a href="../index.html">← Kembali</a>
+      <div style="font-weight:800">Peta DI Provinsi Aceh</div>
+      <div style="margin-left:auto;font-size:12px;opacity:.9">Sumatera</div>
+    </div>
+  </div>
+  <div id="map"></div>
+  <div class="badge">Si‑Irwan v1.0</div>
+  <script>
+    // Inisialisasi Peta
+    const map = L.map('map', { zoomControl: true });
+    // Pusat Indonesia sebagai default; silakan ganti ke pusat Aceh
+    map.setView([-2.5, 118], 5);
+
+    // Basemap OSM
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Placeholder layer DI (contoh GeoJSON kosong)
+    const diLayer = L.geoJSON({ "type":"FeatureCollection", "features":[] }, {
+      style: function() { return { weight:1, color:"#1d5fd1", fillOpacity:0.1 }; },
+      onEachFeature: function (feat, layer) {
+        if (feat.properties && feat.properties.nama) {
+          layer.bindPopup('<b>DI:</b> ' + feat.properties.nama);
+        }
+      }
+    }).addTo(map);
+
+    // TODO:
+    // 1) Ganti setView ke pusat Aceh atau gunakan fitBounds setelah load batas provinsi.
+    // 2) Tambahkan fetch() ke GeoJSON DI kewenangan provinsi ini, contoh:
+    //    fetch('di-aceh.geojson').then(r=>r.json()).then(data=>{
+    //      diLayer.clearLayers(); diLayer.addData(data); map.fitBounds(diLayer.getBounds());
+    //    });
+  </script>
+</body>
+</html>
