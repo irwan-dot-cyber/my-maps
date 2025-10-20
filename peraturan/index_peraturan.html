@@ -4,8 +4,8 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Regulasi: Irigasi, Ketahanan & Swasembada Pangan</title>
-  <meta name="description" content="Daftar peraturan (UU, PP, Perpres/Inpres, Permen, Bapanas, Perda) terkait irigasi, ketahanan pangan, dan swasembada, otomatis dari JSON."/>
-  <link rel="icon" href="assets/LogoPUPR.png" />
+  <meta name="description" content="Daftar peraturan (UU, PP, Perpres/Keppres/Inpres, Permen, Bapanas, Perda) terkait irigasi, ketahanan pangan, dan swasembada. Data otomatis dari JSON."/>
+  <link rel="icon" href="../assets/LogoPUPR.png" />
 
   <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -43,16 +43,16 @@
   <!-- Header -->
   <header class="sticky top-0 z-40 bg-survey text-white shadow-[0_6px_24px_rgba(0,0,0,.25)]">
     <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-      <a href="si-irwan.html" class="flex items-center gap-3">
-        <img src="assets/LogoPUPR.png" class="w-9 h-9" alt="PUPR"/>
+      <a href="../si-irwan.html" class="flex items-center gap-3">
+        <img src="../assets/LogoPUPR.png" class="w-9 h-9" alt="PUPR"/>
         <div class="leading-tight">
           <div class="text-xs uppercase tracking-wide text-white/80">Kementerian Pekerjaan Umum</div>
           <div class="font-semibold">Direktorat Jenderal Sumber Daya Air</div>
           <div class="text-xs text-white/80">Direktorat Irigasi & Rawa</div>
         </div>
       </a>
-      <a href="si-irwan.html" class="text-sm bg-white text-survey px-3 py-2 rounded-lg font-semibold hover:bg-white/90 transition">
-        🏠 Beranda
+      <a href="../si-irwan.html" class="text-sm bg-white text-survey px-3 py-2 rounded-lg font-semibold hover:bg-white/90 transition">
+        Beranda
       </a>
     </div>
   </header>
@@ -61,11 +61,7 @@
   <section class="bg-gradient-to-b from-[#0b1222] via-[#0b1222]/60 to-transparent">
     <div class="max-w-7xl mx-auto px-4 py-8">
       <h1 class="text-2xl md:text-3xl font-extrabold">Regulasi: Irigasi, Ketahanan & Swasembada Pangan</h1>
-      <p class="mt-2 text-slate-300">
-        Diurutkan otomatis berdasarkan <span class="font-semibold">tingkat hukum</span> dan <span class="font-semibold">tahun</span>.
-        Tambah/ubah cukup lewat <code>regulasi.json</code>.
-      </p>
-    </div>
+      </div>
   </section>
 
   <!-- Toolbar -->
@@ -81,7 +77,7 @@
         <label class="inline-flex items-center gap-2 text-sm"><input id="flt-uu" type="checkbox" class="h-4 w-4 accent-slate-100" checked><span>UU</span></label>
         <label class="inline-flex items-center gap-2 text-sm"><input id="flt-pp" type="checkbox" class="h-4 w-4 accent-slate-100" checked><span>PP</span></label>
         <label class="inline-flex items-center gap-2 text-sm"><input id="flt-perpres" type="checkbox" class="h-4 w-4 accent-slate-100" checked><span>Perpres/Keppres/Inpres</span></label>
-        <label class="inline-flex items-center gap-2 text-sm"><input id="flt-permen" type="checkbox" class="h-4 w-4 accent-slate-100" checked><span>Permen (PU/Pertanian)</span></label>
+        <label class="inline-flex items-center gap-2 text-sm"><input id="flt-permen" type="checkbox" class="h-4 w-4 accent-slate-100" checked><span>Permen (PUPR/Pertanian)</span></label>
         <label class="inline-flex items-center gap-2 text-sm"><input id="flt-bapanas" type="checkbox" class="h-4 w-4 accent-slate-100" checked><span>Bapanas</span></label>
         <label class="inline-flex items-center gap-2 text-sm"><input id="flt-perda" type="checkbox" class="h-4 w-4 accent-slate-100" checked><span>Perda</span></label>
 
@@ -145,7 +141,7 @@
       <div class="card rounded-2xl p-4">
         <div class="flex items-center justify-between mb-2">
           <h2 class="text-base font-bold">🏙️ Peraturan Daerah <span id="count-perda" class="text-slate-300 font-normal"></span></h2>
-          <span class="text-xs text-slate-300">Terbaru → Lama</span>
+        <span class="text-xs text-slate-300">Terbaru → Lama</span>
         </div>
         <ul id="list-perda" class="space-y-3 text-sm"></ul>
       </div>
@@ -175,7 +171,7 @@
       return `
         <li class="item" data-cat="${it.group}" data-tags="${(it.tags||[]).join(' ').toLowerCase()}">
           <a class="block hover:underline font-semibold text-sky-300 hover:text-white" ${linkAttr}>
-            ${lead} — ${it.title}
+            ${lead} — ${it.title}${meta}
           </a>
           <div class="mt-1 flex flex-wrap gap-2">${tags}</div>
         </li>
@@ -200,7 +196,6 @@
       bapanas: document.getElementById('list-bapanas'),
       perda: document.getElementById('list-perda'),
     };
-
     const counts = {
       uu: document.getElementById('count-uu'),
       pp: document.getElementById('count-pp'),
@@ -213,8 +208,6 @@
     const countInfo = document.getElementById('countInfo');
     const lastUpdated = document.getElementById('last-updated');
 
-    const levelOrder = ['UU','PP','Perpres','Keppres','Inpres','Permen','Bapanas','Perda'];
-
     // ===== render
     let ALL = []; // flattened array for search/filter
 
@@ -223,26 +216,24 @@
       Object.values(lists).forEach(ul => ul.innerHTML = '');
 
       // sort each group by year desc
+      const mapKey = { uu:'UU', pp:'PP', perpres:'PERPRES', permen:'PERMEN', bapanas:'BAPANAS', perda:'PERDA' };
+
       for(const g of Object.keys(lists)){
-        const arr = (data[g.toUpperCase()]||[]).slice().sort((a,b)=> (b.year||0)-(a.year||0));
+        const arr = (data[mapKey[g]]||[]).slice().sort((a,b)=> (b.year||0)-(a.year||0));
         arr.forEach(it=>{
           it.group = g;
-          it.level = it.level || it.group.toUpperCase();
+          it.level = it.level || (mapKey[g]||g).toUpperCase();
           lists[g].insertAdjacentHTML('beforeend', makeItemHTML(it));
         });
       }
 
-      // flatten
+      // flatten for filtering
       ALL = Array.from(document.querySelectorAll('.item'));
-
       applyFilter();
-      // footer last updated from JSON meta (if any)
+
+      // footer last updated
       const meta = data._meta;
-      if(meta && meta.last_updated){
-        lastUpdated.textContent = 'Terakhir diperbarui: ' + meta.last_updated;
-      }else{
-        lastUpdated.textContent = 'Terakhir diperbarui: ' + new Date().toLocaleString('id-ID',{dateStyle:'medium', timeStyle:'short'});
-      }
+      lastUpdated.textContent = 'Terakhir diperbarui: ' + (meta?.last_updated || new Date().toLocaleString('id-ID',{dateStyle:'medium', timeStyle:'short'}));
     }
 
     function applyFilter(){
@@ -263,7 +254,6 @@
         const title = (li.querySelector('a')?.textContent||'').toLowerCase();
         let visible = !!show[cat];
         if(text && !(title.includes(text)||tags.includes(text))) visible=false;
-
         li.style.display = visible ? '' : 'none';
         if(visible){ c[cat]++; total++; }
       });
@@ -284,12 +274,12 @@
     });
     [q, ...Object.values(flt)].forEach(el=> el.addEventListener('input', applyFilter));
 
-    // ===== load JSON
-    fetch('data/regulasi.json', {cache:'no-store'})
+    // ===== load JSON dari folder yang sama
+    fetch('regulasi.json', { cache:'no-store' })
       .then(r=>r.json())
       .then(render)
       .catch(err=>{
-        countInfo.textContent = 'Gagal memuat data/regulasi.json — cek path & JSON-nya.';
+        countInfo.textContent = 'Gagal memuat regulasi.json — pastikan file ada di folder yang sama.';
         console.error(err);
       });
   </script>
