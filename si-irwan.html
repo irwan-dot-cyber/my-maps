@@ -29,6 +29,9 @@
     }
   </script>
 
+  <!-- Google Font untuk tulisan tangan -->
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+
   <!-- (Opsional) Leaflet CSS jika nanti pakai mini peta -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
@@ -67,6 +70,37 @@
       background: rgba(13,71,161,.95);
       transform: scale(1.03);
       transition: all .25s ease;
+    }
+
+    /* Tulisan tangan neon kuning */
+    .neon-hand {
+      font-family: 'Pacifico', cursive;
+      color: #fff34f; /* kuning neon */
+      letter-spacing: .5px;
+      display: inline-block;
+      transform: rotate(-1.5deg);
+      text-shadow:
+        0 0 6px rgba(255,243,79,1),
+        0 0 14px rgba(255,243,79,.85),
+        0 0 28px rgba(255,243,79,.65),
+        0 0 52px rgba(255,243,79,.45);
+      animation: neonPulse 2.2s ease-in-out infinite;
+    }
+    @keyframes neonPulse {
+      0%,100%{
+        text-shadow:
+          0 0 6px rgba(255,243,79,1),
+          0 0 14px rgba(255,243,79,.85),
+          0 0 28px rgba(255,243,79,.65),
+          0 0 52px rgba(255,243,79,.45);
+      }
+      50%{
+        text-shadow:
+          0 0 3px rgba(255,243,79,.9),
+          0 0 10px rgba(255,243,79,.7),
+          0 0 20px rgba(255,243,79,.5),
+          0 0 36px rgba(255,243,79,.35);
+      }
     }
   </style>
 </head>
@@ -144,9 +178,16 @@
             <span class="w-2 h-2 rounded-full bg-emerald-300"></span>
             Membangun Basis Data Nasional Irigasi dan Rawa yang Akurat, Konsisten, dan Terintegrasi
           </div>
+
+          <!-- Judul Utama -->
           <h1 class="text-3xl md:text-5xl font-extrabold leading-tight">
             Sistem Informasi Irigasi dan Rawa Nasional
           </h1>
+
+          <!-- Tambahan: Tulisan tangan neon kuning -->
+          <div class="mt-2 md:mt-3">
+            <span class="neon-hand text-3xl md:text-5xl">Si-Irwan</span>
+          </div>
         </div>
       </div>
     </div>
@@ -227,11 +268,11 @@
       </div>
       <div class="mt-6 grid md:grid-cols-2 gap-5">
         <div class="p-5 rounded-2xl border bg-white text-slate-800">
-          <div class="font-semibold">Regulasi & Standar</div>
+          <div class="font-semibold">Peraturan</div>
           <ul class="mt-3 space-y-2 text-sm list-disc pl-5">
-            <li><a href="docs/SK-BIG.pdf" class="text-slate-700 hover:text-slate-900">SK BIG (Geospasial & ketentuan peta)</a></li>
-            <li><a href="docs/SBM-terbaru.pdf" class="text-slate-700 hover:text-slate-900">SBM (Standar Biaya Masukan)</a></li>
-            <li><a href="docs/HPS-pedoman.pdf" class="text-slate-700 hover:text-slate-900">Pedoman HPS & contoh</a></li>
+            <li><a href="../Peraturan/Index_Peraturan.html" class="text-slate-700 hover:text-slate-900">Instruksi Presiden Nomor 2 Tahun 2025</a></li>
+            <li><a href="../Peraturan/Index_Peraturan.html" class="text-slate-700 hover:text-slate-900">Peraturan Pemerintah Nomor 30 Tahun 2024</a></li>
+            <li><a href="../Peraturan/Index_Peraturan.html" class="text-slate-700 hover:text-slate-900">Peraturan Menteri Pekerjaan Umum dan Perumahan Rakyat Nomor 4 Tahun 2021</a></li>
           </ul>
         </div>
       </div>
