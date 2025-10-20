@@ -29,6 +29,9 @@
     }
   </script>
 
+  <!-- Google Font untuk tulisan tangan -->
+  <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+
   <!-- (Opsional) Leaflet CSS jika nanti pakai mini peta -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
@@ -67,6 +70,37 @@
       background: rgba(13,71,161,.95);
       transform: scale(1.03);
       transition: all .25s ease;
+    }
+
+    /* Tulisan tangan neon kuning */
+    .neon-hand {
+      font-family: 'Pacifico', cursive;
+      color: #fff34f; /* kuning neon */
+      letter-spacing: .5px;
+      display: inline-block;
+      transform: rotate(-1.5deg);
+      text-shadow:
+        0 0 6px rgba(255,243,79,1),
+        0 0 14px rgba(255,243,79,.85),
+        0 0 28px rgba(255,243,79,.65),
+        0 0 52px rgba(255,243,79,.45);
+      animation: neonPulse 2.2s ease-in-out infinite;
+    }
+    @keyframes neonPulse {
+      0%,100%{
+        text-shadow:
+          0 0 6px rgba(255,243,79,1),
+          0 0 14px rgba(255,243,79,.85),
+          0 0 28px rgba(255,243,79,.65),
+          0 0 52px rgba(255,243,79,.45);
+      }
+      50%{
+        text-shadow:
+          0 0 3px rgba(255,243,79,.9),
+          0 0 10px rgba(255,243,79,.7),
+          0 0 20px rgba(255,243,79,.5),
+          0 0 36px rgba(255,243,79,.35);
+      }
     }
   </style>
 </head>
@@ -144,9 +178,16 @@
             <span class="w-2 h-2 rounded-full bg-emerald-300"></span>
             Membangun Basis Data Nasional Irigasi dan Rawa yang Akurat, Konsisten, dan Terintegrasi
           </div>
+
+          <!-- Judul Utama -->
           <h1 class="text-3xl md:text-5xl font-extrabold leading-tight">
             Sistem Informasi Irigasi dan Rawa Nasional
           </h1>
+
+          <!-- Tambahan: Tulisan tangan neon kuning -->
+          <div class="mt-2 md:mt-3">
+            <span class="neon-hand text-3xl md:text-5xl">Si-Irwan</span>
+          </div>
         </div>
       </div>
     </div>
@@ -169,8 +210,20 @@
 
         <a href="../my-maps/DI/Index_Balai.html" class="block p-5 rounded-2xl bg-white border hover:shadow-lg transition text-slate-800">
           <div class="text-sm text-blue-600 font-semibold">Peta Tematik</div>
-          <div class="mt-1 font-bold text-lg">Daerah Irigasi Permukaan, Rawa dan Tambak</div>
-          <p class="mt-2 text-sm text-slate-600">Kewenangan Pusat</p>
+          <div class="mt-1 font-bold text-lg">Daerah Irigasi Kewenangan Pusat</div>
+          <p class="mt-2 text-sm text-slate-600">Permukaan, Rawa dan Tambak</p>
+        </a>
+        
+        <a href="../my-maps/DI/Provinsi/Index_Provinsi.html" class="block p-5 rounded-2xl bg-white border hover:shadow-lg transition text-slate-800">
+          <div class="text-sm text-blue-600 font-semibold">Peta Tematik</div>
+          <div class="mt-1 font-bold text-lg">Daerah Irigasi Kewenangan Provinsi</div>
+          <p class="mt-2 text-sm text-slate-600">Permukaan, Rawa dan Tambak</p>
+        </a>
+        
+        <a href="../my-maps/DI/Kabupaten/Index_Kabupaten.html" class="block p-5 rounded-2xl bg-white border hover:shadow-lg transition text-slate-800">
+          <div class="text-sm text-blue-600 font-semibold">Peta Tematik</div>
+          <div class="mt-1 font-bold text-lg">Daerah Irigasi Kewenangan Kabupaten</div>
+          <p class="mt-2 text-sm text-slate-600">Permukaan, Rawa dan Tambak</p>
         </a>
 
         <a href="../my-maps/hujan/index.html" class="block p-5 rounded-2xl bg-white border hover:shadow-lg transition text-slate-800">
@@ -192,9 +245,15 @@
         </a>
 
         <a href="../my-maps/Sentinel.html" class="block p-5 rounded-2xl bg-white border hover:shadow-lg transition text-slate-800">
-          <div class="text-sm text-rose-600 font-semibold">>Sentinel-2</div>
+          <div class="text-sm text-rose-600 font-semibold">Sentinel-2</div>
           <div class="mt-1 font-bold text-lg">Monitoring Perubahan Lahan</div>
           <p class="mt-2 text-sm text-slate-600">Menggunakan Data Citra Sentinel-2</p>
+        </a>
+        
+        <a href="../my-maps/jurnal/index_jurnal.html" class="block p-5 rounded-2xl bg-white border hover:shadow-lg transition text-slate-800">
+          <div class="text-sm text-rose-600 font-semibold">Publikasi</div>
+          <div class="mt-1 font-bold text-lg">Jurnal Tentang Irigasi</div>
+          <p class="mt-2 text-sm text-slate-600">Nasional dan Internasional</p>
         </a>
 
        </div>
@@ -225,15 +284,14 @@
     <div class="max-w-7xl mx-auto px-4 grid lg:grid-cols-[1fr,380px] gap-6">
       <div class="p-6 md:p-8 rounded-3xl bg-slate-900 text-white">
         <div class="flex items-center gap-3">
-          <img src="assets/logo-air-bot.png" alt="AIR-bot" class="w-9 h-9">
+          <img src="assets/air_avatar.png" alt="AIR-bot" class="w-9 h-9">
           <div>
             <div class="text-emerald-300 text-sm font-semibold">Asisten Irigasi & Rawa</div>
             <h3 class="text-2xl md:text-3xl font-extrabold">Chatbot A.I.R</h3>
           </div>
         </div>
         <p class="mt-4 text-slate-200">
-          Tanyakan apa saja soal dokumen, peta, progres, hingga troubleshooting.
-          Terintegrasi dengan indeks PDF internal & endpoint lokal.
+          Powered by Chatgpt.
         </p>
         <div class="mt-6 flex flex-wrap gap-3">
           <a href="https://chatgpt.com/g/g-68e0ae2bb8c081919205a701721b07da-si-irwan" class="px-5 py-3 rounded-xl bg-white text-slate-900 font-semibold">Buka Chat</a>
