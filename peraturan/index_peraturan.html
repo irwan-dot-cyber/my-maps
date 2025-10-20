@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Regulasi: Irigasi & Ketahanan Pangan</title>
+  <meta name="description" content="Daftar peraturan terkait irigasi dan ketahanan pangan – diurutkan menurut tingkat hukum tertinggi dan tahun terbit."/>
+  <link rel="icon" href="../assets/LogoPUPR.png" />
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme:{extend:{
+        fontFamily:{sans:['Inter','ui-sans-serif','system-ui']},
+        colors:{survey:'#0d47a1',surveyDark:'#0a3a85',surveyLight:'#1d5fd1'},
+        boxShadow:{header:'0 4px 14px rgba(13,71,161,.18)'}
+      }}
+    }
+  </script>
+
+  <style>
+    html{scroll-behavior:smooth}
+    :focus-visible{outline:2px solid #1d5fd1;outline-offset:2px}
+    .tag{font-size:.72rem;padding:.15rem .5rem;border-radius:9999px;border:1px solid rgba(255,255,255,.18)}
+    .card{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);backdrop-filter:blur(6px)}
+    .badge-irwan{
+      position:fixed; right:16px; bottom:12px; z-index:80;
+      background:rgba(13,71,161,.85);
+      border:1px solid rgba(255,255,255,.25);
+      color:#fff; font-size:13px; font-weight:700;
+      padding:6px 12px; border-radius:10px;
+      box-shadow:0 0 10px rgba(13,71,161,.6);
+      backdrop-filter:blur(6px);
+      animation:glow 2.8s ease-in-out infinite;
+    }
+    .badge-irwan span{ color:#FFD700; }
+    @keyframes glow{ 0%,100%{ box-shadow:0 0 8px rgba(13,71,161,.6);} 50%{ box-shadow:0 0 18px rgba(255,215,0,.8);} }
+  </style>
+</head>
+<body class="font-sans antialiased bg-[#0b1222] text-slate-100">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-40 bg-survey text-white shadow-[0_6px_24px_rgba(0,0,0,.25)]">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <a href="../index.html" class="flex items-center gap-3">
+        <img src="../assets/LogoPUPR.png" class="w-9 h-9" alt="PUPR"/>
+        <div class="leading-tight">
+          <div class="text-xs uppercase tracking-wide text-white/80">Kementerian Pekerjaan Umum</div>
+          <div class="font-semibold">Direktorat Jenderal Sumber Daya Air</div>
+          <div class="text-xs text-white/80">Direktorat Irigasi & Rawa</div>
+        </div>
+      </a>
+      <a href="../si-irwan.html" class="text-sm bg-white text-survey px-3 py-2 rounded-lg font-semibold hover:bg-white/90 transition">🏠 Beranda</a>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="bg-gradient-to-b from-[#0b1222] via-[#0b1222]/60 to-transparent">
+    <div class="max-w-7xl mx-auto px-4 py-8">
+      <h1 class="text-2xl md:text-3xl font-extrabold">Regulasi: Irigasi & Ketahanan Pangan</h1>
+      <p class="mt-2 text-slate-300">Diurutkan berdasarkan <span class="font-semibold">tingkat hukum</span> (tertinggi → teknis) dan <span class="font-semibold">tahun terbit</span> (terbaru → lama). Klik judul untuk membuka dokumen/PDF.</p>
+    </div>
+  </section>
+
+  <!-- Toolbar -->
+  <section class="py-4">
+    <div class="max-w-7xl mx-auto px-4">
+      <div class="flex flex-col md:flex-row md:items-center gap-3">
+        <div class="flex-1">
+          <input id="q" type="search" placeholder="Cari regulasi… (mis. ‘irigasi’, ‘pangan’, ‘aset’, ‘cadangan’, ‘BAPANAS’)" class="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/10 placeholder:text-slate-400 text-white"/>
+        </div>
+        <!-- Filter kelompok -->
+        <label class="inline-flex items-center gap-2 text-sm"><input id="flt-uu" type="checkbox" class="h-4 w-4 accent-slate-100" checked><span>UU</span></label>
+        <label class="inline-flex items-center gap-2 text-sm"><input id="flt-pp" type="checkbox" class="h-4 w-4 accent-slate-100" checked><span>PP</span></label>
+        <label class="inline-flex items-center gap-2 text-sm"><input id="flt-perpres" type="checkbox" class="h-4 w-4 accent-slate-100" checked><span>Perpres</span></label>
+        <label class="inline-flex items-center gap-2 text-sm"><input id="flt-permen" type="checkbox" class="h-4 w-4 accent-slate-100" checked><span>Permen PUPR</span></label>
+        <label class="inline-flex items-center gap-2 text-sm"><input id="flt-bapanas" type="checkbox" class="h-4 w-4 accent-slate-100" checked><span>Peraturan Bapanas</span></label>
+        <button id="reset" class="px-4 py-3 rounded-xl border border-white/15 text-white/90 hover:text-white">Reset</button>
+      </div>
+      <div class="mt-3 text-sm text-slate-300" id="countInfo">Menampilkan 0 regulasi</div>
+    </div>
+  </section>
+
+  <!-- Grid: daftar per kelompok -->
+  <section class="py-6">
+    <div class="max-w-7xl mx-auto px-4 grid lg:grid-cols-2 gap-4">
+
+      <!-- UNDANG-UNDANG -->
+      <div class="card rounded-2xl p-4">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-base font-bold">📜 Undang‑Undang <span id="count-uu" class="text-slate-300 font-normal"></span></h2>
+          <span class="text-xs text-slate-300">Terbaru → Lama</span>
+        </div>
+        <ul id="list-uu" class="space-y-3 text-sm">
+          <li class="item" data-cat="uu" data-tags="pangan ketahanan">
+            <a class="block hover:underline font-semibold text-sky-300 hover:text-white" target="_blank" rel="noopener" href="https://peraturan.bpk.go.id/Home/Details/39100">UU 18/2012 tentang Pangan</a>
+            <div class="mt-1 flex flex-wrap gap-2"><span class="tag">Pangan</span><span class="tag">Ketahanan</span></div>
+          </li>
+          <li class="item" data-cat="uu" data-tags="sumber daya air irigasi">
+            <a class="block hover:underline font-semibold text-sky-300 hover:text-white" target="_blank" rel="noopener" href="https://peraturan.bpk.go.id/Details/122742/uu-no-17-tahun-2019">UU 17/2019 tentang Sumber Daya Air</a>
+            <div class="mt-1 flex flex-wrap gap-2"><span class="tag">SDA</span><span class="tag">Irigasi</span></div>
+          </li>
+          <li class="item" data-cat="uu" data-tags="petani pemberdayaan pangan">
+            <a class="block hover:underline font-semibold text-sky-300 hover:text-white" target="_blank" rel="noopener" href="https://peraturan.bpk.go.id/Details/38893/uu-no-19-tahun-2013">UU 19/2013 tentang Perlindungan dan Pemberdayaan Petani</a>
+            <div class="mt-1 flex flex-wrap gap-2"><span class="tag">Petani</span><span class="tag">Ketahanan</span></div>
+          </li>
+          <li class="item" data-cat="uu" data-tags="lahan pertanian pangan berkelanjutan plp2b">
+            <a class="block hover:underline font-semibold text-sky-300 hover:text-white" target="_blank" rel="noopener" href="https://peraturan.bpk.go.id/Details/38786/uu-no-41-tahun-2009">UU 41/2009 tentang Perlindungan Lahan Pertanian Pangan Berkelanjutan</a>
+            <div class="mt-1 flex flex-wrap gap-2"><span class="tag">PLP2B</span><span class="tag">Lahan</span></div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- PERATURAN PEMERINTAH -->
+      <div class="card rounded-2xl p-4">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-base font-bold">🏛️ Peraturan Pemerintah <span id="count-pp" class="text-slate-300 font-normal"></span></h2>
+          <span class="text-xs text-slate-300">Terbaru → Lama</span>
+        </div>
+        <ul id="list-pp" class="space-y-3 text-sm">
+          <li class="item" data-cat="pp" data-tags="keamanan pangan mutu">
+            <a class="block hover:underline font-semibold text-sky-300 hover:text-white" target="_blank" rel="noopener" href="https://peraturan.bpk.go.id/Details/129230/pp-no-86-tahun-2019">PP 86/2019 tentang Keamanan Pangan</a>
+            <div class="mt-1 flex flex-wrap gap-2"><span class="tag">Keamanan Pangan</span></div>
+          </li>
+          <li class="item" data-cat="pp" data-tags="ketahanan gizi pangan">
+            <a class="block hover:underline font-semibold text-sky-300 hover:text-white" target="_blank" rel="noopener" href="https://peraturan.bpk.go.id/Home/Details/5581">PP 17/2015 tentang Ketahanan Pangan dan Gizi</a>
+            <div class="mt-1 flex flex-wrap gap-2"><span class="tag">Ketahanan</span><span class="tag">Gizi</span></div>
+          </li>
+          <li class="item" data-cat="pp" data-tags="irigasi jaringan operasi pemeliharaan">
+            <a class="block hover:underline font-semibold text-sky-300 hover:text-white" target="_blank" rel="noopener" href="https://peraturan.bpk.go.id/Details/49088/pp-no-20-tahun-2006">PP 20/2006 tentang Irigasi</a>
+            <div class="mt-1 flex flex-wrap gap-2"><span class="tag">Irigasi</span></div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- PERATURAN PRESIDEN -->
+      <div class="card rounded-2xl p-4">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-base font-bold">🕊️ Peraturan Presiden <span id="count-perpres" class="text-slate-300 font-normal"></span></h2>
+          <span class="text-xs text-slate-300">Terbaru → Lama</span>
+        </div>
+        <ul id="list-perpres" class="space-y-3 text-sm">
+          <li class="item" data-cat="perpres" data-tags="cadangan pangan pemerintah cpp beras jagung kedelai">
+            <a class="block hover:underline font-semibold text-sky-300 hover:text-white" target="_blank" rel="noopener" href="https://peraturan.bpk.go.id/Details/230367/perpres-no-125-tahun-2022">Perpres 125/2022 tentang Penyelenggaraan Cadangan Pangan Pemerintah</a>
+            <div class="mt-1 flex flex-wrap gap-2"><span class="tag">Cadangan Pangan</span><span class="tag">CPP</span></div>
+          </li>
+          <li class="item" data-cat="perpres" data-tags="badan pangan nasional nfa kelembagaan">
+            <a class="block hover:underline font-semibold text-sky-300 hover:text-white" target="_blank" rel="noopener" href="https://peraturan.bpk.go.id/Details/175819/perpres-no-66-tahun-2021">Perpres 66/2021 tentang Badan Pangan Nasional</a>
+            <div class="mt-1 flex flex-wrap gap-2"><span class="tag">NFA</span><span class="tag">Kelembagaan</span></div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- PERATURAN MENTERI PUPR -->
+      <div class="card rounded-2xl p-4">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-base font-bold">🧩 Permen PUPR (Teknis Irigasi) <span id="count-permen" class="text-slate-300 font-normal"></span></h2>
+          <span class="text-xs text-slate-300">Terbaru → Lama</span>
+        </div>
+        <ul id="list-permen" class="space-y-3 text-sm">
+          <li class="item" data-cat="permen" data-tags="p3-tgai pemberdayaan p3a partisipatif">
+            <a class="block hover:underline font-semibold text-sky-300 hover:text-white" target="_blank" rel="noopener" href="https://jdih.pu.go.id/detail-dokumen/PermenPUPR-nomor-4-Tahun-2021-tahun-2021-Pedoman-Penyelenggaraan-Program-Percepatan-Peningkatan-Tata-Guna-Air-Irigasi">Permen PUPR 4/2021 tentang Pedoman Penyelenggaraan P3‑TGAI</a>
+            <div class="mt-1 flex flex-wrap gap-2"><span class="tag">P3‑TGAI</span><span class="tag">Partisipatif</span></div>
+          </li>
+          <li class="item" data-cat="permen" data-tags="aset inventaris kodefikasi irigasi">
+            <a class="block hover:underline font-semibold text-sky-300 hover:text-white" target="_blank" rel="noopener" href="https://peraturan.bpk.go.id/Home/Details/159876/permen-pupr-no-23prtm2015-tahun-2015">Permen PUPR 23/2015 tentang Pengelolaan Aset Irigasi</a>
+            <div class="mt-1 flex flex-wrap gap-2"><span class="tag">Aset</span><span class="tag">Pengelolaan</span></div>
+          </li>
+          <li class="item" data-cat="permen" data-tags="kriteria status daerah irigasi kewenangan pusat provinsi kabupaten">
+            <a class="block hover:underline font-semibold text-sky-300 hover:text-white" target="_blank" rel="noopener" href="https://peraturan.bpk.go.id/Details/159870/permen-pupr-no-14prtm2015-tahun-2015">Permen PUPR 14/2015 tentang Kriteria & Penetapan Status Daerah Irigasi</a>
+            <div class="mt-1 flex flex-wrap gap-2"><span class="tag">Kewenangan</span><span class="tag">DI</span></div>
+          </li>
+          <li class="item" data-cat="permen" data-tags="eksploitasi pemeliharaan o&p jaringan irigasi">
+            <a class="block hover:underline font-semibold text-sky-300 hover:text-white" target="_blank" rel="noopener" href="https://peraturan.bpk.go.id/Details/159868/permen-pupr-no-12prtm2015-tahun-2015">Permen PUPR 12/2015 tentang Eksploitasi & Pemeliharaan Jaringan Irigasi</a>
+            <div class="mt-1 flex flex-wrap gap-2"><span class="tag">O&P</span><span class="tag">Jaringan</span></div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- PERATURAN BADAN PANGAN NASIONAL -->
+      <div class="card rounded-2xl p-4">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-base font-bold">🏷️ Peraturan Badan Pangan Nasional <span id="count-bapanas" class="text-slate-300 font-normal"></span></h2>
+          <span class="text-xs text-slate-300">Terbaru → Lama</span>
+        </div>
+        <ul id="list-bapanas" class="space-y-3 text-sm">
+          <li class="item" data-cat="bapanas" data-tags="fsva peta ketahanan kerentanan">
+            <a class="block hover:underline font-semibold text-sky-300 hover:text-white" target="_blank" rel="noopener" href="https://badanpangan.go.id/storage/app/media/2022/Regulasi%20NFA%202022/Peraturan%20Badan%20Pangan%20Nomor%2010%20Tahun%202022%20tentang%20Tata%20Cara%20Penyusunan%20Peta%20Ketahanan%20Dan%20Kerentanan%20Pangan.pdf">Peraturan Bapanas 10/2022 tentang Tata Cara Penyusunan Peta Ketahanan & Kerentanan Pangan</a>
+            <div class="mt-1 flex flex-wrap gap-2"><span class="tag">FSVA</span><span class="tag">Teknis</span></div>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
+  <footer class="border-t border-white/10 mt-10">
+    <div class="max-w-7xl mx-auto px-4 py-8 text-sm text-slate-300 flex items-center justify-between">
+      <span>© 2025 Direktorat Irigasi & Rawa</span>
+      <span id="last-updated" class="opacity-80"></span>
+    </div>
+  </footer>
+
+  <!-- Badge Si-Irwan -->
+  <div class="badge-irwan" title="Sistem Informasi Irigasi & Rawa Nasional">
+    <span>Si-Irwan v1.0</span>
+  </div>
+
+  <script>
+    // ===== Filter & Counter =====
+    const q = document.getElementById('q');
+    const fltUU = document.getElementById('flt-uu');
+    const fltPP = document.getElementById('flt-pp');
+    const fltPerpres = document.getElementById('flt-perpres');
+    const fltPermen = document.getElementById('flt-permen');
+    const fltBapanas = document.getElementById('flt-bapanas');
+
+    const items = [...document.querySelectorAll('.item')];
+    const countInfo = document.getElementById('countInfo');
+    const lastUpdated = document.getElementById('last-updated');
+
+    function applyFilter(){
+      const text = (q.value||"").toLowerCase().trim();
+      let cntU=0,cntP=0,cntPr=0,cntM=0,cntB=0,cntAll=0;
+
+      items.forEach(li=>{
+        const cat = li.dataset.cat; // 'uu' | 'pp' | 'perpres' | 'permen' | 'bapanas'
+        const tags= (li.dataset.tags||'').toLowerCase();
+        const title=(li.querySelector('a')?.textContent||'').toLowerCase();
+
+        let visible = true;
+        if(cat==='uu' && !fltUU.checked) visible=false;
+        if(cat==='pp' && !fltPP.checked) visible=false;
+        if(cat==='perpres' && !fltPerpres.checked) visible=false;
+        if(cat==='permen' && !fltPermen.checked) visible=false;
+        if(cat==='bapanas' && !fltBapanas.checked) visible=false;
+        if(text && !(title.includes(text) || tags.includes(text))) visible=false;
+
+        li.style.display = visible ? '' : 'none';
+        if(visible){
+          cntAll++;
+          if(cat==='uu') cntU++;
+          else if(cat==='pp') cntP++;
+          else if(cat==='perpres') cntPr++;
+          else if(cat==='permen') cntM++;
+          else if(cat==='bapanas') cntB++;
+        }
+      });
+
+      document.getElementById('count-uu').textContent = `(${cntU})`;
+      document.getElementById('count-pp').textContent = `(${cntP})`;
+      document.getElementById('count-perpres').textContent = `(${cntPr})`;
+      document.getElementById('count-permen').textContent = `(${cntM})`;
+      document.getElementById('count-bapanas').textContent = `(${cntB})`;
+      countInfo.textContent = `Menampilkan ${cntAll} regulasi`;
+    }
+
+    // Reset
+    document.getElementById('reset').addEventListener('click', ()=>{
+      q.value = "";
+      fltUU.checked = fltPP.checked = fltPerpres.checked = fltPermen.checked = fltBapanas.checked = true;
+      applyFilter();
+    });
+
+    // Init
+    [q,fltUU,fltPP,fltPerpres,fltPermen,fltBapanas].forEach(el=>el.addEventListener('input', applyFilter));
+    window.addEventListener('DOMContentLoaded', ()=>{
+      applyFilter();
+      lastUpdated.textContent = 'Terakhir diperbarui: ' + new Date().toLocaleString('id-ID', { dateStyle:'medium', timeStyle:'short' });
+    });
+  </script>
+</body>
+</html>
