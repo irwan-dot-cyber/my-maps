@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<title>Dashboard Survey — Si-Irwan</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<link rel="icon" href="../../assets/LogoPUPR.png" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+<!-- Leaflet & MarkerCluster -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+
+<style>
+  :root{
+    --bg: #0b1222;
+    --text: #e5e7eb;
+    --muted: #cbd5e1;
+    --muted-2:#94a3b8;
+    --survey:#0d47a1;
+    --accent:#1d5fd1;
+    --panel: rgba(11,18,34,.92);
+    --border: rgba(255,255,255,.12);
+    --hdrH: 88px;
+    --radius: 12px;
+  }
+  html,body{height:100%;margin:0;font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+  /* Header */
+  .header{position:fixed;top:0;left:0;right:0;z-index:900;background:var(--survey);border-bottom:1px solid rgba(255,255,255,.18);padding:10px 16px;display:flex;align-items:center;gap:14px;box-shadow:0 6px 18px rgba(13,71,161,.25)}
+  .header img{height:54px}
+  .header .text{flex:1;color:#fff}
+  .header .title{font-weight:800;font-size:14px;line-height:1.35}
+  .header .subtitle{font-weight:600;font-size:12px;color:rgba(255,255,255,.9);margin-top:4px}
+  .btn-home{background:#fff;color:var(--survey);font-weight:700;padding:8px 14px;border-radius:10px;text-decoration:none;font-size:13px}
+  .btn-home:hover{background:#f1f5f9;text-decoration:none}
+  .spacer{height:var(--hdrH)}
+  #map{height:calc(100vh - var(--hdrH))}
+  /* Dock bawah */
+  .dock{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--border);max-height:46vh;overflow:auto;padding:12px 14px;box-shadow:0 -10px 22px rgba(0,0,0,.28);z-index:950;backdrop-filter: blur(6px)}
+  .dock h2{font-size:14px;margin:0 0 8px;font-weight:800;color:#fff}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  label{font-size:12px;color:var(--muted)}
+  select{width:100%;padding:10px 12px;font-size:14px;background:rgba(255,255,255,.06);color:#fff;border:1px solid var(--border);border-radius:var(--radius);outline:none;appearance:none}
+  option{color:#000;background:#fff}
+  .row{display:grid;grid-template-columns:1fr auto;gap:8px;font-size:13px;color:var(--muted)}
+  .row b{color:#fff}
+  .err{color:#fca5a5;font-size:12px;margin-top:6px}
+  .meta{font-size:13px;border-collapse:collapse;width:100%;color:var(--text)}
+  .meta td{border-bottom:1px dashed rgba(255,255,255,.08);padding:6px 2px;vertical-align:top}
+  .key{color:var(--muted-2);width:42%}
+  @media(max-width:960px){.grid{grid-template-columns:1fr 1fr}}
+  @media(max-width:680px){.grid{grid-template-columns:1fr}:root{--hdrH:96px}}
+  /* Badge */
+  .badge-irwan{position:fixed;right:12px;bottom:96px;z-index:1200;background:rgba(13,71,161,.85);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:12px;font-weight:700;padding:6px 12px;border-radius:10px;box-shadow:0 0 10px rgba(13,71,161,.6);backdrop-filter: blur(6px);animation:glow 2.8s ease-in-out infinite}
+  .badge-irwan span{color:#FFD700}
+  .badge-irwan:hover{transform:scale(1.03);transition:transform .2s ease}
+  @keyframes glow{0%,100%{box-shadow:0 0 8px rgba(13,71,161,.6)}50%{box-shadow:0 0 18px rgba(255,215,0,.8)}}
+  .legend{display:flex;flex-wrap:wrap;gap:8px;font-size:12px;color:#cbd5e1;margin-top:8px}
+  .lg{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:10px;height:10px;border-radius:50%}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <img src="../../assets/LogoPUPR.png" alt="Logo PU"/>
+  <div class="text">
+    <div class="title">Kementerian Pekerjaan Umum</div>
+    <div class="subtitle">Direktorat Jenderal Sumber Daya Air — Direktorat Irigasi & Rawa</div>
+    <div class="subtitle">Dashboard Titik Survey (CSV)</div>
+  </div>
+  <a href="../../si-irwan.html" class="btn-home">Beranda</a>
+</div>
+<div class="spacer"></div>
+
+<!-- MAP -->
+<div id="map"></div>
+
+<!-- DOCK -->
+<div class="dock">
+  <h2>Filter & Statistik</h2>
+  <div class="grid">
+    <div>
+      <label>Filter BBWS</label>
+      <select id="bbwsSel"><option value="">— Semua —</option></select>
+    </div>
+    <div>
+      <label>Pilih Daerah Irigasi (nama_di)</label>
+      <select id="diSel"><option value="">— Semua —</option></select>
+    </div>
+    <div>
+      <label>Status Progres</label>
+      <select id="statusSel"><option value="">— Semua —</option></select>
+    </div>
+  </div>
+  <div class="legend" id="legend"></div>
+  <div id="msg" class="err"></div>
+  <hr style="border:none;border-top:1px solid var(--border);margin:10px 0"/>
+  <div id="stats" class="row"></div>
+  <div id="detail" style="margin-top:8px"></div>
+</div>
+
+<!-- BADGE -->
+<div class="badge-irwan" title="Sistem Informasi Irigasi & Rawa Nasional">
+  <span>Si-Irwan v1.0</span>
+</div>
+
+<!-- Scripts -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+<script>
+/* ========= KONFIG ========= */
+const CSV_URL = "survey.csv";  // pastikan file ini ada di folder yang sama
+const DEFAULT_ZOOM = 5;
+const DEFAULT_CENTER = [-2.5, 117.5]; // Indonesia tengah
+// Warna untuk status_progres (tambahkan/ubah sesuai kebutuhan)
+const STATUS_COLORS = {
+  "Selesai": "#22c55e",
+  "Proses": "#f59e0b",
+  "Terkendala": "#ef4444",
+  "Direncanakan": "#3b82f6"
+};
+const FALLBACK_COLOR = "#a3a3a3";
+
+const map = L.map('map').setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  { attribution: 'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics' }
+).addTo(map);
+
+// Layer Group
+const cluster = L.markerClusterGroup({ showCoverageOnHover:false, maxClusterRadius:54 });
+map.addLayer(cluster);
+
+const bbwsSel = document.getElementById('bbwsSel');
+const diSel = document.getElementById('diSel');
+const statusSel = document.getElementById('statusSel');
+const statsEl = document.getElementById('stats');
+const detailEl = document.getElementById('detail');
+const msgEl = document.getElementById('msg');
+const legendEl = document.getElementById('legend');
+
+function note(msg){ msgEl.textContent = msg || ""; }
+function colorForStatus(s){
+  if(!s) return FALLBACK_COLOR;
+  const key = String(s).trim();
+  return STATUS_COLORS[key] || FALLBACK_COLOR;
+}
+function circleStyle(s){
+  const c = colorForStatus(s);
+  return { radius:7, color:"#fff", weight:1, fillColor:c, fillOpacity:.9 };
+}
+function imgTag(url){
+  if(!url) return "";
+  const safe = String(url).trim();
+  if(!safe) return "";
+  return `<div style="margin:6px 0"><img src="${safe}" alt="Foto" style="max-width:100%;border-radius:10px;border:1px solid #e5e7eb"/></div>`;
+}
+function buildTable(obj){
+  const rows = Object.entries(obj)
+    .filter(([k,v]) => v !== null && v !== undefined && String(v).trim() !== "" )
+    .map(([k,v])=>{
+      const val = typeof v === "string" ? v : JSON.stringify(v);
+      return `<tr><td class="key">${k}</td><td>${val}</td></tr>`;
+    }).join("");
+  return `<table class="meta">${rows || '<tr><td>(tidak ada data)</td></tr>'}</table>`;
+}
+function setOptions(sel, arr, placeholder){
+  sel.innerHTML = `<option value="">— ${placeholder} —</option>`;
+  arr.forEach(v=>{
+    const lbl = (v===null||v===undefined||v==="") ? "(kosong)" : v;
+    sel.insertAdjacentHTML('beforeend', `<option value="${v}">${lbl}</option>`);
+  });
+}
+
+let rawRows = [];
+let markers = []; // { marker, data }
+
+function normalizeLatLon(row){
+  // Cari kandidat kolom koordinat
+  const keys = Object.keys(row);
+  const latKey = keys.find(k=>/^(lat|latitude|y)$/i.test(k));
+  const lonKey = keys.find(k=>/^(lon|long|longitude|x)$/i.test(k));
+  const lat = latKey ? parseFloat(row[latKey]) : NaN;
+  const lon = lonKey ? parseFloat(row[lonKey]) : NaN;
+  return { lat, lon, latKey, lonKey };
+}
+
+function makeLegend(statusList){
+  const html = statusList.map(s=>{
+    const c = colorForStatus(s);
+    const name = s || "(kosong)";
+    return `<span class="lg"><span class="dot" style="background:${c}"></span>${name}</span>`;
+  }).join("");
+  legendEl.innerHTML = html;
+}
+
+function refresh(){
+  // Ambil filter
+  const bbws = (bbwsSel.value||"").toLowerCase();
+  const di = (diSel.value||"").toLowerCase();
+  const stat = (statusSel.value||"").toLowerCase();
+
+  // Clear cluster
+  cluster.clearLayers();
+
+  let count=0;
+  const bounds = [];
+
+  markers.forEach(m=>{
+    const b = String(m.data.bbws||"").toLowerCase();
+    const d = String(m.data.nama_di||"").toLowerCase();
+    const s = String(m.data.status_progres||"").toLowerCase();
+
+    const pass = (!bbws || b===bbws) && (!di || d===di) && (!stat || s===stat);
+    if(pass){
+      cluster.addLayer(m.marker);
+      count++;
+      bounds.push([m.marker.getLatLng().lat, m.marker.getLatLng().lng]);
+    }
+  });
+
+  statsEl.innerHTML = `<span>Total titik tampil</span><b>${count}</b>`;
+
+  // Auto-zoom jika ada filter, atau saat awal
+  if(count>0){
+    const ll = L.latLngBounds(bounds);
+    map.fitBounds(ll.pad(0.15), { maxZoom: 12 });
+  }
+}
+
+function buildPopupContent(d){
+  const title = d.nama_di || d.kegiatan || d.kabupaten || "Titik Survey";
+  const sub = [d.bbws, d.kecamatan, d.desa].filter(Boolean).join(" • ");
+  const fotos = (d.foto1?imgTag(d.foto1):"") + (d.foto2?imgTag(d.foto2):"");
+  return `
+    <div style="min-width:240px;max-width:320px">
+      <div style="font-weight:800;font-size:14px;color:#111">${title}</div>
+      <div style="font-size:12px;color:#374151;margin:4px 0">${sub}</div>
+      ${fotos}
+      <div style="font-size:12px;color:#111"><b>Status:</b> ${d.status_progres||"-"}</div>
+    </div>
+  `;
+}
+
+function showDetail(d, latlng){
+  const title = d.nama_di || d.kegiatan || d.kabupaten || "Detail Survey";
+  const fotos = (d.foto1?imgTag(d.foto1):"") + (d.foto2?imgTag(d.foto2):"");
+  detailEl.innerHTML = `
+    <h3 style="margin:6px 0;color:#fff">${title}</h3>
+    <div style="font-size:12px;color:#cbd5e1;margin-bottom:6px">Koordinat: ${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}</div>
+    ${fotos}
+    ${buildTable(d)}
+  `;
+}
+
+function distinct(arr){
+  return [...new Set(arr.filter(v=>v!==undefined))];
+}
+
+// Muat CSV
+Papa.parse(CSV_URL,{
+  download:true, header:true, dynamicTyping:true, skipEmptyLines:true,
+  complete: (res)=>{
+    try{
+      rawRows = res.data;
+      if(!rawRows.length){ note("CSV kosong / tidak terbaca."); return; }
+
+      // siapkan domain filter
+      const bbwsList = distinct(rawRows.map(r=>r.bbws).filter(Boolean)).sort((a,b)=>String(a).localeCompare(String(b)));
+      const diList = distinct(rawRows.map(r=>r.nama_di).filter(Boolean)).sort((a,b)=>String(a).localeCompare(String(b)));
+      const statusList = distinct(rawRows.map(r=>r.status_progres).filter(Boolean)).sort((a,b)=>String(a).localeCompare(String(b)));
+
+      setOptions(bbwsSel, bbwsList, "Semua BBWS");
+      setOptions(diSel, diList, "Semua DI");
+      setOptions(statusSel, statusList, "Semua Status");
+
+      makeLegend(statusList);
+
+      // Buat marker
+      markers = [];
+      let good=0, bad=0;
+      rawRows.forEach(row=>{
+        const {lat, lon} = normalizeLatLon(row);
+        if(isFinite(lat) && isFinite(lon)){
+          const m = L.circleMarker([lat, lon], circleStyle(row.status_progres));
+          m.bindPopup(buildPopupContent(row));
+          m.on('click', ()=> showDetail(row, m.getLatLng()));
+          markers.push({ marker:m, data:row });
+          good++;
+        } else {
+          bad++;
+        }
+      });
+
+      if(!markers.length){
+        note("Tidak ada baris dengan koordinat valid (cek kolom x/y atau lon/lat).");
+      } else {
+        note(bad ? `Beberapa baris tanpa koordinat valid terlewat: ${bad}` : "");
+      }
+
+      // Prefilter default ke BBWS Serayu Opak jika ada
+      const hasSO = bbwsList.map(v=>String(v).toLowerCase()).includes("serayu opak");
+      if(hasSO){
+        const opt = [...bbwsSel.options].find(o=>String(o.value).toLowerCase()==="serayu opak");
+        if(opt){ bbwsSel.value = opt.value; }
+      }
+
+      refresh(); // render awal
+    }catch(e){
+      console.error(e);
+      note("Gagal memproses CSV.");
+    }
+  },
+  error: (err)=>{ console.error(err); note("Gagal memuat CSV."); }
+});
+
+// Event filter
+[bbwsSel, diSel, statusSel].forEach(el => el.addEventListener('change', refresh));
+</script>
+</body>
+</html>
