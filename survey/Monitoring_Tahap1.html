@@ -22,7 +22,10 @@
   .dock h2{font-size:14px;margin:0 0 8px;font-weight:800;color:#fff}
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   label{font-size:12px;color:var(--muted)}
-  select{width:100%;padding:10px 12px;font-size:14px;background:rgba(255,255,255,.06);color:#fff;border:1px solid var(--border);border-radius:var(--radius);outline:none}
+  /* === warna dropdown === */
+  select{width:100%;padding:10px 12px;font-size:14px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:var(--radius);outline:none;color:#9aa3b2}
+  select.has-value{color:#ffffff}      /* saat ada pilihan */
+  option{color:#111;background:#fff}   /* warna di menu list */
   .row{display:grid;grid-template-columns:1fr auto;gap:8px;font-size:13px;color:var(--muted)} .row b{color:#fff}
   .meta{font-size:13px;border-collapse:collapse;width:100%}.meta td{border-bottom:1px dashed rgba(255,255,255,.08);padding:6px 2px}
   .key{color:var(--muted-2);width:42%}
@@ -35,7 +38,7 @@
   <div class="text">
     <div class="title">Kementerian Pekerjaan Umum</div>
     <div class="subtitle">Direktorat Jenderal Sumber Daya Air — Direktorat Irigasi & Rawa</div>
-    <div class="subtitle">Dashboard Monitoring Inpres 2/2025 Tahap 1</div>
+    <div class="subtitle">Dashboard Titik Survey (XLSX/CSV)</div>
   </div>
   <a href="../../si-irwan.html" class="btn-home">Beranda</a>
 </div>
@@ -62,16 +65,20 @@
 
 <div class="badge-irwan" title="Sistem Informasi Irigasi & Rawa Nasional"><span>Si-Irwan v1.0</span></div>
 
-<!-- Scripts -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-<!-- SheetJS (XLSX parser) -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
+<script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 <script>
-const FILE_URL = "Monitoring_Tahap1.xlsx"; // file Excel di folder yang sama
-const SHEET_NAME = "survey";                // gunakan sheet 'survey'
+/* ===== config ===== */
 const LABEL_ZOOM = 9;
+/* XLSX candidates: rename Excel tanpa underscore kalau pakai GitHub Pages */
+const CANDIDATE_PATHS = [
+  "./Monitoring_Tahap.xlsx",         // rekomendasi (tanpa _)
+  "./_Monitoring_Tahap_.xlsx",       // butuh .nojekyll jika di Pages
+  "./data/Monitoring_Tahap.xlsx",
+  "../Monitoring_Tahap.xlsx"
+];
 
 const map=L.map('map').setView([-2.5,117.5],5);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -85,57 +92,55 @@ const diSel=document.getElementById('diSel');
 const statsEl=document.getElementById('stats');
 const detailEl=document.getElementById('detail');
 
+/* === warna dropdown saat ada/ga ada value === */
+function syncSelectColor(sel){ sel.classList.toggle('has-value', !!sel.value); }
+
+/* utils */
 const norm=v=>String(v??"").trim().toLowerCase();
 const isValid=v=>v!==undefined&&v!==null&&String(v).trim()!=="";
 const distinct=a=>[...new Set(a.filter(isValid))];
-
-let rawRows=[], markers=[];
-
-function normalizeLatLon(r){
-  // dukung kolom: y/lat/latitude dan x/lon/long/longitude
-  const keys = Object.keys(r);
-  const latKey = keys.find(k=>/^(y|lat|latitude)$/i.test(k)) || "y";
-  const lonKey = keys.find(k=>/^(x|lon|long|longitude)$/i.test(k)) || "x";
-  return { lat: parseFloat(r[latKey]), lon: parseFloat(r[lonKey]) };
+function normalizeLatLon(row){
+  const keys=Object.keys(row);
+  const latKey=keys.find(k=>/^(y|lat|latitude)$/i.test(k))||"y";
+  const lonKey=keys.find(k=>/^(x|lon|long|longitude)$/i.test(k))||"x";
+  return {lat:parseFloat(row[latKey]),lon:parseFloat(row[lonKey])};
 }
 function colorForStatus(s){const pal={Selesai:"#22c55e",Proses:"#f59e0b",Terkendala:"#ef4444",Direncanakan:"#3b82f6"};return pal[s]||"#a3a3a3";}
 function circleStyle(s){return{radius:7,color:"#fff",weight:1,fillColor:colorForStatus(s),fillOpacity:.9};}
-
 function setOptionsSimple(sel,arr,ph){sel.innerHTML=`<option value="">— ${ph} —</option>`;arr.forEach(v=>sel.insertAdjacentHTML('beforeend',`<option value="${v}">${v}</option>`));}
-function buildTable(o){
-  const rows=Object.entries(o).filter(([k,v])=>isValid(v)).map(([k,v])=>`<tr><td class="key">${k}</td><td>${v}</td></tr>`).join("");
-  return `<table class="meta">${rows||"<tr><td>(tidak ada data)</td></tr>"}</table>`;
-}
-function showDetail(d,latlng){
-  detailEl.innerHTML=`<h3 style="margin:6px 0;color:#fff">${d.nama_di||d.kegiatan||d.kabupaten||"Detail Survey"}</h3>
-  <div style="font-size:12px;color:#cbd5e1;margin-bottom:6px">Koordinat: ${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}</div>${buildTable(d)}`;
-}
+function buildTable(o){const rows=Object.entries(o).filter(([k,v])=>isValid(v)).map(([k,v])=>`<tr><td class="key">${k}</td><td>${v}</td></tr>`).join("");return `<table class="meta">${rows||"<tr><td>(tidak ada data)</td></tr>"}</table>`;}
+function showDetail(d,latlng){detailEl.innerHTML=`<h3 style="margin:6px 0;color:#fff">${d.nama_di||d.kegiatan||d.kabupaten||"Detail Survey"}</h3><div style="font-size:12px;color:#cbd5e1;margin-bottom:6px">Koordinat: ${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}</div>${buildTable(d)}`;}
 
+/* state */
+let rawRows=[], markers=[];
+
+/* rebuild DI tergantung BBWS + sync warna */
 function rebuildDiOptions(){
-  const bPick = bbwsSel.value; // label asli
+  const bPick=bbwsSel.value;
   if(isValid(bPick)){
-    const key = norm(bPick);
-    const list = distinct(rawRows.filter(r=>norm(r.bbws)===key).map(r=>String(r.nama_di||"").trim()))
-                 .sort((a,b)=>a.localeCompare(b));
-    setOptionsSimple(diSel, list, "Semua DI di BBWS ini");
-  } else {
-    const all = distinct(rawRows.map(r=>String(r.nama_di||"").trim())).sort((a,b)=>a.localeCompare(b));
+    const key=norm(bPick);
+    const diList=distinct(rawRows.filter(r=>norm(r.bbws)===key).map(r=>String(r.nama_di||"").trim()))
+                  .sort((a,b)=>a.localeCompare(b));
+    setOptionsSimple(diSel, diList, "Semua DI di BBWS ini");
+  }else{
+    const all=distinct(rawRows.map(r=>String(r.nama_di||"").trim())).sort((a,b)=>a.localeCompare(b));
     setOptionsSimple(diSel, all, "Semua DI");
   }
-  diSel.value = "";
+  diSel.value="";
+  syncSelectColor(diSel);
 }
 
+/* render map */
 function refresh(autoZoom=true){
-  const bPick = bbwsSel.value;                 // label asli
-  const dPick = (diSel.value||"").trim();      // label asli
-  const bKey  = isValid(bPick)?norm(bPick):"";
+  const bPick=bbwsSel.value, dPick=(diSel.value||"").trim();
+  const bKey=isValid(bPick)?norm(bPick):"";
   cluster.clearLayers(); labelLayer.clearLayers();
 
   const pts=[];
   markers.forEach(m=>{
-    const r = m.data;
-    const pass = (!bKey || norm(r.bbws)===bKey) && (!dPick || String(r.nama_di||"").trim()===dPick);
-    if(pass){
+    const r=m.data;
+    const ok=( !bKey || norm(r.bbws)===bKey ) && ( !dPick || String(r.nama_di||"").trim()===dPick );
+    if(ok){
       cluster.addLayer(m.marker);
       const ll=m.marker.getLatLng();
       pts.push(ll);
@@ -146,50 +151,67 @@ function refresh(autoZoom=true){
       }
     }
   });
-
   statsEl.innerHTML=`<span>Total titik tampil</span><b>${pts.length}</b>`;
-  if(autoZoom && pts.length){ map.fitBounds(L.latLngBounds(pts).pad(0.15), {maxZoom:12}); }
+  if(autoZoom&&pts.length){ map.fitBounds(L.latLngBounds(pts).pad(0.15),{maxZoom:12}); }
 }
 map.on('zoomend',()=>refresh(false));
 
-/* ======== Load XLSX (SheetJS) ======== */
-fetch(FILE_URL).then(r=>r.arrayBuffer()).then(buf=>{
-  const wb = XLSX.read(buf, { type: 'array' });
-  const sheetName = wb.SheetNames.includes(SHEET_NAME) ? SHEET_NAME : wb.SheetNames[0];
-  const json = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: "" });  // defval biar kolom kosong jadi ""
-  rawRows = json;
+/* ===== loader: coba XLSX multi-path, fallback CSV ===== */
+async function tryLoadXlsx(path){
+  try{
+    const res = await fetch(path,{cache:"no-store"});
+    if(!res.ok) return null;
+    const buf = await res.arrayBuffer();
+    const wb  = XLSX.read(buf,{type:"array"});
+    const sheet = wb.SheetNames.includes("survey") ? "survey" : wb.SheetNames[0];
+    const json  = XLSX.utils.sheet_to_json(wb.Sheets[sheet],{defval:""});
+    return json;
+  }catch(e){ return null; }
+}
+async function loadData(){
+  for(const p of CANDIDATE_PATHS){
+    const rows=await tryLoadXlsx(p);
+    if(rows && rows.length) return rows;
+  }
+  // fallback CSV
+  const txt = await fetch("survey.csv",{cache:"no-store"}).then(r=>{ if(!r.ok) throw new Error("csv missing"); return r.text(); });
+  return Papa.parse(txt,{header:true,dynamicTyping:true,skipEmptyLines:true}).data;
+}
 
-  // Dropdown BBWS (label asli)
-  const bbwsList = distinct(rawRows.map(r=>String(r.bbws||"").trim())).sort((a,b)=>a.localeCompare(b));
+/* boot */
+loadData().then(rows=>{
+  rawRows=rows;
+
+  const bbwsList=distinct(rawRows.map(r=>String(r.bbws||"").trim())).sort((a,b)=>a.localeCompare(b));
   setOptionsSimple(bbwsSel, bbwsList, "Semua BBWS");
 
-  // Marker
   markers=[];
   rawRows.forEach(r=>{
     const {lat,lon}=normalizeLatLon(r);
     if(isFinite(lat)&&isFinite(lon)){
       const title=r.nama_di||"Titik Survey";
       const m=L.circleMarker([lat,lon],circleStyle(r.status_progres));
-      m.bindPopup(`<b>${title}</b>`); // popup hanya nama DI
+      m.bindPopup(`<b>${title}</b>`);
       m.on('click',()=>showDetail(r,m.getLatLng()));
       markers.push({marker:m,data:r});
     }
   });
 
-  // Preselect contoh (opsional): BBWS Serayu Opak
-  const so = bbwsList.find(v=>v.toLowerCase()==="serayu opak");
-  if(so){ bbwsSel.value = so; }
+  // inisialisasi warna dropdown
+  syncSelectColor(bbwsSel); syncSelectColor(diSel);
 
+  // preselect opsional
+  const so=[...bbwsSel.options].find(o=>o.value.toLowerCase()==="serayu opak"); if(so){bbwsSel.value=so.value;}
   rebuildDiOptions();
   refresh(true);
-}).catch(err=>{
-  console.error("Gagal memuat XLSX:", err);
-  statsEl.innerHTML = `<span style="color:#fca5a5">Gagal memuat data Excel.</span>`;
+}).catch(e=>{
+  console.error(e);
+  statsEl.innerHTML = `<span style="color:#fca5a5">Gagal memuat data. Cek path XLSX/CSV.</span>`;
 });
 
-/* Events */
-bbwsSel.addEventListener('change',()=>{rebuildDiOptions();refresh(true);});
-diSel.addEventListener('change',()=>refresh(true));
+/* events + sinkron warna */
+bbwsSel.addEventListener('change',()=>{ syncSelectColor(bbwsSel); rebuildDiOptions(); refresh(true); });
+diSel.addEventListener('change', ()=>{ syncSelectColor(diSel); refresh(true); });
 </script>
 </body>
 </html>
