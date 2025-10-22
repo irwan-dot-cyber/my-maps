@@ -42,17 +42,7 @@
   .badge-irwan{position:fixed;right:12px;bottom:96px;z-index:1200;background:rgba(13,71,161,.85);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:12px;font-weight:700;padding:6px 12px;border-radius:10px;box-shadow:0 0 10px rgba(13,71,161,.6);backdrop-filter:blur(6px);animation:glow 2.8s ease-in-out infinite}
   .badge-irwan span{color:#FFD700}
   @keyframes glow{0%,100%{box-shadow:0 0 8px rgba(13,71,161,.6)}50%{box-shadow:0 0 18px rgba(255,215,0,.8)}}
-
-  /* Label DI */
-  .di-label{
-    background: rgba(255,255,255,.92);
-    border: 1px solid #d1d5db;
-    padding: 2px 6px;
-    border-radius: 6px;
-    font-size: 12px;
-    color:#111;
-    box-shadow: 0 1px 6px rgba(0,0,0,.12);
-  }
+  .di-label{background:rgba(255,255,255,.92);border:1px solid #d1d5db;padding:2px 6px;border-radius:6px;font-size:12px;color:#111;box-shadow:0 1px 6px rgba(0,0,0,.12)}
 </style>
 </head>
 <body>
@@ -95,7 +85,7 @@
 <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 <script>
 const CSV_URL = "survey.csv";
-const LABEL_ZOOM = 9; // tampilkan label saat zoom >= 9
+const LABEL_ZOOM = 9;
 
 const map = L.map('map').setView([-2.5,117.5],5);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -103,117 +93,168 @@ L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/
 
 const cluster=L.markerClusterGroup({showCoverageOnHover:false,maxClusterRadius:54});
 map.addLayer(cluster);
-
-// layer khusus untuk label supaya gampang di-clear/add saat refresh
 const labelLayer = L.layerGroup().addTo(map);
 
 const bbwsSel=document.getElementById('bbwsSel');
 const diSel=document.getElementById('diSel');
 const statsEl=document.getElementById('stats');
 const detailEl=document.getElementById('detail');
-let markers=[],rawRows=[],diByBbws=new Map(),allDiList=[];
+
+let markers=[],rawRows=[];
+
+/* ====== Normalizer & helpers ====== */
+const norm = v => String(v ?? "").trim().toLowerCase();
+const isValid = v => v!==undefined && v!==null && String(v).trim()!=="";
+const distinct = a => [...new Set(a.filter(isValid))];
+
+function normalizeLatLon(r){
+  const k=Object.keys(r);
+  const latKey=k.find(k=>/^(lat|latitude|y)$/i.test(k));
+  const lonKey=k.find(k=>/^(lon|long|longitude|x)$/i.test(k));
+  return { lat: parseFloat(r[latKey]), lon: parseFloat(r[lonKey]) };
+}
 
 function colorForStatus(s){const c={Selesai:"#22c55e",Proses:"#f59e0b",Terkendala:"#ef4444",Direncanakan:"#3b82f6"};return c[s]||"#a3a3a3";}
 function circleStyle(s){return{radius:7,color:"#fff",weight:1,fillColor:colorForStatus(s),fillOpacity:.9};}
-function distinct(a){return[...new Set(a.filter(v=>v!==undefined && v!==null && v!==""))];}
-function normalizeLatLon(r){const k=Object.keys(r);const latKey=k.find(k=>/^(lat|latitude|y)$/i.test(k));const lonKey=k.find(k=>/^(lon|long|longitude|x)$/i.test(k));return{lat:parseFloat(r[latKey]),lon:parseFloat(r[lonKey])};}
-function setOptions(sel,arr,ph){sel.innerHTML=`<option value="">— ${ph} —</option>`;arr.forEach(v=>sel.insertAdjacentHTML('beforeend',`<option value="${v}">${v}</option>`));}
+
+function setOptionsPairs(sel, pairs, placeholder){
+  sel.innerHTML = `<option value="">— ${placeholder} —</option>`;
+  pairs.forEach(([value,label])=>{
+    sel.insertAdjacentHTML('beforeend', `<option value="${value}">${label}</option>`);
+  });
+}
+
+function setOptionsSimple(sel, arr, placeholder){
+  sel.innerHTML = `<option value="">— ${placeholder} —</option>`;
+  arr.forEach(v=>{
+    sel.insertAdjacentHTML('beforeend', `<option value="${v}">${v}</option>`);
+  });
+}
+
 function buildTable(o){
-  const rows = Object.entries(o).filter(([k,v])=>v!==null && v!==undefined && String(v).trim()!=="")
-               .map(([k,v])=>`<tr><td class='key'>${k}</td><td>${v}</td></tr>`).join("");
-  return "<table class='meta'>"+(rows||"<tr><td>(tidak ada data)</td></tr>")+"</table>";
+  const rows = Object.entries(o).filter(([k,v])=>isValid(v))
+    .map(([k,v])=>`<tr><td class="key">${k}</td><td>${v}</td></tr>`).join("");
+  return `<table class="meta">${rows || "<tr><td>(tidak ada data)</td></tr>"}</table>`;
 }
+
 function showDetail(d,latlng){
-  detailEl.innerHTML=`<h3 style="margin:6px 0;color:#fff">${d.nama_di||d.kegiatan||d.kabupaten||"Detail Survey"}</h3>
+  detailEl.innerHTML = `
+    <h3 style="margin:6px 0;color:#fff">${d.nama_di || d.kegiatan || d.kabupaten || "Detail Survey"}</h3>
     <div style="font-size:12px;color:#cbd5e1;margin-bottom:6px">Koordinat: ${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}</div>
-    ${buildTable(d)}`;
+    ${buildTable(d)}
+  `;
 }
 
+/* ====== Index: BBWS (normalized) -> {label, dis:Set(DI-label)} ====== */
+const bbwsIndex = new Map(); // key: norm(bbws) -> { label: "Serayu Opak", dis: Set<string> }
+let allDiList = [];
+
+/* ====== Populate from CSV ====== */
+Papa.parse(CSV_URL,{
+  download:true, header:true, dynamicTyping:true, skipEmptyLines:true,
+  complete: ({data})=>{
+    rawRows = data;
+
+    // Build index BBWS -> DI (pakai key normalized, label asli disimpan)
+    rawRows.forEach(r=>{
+      const bLabel = r.bbws;
+      const dLabel = r.nama_di;
+      if(!isValid(bLabel) || !isValid(dLabel)) return;
+      const bKey = norm(bLabel);
+      if(!bbwsIndex.has(bKey)) bbwsIndex.set(bKey, { label: String(bLabel).trim(), dis: new Set() });
+      bbwsIndex.get(bKey).dis.add(String(dLabel).trim());
+    });
+
+    // Isi dropdown BBWS (value=normalized, text=label asli)
+    const bbwsPairs = [...bbwsIndex.entries()]
+      .map(([key, obj]) => [key, obj.label])
+      .sort((a,b)=>a[1].localeCompare(b[1]));
+    setOptionsPairs(bbwsSel, bbwsPairs, "Semua BBWS");
+
+    // Kumpulan semua DI (untuk saat BBWS kosong)
+    const diSetAll = new Set();
+    bbwsIndex.forEach(obj => obj.dis.forEach(di => diSetAll.add(di)));
+    allDiList = [...diSetAll].sort((a,b)=>a.localeCompare(b));
+    setOptionsSimple(diSel, allDiList, "Semua DI");
+
+    // Buat marker
+    let skipped=0;
+    rawRows.forEach(r=>{
+      const {lat,lon}=normalizeLatLon(r);
+      if(isFinite(lat) && isFinite(lon)){
+        const title = r.nama_di || "Titik Survey";
+        const m=L.circleMarker([lat,lon],circleStyle(r.status_progres));
+        m.bindPopup(`<b>${title}</b>`); // popup hanya nama DI
+        m.on('click',()=> showDetail(r,m.getLatLng()));
+        markers.push({ marker:m, data:r });
+      } else skipped++;
+    });
+
+    // Prefill: jika ada "Serayu Opak"
+    const soKey = [...bbwsIndex.keys()].find(k => bbwsIndex.get(k).label.toLowerCase()==="serayu opak");
+    if(soKey){
+      bbwsSel.value = soKey;
+      rebuildDiOptions();    // filter DI sesuai BBWS
+    }
+
+    refresh(true);
+  }
+});
+
+/* ====== Rebuild DI options when BBWS changes ====== */
 function rebuildDiOptions(){
-  const b=bbwsSel.value;
-  if(b){ setOptions(diSel, diByBbws.get(b)||[], "Semua DI di BBWS ini"); }
-  else{ setOptions(diSel, allDiList, "Semua DI"); }
-  diSel.value="";
+  const bKey = bbwsSel.value; // sudah normalized
+  if(isValid(bKey)){
+    const obj = bbwsIndex.get(bKey);
+    const list = obj ? [...obj.dis].sort((a,b)=>a.localeCompare(b)) : [];
+    setOptionsSimple(diSel, list, "Semua DI di BBWS ini");
+  }else{
+    setOptionsSimple(diSel, allDiList, "Semua DI");
+  }
+  diSel.value = ""; // reset pilihan DI
 }
 
+/* ====== Render map based on filters and labels ====== */
 function refresh(autoZoom=true){
-  const b=(bbwsSel.value||"").toLowerCase(), d=(diSel.value||"").toLowerCase();
+  const bKey = bbwsSel.value;                // normalized (atau "")
+  const diPick = (diSel.value||"").trim();   // DI label asli
   cluster.clearLayers();
   labelLayer.clearLayers();
 
   let pts=[];
   markers.forEach(m=>{
-    const mb=(m.data.bbws||"").toLowerCase(), md=(m.data.nama_di||"").toLowerCase();
-    const ok=(!b||mb===b)&&(!d||md===d);
-    if(ok){
+    const r = m.data;
+    const rowBKey = norm(r.bbws);
+    const rowDI   = String(r.nama_di||"").trim();
+
+    const pass = (!isValid(bKey) || rowBKey===bKey) && (!isValid(diPick) || rowDI===diPick);
+    if(pass){
       cluster.addLayer(m.marker);
-      pts.push(m.marker.getLatLng());
-      // tampilkan label saat zoom cukup
-      if(map.getZoom()>=LABEL_ZOOM){
-        // label berisi NAMA DI
-        const title = m.data.nama_di || "Titik Survey";
+      const ll = m.marker.getLatLng();
+      pts.push(ll);
+
+      // label muncul saat zoom cukup
+      if(map.getZoom() >= LABEL_ZOOM){
+        const title = rowDI || "Titik Survey";
         const tip = L.tooltip({permanent:true,direction:'top',className:'di-label'})
-                      .setLatLng(m.marker.getLatLng())
-                      .setContent(title);
+                      .setLatLng(ll).setContent(title);
         labelLayer.addLayer(tip);
       }
     }
   });
 
-  statsEl.innerHTML=`<span>Total titik tampil</span><b>${pts.length}</b>`;
+  statsEl.innerHTML = `<span>Total titik tampil</span><b>${pts.length}</b>`;
   if(autoZoom && pts.length){
-    map.fitBounds(L.latLngBounds(pts).pad(0.15),{maxZoom:12});
+    map.fitBounds(L.latLngBounds(pts).pad(0.15), { maxZoom: 12 });
   }
 }
 
-// Re-render label saat zoom berubah
+// re-render label on zoom
 map.on('zoomend', ()=> refresh(false));
 
-Papa.parse(CSV_URL,{
-  download:true,header:true,dynamicTyping:true,skipEmptyLines:true,
-  complete:r=>{
-    rawRows=r.data;
-    const bbwsList=distinct(rawRows.map(x=>x.bbws)).sort((a,b)=>String(a).localeCompare(String(b)));
-    setOptions(bbwsSel,bbwsList,"Semua BBWS");
-
-    // bangun map DI per BBWS
-    diByBbws=new Map();
-    rawRows.forEach(row=>{
-      if(row.bbws && row.nama_di){
-        if(!diByBbws.has(row.bbws)) diByBbws.set(row.bbws,new Set());
-        diByBbws.get(row.bbws).add(row.nama_di);
-      }
-    });
-    diByBbws.forEach((set,key)=> diByBbws.set(key,[...set].sort((a,b)=>String(a).localeCompare(String(b)))));
-    allDiList = distinct(rawRows.map(r=>r.nama_di)).sort((a,b)=>String(a).localeCompare(String(b)));
-    rebuildDiOptions();
-
-    // buat marker + popup nama DI + click handler
-    markers=[];
-    let skipped=0;
-    rawRows.forEach(row=>{
-      const {lat,lon}=normalizeLatLon(row);
-      if(isFinite(lat)&&isFinite(lon)){
-        const title = row.nama_di || "Titik Survey";
-        const m=L.circleMarker([lat,lon],circleStyle(row.status_progres));
-        m.bindPopup(`<b>${title}</b>`); // popup hanya nama DI
-        m.on('click',()=> showDetail(row,m.getLatLng()));
-        markers.push({marker:m,data:row});
-      }else{
-        skipped++;
-      }
-    });
-
-    // default ke Serayu Opak kalau ada
-    const so=bbwsList.find(v=>String(v).toLowerCase()==="serayu opak");
-    if(so){ bbwsSel.value=so; rebuildDiOptions(); }
-    refresh();
-  },
-  error: (err)=> console.error(err)
-});
-
-bbwsSel.addEventListener('change',()=>{rebuildDiOptions();refresh();});
-diSel.addEventListener('change',()=>refresh(true));
+// events
+bbwsSel.addEventListener('change', ()=>{ rebuildDiOptions(); refresh(true); });
+diSel.addEventListener('change', ()=> refresh(true));
 </script>
 </body>
 </html>
