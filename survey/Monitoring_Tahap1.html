@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <title>Dashboard Survey — Si-Irwan</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<link rel="icon" href="../../assets/LogoPUPR.png" />
+<link rel="icon" href="../assets/LogoPUPR.png" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
@@ -18,18 +18,43 @@
   .header img{height:54px}.header .text{flex:1;color:#fff}.title{font-weight:800;font-size:14px}.subtitle{font-weight:600;font-size:12px;color:rgba(255,255,255,.9);margin-top:4px}
   .btn-home{background:#fff;color:var(--survey);font-weight:700;padding:8px 14px;border-radius:10px;text-decoration:none;font-size:13px}
   .spacer{height:var(--hdrH)} #map{height:calc(100vh - var(--hdrH))}
-  .dock{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--border);max-height:46vh;overflow:auto;padding:12px 14px;box-shadow:0 -10px 22px rgba(0,0,0,.28);z-index:950;backdrop-filter:blur(6px)}
-  .dock h2{font-size:14px;margin:0 0 8px;font-weight:800;color:#fff}
+
+  /* ===== Dock ===== */
+  .dock{
+    position:fixed;left:0;right:0;bottom:0;z-index:950;
+    background:var(--panel);border-top:1px solid var(--border);
+    max-height:46vh;overflow:auto;padding:12px 14px;
+    box-shadow:0 -10px 22px rgba(0,0,0,.28);backdrop-filter:blur(6px);
+    transition:max-height .22s ease, padding .22s ease;
+  }
+  .dock-head{
+    display:flex;align-items:center;gap:8px;margin-bottom:8px
+  }
+  .dock-title{font-size:14px;font-weight:800;color:#fff;margin:0;flex:1}
+  .dock-toggle{
+    appearance:none;border:1px solid var(--border);background:rgba(255,255,255,.06);
+    color:#fff;border-radius:10px;padding:6px 10px;font-weight:700;font-size:12px;
+    cursor:pointer;transition:transform .15s ease, background .15s ease;
+  }
+  .dock-toggle:hover{transform:translateY(-1px);background:rgba(255,255,255,.10)}
+  .dock-body{overflow:hidden}
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   label{font-size:12px;color:var(--muted)}
-  /* === warna dropdown === */
+  /* dropdown colors */
   select{width:100%;padding:10px 12px;font-size:14px;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:var(--radius);outline:none;color:#9aa3b2}
-  select.has-value{color:#ffffff}      /* saat ada pilihan */
-  option{color:#111;background:#fff}   /* warna di menu list */
+  select.has-value{color:#ffffff}
+  option{color:#111;background:#fff}
   .row{display:grid;grid-template-columns:1fr auto;gap:8px;font-size:13px;color:var(--muted)} .row b{color:#fff}
   .meta{font-size:13px;border-collapse:collapse;width:100%}.meta td{border-bottom:1px dashed rgba(255,255,255,.08);padding:6px 2px}
   .key{color:var(--muted-2);width:42%}
   .di-label{background:rgba(255,255,255,.92);border:1px solid #d1d5db;padding:2px 6px;border-radius:6px;font-size:12px;color:#111;box-shadow:0 1px 6px rgba(0,0,0,.12)}
+  @media(max-width:680px){.grid{grid-template-columns:1fr}:root{--hdrH:96px}}
+
+  /* ===== Collapsed state ===== */
+  .dock.collapsed{max-height:44px;padding:8px 14px}
+  .dock.collapsed .dock-body{display:none}
+  .dock.collapsed .dock-toggle::after{content:" Perluas"}
+  .dock .dock-toggle::after{content:" Ciutkan"}
 </style>
 </head>
 <body>
@@ -46,40 +71,47 @@
 
 <div id="map"></div>
 
-<div class="dock">
-  <h2>Filter & Statistik</h2>
-  <div class="grid">
-    <div>
-      <label>Filter BBWS</label>
-      <select id="bbwsSel"><option value="">— Semua —</option></select>
-    </div>
-    <div>
-      <label>Pilih Daerah Irigasi (nama_di)</label>
-      <select id="diSel"><option value="">— Semua —</option></select>
-    </div>
+<!-- ===== Dock with collapse button ===== -->
+<div class="dock" id="dock">
+  <div class="dock-head">
+    <h2 class="dock-title">Filter & Statistik</h2>
+    <button id="dockToggle" class="dock-toggle" aria-expanded="true" aria-controls="dockBody"></button>
   </div>
-  <hr style="border:none;border-top:1px solid var(--border);margin:10px 0"/>
-  <div id="stats" class="row"></div>
-  <div id="detail" style="margin-top:8px"></div>
+  <div id="dockBody" class="dock-body">
+    <div class="grid">
+      <div>
+        <label>Filter BBWS</label>
+        <select id="bbwsSel"><option value="">— Semua BBWS —</option></select>
+      </div>
+      <div>
+        <label>Pilih Daerah Irigasi (nama_di)</label>
+        <select id="diSel"><option value="">— Semua DI —</option></select>
+      </div>
+    </div>
+    <hr style="border:none;border-top:1px solid var(--border);margin:10px 0"/>
+    <div id="stats" class="row"></div>
+    <div id="detail" style="margin-top:8px"></div>
+  </div>
 </div>
 
 <div class="badge-irwan" title="Sistem Informasi Irigasi & Rawa Nasional"><span>Si-Irwan v1.0</span></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 <script>
 /* ===== config ===== */
 const LABEL_ZOOM = 9;
-/* XLSX candidates: rename Excel tanpa underscore kalau pakai GitHub Pages */
+/* XLSX paths (rename Excel tanpa underscore disarankan di GitHub Pages) */
 const CANDIDATE_PATHS = [
-  "./Monitoring_Tahap.xlsx",         // rekomendasi (tanpa _)
-  "./_Monitoring_Tahap_.xlsx",       // butuh .nojekyll jika di Pages
+  "./Monitoring_Tahap1.xlsx",
+  "./_Monitoring_Tahap_.xlsx",
   "./data/Monitoring_Tahap.xlsx",
   "../Monitoring_Tahap.xlsx"
 ];
 
+/* ===== map ===== */
 const map=L.map('map').setView([-2.5,117.5],5);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
  {attribution:'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics'}).addTo(map);
@@ -87,15 +119,30 @@ const cluster=L.markerClusterGroup({showCoverageOnHover:false,maxClusterRadius:5
 map.addLayer(cluster);
 const labelLayer=L.layerGroup().addTo(map);
 
+/* ===== UI refs ===== */
 const bbwsSel=document.getElementById('bbwsSel');
 const diSel=document.getElementById('diSel');
 const statsEl=document.getElementById('stats');
 const detailEl=document.getElementById('detail');
 
-/* === warna dropdown saat ada/ga ada value === */
+/* ===== collapse logic ===== */
+const dock = document.getElementById('dock');
+const dockToggle = document.getElementById('dockToggle');
+const DOCK_KEY = "dock-collapsed";
+
+function setDockCollapsed(collapsed){
+  dock.classList.toggle('collapsed', collapsed);
+  dockToggle.setAttribute('aria-expanded', String(!collapsed));
+  localStorage.setItem(DOCK_KEY, collapsed ? "1" : "0");
+}
+dockToggle.addEventListener('click', ()=> setDockCollapsed(!dock.classList.contains('collapsed')));
+// restore state
+setDockCollapsed(localStorage.getItem(DOCK_KEY)==="1");
+
+/* ===== select colors ===== */
 function syncSelectColor(sel){ sel.classList.toggle('has-value', !!sel.value); }
 
-/* utils */
+/* ===== utils ===== */
 const norm=v=>String(v??"").trim().toLowerCase();
 const isValid=v=>v!==undefined&&v!==null&&String(v).trim()!=="";
 const distinct=a=>[...new Set(a.filter(isValid))];
@@ -111,10 +158,10 @@ function setOptionsSimple(sel,arr,ph){sel.innerHTML=`<option value="">— ${ph} 
 function buildTable(o){const rows=Object.entries(o).filter(([k,v])=>isValid(v)).map(([k,v])=>`<tr><td class="key">${k}</td><td>${v}</td></tr>`).join("");return `<table class="meta">${rows||"<tr><td>(tidak ada data)</td></tr>"}</table>`;}
 function showDetail(d,latlng){detailEl.innerHTML=`<h3 style="margin:6px 0;color:#fff">${d.nama_di||d.kegiatan||d.kabupaten||"Detail Survey"}</h3><div style="font-size:12px;color:#cbd5e1;margin-bottom:6px">Koordinat: ${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}</div>${buildTable(d)}`;}
 
-/* state */
+/* ===== state ===== */
 let rawRows=[], markers=[];
 
-/* rebuild DI tergantung BBWS + sync warna */
+/* ===== dependent DI ===== */
 function rebuildDiOptions(){
   const bPick=bbwsSel.value;
   if(isValid(bPick)){
@@ -126,11 +173,10 @@ function rebuildDiOptions(){
     const all=distinct(rawRows.map(r=>String(r.nama_di||"").trim())).sort((a,b)=>a.localeCompare(b));
     setOptionsSimple(diSel, all, "Semua DI");
   }
-  diSel.value="";
-  syncSelectColor(diSel);
+  diSel.value=""; syncSelectColor(diSel);
 }
 
-/* render map */
+/* ===== render map ===== */
 function refresh(autoZoom=true){
   const bPick=bbwsSel.value, dPick=(diSel.value||"").trim();
   const bKey=isValid(bPick)?norm(bPick):"";
@@ -156,29 +202,24 @@ function refresh(autoZoom=true){
 }
 map.on('zoomend',()=>refresh(false));
 
-/* ===== loader: coba XLSX multi-path, fallback CSV ===== */
+/* ===== data loader (XLSX -> CSV fallback) ===== */
 async function tryLoadXlsx(path){
   try{
-    const res = await fetch(path,{cache:"no-store"});
-    if(!res.ok) return null;
-    const buf = await res.arrayBuffer();
-    const wb  = XLSX.read(buf,{type:"array"});
-    const sheet = wb.SheetNames.includes("survey") ? "survey" : wb.SheetNames[0];
-    const json  = XLSX.utils.sheet_to_json(wb.Sheets[sheet],{defval:""});
-    return json;
-  }catch(e){ return null; }
+    const res=await fetch(path,{cache:"no-store"}); if(!res.ok) return null;
+    const buf=await res.arrayBuffer(); const wb=XLSX.read(buf,{type:"array"});
+    const sheet=wb.SheetNames.includes("survey")?"survey":wb.SheetNames[0];
+    return XLSX.utils.sheet_to_json(wb.Sheets[sheet],{defval:""});
+  }catch(e){return null;}
 }
 async function loadData(){
   for(const p of CANDIDATE_PATHS){
     const rows=await tryLoadXlsx(p);
     if(rows && rows.length) return rows;
   }
-  // fallback CSV
-  const txt = await fetch("survey.csv",{cache:"no-store"}).then(r=>{ if(!r.ok) throw new Error("csv missing"); return r.text(); });
+  const txt=await fetch("survey.csv",{cache:"no-store"}).then(r=>{if(!r.ok)throw new Error("csv missing");return r.text();});
   return Papa.parse(txt,{header:true,dynamicTyping:true,skipEmptyLines:true}).data;
 }
 
-/* boot */
 loadData().then(rows=>{
   rawRows=rows;
 
@@ -191,13 +232,12 @@ loadData().then(rows=>{
     if(isFinite(lat)&&isFinite(lon)){
       const title=r.nama_di||"Titik Survey";
       const m=L.circleMarker([lat,lon],circleStyle(r.status_progres));
-      m.bindPopup(`<b>${title}</b>`);
-      m.on('click',()=>showDetail(r,m.getLatLng()));
+      m.bindPopup(`<b>${title}</b>`); m.on('click',()=>showDetail(r,m.getLatLng()));
       markers.push({marker:m,data:r});
     }
   });
 
-  // inisialisasi warna dropdown
+  // warna awal dropdown
   syncSelectColor(bbwsSel); syncSelectColor(diSel);
 
   // preselect opsional
@@ -209,7 +249,7 @@ loadData().then(rows=>{
   statsEl.innerHTML = `<span style="color:#fca5a5">Gagal memuat data. Cek path XLSX/CSV.</span>`;
 });
 
-/* events + sinkron warna */
+/* events */
 bbwsSel.addEventListener('change',()=>{ syncSelectColor(bbwsSel); rebuildDiOptions(); refresh(true); });
 diSel.addEventListener('change', ()=>{ syncSelectColor(diSel); refresh(true); });
 </script>
