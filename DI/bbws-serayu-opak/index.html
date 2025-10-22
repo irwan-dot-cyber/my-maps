@@ -1,253 +1,315 @@
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-/* ========= KONFIG ========= */
-/* Ganti path ini sesuai lokasi file di repo kamu */
-const GEOJSON_URL = "../bbws-serayu-opak/Bendung.geojson";
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<title>Dashboard DI — BBWS Serayu Opak</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<link rel="icon" href="../../assets/LogoPUPR.png" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
-/* (Opsional) Tetap pakai GAS kalau mau join ke tabel integrasi.
-   Kalau nggak ada match, panel akan fallback ke atribut GeoJSON. */
-const GAS_URL = "https://script.google.com/macros/s/AKfycbybsLoQu-8S-MlR_kB2989FZV0C-c1gRzUqcIZWBWuYb-_We03B_BShX8Q3AQqWhOTvzg/exec?sheet=SO_Integrasi&t=" + Date.now();
-
-const diSel = document.getElementById('diSel');
-const clusterSel = document.getElementById('clusterSel');
-const statsEl = document.getElementById('stats');
-const detailEl = document.getElementById('detail');
-const msgEl = document.getElementById('msg');
-function note(msg){ msgEl.textContent = msg || ""; }
-
-const map = L.map('map').setView([-7.5,110.3], 8);
-L.tileLayer(
-  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-  { attribution: 'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics' }
-).addTo(map);
-
-let lookup={}, rows=[], groups={}, headers=[];
-let geoLayer, joined=[];
-const labelLayer = L.layerGroup().addTo(map);
-let activeKey=null, activeTitle=null;
-
-/* ===== Util ===== */
-function getNamaDI(obj){return obj?.Nama_DI||obj?.["Nama Aset"]||obj?.["Nama DI"]||obj?.nama_infrastruktur||"";}
-function addLabel(latlng,text){
-  if(!latlng) return;
-  L.tooltip({permanent:true,direction:'top',className:'di-label'})
-   .setLatLng(latlng).setContent(text).addTo(labelLayer);
-}
-function cleanMaybeWrappedJSON(txt){
-  // jika file GeoJSON tak sengaja ada teks tambahan (mis. "... ] bro tolong pelajari ini")
-  // potong dari '[' pertama sampai ']' terakhir
-  try{
-    const s = txt.indexOf('['), e = txt.lastIndexOf(']');
-    if(s>=0 && e>=0 && e>s) return JSON.parse(txt.slice(s, e+1));
-    return JSON.parse(txt); // normal
-  }catch(e){ throw e; }
-}
-
-function buildTableFromObj(obj, fields){
-  const keys = fields && fields.length ? fields : Object.keys(obj||{});
-  const html = (keys||[]).filter(k => k && k!=="Kd_Inf").map(k=>{
-    const v=obj[k]; if(v==null || v==="") return "";
-    return `<tr><td class="key">${k}</td><td>${v}</td></tr>`;
-  }).join("");
-  return `<table class="meta">${html || '<tr><td>(tidak ada data)</td></tr>'}</table>`;
-}
-
-function normalizeGas(json){
-  if(json && json.lookup && json.rows) return json;
-  let _rows = Array.isArray(json)? json : (json?.rows || Object.values(json.lookup||{}));
-  const _headers = _rows.length ? Object.keys(_rows[0]) : [];
-  return { rows:_rows, headers:_headers, lookup:Object.fromEntries(_rows.map(r=>[r.Kd_Inf, r])) };
-}
-function buildFixedGroups(headers){
-  const g={};
-  g["__ALL__"]=headers;
-  g["Informasi"]=headers.slice(1,14);
-  g["Area"]=headers.slice(14,19);
-  g["Teknis"]=headers.slice(19,24);
-  g["Saluran Primer"]=headers.slice(24,33);
-  g["Saluran Sekunder"]=headers.slice(33,40);
-  g["Hidrologi"]=headers.slice(40,42);
-  g["Organisasi Petani"]=headers.slice(42,45);
-  g["Manfaat"]=headers.slice(45,49);
-  g["Tanggal Perubahan"]=headers.slice(49,50);
-  return g;
-}
-
-/* ===== Load Data ===== */
-Promise.all([
-  fetch(GEOJSON_URL).then(async r=>{
-    const ct = r.headers.get('content-type')||"";
-    if(ct.includes('application/json')) return r.json();
-    const txt = await r.text();
-    return cleanMaybeWrappedJSON(txt); // handle file yang ada “noise”
-  }),
-  fetch(GAS_URL).then(r=>r.json()).catch(()=>null)
-]).then(([gj, data])=>{
-  // GAS optional
-  if(data){
-    const norm = normalizeGas(data);
-    lookup=norm.lookup; rows=norm.rows; headers=norm.headers; groups=buildFixedGroups(headers);
-
-    // Hindari duplikasi opsi "__ALL__" (sudah ada di HTML)
-    Object.keys(groups)
-      .filter(k => k !== '__ALL__')
-      .forEach(k=>{
-        clusterSel.insertAdjacentHTML('beforeend', `<option value="${k}">${k}</option>`);
-      });
-
-    const diNames=[...new Set(rows.map(r=>getNamaDI(r)).filter(Boolean))].sort();
-    diNames.forEach(nm=>diSel.insertAdjacentHTML('beforeend',`<option value="${nm}">${nm}</option>`));
-  }else{
-    // Jika GAS gagal, sembunyikan filter cluster agar gak bingung
-    clusterSel.innerHTML = `<option value="__ALL__">— Semua —</option>`;
+<style>
+  :root{
+    --bg:#0b1222; --text:#e5e7eb; --muted:#cbd5e1; --muted-2:#94a3b8;
+    --survey:#0d47a1; --accent:#1d5fd1; --panel:rgba(11,18,34,.92);
+    --border:rgba(255,255,255,.12); --hdrH:88px; --radius:12px;
   }
+  html,body{height:100%;margin:0;font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+  /* Header */
+  .header{position:fixed;top:0;left:0;right:0;z-index:900;background:var(--survey);
+    border-bottom:1px solid rgba(255,255,255,.18);padding:10px 16px;display:flex;align-items:center;gap:14px;
+    box-shadow:0 6px 18px rgba(13,71,161,.25)}
+  .header img{height:54px}
+  .header .text{flex:1;color:#fff}
+  .header .title{font-weight:800;font-size:14px;line-height:1.35}
+  .header .subtitle{font-weight:600;font-size:12px;color:rgba(255,255,255,.9);margin-top:4px}
+  .btn-home{background:#fff;color:var(--survey);font-weight:700;padding:8px 14px;border-radius:10px;text-decoration:none;font-size:13px}
+  .btn-home:hover{background:#f1f5f9}
+  .spacer{height:var(--hdrH)}
+  #map{height:calc(100vh - var(--hdrH))}
+  /* Dock */
+  .dock{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--border);
+    max-height:46vh;overflow:auto;padding:12px 14px;box-shadow:0 -10px 22px rgba(0,0,0,.28);z-index:950;backdrop-filter:blur(6px)}
+  .dock h2{font-size:14px;margin:0 0 8px;font-weight:800;color:#fff}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  label{font-size:12px;color:var(--muted)}
+  select{width:100%;padding:10px 12px;font-size:14px;background:rgba(255,255,255,.06);color:#fff;border:1px solid var(--border);border-radius:var(--radius);outline:none;appearance:none}
+  option{color:#000;background:#fff}
+  .meta{font-size:13px;border-collapse:collapse;width:100%;color:var(--text)}
+  .meta td{border-bottom:1px dashed rgba(255,255,255,.08);padding:6px 2px}
+  .key{color:var(--muted-2);width:42%}
+  .row{display:grid;grid-template-columns:1fr auto;gap:8px;font-size:13px;color:var(--muted)}
+  .row b{color:#fff}
+  .err{color:#fca5a5;font-size:12px;margin-top:6px}
+  .di-label{background:rgba(255,255,255,.9);border:1px solid #d1d5db;padding:2px 6px;border-radius:6px;font-size:12px;color:#111}
+  @media(max-width:680px){.grid{grid-template-columns:1fr}:root{--hdrH:96px}}
+  /* Badge */
+  .badge-irwan{position:fixed;right:12px;bottom:96px;z-index:1200;background:rgba(13,71,161,.85);
+    border:1px solid rgba(255,255,255,.25);color:#fff;font-size:12px;font-weight:700;padding:6px 12px;border-radius:10px;
+    box-shadow:0 0 10px rgba(13,71,161,.6);backdrop-filter:blur(6px);animation:glow 2.8s ease-in-out infinite}
+  .badge-irwan span{color:#FFD700}
+  .badge-irwan:hover{transform:scale(1.03);transition:transform .2s ease}
+  @keyframes glow{0%,100%{box-shadow:0 0 8px rgba(13,71,161,.6)}50%{box-shadow:0 0 18px rgba(255,215,0,.8)}}
+</style>
+</head>
+<body>
+  <!-- HEADER -->
+  <div class="header">
+    <img src="../../assets/LogoPUPR.png" alt="Logo PU"/>
+    <div class="text">
+      <div class="title">Kementerian Pekerjaan Umum</div>
+      <div class="subtitle">Direktorat Jenderal Sumber Daya Air — Direktorat Irigasi dan Rawa</div>
+      <div class="subtitle">Daerah Irigasi Kewenangan <b>BBWS Serayu Opak</b></div>
+    </div>
+    <a href="../../si-irwan.html" class="btn-home">Beranda</a>
+  </div>
+  <div class="spacer"></div>
 
-  // ==== Layer Bendung (Point) ====
-  geoLayer = L.geoJSON(gj, {
-    pointToLayer: (f, latlng) => L.circleMarker(latlng, {
-      radius: 6,
-      color: '#0d9488',
-      weight: 1,
-      fillColor: '#22c55e',
-      fillOpacity: 0.9
-    }),
-    onEachFeature:(f, layer)=>{
-      // ambil identitas
-      const props = f.properties || {};
-      // kunci join kalau ada (sesuaikan jika suatu saat bendung punya Kd_Inf)
-      const key = String(props.Kd_Inf || props.id || '').trim();
-      const title = getNamaDI(props) || key || 'Bendung';
-      const latlng = layer.getLatLng?.();
+  <!-- MAP -->
+  <div id="map"></div>
 
-      // simpan index
-      joined.push({ layer, key, title, nama:title.toLowerCase(), dataObj: props, latlng });
+  <!-- DOCK -->
+  <div class="dock">
+    <h2>Dashboard Daerah Irigasi</h2>
+    <div class="grid">
+      <div>
+        <label>Pilih Daerah Irigasi</label>
+        <select id="diSel"><option value="">— Semua —</option></select>
+      </div>
+      <div>
+        <label>Cluster Informasi</label>
+        <select id="clusterSel"><option value="__ALL__">— Semua —</option></select>
+      </div>
+    </div>
+    <div id="msg" class="err"></div>
+    <hr style="border:none;border-top:1px solid var(--border);margin:10px 0"/>
+    <div id="stats" class="row"></div>
+    <div id="detail" style="margin-top:8px"></div>
+  </div>
 
-      // popup ringkas
-      const kab = props.kota_kabupaten || props.kabupaten || '';
-      const prov = props.provinsi || '';
-      layer.bindPopup(`
-        <div style="font-size:13px">
-          <b>${title}</b><br/>
-          ${kab ? kab+', ' : ''}${prov}
-        </div>
-      `);
+  <!-- BADGE -->
+  <div class="badge-irwan" title="Sistem Informasi Irigasi & Rawa Nasional">
+    <span>Si-Irwan v1.0</span>
+  </div>
 
-      // klik => buka detail
-      layer.on('click', ()=>{
-        activeKey = key || null;
-        activeTitle = title;
-        renderDetail();
-      });
+  <!-- Scripts -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    /* ========= KONFIG =========
+       Ganti path ini sesuai lokasi file di repo kamu */
+    const GEOJSON_URL = "../bbws-serayu-opak/bendung.geojson";
+
+    /* Opsional join ke sheet integrasi (akan auto-fallback ke atribut GeoJSON jika tak ada match) */
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbybsLoQu-8S-MlR_kB2989FZV0C-c1gRzUqcIZWBWuYb-_We03B_BShX8Q3AQqWhOTvzg/exec?sheet=SO_Integrasi&t=" + Date.now();
+
+    const diSel = document.getElementById('diSel');
+    const clusterSel = document.getElementById('clusterSel');
+    const statsEl = document.getElementById('stats');
+    const detailEl = document.getElementById('detail');
+    const msgEl = document.getElementById('msg');
+    function note(msg){ msgEl.textContent = msg || ""; }
+
+    const mapEl = document.getElementById('map');
+    if(!mapEl){ console.error('Elemen #map tidak ditemukan'); return; }
+
+    /* ==== Leaflet Map ==== */
+    const map = L.map('map').setView([-7.5,110.3], 8);
+    L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      { attribution: 'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics' }
+    ).addTo(map);
+
+    let lookup={}, rows=[], groups={}, headers=[];
+    let geoLayer, joined=[];
+    const labelLayer = L.layerGroup().addTo(map);
+    let activeKey=null, activeTitle=null;
+
+    /* ===== Util ===== */
+    const BALAI_REGEX = /serayu\s*opak/i; // filter khusus BBWS Serayu-Opak
+    function matchSerayuOpak(props = {}){
+      const candidates = [
+        props.kode_balai, props.balai, props.nama_balai, props.bbws_bws,
+        props.Balai, props.Nama_Balai, props.Kode_Balai
+      ].filter(Boolean).map(String);
+      return candidates.some(v => BALAI_REGEX.test(v));
     }
-  }).addTo(map);
-
-  if(geoLayer.getLayers().length){
-    try{
-      map.fitBounds(geoLayer.getBounds());
-    }catch(e){
-      // kalau semua point sama, fitBounds bisa error — abaikan
+    function getNamaDI(obj){ return obj?.Nama_DI || obj?.["Nama Aset"] || obj?.["Nama DI"] || obj?.nama_infrastruktur || ""; }
+    function addLabel(latlng,text){
+      if(!latlng) return;
+      L.tooltip({permanent:true,direction:'top',className:'di-label'}).setLatLng(latlng).setContent(text).addTo(labelLayer);
     }
-  }
+    function cleanMaybeWrappedJSON(txt){
+      try{
+        const s = txt.indexOf('['), e = txt.lastIndexOf(']');
+        if(s>=0 && e>=0 && e>s) return JSON.parse(txt.slice(s, e+1));
+        return JSON.parse(txt);
+      }catch(e){ throw e; }
+    }
+    function buildTableFromObj(obj, fields){
+      const keys = fields && fields.length ? fields : Object.keys(obj||{});
+      const html = (keys||[]).filter(k => k && k!=="Kd_Inf").map(k=>{
+        const v = obj[k]; if(v==null || v==="") return "";
+        return `<tr><td class="key">${k}</td><td>${v}</td></tr>`;
+      }).join("");
+      return `<table class="meta">${html || '<tr><td>(tidak ada data)</td></tr>'}</table>`;
+    }
+    function normalizeGas(json){
+      if(json && json.lookup && json.rows) return json;
+      let _rows = Array.isArray(json)? json : (json?.rows || Object.values(json.lookup||{}));
+      const _headers = _rows.length ? Object.keys(_rows[0]) : [];
+      return { rows:_rows, headers:_headers, lookup:Object.fromEntries(_rows.map(r=>[r.Kd_Inf, r])) };
+    }
+    function buildFixedGroups(headers){
+      const g={};
+      g["__ALL__"]=headers;
+      g["Informasi"]=headers.slice(1,14);
+      g["Area"]=headers.slice(14,19);
+      g["Teknis"]=headers.slice(19,24);
+      g["Saluran Primer"]=headers.slice(24,33);
+      g["Saluran Sekunder"]=headers.slice(33,40);
+      g["Hidrologi"]=headers.slice(40,42);
+      g["Organisasi Petani"]=headers.slice(42,45);
+      g["Manfaat"]=headers.slice(45,49);
+      g["Tanggal Perubahan"]=headers.slice(49,50);
+      return g;
+    }
 
-  refreshView();
-  detailEl.innerHTML='<i style="color:#cbd5e1">Klik titik bendung atau pilih DI untuk lihat detail.</i>';
-}).catch(e=>{
-  console.error(e);
-  note('Gagal load data.');
-});
+    /* ===== Load Data ===== */
+    Promise.all([
+      fetch(GEOJSON_URL).then(async r=>{
+        const ct = r.headers.get('content-type')||"";
+        if(ct.includes('application/json')) return r.json();
+        const txt = await r.text();
+        return cleanMaybeWrappedJSON(txt);
+      }),
+      fetch(GAS_URL).then(r=>r.json()).catch(()=>null)
+    ]).then(([gj, data])=>{
+      // Filter fitur GeoJSON hanya Serayu-Opak
+      const features = (gj?.features||[]).filter(f => matchSerayuOpak(f.properties||{}));
+      const filteredGJ = { type:'FeatureCollection', features };
 
-/* ===== Renderers ===== */
-function renderDetail(){
-  // Prioritas: kalau ada join GAS berdasarkan activeKey, tampilkan grup cluster; kalau tidak, tampilkan atribut GeoJSON.
-  const g = clusterSel.value || "__ALL__";
+      // GAS optional
+      if(data){
+        const norm = normalizeGas(data);
+        lookup=norm.lookup; rows=norm.rows; headers=norm.headers; groups=buildFixedGroups(headers);
+        Object.keys(groups).filter(k=>k!=='__ALL__')
+          .forEach(k=> clusterSel.insertAdjacentHTML('beforeend', `<option value="${k}">${k}</option>`));
+      }else{
+        clusterSel.innerHTML = `<option value="__ALL__">— Semua —</option>`;
+      }
 
-  // cari feature aktif
-  let f = null;
-  if(activeTitle){
-    f = joined.find(o => o.title === activeTitle) || null;
-  }
-  const geoProps = f?.dataObj || {};
+      // Dropdown DI diisi dari fitur hasil filter
+      const diNames = [...new Set(features.map(f=>getNamaDI(f.properties)).filter(Boolean))].sort();
+      diNames.forEach(nm=> diSel.insertAdjacentHTML('beforeend', `<option value="${nm}">${nm}</option>`));
 
-  // data GAS (join by Kd_Inf) kalau ada
-  const infoGAS = (activeKey && lookup[activeKey]) ? lookup[activeKey] : null;
+      // ==== Layer Bendung (Point) ====
+      geoLayer = L.geoJSON(filteredGJ, {
+        pointToLayer: (f, latlng) => L.circleMarker(latlng, {
+          radius: 6, color: '#0d9488', weight: 1, fillColor: '#22c55e', fillOpacity: 0.9
+        }),
+        onEachFeature:(f, layer)=>{
+          const props = f.properties || {};
+          const key = String(props.Kd_Inf || props.id || '').trim();
+          const title = getNamaDI(props) || key || 'Bendung';
+          const latlng = layer.getLatLng?.();
 
-  const title = activeTitle || getNamaDI(infoGAS) || getNamaDI(geoProps) || (activeKey||'Detail');
-  const keyLine = (activeKey ? `Kd_Inf: ${activeKey}` : (geoProps.id ? `ID: ${geoProps.id}` : ''));
+          joined.push({ layer, key, title, nama:title.toLowerCase(), dataObj: props, latlng });
 
-  let tableHTML = '';
-  if(infoGAS){
-    const fields = (g==="__ALL__") ? headers : (groups[g]||headers);
-    tableHTML = buildTableFromObj(infoGAS, fields);
-  }else{
-    // fallback: tampilkan atribut penting dari GeoJSON bendung
-    const prefer = [
-      'nama_infrastruktur','kewenangan','kode_balai','provinsi','kota_kabupaten',
-      'kondisi_bangunan','status_infrastruktur','status_pemeliharaan',
-      'tipe_infrastruktur','lebar_tubuh_bendung_m','tinggi_tubuh_bendung_m',
-      'debit_andalan_m3dt','op_oleh'
-    ].filter(k => k in geoProps);
-    tableHTML = buildTableFromObj(geoProps, prefer);
-  }
+          const kab = props.kota_kabupaten || props.kabupaten || '';
+          const prov = props.provinsi || '';
+          layer.bindPopup(`<div style="font-size:13px"><b>${title}</b><br/>${kab ? kab+', ' : ''}${prov}</div>`);
+          layer.on('click', ()=>{ activeKey = key || null; activeTitle = title; renderDetail(); });
+        }
+      }).addTo(map);
 
-  detailEl.innerHTML = `
-    <h3 style="margin:6px 0;color:#fff">${title}</h3>
-    ${keyLine ? `<div style="font-size:12px;color:#cbd5e1;margin-bottom:6px">${keyLine}</div>` : ''}
-    ${tableHTML}
-  `;
+      if(geoLayer.getLayers().length){
+        try{ map.fitBounds(geoLayer.getBounds()); }catch(e){}
+      }
 
-  // center ke titik aktif
-  if(f?.layer?.getLatLng){
-    map.setView(f.layer.getLatLng(), Math.max(map.getZoom(), 12), { animate:true });
-  }
-}
+      refreshView();
+      detailEl.innerHTML='<i style="color:#cbd5e1">Klik titik bendung (Serayu-Opak) atau pilih DI untuk lihat detail.</i>';
+    }).catch(e=>{
+      console.error(e);
+      note('Gagal load data GeoJSON/GAS.');
+    });
 
-function refreshView(){
-  const sel = (diSel.value||"").toLowerCase();
-  labelLayer.clearLayers();
-  let total = 0;
+    /* ===== Renderers ===== */
+    function renderDetail(){
+      const g = clusterSel.value || "__ALL__";
+      let f = activeTitle ? (joined.find(o => o.title === activeTitle) || null) : null;
+      const geoProps = f?.dataObj || {};
+      const infoGAS = (activeKey && lookup[activeKey]) ? lookup[activeKey] : null;
 
-  joined.forEach(o=>{
-    // filter by DI (kalau dropdown kosong, tampilkan semua)
-    const match = !sel || (o.nama === sel);
-    const styleOn = { opacity:1, fillOpacity:0.9 };
-    const styleOff = { opacity:0, fillOpacity:0 };
+      const title = activeTitle || getNamaDI(infoGAS) || getNamaDI(geoProps) || (activeKey||'Detail');
+      const keyLine = (activeKey ? `Kd_Inf: ${activeKey}` : (geoProps.id ? `ID: ${geoProps.id}` : ''));
 
-    if(o.layer.setStyle) o.layer.setStyle(match? styleOn : styleOff);
-    if(match){
-      total++;
-      if (map.getZoom() >= 11) {
-        addLabel(o.latlng, o.title);
+      let tableHTML = '';
+      if(infoGAS){
+        const fields = (g==="__ALL__") ? headers : (groups[g]||headers);
+        tableHTML = buildTableFromObj(infoGAS, fields);
+      }else{
+        const prefer = [
+          'nama_infrastruktur','kewenangan','kode_balai','provinsi','kota_kabupaten',
+          'kondisi_bangunan','status_infrastruktur','status_pemeliharaan',
+          'tipe_infrastruktur','lebar_tubuh_bendung_m','tinggi_tubuh_bendung_m',
+          'debit_andalan_m3dt','op_oleh'
+        ].filter(k => k in geoProps);
+        tableHTML = buildTableFromObj(geoProps, prefer);
+      }
+
+      detailEl.innerHTML = `
+        <h3 style="margin:6px 0;color:#fff">${title}</h3>
+        ${keyLine ? `<div style="font-size:12px;color:#cbd5e1;margin-bottom:6px">${keyLine}</div>` : ''}
+        ${tableHTML}
+      `;
+
+      if(f?.layer?.getLatLng){
+        map.setView(f.layer.getLatLng(), Math.max(map.getZoom(), 12), { animate:true });
       }
     }
-  });
 
-  statsEl.innerHTML = `<span>Total bendung tampil</span><b>${total}</b>`;
-}
+    function refreshView(){
+      const sel = (diSel.value||"").toLowerCase();
+      labelLayer.clearLayers();
+      let total = 0;
 
-map.on('zoomend', refreshView);
+      joined.forEach(o=>{
+        const match = !sel || (o.nama === sel);
+        const styleOn = { opacity:1, fillOpacity:0.9 };
+        const styleOff = { opacity:0, fillOpacity:0 };
+        if(o.layer.setStyle) o.layer.setStyle(match? styleOn : styleOff);
+        if(match){
+          total++;
+          if (map.getZoom() >= 11) addLabel(o.latlng, o.title);
+        }
+      });
 
-/* ===== Events (Filter) ===== */
-diSel.addEventListener('change', ()=>{
-  const sel = (diSel.value||"").toLowerCase();
-  refreshView();
-  if(!sel){
-    activeKey=null; activeTitle=null;
-    detailEl.innerHTML='<i style="color:#cbd5e1">Pilih DI untuk lihat detail.</i>';
-    map.fitBounds(geoLayer.getBounds());
-    return;
-  }
-  const hit = joined.find(o => o.nama === sel);
-  if(hit){
-    activeKey = hit.key || null;
-    activeTitle = hit.title;
-    if(hit.layer.getLatLng){
-      map.setView(hit.layer.getLatLng(), 12, { animate:true });
+      statsEl.innerHTML = `<span>Total bendung (Serayu-Opak)</span><b>${total}</b>`;
     }
-    renderDetail();
-  }
-});
 
-clusterSel.addEventListener('change', ()=>{
-  renderDetail();
-});
-</script>
+    map.on('zoomend', refreshView);
+
+    /* ===== Events ===== */
+    diSel.addEventListener('change', ()=>{
+      const sel = (diSel.value||"").toLowerCase();
+      refreshView();
+      if(!sel){
+        activeKey=null; activeTitle=null;
+        detailEl.innerHTML='<i style="color:#cbd5e1">Pilih DI untuk lihat detail.</i>';
+        try{ map.fitBounds(geoLayer.getBounds()); }catch(e){}
+        return;
+      }
+      const hit = joined.find(o => o.nama === sel);
+      if(hit){
+        activeKey = hit.key || null;
+        activeTitle = hit.title;
+        if(hit.layer.getLatLng) map.setView(hit.layer.getLatLng(), 12, { animate:true });
+        renderDetail();
+      }
+    });
+    clusterSel.addEventListener('change', renderDetail);
+  });
+  </script>
+</body>
+</html>
