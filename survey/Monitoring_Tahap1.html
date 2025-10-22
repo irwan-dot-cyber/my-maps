@@ -6,42 +6,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <link rel="icon" href="../../assets/LogoPUPR.png" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
-
 <style>
-  :root{
-    --bg:#0b1222; --text:#e5e7eb; --muted:#cbd5e1; --muted-2:#94a3b8;
-    --survey:#0d47a1; --accent:#1d5fd1; --panel:rgba(11,18,34,.92); --border:rgba(255,255,255,.12);
-    --hdrH:88px; --radius:12px;
-  }
+  :root{--bg:#0b1222;--text:#e5e7eb;--muted:#cbd5e1;--muted-2:#94a3b8;
+        --survey:#0d47a1;--panel:rgba(11,18,34,.92);--border:rgba(255,255,255,.12);
+        --hdrH:88px;--radius:12px}
   html,body{height:100%;margin:0;font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
   .header{position:fixed;top:0;left:0;right:0;z-index:900;background:var(--survey);border-bottom:1px solid rgba(255,255,255,.18);padding:10px 16px;display:flex;align-items:center;gap:14px;box-shadow:0 6px 18px rgba(13,71,161,.25)}
-  .header img{height:54px}
-  .header .text{flex:1;color:#fff}
-  .header .title{font-weight:800;font-size:14px;line-height:1.35}
-  .header .subtitle{font-weight:600;font-size:12px;color:rgba(255,255,255,.9);margin-top:4px}
+  .header img{height:54px}.header .text{flex:1;color:#fff}.title{font-weight:800;font-size:14px}.subtitle{font-weight:600;font-size:12px;color:rgba(255,255,255,.9);margin-top:4px}
   .btn-home{background:#fff;color:var(--survey);font-weight:700;padding:8px 14px;border-radius:10px;text-decoration:none;font-size:13px}
-  .btn-home:hover{background:#f1f5f9}
-  .spacer{height:var(--hdrH)}
-  #map{height:calc(100vh - var(--hdrH))}
+  .spacer{height:var(--hdrH)} #map{height:calc(100vh - var(--hdrH))}
   .dock{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--border);max-height:46vh;overflow:auto;padding:12px 14px;box-shadow:0 -10px 22px rgba(0,0,0,.28);z-index:950;backdrop-filter:blur(6px)}
   .dock h2{font-size:14px;margin:0 0 8px;font-weight:800;color:#fff}
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   label{font-size:12px;color:var(--muted)}
   select{width:100%;padding:10px 12px;font-size:14px;background:rgba(255,255,255,.06);color:#fff;border:1px solid var(--border);border-radius:var(--radius);outline:none}
-  option{color:#000;background:#fff}
-  .row{display:grid;grid-template-columns:1fr auto;gap:8px;font-size:13px;color:var(--muted)}
-  .row b{color:#fff}
-  .meta{font-size:13px;border-collapse:collapse;width:100%;color:var(--text)}
-  .meta td{border-bottom:1px dashed rgba(255,255,255,.08);padding:6px 2px}
+  .row{display:grid;grid-template-columns:1fr auto;gap:8px;font-size:13px;color:var(--muted)} .row b{color:#fff}
+  .meta{font-size:13px;border-collapse:collapse;width:100%}.meta td{border-bottom:1px dashed rgba(255,255,255,.08);padding:6px 2px}
   .key{color:var(--muted-2);width:42%}
-  @media(max-width:680px){.grid{grid-template-columns:1fr}:root{--hdrH:96px}}
-  .badge-irwan{position:fixed;right:12px;bottom:96px;z-index:1200;background:rgba(13,71,161,.85);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:12px;font-weight:700;padding:6px 12px;border-radius:10px;box-shadow:0 0 10px rgba(13,71,161,.6);backdrop-filter:blur(6px);animation:glow 2.8s ease-in-out infinite}
-  .badge-irwan span{color:#FFD700}
-  @keyframes glow{0%,100%{box-shadow:0 0 8px rgba(13,71,161,.6)}50%{box-shadow:0 0 18px rgba(255,215,0,.8)}}
   .di-label{background:rgba(255,255,255,.92);border:1px solid #d1d5db;padding:2px 6px;border-radius:6px;font-size:12px;color:#111;box-shadow:0 1px 6px rgba(0,0,0,.12)}
 </style>
 </head>
@@ -76,185 +60,128 @@
   <div id="detail" style="margin-top:8px"></div>
 </div>
 
-<div class="badge-irwan" title="Sistem Informasi Irigasi & Rawa Nasional">
-  <span>Si-Irwan v1.0</span>
-</div>
+<div class="badge-irwan" title="Sistem Informasi Irigasi & Rawa Nasional"><span>Si-Irwan v1.0</span></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
 <script>
-const CSV_URL = "survey.csv";
-const LABEL_ZOOM = 9;
+const CSV_URL="survey.csv";
+const LABEL_ZOOM=9;
+const norm=v=>String(v??"").trim().toLowerCase();
+const isValid=v=>v!==undefined&&v!==null&&String(v).trim()!=="";
+const distinct=a=>[...new Set(a.filter(isValid))];
 
-const map = L.map('map').setView([-2.5,117.5],5);
+const map=L.map('map').setView([-2.5,117.5],5);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-  {attribution:'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics'}).addTo(map);
-
+ {attribution:'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics'}).addTo(map);
 const cluster=L.markerClusterGroup({showCoverageOnHover:false,maxClusterRadius:54});
 map.addLayer(cluster);
-const labelLayer = L.layerGroup().addTo(map);
+const labelLayer=L.layerGroup().addTo(map);
 
 const bbwsSel=document.getElementById('bbwsSel');
 const diSel=document.getElementById('diSel');
 const statsEl=document.getElementById('stats');
 const detailEl=document.getElementById('detail');
 
-let markers=[],rawRows=[];
+let rawRows=[], markers=[];
 
-/* ====== Normalizer & helpers ====== */
-const norm = v => String(v ?? "").trim().toLowerCase();
-const isValid = v => v!==undefined && v!==null && String(v).trim()!=="";
-const distinct = a => [...new Set(a.filter(isValid))];
-
+/* helpers */
 function normalizeLatLon(r){
   const k=Object.keys(r);
   const latKey=k.find(k=>/^(lat|latitude|y)$/i.test(k));
   const lonKey=k.find(k=>/^(lon|long|longitude|x)$/i.test(k));
-  return { lat: parseFloat(r[latKey]), lon: parseFloat(r[lonKey]) };
+  return {lat:parseFloat(r[latKey]),lon:parseFloat(r[lonKey])};
 }
-
 function colorForStatus(s){const c={Selesai:"#22c55e",Proses:"#f59e0b",Terkendala:"#ef4444",Direncanakan:"#3b82f6"};return c[s]||"#a3a3a3";}
 function circleStyle(s){return{radius:7,color:"#fff",weight:1,fillColor:colorForStatus(s),fillOpacity:.9};}
+function setOptionsSimple(sel,arr,ph){sel.innerHTML=`<option value="">— ${ph} —</option>`;arr.forEach(v=>sel.insertAdjacentHTML('beforeend',`<option value="${v}">${v}</option>`));}
+function buildTable(o){const rows=Object.entries(o).filter(([k,v])=>isValid(v)).map(([k,v])=>`<tr><td class="key">${k}</td><td>${v}</td></tr>`).join("");return `<table class="meta">${rows||"<tr><td>(tidak ada data)</td></tr>"}</table>`;}
+function showDetail(d,latlng){detailEl.innerHTML=`<h3 style="margin:6px 0;color:#fff">${d.nama_di||d.kegiatan||d.kabupaten||"Detail Survey"}</h3><div style="font-size:12px;color:#cbd5e1;margin-bottom:6px">Koordinat: ${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}</div>${buildTable(d)}`;}
 
-function setOptionsPairs(sel, pairs, placeholder){
-  sel.innerHTML = `<option value="">— ${placeholder} —</option>`;
-  pairs.forEach(([value,label])=>{
-    sel.insertAdjacentHTML('beforeend', `<option value="${value}">${label}</option>`);
-  });
-}
-
-function setOptionsSimple(sel, arr, placeholder){
-  sel.innerHTML = `<option value="">— ${placeholder} —</option>`;
-  arr.forEach(v=>{
-    sel.insertAdjacentHTML('beforeend', `<option value="${v}">${v}</option>`);
-  });
-}
-
-function buildTable(o){
-  const rows = Object.entries(o).filter(([k,v])=>isValid(v))
-    .map(([k,v])=>`<tr><td class="key">${k}</td><td>${v}</td></tr>`).join("");
-  return `<table class="meta">${rows || "<tr><td>(tidak ada data)</td></tr>"}</table>`;
-}
-
-function showDetail(d,latlng){
-  detailEl.innerHTML = `
-    <h3 style="margin:6px 0;color:#fff">${d.nama_di || d.kegiatan || d.kabupaten || "Detail Survey"}</h3>
-    <div style="font-size:12px;color:#cbd5e1;margin-bottom:6px">Koordinat: ${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}</div>
-    ${buildTable(d)}
-  `;
-}
-
-/* ====== Index: BBWS (normalized) -> {label, dis:Set(DI-label)} ====== */
-const bbwsIndex = new Map(); // key: norm(bbws) -> { label: "Serayu Opak", dis: Set<string> }
-let allDiList = [];
-
-/* ====== Populate from CSV ====== */
-Papa.parse(CSV_URL,{
-  download:true, header:true, dynamicTyping:true, skipEmptyLines:true,
-  complete: ({data})=>{
-    rawRows = data;
-
-    // Build index BBWS -> DI (pakai key normalized, label asli disimpan)
-    rawRows.forEach(r=>{
-      const bLabel = r.bbws;
-      const dLabel = r.nama_di;
-      if(!isValid(bLabel) || !isValid(dLabel)) return;
-      const bKey = norm(bLabel);
-      if(!bbwsIndex.has(bKey)) bbwsIndex.set(bKey, { label: String(bLabel).trim(), dis: new Set() });
-      bbwsIndex.get(bKey).dis.add(String(dLabel).trim());
-    });
-
-    // Isi dropdown BBWS (value=normalized, text=label asli)
-    const bbwsPairs = [...bbwsIndex.entries()]
-      .map(([key, obj]) => [key, obj.label])
-      .sort((a,b)=>a[1].localeCompare(b[1]));
-    setOptionsPairs(bbwsSel, bbwsPairs, "Semua BBWS");
-
-    // Kumpulan semua DI (untuk saat BBWS kosong)
-    const diSetAll = new Set();
-    bbwsIndex.forEach(obj => obj.dis.forEach(di => diSetAll.add(di)));
-    allDiList = [...diSetAll].sort((a,b)=>a.localeCompare(b));
-    setOptionsSimple(diSel, allDiList, "Semua DI");
-
-    // Buat marker
-    let skipped=0;
-    rawRows.forEach(r=>{
-      const {lat,lon}=normalizeLatLon(r);
-      if(isFinite(lat) && isFinite(lon)){
-        const title = r.nama_di || "Titik Survey";
-        const m=L.circleMarker([lat,lon],circleStyle(r.status_progres));
-        m.bindPopup(`<b>${title}</b>`); // popup hanya nama DI
-        m.on('click',()=> showDetail(r,m.getLatLng()));
-        markers.push({ marker:m, data:r });
-      } else skipped++;
-    });
-
-    // Prefill: jika ada "Serayu Opak"
-    const soKey = [...bbwsIndex.keys()].find(k => bbwsIndex.get(k).label.toLowerCase()==="serayu opak");
-    if(soKey){
-      bbwsSel.value = soKey;
-      rebuildDiOptions();    // filter DI sesuai BBWS
-    }
-
-    refresh(true);
-  }
-});
-
-/* ====== Rebuild DI options when BBWS changes ====== */
+/* === FIX PENTING: bangun opsi DI langsung dari rawRows yang match BBWS terpilih === */
 function rebuildDiOptions(){
-  const bKey = bbwsSel.value; // sudah normalized
+  const bKey=bbwsSel.value; // ini masih label asli (karena kita isi dropdown BBWS dengan label asli)
   if(isValid(bKey)){
-    const obj = bbwsIndex.get(bKey);
-    const list = obj ? [...obj.dis].sort((a,b)=>a.localeCompare(b)) : [];
-    setOptionsSimple(diSel, list, "Semua DI di BBWS ini");
+    const wanted=norm(bKey);
+    const diList=distinct(
+      rawRows
+        .filter(r=>norm(r.bbws)===wanted)
+        .map(r=>String(r.nama_di||"").trim())
+    ).sort((a,b)=>a.localeCompare(b));
+    setOptionsSimple(diSel, diList, "Semua DI di BBWS ini");
   }else{
-    setOptionsSimple(diSel, allDiList, "Semua DI");
+    const allDi=distinct(rawRows.map(r=>String(r.nama_di||"").trim()))
+      .sort((a,b)=>a.localeCompare(b));
+    setOptionsSimple(diSel, allDi, "Semua DI");
   }
-  diSel.value = ""; // reset pilihan DI
+  diSel.value="";
 }
 
-/* ====== Render map based on filters and labels ====== */
+/* render */
 function refresh(autoZoom=true){
-  const bKey = bbwsSel.value;                // normalized (atau "")
-  const diPick = (diSel.value||"").trim();   // DI label asli
-  cluster.clearLayers();
-  labelLayer.clearLayers();
+  const bPick=bbwsSel.value;            // label asli
+  const dPick=(diSel.value||"").trim(); // label asli
+  const bKey=isValid(bPick)?norm(bPick):"";
+  cluster.clearLayers(); labelLayer.clearLayers();
 
-  let pts=[];
+  const pts=[];
   markers.forEach(m=>{
-    const r = m.data;
-    const rowBKey = norm(r.bbws);
-    const rowDI   = String(r.nama_di||"").trim();
-
-    const pass = (!isValid(bKey) || rowBKey===bKey) && (!isValid(diPick) || rowDI===diPick);
+    const r=m.data;
+    const pass=( !bKey || norm(r.bbws)===bKey ) && ( !dPick || String(r.nama_di||"").trim()===dPick );
     if(pass){
       cluster.addLayer(m.marker);
-      const ll = m.marker.getLatLng();
+      const ll=m.marker.getLatLng();
       pts.push(ll);
-
-      // label muncul saat zoom cukup
-      if(map.getZoom() >= LABEL_ZOOM){
-        const title = rowDI || "Titik Survey";
-        const tip = L.tooltip({permanent:true,direction:'top',className:'di-label'})
-                      .setLatLng(ll).setContent(title);
+      if(map.getZoom()>=LABEL_ZOOM){
+        const title=r.nama_di||"Titik Survey";
+        const tip=L.tooltip({permanent:true,direction:'top',className:'di-label'}).setLatLng(ll).setContent(title);
         labelLayer.addLayer(tip);
       }
     }
   });
 
-  statsEl.innerHTML = `<span>Total titik tampil</span><b>${pts.length}</b>`;
-  if(autoZoom && pts.length){
-    map.fitBounds(L.latLngBounds(pts).pad(0.15), { maxZoom: 12 });
-  }
+  statsEl.innerHTML=`<span>Total titik tampil</span><b>${pts.length}</b>`;
+  if(autoZoom&&pts.length){map.fitBounds(L.latLngBounds(pts).pad(0.15),{maxZoom:12});}
 }
 
-// re-render label on zoom
-map.on('zoomend', ()=> refresh(false));
+map.on('zoomend',()=>refresh(false));
 
-// events
-bbwsSel.addEventListener('change', ()=>{ rebuildDiOptions(); refresh(true); });
-diSel.addEventListener('change', ()=> refresh(true));
+/* load CSV */
+Papa.parse(CSV_URL,{
+  download:true,header:true,dynamicTyping:true,skipEmptyLines:true,
+  complete:({data})=>{
+    rawRows=data;
+
+    // isi dropdown BBWS pakai label asli (biar user lihat nama persis)
+    const bbwsList=distinct(rawRows.map(r=>String(r.bbws||"").trim()))
+      .sort((a,b)=>a.localeCompare(b));
+    setOptionsSimple(bbwsSel, bbwsList, "Semua BBWS");
+
+    // marker
+    rawRows.forEach(r=>{
+      const {lat,lon}=normalizeLatLon(r);
+      if(isFinite(lat)&&isFinite(lon)){
+        const title=r.nama_di||"Titik Survey";
+        const m=L.circleMarker([lat,lon],circleStyle(r.status_progres));
+        m.bindPopup(`<b>${title}</b>`);
+        m.on('click',()=>showDetail(r,m.getLatLng()));
+        markers.push({marker:m,data:r});
+      }
+    });
+
+    // preselect kalau ada “Serayu Opak” (opsional, bisa dihapus)
+    const so = bbwsList.find(v=>v.toLowerCase()==="serayu opak");
+    if(so){ bbwsSel.value=so; }
+
+    rebuildDiOptions();
+    refresh(true);
+  }
+});
+
+/* events */
+bbwsSel.addEventListener('change',()=>{rebuildDiOptions();refresh(true);});
+diSel.addEventListener('change',()=>refresh(true));
 </script>
 </body>
 </html>
