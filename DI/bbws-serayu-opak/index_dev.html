@@ -38,11 +38,12 @@
     .meta{font-size:13px; border-collapse:collapse; width:100%; color:var(--text)}
     .meta td{border-bottom:1px dashed rgba(255,255,255,.08); padding:6px 2px}
     .key{color:var(--muted-2); width:42%}
-    .row{display:grid; grid-template-columns:1fr auto; gap:8px; font-size:13px; color:var(--muted)}
+    .row{display:grid; grid-template-columns:1fr auto 1fr auto; gap:12px; font-size:13px; color:var(--muted)}
     .row b{color:#fff}
     .err{color:#fca5a5; font-size:12px; margin-top:6px}
     .di-label{background:rgba(255,255,255,.9); border:1px solid #d1d5db; padding:2px 6px; border-radius:6px; font-size:12px; color:#111}
     @media(max-width:680px){.grid{grid-template-columns:1fr}:root{--hdrH:96px}}
+
     /* Badge */
     .badge-irwan{position:fixed; right:12px; bottom:96px; z-index:1200; background:rgba(13,71,161,.85);
       border:1px solid rgba(255,255,255,.25); color:#fff; font-size:12px; font-weight:700; padding:6px 12px; border-radius:10px;
@@ -61,7 +62,6 @@
     .legend .swatch{width:16px; height:16px; border-radius:4px; border:1px solid rgba(255,255,255,.6)}
     .swatch-di{background:#3388ff}
     .swatch-saluran{background:#10b981}
-    .swatch-bendung{background:#f59e0b}
   </style>
 </head>
 <body>
@@ -103,7 +103,6 @@
   <div class="legend">
     <div class="item"><span class="swatch swatch-di"></span> DI (Polygon)</div>
     <div class="item"><span class="swatch swatch-saluran"></span> Saluran (Line)</div>
-    <div class="item"><span class="swatch swatch-bendung"></span> Bendung (Point)</div>
   </div>
 
   <!-- BADGE -->
@@ -115,13 +114,13 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
   <script>
   document.addEventListener('DOMContentLoaded', () => {
-    /* ========= PATH DATA =========
-       Sesuaikan kalau lokasi file berbeda  */
-    const URL_DI      = "../bbws-serayu-opak/LuasBaku_SerayuOpak_3.geojson";  // polygon
-    /*const URL_BENDUNG = "../bbws-serayu-opak/Bendung.geojson";                // point*/
-    const URL_SALURAN = "../bbws-serayu-opak/Saluran_SerayuOpak.geojson";     // line
+    /* ========= PATH DATA ========= */
+    const PATHS = {
+      DI:      "../bbws-serayu-opak/LuasBaku_SerayuOpak_3.geojson", // polygon
+      SALURAN: "../bbws-serayu-opak/Saluran_SerayuOpak.geojson",    // line
+    };
 
-    /* Optional join ke GAS: digunakan untuk panel detail DI via Kd_Inf */
+    /* Optional join ke GAS (untuk panel detail DI via Kd_Inf) */
     const GAS_URL = "https://script.google.com/macros/s/AKfycbybsLoQu-8S-MlR_kB2989FZV0C-c1gRzUqcIZWBWuYb-_We03B_BShX8Q3AQqWhOTvzg/exec?sheet=SO_Integrasi&t=" + Date.now();
 
     /* Elemen UI */
@@ -142,7 +141,7 @@
     /* ===== State ===== */
     let lookup={}, rows=[], groups={}, headers=[];
     const labelLayer = L.layerGroup().addTo(map);
-    let diLayer, bendungLayer, saluranLayer;
+    let diLayer, saluranLayer;
     let diIndex=[];  // {layer,key,title,nama,center,dataObj}
     let activeKey=null, activeTitle=null;
 
@@ -192,22 +191,19 @@
     function updateStats(){
       const diCount      = diLayer ? diLayer.getLayers().filter(l=>l.options.fillOpacity>0).length : 0;
       const saluranCount = saluranLayer ? saluranLayer.getLayers().filter(l=>l.options.opacity>0).length : 0;
-      const bendungCount = bendungLayer ? bendungLayer.getLayers().filter(l=>l.options.fillOpacity>0).length : 0;
       statsEl.innerHTML = `
         <span>DI</span><b>${diCount}</b>
         <span>Saluran</span><b>${saluranCount}</b>
-        <span>Bendung</span><b>${bendungCount}</b>
       `;
     }
 
     /* ===== Load all ===== */
     Promise.allSettled([
       fetch(GAS_URL).then(r=>r.json()),
-      fetch(URL_DI).then(r=>r.json()),
-      fetch(URL_BENDUNG).then(r=>r.json()),
-      fetch(URL_SALURAN).then(r=>r.json())
+      fetch(PATHS.DI).then(r=>r.json()),
+      fetch(PATHS.SALURAN).then(r=>r.json())
     ]).then(results=>{
-      const [gasRes, diRes, bendRes, salRes] = results;
+      const [gasRes, diRes, salRes] = results;
 
       // GAS (optional)
       if(gasRes.status === 'fulfilled'){
@@ -246,7 +242,7 @@
         note('Layer DI gagal dimuat.');
       }
 
-      /* ===== Saluran (LineString/MultiLineString) — filter Serayu Opak ===== */
+      /* ===== Saluran (Line) — filter Serayu Opak ===== */
       if(salRes.status === 'fulfilled'){
         const feats = (salRes.value?.features||[]).filter(f=>matchSerayuOpak(f.properties||{}));
         const fc = { type:'FeatureCollection', features:feats };
@@ -257,40 +253,14 @@
         note('Layer Saluran gagal dimuat.');
       }
 
-      /* ===== Bendung (Point) — filter Serayu Opak jika ada kolom balai ===== */
-      if(bendRes.status === 'fulfilled'){
-        const rawFeats = (bendRes.value?.features||[]);
-        // Bila file bendung tidak punya info balai, tampilkan semua;
-        // bila punya, tampilkan yang match Serayu Opak agar konsisten.
-        const hasBalai = rawFeats.some(f=>
-          matchSerayuOpak(f.properties||{}) || ['kode_balai','balai','nama_balai','bbws_bws','Balai','Nama_Balai','Kode_Balai'].some(k=>k in (f.properties||{}))
-        );
-        const feats = hasBalai ? rawFeats.filter(f=>matchSerayuOpak(f.properties||{})) : rawFeats;
-
-        const fc = { type:'FeatureCollection', features:feats };
-        bendungLayer = L.geoJSON(fc, {
-          pointToLayer: (f, latlng)=> L.circleMarker(latlng, { radius:6, color:'#b45309', weight:1, fillColor:'#f59e0b', fillOpacity:.9 }),
-          onEachFeature:(f, layer)=>{
-            const p = f.properties||{};
-            const title = p.nama_infrastruktur || p.nama || 'Bendung';
-            const kab = p.kota_kabupaten || p.kabupaten || '';
-            const prov = p.provinsi || '';
-            layer.bindPopup(`<div style="font-size:13px"><b>${title}</b><br/>${kab ? kab+', ' : ''}${prov}</div>`);
-          }
-        }).addTo(map);
-      } else {
-        note('Layer Bendung gagal dimuat.');
-      }
-
       /* ===== Layer control ===== */
       const overlays = {};
       if(diLayer) overlays['Daerah Irigasi'] = diLayer;
       if(saluranLayer) overlays['Saluran'] = saluranLayer;
-      if(bendungLayer) overlays['Bendung'] = bendungLayer;
       L.control.layers(null, overlays, { collapsed:true }).addTo(map);
 
       refreshLabelsAndStats();
-      detailEl.innerHTML = '<i style="color:#cbd5e1">Klik poligon DI, atau pilih DI untuk lihat detail. Klik titik bendung untuk popup ringkas.</i>';
+      detailEl.innerHTML = '<i style="color:#cbd5e1">Klik poligon DI, atau pilih DI untuk lihat detail.</i>';
     });
 
     /* ===== Renderers ===== */
