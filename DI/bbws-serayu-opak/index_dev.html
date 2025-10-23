@@ -111,68 +111,53 @@
   </div>
 
   <!-- Scripts -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
   document.addEventListener('DOMContentLoaded', () => {
     /* ========= PATH DATA ========= */
     const PATHS = {
-      DI:      "../bbws-serayu-opak/LuasBaku_SerayuOpak_3.geojson", // polygon
-      SALURAN: "../bbws-serayu-opak/Saluran_SerayuOpak.geojson",    // line
+      DI: "./LuasBaku_SerayuOpak_3.geojson",      // sesuaikan path
+      SALURAN: "./Saluran_SerayuOpak.geojson",    // sesuaikan path
     };
 
-    /* Optional join ke GAS (untuk panel detail DI via Kd_Inf) */
     const GAS_URL = "https://script.google.com/macros/s/AKfycbybsLoQu-8S-MlR_kB2989FZV0C-c1gRzUqcIZWBWuYb-_We03B_BShX8Q3AQqWhOTvzg/exec?sheet=SO_Integrasi&t=" + Date.now();
 
-    /* Elemen UI */
-    const diSel      = document.getElementById('diSel');
-    const clusterSel = document.getElementById('clusterSel');
-    const statsEl    = document.getElementById('stats');
-    const detailEl   = document.getElementById('detail');
-    const msgEl      = document.getElementById('msg');
-    const note = (m)=> msgEl.textContent = m || "";
+    const diSel=document.getElementById('diSel');
+    const clusterSel=document.getElementById('clusterSel');
+    const statsEl=document.getElementById('stats');
+    const detailEl=document.getElementById('detail');
+    const msgEl=document.getElementById('msg');
+    const note=(m)=>msgEl.textContent=m||"";
 
-    /* ===== Map ===== */
-    const map = L.map('map', { preferCanvas:true }).setView([-7.8,110.3], 8);
-    L.tileLayer(
-      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      { attribution: 'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics' }
-    ).addTo(map);
+    const map=L.map('map',{preferCanvas:true}).setView([-7.8,110.3],8);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
+      attribution:'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics'
+    }).addTo(map);
 
-    /* ===== State ===== */
-    let lookup={}, rows=[], groups={}, headers=[];
-    const labelLayer = L.layerGroup().addTo(map);
-    let diLayer, saluranLayer;
-    let diIndex=[];  // {layer,key,title,nama,center,dataObj}
-    let activeKey=null, activeTitle=null;
+    let lookup={},rows=[],groups={},headers=[];
+    const labelLayer=L.layerGroup().addTo(map);
+    let diLayer,saluranLayer;
+    let diIndex=[],activeKey=null,activeTitle=null;
 
-    /* ===== Utils ===== */
-    const BALAI_REGEX = /serayu\s*opak/i;
-    function matchSerayuOpak(props = {}){
-      const candidates = [
-        props.kode_balai, props.balai, props.nama_balai, props.bbws_bws,
-        props.Balai, props.Nama_Balai, props.Kode_Balai
-      ].filter(Boolean).map(String);
-      return candidates.some(v => BALAI_REGEX.test(v));
-    }
-    const getNamaDI=(o)=> o?.Nama_DI || o?.["Nama Aset"] || o?.["Nama DI"] || o?.nama_infrastruktur || "";
-    const addLabel = (latlng,text)=>{
-      if(!latlng) return;
+    const getNamaDI=(o)=>o?.Nama_DI||o?.["Nama Aset"]||o?.["Nama DI"]||o?.nama_infrastruktur||"";
+    const addLabel=(latlng,text)=>{
+      if(!latlng)return;
       L.tooltip({permanent:true,direction:'center',className:'di-label'})
-        .setLatLng(latlng).setContent(text).addTo(labelLayer);
+      .setLatLng(latlng).setContent(text).addTo(labelLayer);
     };
-    function buildTable(obj, fields){
-      const keys = fields && fields.length ? fields : Object.keys(obj||{});
-      const html = (keys||[]).filter(k=>k && k!=="Kd_Inf").map(k=>{
-        const v = obj[k]; if(v==null || v==="") return "";
+    function buildTable(obj,fields){
+      const keys=fields&&fields.length?fields:Object.keys(obj||{});
+      const html=(keys||[]).filter(k=>k&&k!=="Kd_Inf").map(k=>{
+        const v=obj[k];if(v==null||v==="")return"";
         return `<tr><td class="key">${k}</td><td>${v}</td></tr>`;
       }).join("");
-      return `<table class="meta">${html || '<tr><td>(tidak ada data)</td></tr>'}</table>`;
+      return `<table class="meta">${html||'<tr><td>(tidak ada data)</td></tr>'}</table>`;
     }
     function normalizeGas(json){
-      if(json && json.lookup && json.rows) return json;
-      let _rows = Array.isArray(json)? json : (json?.rows || Object.values(json.lookup||{}));
-      const _headers = _rows.length ? Object.keys(_rows[0]) : [];
-      return { rows:_rows, headers:_headers, lookup:Object.fromEntries(_rows.map(r=>[r.Kd_Inf, r])) };
+      if(json&&json.lookup&&json.rows)return json;
+      let _rows=Array.isArray(json)?json:(json?.rows||Object.values(json.lookup||{}));
+      const _headers=_rows.length?Object.keys(_rows[0]):[];
+      return{rows:_rows,headers:_headers,lookup:Object.fromEntries(_rows.map(r=>[r.Kd_Inf,r]))};
     }
     function buildFixedGroups(headers){
       const g={};
@@ -189,129 +174,80 @@
       return g;
     }
     function updateStats(){
-      const diCount      = diLayer ? diLayer.getLayers().filter(l=>l.options.fillOpacity>0).length : 0;
-      const saluranCount = saluranLayer ? saluranLayer.getLayers().filter(l=>l.options.opacity>0).length : 0;
-      statsEl.innerHTML = `
-        <span>DI</span><b>${diCount}</b>
-        <span>Saluran</span><b>${saluranCount}</b>
-      `;
+      const diCount=diLayer?diLayer.getLayers().length:0;
+      const saluranCount=saluranLayer?saluranLayer.getLayers().length:0;
+      statsEl.innerHTML=`<span>DI</span><b>${diCount}</b><span>Saluran</span><b>${saluranCount}</b>`;
     }
 
-    /* ===== Load all ===== */
     Promise.allSettled([
       fetch(GAS_URL).then(r=>r.json()),
       fetch(PATHS.DI).then(r=>r.json()),
       fetch(PATHS.SALURAN).then(r=>r.json())
     ]).then(results=>{
-      const [gasRes, diRes, salRes] = results;
+      const [gasRes,diRes,salRes]=results;
 
-      // GAS (optional)
-      if(gasRes.status === 'fulfilled'){
-        const norm = normalizeGas(gasRes.value);
-        lookup = norm.lookup; rows = norm.rows; headers = norm.headers; groups = buildFixedGroups(headers);
+      if(gasRes.status==='fulfilled'){
+        const norm=normalizeGas(gasRes.value);
+        lookup=norm.lookup;rows=norm.rows;headers=norm.headers;groups=buildFixedGroups(headers);
         Object.keys(groups).filter(k=>k!=='__ALL__')
-          .forEach(k => clusterSel.insertAdjacentHTML('beforeend', `<option value="${k}">${k}</option>`));
-        const diNames = [...new Set(rows.map(r=>getNamaDI(r)).filter(Boolean))].sort();
-        diNames.forEach(nm => diSel.insertAdjacentHTML('beforeend', `<option value="${nm}">${nm}</option>`));
-      } else {
-        note('GAS tidak terbaca — panel detail akan pakai fallback atribut GeoJSON.');
+          .forEach(k=>clusterSel.insertAdjacentHTML('beforeend',`<option value="${k}">${k}</option>`));
+        const diNames=[...new Set(rows.map(r=>getNamaDI(r)).filter(Boolean))].sort();
+        diNames.forEach(nm=>diSel.insertAdjacentHTML('beforeend',`<option value="${nm}">${nm}</option>`));
       }
 
-      /* ===== DI (Polygon) — filter Serayu Opak ===== */
-      if(diRes.status === 'fulfilled'){
-        const feats = (diRes.value?.features||[]).filter(f=>matchSerayuOpak(f.properties||{}));
-        const fc = { type:'FeatureCollection', features:feats };
-        diLayer = L.geoJSON(fc, {
-          style: ()=> ({ color:'#1d5fd1', weight:1, fillColor:'#3388ff', fillOpacity:0.35 }),
-          onEachFeature:(f, layer)=>{
-            const key = String(f.properties?.Kd_Inf || "").trim();
-            const info = lookup[key] || {};
-            const title = getNamaDI(info) || key || 'DI';
-            const center = layer.getBounds().getCenter();
-            diIndex.push({ layer, key, title, nama:title.toLowerCase(), dataObj:info, center });
-            layer.on('click', ()=>{
-              activeKey = key; activeTitle = title;
-              renderDetailDI(info, title, key);
-              const opt = [...diSel.options].find(o => o.value.toLowerCase() === title.toLowerCase());
-              if(opt) diSel.value = opt.value;
+      // tampilkan semua DI
+      if(diRes.status==='fulfilled'){
+        const fc={type:'FeatureCollection',features:diRes.value?.features||[]};
+        diLayer=L.geoJSON(fc,{
+          style:()=>({color:'#1d5fd1',weight:1,fillColor:'#3388ff',fillOpacity:0.35}),
+          onEachFeature:(f,layer)=>{
+            const key=String(f.properties?.Kd_Inf||"").trim();
+            const info=lookup[key]||{};
+            const title=getNamaDI(info)||key||'DI';
+            const center=layer.getBounds().getCenter();
+            diIndex.push({layer,key,title,nama:title.toLowerCase(),dataObj:info,center});
+            layer.on('click',()=>{
+              activeKey=key;activeTitle=title;
+              renderDetailDI(info,title,key);
             });
           }
         }).addTo(map);
-        if(diLayer.getLayers().length){ try{ map.fitBounds(diLayer.getBounds()); }catch(_){ } }
-      } else {
-        note('Layer DI gagal dimuat.');
+        if(diLayer.getLayers().length){map.fitBounds(diLayer.getBounds());}
       }
 
-      /* ===== Saluran (Line) — filter Serayu Opak ===== */
-      if(salRes.status === 'fulfilled'){
-        const feats = (salRes.value?.features||[]).filter(f=>matchSerayuOpak(f.properties||{}));
-        const fc = { type:'FeatureCollection', features:feats };
-        saluranLayer = L.geoJSON(fc, {
-          style: ()=>({ color:'#10b981', weight:2, opacity:.9 })
-        }).addTo(map);
-      } else {
-        note('Layer Saluran gagal dimuat.');
+      // tampilkan semua saluran
+      if(salRes.status==='fulfilled'){
+        const fc={type:'FeatureCollection',features:salRes.value?.features||[]};
+        saluranLayer=L.geoJSON(fc,{style:()=>({color:'#10b981',weight:2,opacity:.9})}).addTo(map);
       }
 
-      /* ===== Layer control ===== */
-      const overlays = {};
-      if(diLayer) overlays['Daerah Irigasi'] = diLayer;
-      if(saluranLayer) overlays['Saluran'] = saluranLayer;
-      L.control.layers(null, overlays, { collapsed:true }).addTo(map);
+      const overlays={};
+      if(diLayer)overlays['DI (Polygon)']=diLayer;
+      if(saluranLayer)overlays['Saluran (Line)']=saluranLayer;
+      L.control.layers(null,overlays,{collapsed:true}).addTo(map);
 
       refreshLabelsAndStats();
-      detailEl.innerHTML = '<i style="color:#cbd5e1">Klik poligon DI, atau pilih DI untuk lihat detail.</i>';
+      detailEl.innerHTML='<i style="color:#cbd5e1">Klik poligon DI atau pilih DI untuk lihat detail.</i>';
     });
 
-    /* ===== Renderers ===== */
-    function renderDetailDI(info, title, key){
-      const g = clusterSel.value || "__ALL__";
-      const table = (lookup[key])
-        ? buildTable(info, (g==="__ALL__") ? headers : (groups[g]||headers))
-        : `<div style="color:#cbd5e1;font-size:12px">Data GAS tidak ditemukan untuk Kd_Inf ini.</div>`;
-      detailEl.innerHTML = `
-        <h3 style="margin:6px 0;color:#fff">${title}</h3>
-        <div style="font-size:12px;color:#cbd5e1;margin-bottom:6px">Kd_Inf: ${key}</div>
-        ${table}
-      `;
+    function renderDetailDI(info,title,key){
+      const g=clusterSel.value||"__ALL__";
+      const table=(lookup[key])
+        ?buildTable(info,(g==="__ALL__")?headers:(groups[g]||headers))
+        :`<div style="color:#cbd5e1;font-size:12px">Data GAS tidak ditemukan.</div>`;
+      detailEl.innerHTML=`<h3 style="margin:6px 0;color:#fff">${title}</h3>
+      <div style="font-size:12px;color:#cbd5e1;margin-bottom:6px">Kd_Inf: ${key}</div>${table}`;
     }
 
     function refreshLabelsAndStats(){
       labelLayer.clearLayers();
-      if(diIndex.length && map.getZoom() >= 10){
-        diIndex.forEach(o=> addLabel(o.center, o.title));
+      if(diIndex.length&&map.getZoom()>=10){
+        diIndex.forEach(o=>addLabel(o.center,o.title));
       }
       updateStats();
     }
 
-    map.on('zoomend', refreshLabelsAndStats);
-
-    /* ===== Events ===== */
-    diSel.addEventListener('change', ()=>{
-      const sel = (diSel.value||"").toLowerCase();
-      if(!sel){
-        activeKey=null; activeTitle=null;
-        detailEl.innerHTML = '<i style="color:#cbd5e1">Pilih DI untuk lihat detail.</i>';
-        try{ if(diLayer) map.fitBounds(diLayer.getBounds()); }catch(_){}
-        refreshLabelsAndStats();
-        return;
-      }
-      const hit = diIndex.find(o=>o.nama===sel);
-      if(hit){
-        activeKey = hit.key; activeTitle = hit.title;
-        map.fitBounds(hit.layer.getBounds(), { maxZoom:14 });
-        renderDetailDI(lookup[activeKey]||{}, activeTitle, activeKey);
-        refreshLabelsAndStats();
-      }
-    });
-
-    clusterSel.addEventListener('change', ()=>{
-      if(activeKey && lookup[activeKey]){
-        renderDetailDI(lookup[activeKey], activeTitle || getNamaDI(lookup[activeKey]) || activeKey, activeKey);
-      }else{
-        detailEl.innerHTML = '<i style="color:#cbd5e1">Pilih DI terlebih dahulu.</i>';
-      }
-    });
+    map.on('zoomend',refreshLabelsAndStats);
   });
   </script>
 </body>
