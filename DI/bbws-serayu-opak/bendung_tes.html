@@ -2,12 +2,12 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <title>Preview Bendung — Street View Link</title>
+  <title>Preview Bendung — Street View</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
-    :root{ --bg:#0b1222; --text:#e5e7eb; --panel:rgba(11,18,34,.92); --border:rgba(255,255,255,.12); --hdrH:68px; }
+    :root{ --bg:#0b1222; --text:#e5e7eb; --panel:rgba(11,18,34,.92); --border:rgba(255,255,255,.12); --hdrH:64px; }
     html,body{height:100%;margin:0;font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
     .header{position:fixed;left:0;right:0;top:0;height:var(--hdrH);display:flex;align-items:center;gap:12px;padding:10px 14px;background:#0d47a1;color:#fff;z-index:900}
     .title{font-weight:800;font-size:14px;line-height:1.2}
@@ -25,7 +25,7 @@
   <div class="header">
     <div>
       <div class="title">Preview Bendung</div>
-      <div class="subtitle">Klik titik untuk membuka Street View</div>
+      <div class="subtitle">Klik titik → buka Google Street View</div>
     </div>
   </div>
   <div class="spacer"></div>
@@ -37,16 +37,15 @@
       <div id="info"><i style="color:#cbd5e1">Belum ada bendung dipilih.</i></div>
       <button id="btnSV" class="btn" disabled>👁️ Lihat Street View</button>
     </div>
-    <div class="hint">File data: <code>contoh_bendung.geojson</code> (Point)</div>
+    <div class="hint">Data: <code>contoh_bendung.geojson</code> — kolom dipakai: <code>N_DI</code>, <code>N_ASET</code>, <code>KEWENANGAN</code></div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
   document.addEventListener('DOMContentLoaded', () => {
-    const DATA_URL = './contoh_bendung.geojson'; // pastikan file ada di path ini
+    const DATA_URL = './contoh_bendung.geojson';
     const map = L.map('map', { preferCanvas:true }).setView([-7.8,110.3], 10);
 
-    // Basemap (bebas API key)
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
       attribution:'Tiles © Esri — Source: Esri, Maxar'
     }).addTo(map);
@@ -55,16 +54,20 @@
     const btnSV  = document.getElementById('btnSV');
     let lastSVUrl = null;
 
+    // ✅ format aman (nggak nyasar ke "Space")
     function svUrl(lat, lon){
-      // Street View viewer pada koordinat (fov default 75 derajat)
-      return `https://www.google.com/maps/@${lat},${lon},3a,75y,90t`;
+      return `https://www.google.com/maps?layer=c&cbll=${lat},${lon}&cbp=11,0,0,0,0`;
     }
 
-    function setDetail(props, lat, lon){
-      const nama = props?.nama_infrastruktur || props?.Nama_Bendung || props?.nama || 'Bendung';
+    function setDetail(p, lat, lon){
+      const nama = p?.NAMA && p.NAMA!=="Bendung" ? p.NAMA : (p?.N_ASET || "Bendung");
+      const di   = p?.N_DI || "-";
+      const kew  = p?.KEWENANGAN || "-";
       infoEl.innerHTML = `
         <div style="font-size:14px"><b>${nama}</b></div>
-        <div style="font-size:12px;color:#cbd5e1">Koordinat: ${lat.toFixed(6)}, ${lon.toFixed(6)}</div>
+        <div style="font-size:12px;color:#cbd5e1">DI: ${di}</div>
+        <div style="font-size:12px;color:#cbd5e1">Kewenangan: ${kew}</div>
+        <div style="font-size:12px;color:#cbd5e1">Koord: ${lat.toFixed(6)}, ${lon.toFixed(6)}</div>
       `;
       lastSVUrl = svUrl(lat, lon);
       btnSV.disabled = false;
@@ -74,54 +77,52 @@
       if(lastSVUrl) window.open(lastSVUrl, '_blank');
     });
 
-    // load geojson
-    fetch(DATA_URL).then(async r=>{
-      if(!r.ok) throw new Error('Gagal memuat file GeoJSON');
-      const ct=r.headers.get('content-type')||'';
-      if(ct.includes('application/json')) return r.json();
-      const txt=await r.text();
-      // fallback parsers: ambil objek FeatureCollection jika ada noise
-      const start = txt.indexOf('{'), end = txt.lastIndexOf('}');
-      return JSON.parse(txt.slice(start, end+1));
-    }).then(gj=>{
-      const feats = (gj && gj.features) ? gj.features : [];
-      if(!feats.length){
-        infoEl.innerHTML = '<span style="color:#fca5a5">Tidak ada fitur di dalam GeoJSON.</span>';
-        return;
-      }
+    // Load & render
+    fetch(DATA_URL)
+      .then(async r=>{
+        if(!r.ok) throw new Error('Gagal memuat GeoJSON');
+        const ct=r.headers.get('content-type')||'';
+        if(ct.includes('application/json')) return r.json();
+        const txt=await r.text(); const s=txt.indexOf('{'), e=txt.lastIndexOf('}');
+        return JSON.parse(txt.slice(s,e+1));
+      })
+      .then(gj=>{
+        const feats = (gj && gj.features) ? gj.features : [];
+        if(!feats.length){ infoEl.innerHTML='<span style="color:#fca5a5">Tidak ada fitur di file.</span>'; return; }
 
-      const layer = L.geoJSON(gj, {
-        pointToLayer: (f, latlng) => L.circleMarker(latlng, {
-          radius: 7, color:'#0d9488', weight:1.5, fillColor:'#22c55e', fillOpacity:.95
-        }),
-        onEachFeature: (f, l) => {
-          const [lon, lat] = (f.geometry && f.geometry.coordinates) ? f.geometry.coordinates : [latlng.lng, latlng.lat];
-          const nama = f.properties?.nama_infrastruktur || f.properties?.Nama_Bendung || f.properties?.nama || 'Bendung';
-          const link = svUrl(lat, lon);
-          l.bindPopup(`
-            <div style="font-size:13px">
-              <b>${nama}</b><br/>
-              ${lat.toFixed(6)}, ${lon.toFixed(6)}<br/>
-              <a href="${link}" target="_blank" style="color:#1d5fd1;font-weight:700">👁️ Lihat Street View</a>
-            </div>
-          `);
-          l.on('click', ()=> setDetail(f.properties||{}, lat, lon));
+        const layer = L.geoJSON(gj, {
+          pointToLayer: (f, latlng) => L.circleMarker(latlng, {
+            radius: 7, color:'#0d9488', weight:1.5, fillColor:'#22c55e', fillOpacity:.95
+          }),
+          onEachFeature: (f, l) => {
+            const [lon, lat] = f.geometry.coordinates;
+            const p = f.properties || {};
+            const nama = p.NAMA && p.NAMA!=="Bendung" ? p.NAMA : (p.N_ASET || "Bendung");
+            const di   = p.N_DI || "-";
+            const link = svUrl(lat, lon);
+            l.bindPopup(`
+              <div style="font-size:13px">
+                <b>${nama}</b><br/>
+                <span style="color:#94a3b8">${di}</span><br/>
+                ${lat.toFixed(6)}, ${lon.toFixed(6)}<br/>
+                <a href="${link}" target="_blank" style="color:#1d5fd1;font-weight:700">👁️ Lihat Street View</a>
+              </div>
+            `);
+            l.on('click', ()=> setDetail(p, lat, lon));
+          }
+        }).addTo(map);
+
+        try{
+          map.fitBounds(layer.getBounds(), { maxZoom: 14 });
+        }catch(e){
+          const f0 = feats[0]; const [lon,lat]=f0.geometry.coordinates;
+          map.setView([lat,lon], 16); setDetail(f0.properties||{}, lat, lon);
         }
-      }).addTo(map);
-
-      try{
-        map.fitBounds(layer.getBounds(), { maxZoom: 15 });
-      }catch(e){
-        // kalau cuma 1 titik, fitBounds bisa error — set view manual
-        const f0 = feats[0];
-        const [lon, lat] = f0.geometry.coordinates;
-        map.setView([lat, lon], 16);
-        setDetail(f0.properties||{}, lat, lon);
-      }
-    }).catch(err=>{
-      console.error(err);
-      infoEl.innerHTML = '<span style="color:#fca5a5">Gagal memuat <code>contoh_bendung.geojson</code>.</span>';
-    });
+      })
+      .catch(err=>{
+        console.error(err);
+        infoEl.innerHTML = '<span style="color:#fca5a5">Gagal memuat <code>contoh_bendung.geojson</code>.</span>';
+      });
   });
   </script>
 </body>
