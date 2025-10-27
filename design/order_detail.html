@@ -95,6 +95,7 @@ body{margin:0;background:var(--bg);color:var(--fg);font:500 15px/1.55 system-ui,
 .gate .hint{margin-top:4px}
 .gok{display:none;align-items:center;gap:6px;background:#0c1f12;border:1px solid #1f5f3a;color:#b7ffd2;padding:6px 10px;border-radius:999px}
 .gerr{display:none;align-items:center;gap:6px;background:#1a0d0d;border:1px solid #5b2b2b;color:#ffc7c7;padding:6px 10px;border-radius:999px}
+
 /* ====== PICKER (pilih lini produk) ====== */
 .picker{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
 .pick-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
@@ -146,6 +147,7 @@ body{margin:0;background:var(--bg);color:var(--fg);font:500 15px/1.55 system-ui,
     </div>
     <div class="pick-note">Setelah memilih, katalog dan form akan muncul sesuai pilihan.</div>
   </section>
+
   <!-- header brand -->
   <div class="brand">
     <div class="logo">
@@ -227,9 +229,8 @@ body{margin:0;background:var(--bg);color:var(--fg);font:500 15px/1.55 system-ui,
 /* ========= KONFIG UTAMA ========= */
 // MULTI-LOKASI: tambahkan beberapa titik (id, name, lat, lng, radius meter)
 const LOCATIONS = [
-  { id: 'T1', name: 'Workshop Tuic — Bandung', lat: -6.333959, lng: 106.660189, radius: 500 },
+  { id: 'T1', name: 'Workshop Tuic — Lokasi Utama', lat: -6.333959, lng: 106.660189, radius: 50 },
   // { id: 'T2', name: 'Cabang Garut', lat: -7.227906, lng: 107.908699, radius: 75 },
-  // { id: 'T3', name: 'Pop-up Event', lat: -6.175392, lng: 106.827153, radius: 100 },
 ];
 
 const SHEET_URL = "https://script.google.com/macros/s/AKfycbyI0VlKIVZtWM02pXhfDW4srbZMW8whQ9iCz49AsZ74XT9JC_Wd0fx9WByJto4GosUehg/exec"; // katalog
@@ -262,7 +263,7 @@ const gateErr = document.getElementById('gateErr');
 const gateOK = document.getElementById('gateOK');
 const gateRadiusTxt = document.getElementById('gateRadius');
 
-// tampilkan ringkas radius (min dari semua lokasi)
+// tampilkan ringkas radius (min–max)
 const minRadius = Math.min(...LOCATIONS.map(l=>l.radius));
 gateRadiusTxt.textContent = minRadius + '–' + Math.max(...LOCATIONS.map(l=>l.radius)) + ' m';
 
@@ -348,7 +349,6 @@ async function openAppIfAllowed(){
   const ok = await checkFence();
   if(ok){
     applyGateState(true);
-    // mulai app setelah lolos geofence
     initApp();
     startFenceWatcher();
   } else {
@@ -357,7 +357,6 @@ async function openAppIfAllowed(){
 }
 
 document.getElementById('gateAsk').onclick = openAppIfAllowed;
-
 document.getElementById('gateRetry').onclick = async ()=>{
   gateOK.style.display='none';
   await openAppIfAllowed();
@@ -373,7 +372,6 @@ function startFenceWatcher(){
     const ok = d <= (loc?.radius ?? 0);
     LAST_FENCE = { ok, centerId: loc?.id||null, centerName: loc?.name||null, distanceM: d, coords: you };
     if(!ok){
-      // kunci lagi bila keluar area
       gateMsg.textContent = `Keluar area (${loc?.name||'-'}). Jarak ~${d} m (radius ${loc?.radius||'?'} m).`;
       applyGateState(false);
     }
@@ -421,7 +419,6 @@ const limitMsg=document.getElementById('limitMsg');
 
 function render(){
   if(!SELECTED_LINE){
-    // belum pilih lini -> sembunyikan detail lainnya
     document.getElementById('linePicker').style.display='block';
     document.querySelector('.formbox').style.display='none';
     document.getElementById('listTableSection').style.display='none';
@@ -440,12 +437,11 @@ function render(){
   const maxReached=pickedCount>=MAX_PICK;
 
   const filtered = SETS.filter(s=>{
-    // dukung field s.line atau s.tag, fallback: cek judul
     const line = (s.line||'').toLowerCase();
     const tags = (Array.isArray(s.tag)?s.tag.join(','):String(s.tag||'')).toLowerCase();
     const title = String(s.title||'').toLowerCase();
     const key = SELECTED_LINE.toLowerCase();
-    return line.includes(key) || tags.includes(key) || title.includes(key) || !s.line && !s.tag;
+    return line.includes(key) || tags.includes(key) || title.includes(key) || (!s.line && !s.tag);
   });
 
   if(maxReached){
@@ -465,49 +461,6 @@ function render(){
     tr.innerHTML=`
       <td class="td no">${no}</td>
       <td class="td"><div class="title">${s.title}</div><div style="color:#9aa7c7">ID: ${s.id}${s.line?` · <span style='color:#7a88b3'>${s.line}</span>`:''}</div></td>
-      <td class="td"><div class="thumb"><img src="${s.back}" alt="${s.title}"/></div></td>
-      <td class="td pick">
-        <input type="checkbox" data-id="${s.id}" ${disabled?'disabled':''}>
-        ${disabled?'<div class="disabled-note">Klik OK dulu</div>':`<div class="hint">Sisa bisa pilih: ${MAX_PICK - pickedCount}</div>`}
-      </td>`;
-    tbody.appendChild(tr);
-    tr.querySelector('.thumb').onclick=()=>openLightbox(imgsFor(s),0);
-  });
-
-  tbody.querySelectorAll('input[type=checkbox]').forEach(cb=>{
-    cb.onchange=()=>{
-      if(cartCount()>=MAX_PICK){
-        cb.checked=false; toast('Maksimal 12 gambar per pesanan.'); render(); return;
-      }
-      const id=cb.dataset.id; const c=loadCart(); c[id]={qty:1,price:PRICE}; saveCart(c);
-      render(); renderCart(); updateBadge(); updateCapInfo(); toast('Ditambahkan ke keranjang');
-    };
-  });
-
-  updateCapInfo();
-};
-  tbody.innerHTML=""; let no=0;
-
-  const pickedCount=(USER_KEY&&CONFIRMED)?cartCount():0;
-  const maxReached=pickedCount>=MAX_PICK;
-
-  if(maxReached){
-    listTableSection.style.display='none';
-    limitMsg.style.display='block';
-    updateCapInfo();
-    return;
-  } else {
-    listTableSection.style.display='block';
-    limitMsg.style.display='none';
-  }
-
-  SETS.forEach(s=>{
-    if(cart[s.id]) return; no++;
-    const disabled=!(USER_KEY&&CONFIRMED);
-    const tr=document.createElement('tr');
-    tr.innerHTML=`
-      <td class="td no">${no}</td>
-      <td class="td"><div class="title">${s.title}</div><div style="color:#9aa7c7">ID: ${s.id}</div></td>
       <td class="td"><div class="thumb"><img src="${s.back}" alt="${s.title}"/></div></td>
       <td class="td pick">
         <input type="checkbox" data-id="${s.id}" ${disabled?'disabled':''}>
@@ -662,38 +615,10 @@ Total: ${formatIDR(total)}`;
   render(); renderCart(); updateBadge(); updateCapInfo(); closeCart();
   toast('Pesanan diproses. Terima kasih!');
 };
-  });
-
-  // kirim ke Google Sheet (pencatatan pesanan)
-  sendToSheet(SCRIPT_URL,{noBon,nama,telp,timestamp:new Date().toISOString(),items,total,source:"order_design_geofenced.html"});
-
-  // pesan WA
-  let msg=`Pesanan Baru 🚨\nNama: ${nama}\nTelp: ${telp}\nTanggal: ${now.toLocaleString('id-ID')}\n\n`;
-  items.forEach(it=>{ msg+=`${it.no}. ${it.title} – ${it.qty} x ${formatIDR(it.price)}\n`; });
-  msg+=`\nTotal: ${formatIDR(total)}`;
-
-  // bon (PDF)
-  const rows=items.map(it=>`<tr><td>${it.no}</td><td>${it.title}</td><td>${it.qty}</td><td>${formatIDR(it.price)}</td><td>${formatIDR(it.subtotal)}</td></tr>`).join("");
-  const bonHTML=`<!doctype html><html><head><meta charset="utf-8"><title>${noBon}</title>
-  <style>body{font-family:Arial;margin:24px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:6px}</style></head>
-  <body><h2>Bon Pesanan</h2><p>No: ${noBon}<br>Nama: ${nama}<br>Telp: ${telp}<br>Tanggal: ${now.toLocaleString('id-ID')}</p>
-  <table><tr><th>No</th><th>Judul</th><th>Qty</th><th>Harga</th><th>Subtotal</th></tr>${rows}
-  <tr><td colspan="4" style="text-align:right"><b>Total</b></td><td><b>${formatIDR(total)}</b></td></tr></table>
-  <script>window.print();<\/script></body></html>`;
-
-  openWhatsApp(WA_NUMBER, msg);
-  setTimeout(()=>{ const w=window.open("","_blank"); if(w){ w.document.write(bonHTML); w.document.close(); }},700);
-
-  // reset UI
-  localStorage.removeItem(lsKey());
-  render(); renderCart(); updateBadge(); updateCapInfo(); closeCart();
-  toast('Pesanan diproses. Terima kasih!');
-};
 
 /* ========= INIT APP (dipanggil setelah lolos geofence) ========= */
 async function initApp(){
   await loadSets();
-  // tampilkan picker lebih dulu
   SELECTED_LINE = null;
   document.getElementById('linePicker').style.display='block';
   document.querySelector('.formbox').style.display='none';
@@ -702,7 +627,6 @@ async function initApp(){
   document.querySelectorAll('#linePicker .pick-card').forEach(btn=>{
     btn.onclick=()=>{
       SELECTED_LINE = btn.dataset.line;
-      // update brand subtitle
       const tg = document.querySelector('.tagline');
       if(tg) tg.innerHTML = `Design Kaos Siap Cetak · <span style="opacity:.8">${SELECTED_LINE}</span>`;
       render();
@@ -712,10 +636,9 @@ async function initApp(){
 }
 
 // Saat halaman dibuka, jangan jalankan app sampai geofence OK
-// Pengguna harus klik "Aktifkan Lokasi" (best practice), namun kita juga bisa auto-trigger di secure context
 if(isSecureContextOK()){
-  // Opsi: auto trigger sekali supaya prompt muncul
-  // openAppIfAllowed(); // aktifkan jika mau auto
+  // Opsi: auto trigger supaya prompt izin lokasi muncul
+  // openAppIfAllowed();
 }
 </script>
 </body>
