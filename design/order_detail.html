@@ -1,114 +1,722 @@
 <!doctype html>
 <html lang="id">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Detail Desain • Zenius Supply Co</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Tuic Order Desain Kaos (Geofence)</title>
 <style>
-  :root{--bg:#0f1115;--card:#171922;--fg:#e8eefc;--muted:#9aa7c7;--line:#23283a}
-  *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#0f1115,#0b0d12);color:var(--fg);font:500 15px/1.55 system-ui,Segoe UI,Inter,Arial}
-  .wrap{max-width:1100px;margin:auto;padding:22px}
-  header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-  .spacer{flex:1}
-  a.link, .btn{display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:#cfe1ff;background:#101422;border:1px solid #26304f;padding:8px 12px;border-radius:10px;cursor:pointer}
-  .badge{margin-left:6px;background:#ef4444;border-radius:999px;padding:2px 7px;font:700 11px/1 system-ui;color:#fff;border:2px solid #0f1320}
+:root{--bg:#0f1115;--card:#171922;--fg:#e8eefc;--muted:#9aa7c7;--line:#23283a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:500 15px/1.55 system-ui,Segoe UI,Inter,Arial}
+.wrap{max-width:1200px;margin:auto;padding:22px}
 
-  h1{font:800 20px/1.2;margin:0 0 6px}
-  .muted{color:var(--muted);font-size:12px}
-  .card{background:#171922;border:1px solid var(--line);border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,.35);padding:12px}
-  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-  .tile{background:#0e1018;border:1px solid var(--line);border-radius:12px;overflow:hidden}
-  .tile img{width:100%;height:260px;object-fit:cover;display:block;cursor:pointer}
-  .label{padding:10px 12px;border-top:1px solid #22283b}
+/* brand header */
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.brand .logo{width:66px;height:66px;border-radius:999px;overflow:hidden;background:#0f1320;border:1px solid var(--line);display:grid;place-items:center}
+.brand .logo img{width:100%;height:100%;object-fit:contain}
+.brand .text h1{font:800 20px;margin:0;line-height:1.15}
+.brand .tagline{color:var(--muted);font-size:13px;margin-top:2px}
+@media (max-width:760px){
+  .brand{gap:10px}
+  .brand .logo{width:58px;height:58px}
+}
 
-  @media (max-width:900px){ .grid{grid-template-columns:repeat(2,1fr)} .tile img{height:220px} }
-  @media (max-width:560px){ .wrap{padding:14px} .grid{grid-template-columns:1fr} .tile img{height:auto;aspect-ratio:1/1} }
+/* form */
+.formbox{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin:16px 0;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start}
+.formbox input{flex:1;min-width:180px;padding:10px 12px;border-radius:8px;border:1px solid #26304f;background:#0f1320;color:var(--fg)}
+.btn{border:1px solid #26304f;background:#0f1320;color:#dce6ff;border-radius:10px;padding:10px 14px;cursor:pointer}
+.hint{font-size:12px;color:#9aa7c7;margin-top:-6px}
+.error{font-size:12px;color:#ff8a8a;margin-top:-6px;display:none}
+.oktag{display:none;align-items:center;gap:6px;background:#0c1f12;border:1px solid #1f5f3a;color:#b7ffd2;padding:6px 10px;border-radius:999px}
+.cartBtn{position:relative}
+.badge{display:none;position:absolute;top:-8px;right:-8px;background:#ef4444;color:#fff;border:2px solid #0f1320;border-radius:999px;font:700 11px/1 system-ui;padding:2px 6px}
+
+/* tabel */
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.table{width:100%;border-collapse:collapse}
+.th,.td{padding:12px;border-bottom:1px solid var(--line);vertical-align:middle}
+.th{color:#aab6da;text-transform:uppercase;font-size:12px}
+.no{width:56px;text-align:center}
+.title{font-weight:800}
+.thumb{width:120px;height:120px;border-radius:10px;overflow:hidden;background:#0e1018;border:1px solid #26304f;display:grid;place-items:center;cursor:pointer}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.pick{text-align:center;width:90px}
+.disabled-note{font-size:12px;color:#ff9b9b;margin-top:6px}
+
+/* panel keranjang + backdrop */
+.backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;z-index:9000}
+.backdrop.show{display:block}
+.cart-panel{position:fixed;inset:0 0 0 auto;max-width:420px;transform:translateX(110%);transition:.25s;background:#0f1115;border-left:1px solid #26304f;z-index:9010;display:flex;flex-direction:column}
+.cart-panel.open{transform:translateX(0)}
+.cart-head{display:flex;align-items:center;justify-content:space-between;padding:14px;border-bottom:1px solid #26304f}
+.cart-body{padding:12px;overflow:auto;flex:1}
+.cart-row{display:grid;grid-template-columns:64px 1fr 70px;gap:10px;align-items:center;padding:10px 0;border-bottom:1px dashed #2b3350}
+.cart-thumb{width:64px;height:64px;border-radius:10px;overflow:hidden;border:1px solid #26304f;background:#101422}
+.cart-thumb img{width:100%;height:100%;object-fit:cover}
+.cart-foot{padding:12px;border-top:1px solid #26304f}
+.total{display:flex;align-items:center;justify-content:space-between;font-weight:800;margin-bottom:10px}
+.btn-primary{background:linear-gradient(135deg,#3b82f6,#22c55e);border:none;color:#fff;width:100%}
+.xbtn{cursor:pointer;color:#ff9b9b;border:1px solid #5b2b2b;background:#1a0d0d;border-radius:8px;padding:6px 8px;width:100%}
+
+/* lightbox */
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;z-index:9500}
+.lightbox.show{display:flex}
+.lb-inner{position:relative;max-width:94vw}
+.lightbox .close{position:absolute;top:-48px;right:0;background:#1b2339;color:#eaf2ff;border:1px solid #2b3a66;border-radius:10px;padding:8px 12px;cursor:pointer}
+.lb-main{display:flex;align-items:center;gap:10px}
+.lb-main img{max-width:86vw;max-height:70vh;border-radius:12px}
+.nav{width:42px;height:42px;border-radius:999px;background:#1b2339;color:#eaf2ff;display:grid;place-items:center;cursor:pointer}
+.thumbs{display:flex;gap:8px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+.thumbs img{width:72px;height:72px;object-fit:cover;border-radius:8px;opacity:.7;cursor:pointer;border:2px solid transparent}
+.thumbs img.active{opacity:1;border-color:#3b82f6}
+
+/* toast */
+.toast{position:fixed;top:14px;right:14px;background:#1b2339;color:#eaf2ff;padding:10px 14px;border-radius:10px;z-index:9600;opacity:0;transform:translateY(-10px);transition:.2s}
+.toast.show{opacity:1;transform:translateY(0)}
+
+@media (max-width:760px){
+  thead{display:none}
+  .table, tbody, .row, .td{display:block;width:100%}
+  .row{border:1px solid var(--line);border-radius:12px;margin:10px 0}
+  .td{border-bottom:1px solid var(--line)}
+  .td:last-child{border-bottom:none}
+  .thumb{width:100%;height:0;padding-bottom:60%;position:relative}
+  .thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+}
+
+/* ====== GEOFENCE GATE ====== */
+.gate{position:fixed;inset:0;background:linear-gradient(180deg,#0b0f1d,#0a0c14);display:flex;align-items:center;justify-content:center;z-index:9999;border-top:2px solid #24355f}
+.gate .panel{max-width:640px;margin:20px;background:#111528;border:1px solid #26304f;border-radius:14px;padding:20px;box-shadow:0 10px 40px rgba(0,0,0,.45)}
+.gate h2{margin:0 0 8px;font:800 20px/1.2 Inter,system-ui}
+.gate p{margin:6px 0;color:#9aa7c7}
+.gate .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.gate .btn{background:#10172a}
+.gate .badge{display:inline-block;position:static;border:none;background:#1e2b4f}
+.gate .hint{margin-top:4px}
+.gok{display:none;align-items:center;gap:6px;background:#0c1f12;border:1px solid #1f5f3a;color:#b7ffd2;padding:6px 10px;border-radius:999px}
+.gerr{display:none;align-items:center;gap:6px;background:#1a0d0d;border:1px solid #5b2b2b;color:#ffc7c7;padding:6px 10px;border-radius:999px}
+/* ====== PICKER (pilih lini produk) ====== */
+.picker{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:16px 0}
+.pick-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.pick-card{border:1px solid #26304f;background:#0f1320;border-radius:12px;padding:16px;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;gap:8px;transition:.15s}
+.pick-card:hover{transform:translateY(-2px)}
+.pick-title{font-weight:800;font-size:16px}
+.pick-desc{font-size:12px;color:#9aa7c7}
+.pick-note{font-size:12px;color:#9aa7c7;margin-top:8px}
+@media(max-width:760px){.pick-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <a href="order_design.html" class="link">← Kembali</a>
-    <div class="spacer"></div>
-    <a href="order_design.html" class="link">🧺 Keranjang <span id="badge" class="badge" style="display:none">0</span></a>
-    <button id="pickBtn" class="btn">✓ Pilih Set Ini</button>
-  </header>
+<!-- ====== GEOFENCE OVERLAY ====== -->
+<div id="gate" class="gate" aria-hidden="false">
+  <div class="panel">
+    <h2>Lokasi Diperlukan untuk Membuka Aplikasi</h2>
+    <p>Aplikasi ini hanya bisa digunakan di area yang ditentukan (radius <strong id="gateRadius">50 m</strong>). Aktifkan lokasi (GPS) agar kami bisa memverifikasi posisi Anda.</p>
+    <div class="row">
+      <button id="gateAsk" type="button" class="btn">Aktifkan Lokasi</button>
+      <button id="gateRetry" type="button" class="btn">Cek Ulang</button>
+      <span id="gateOK" class="gok">✔️ Lokasi valid – membuka aplikasi…</span>
+    </div>
+    <p id="gateMsg" class="hint">Menunggu izin lokasi…</p>
+    <p id="gateErr" class="gerr">Gagal mendapatkan lokasi.</p>
+    <p class="hint">Catatan: Pastikan situs diakses lewat <b>HTTPS</b> (atau <b>localhost</b>), dan GPS menyala. Jika izin ditolak, buka ulang halaman lalu izinkan lokasi.</p>
+  </div>
+</div>
 
-  <div id="head">
-    <h1 id="title">Detail Desain</h1>
-    <div class="muted" id="meta"></div>
+<div class="wrap" aria-hidden="true" id="appRoot">
+  <!-- picker lini produk -->
+  <section id="linePicker" class="picker">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px">
+      <strong>Pilih Lini Produk</strong>
+      <span class="hint">Wajib pilih salah satu sebelum lanjut</span>
+    </div>
+    <div class="pick-grid">
+      <button class="pick-card" type="button" data-line="Executor">
+        <div class="pick-title">Executor</div>
+        <div class="pick-desc">Template desain kaos tim/crew, bold & sporty.</div>
+      </button>
+      <button class="pick-card" type="button" data-line="Zenius">
+        <div class="pick-title">Zenius</div>
+        <div class="pick-desc">Gaya edukatif/brand Zenius, clean & playful.</div>
+      </button>
+      <button class="pick-card" type="button" data-line="Sweater">
+        <div class="pick-title">Sweater</div>
+        <div class="pick-desc">Desain untuk sweater/hoodie, cozy & street.</div>
+      </button>
+    </div>
+    <div class="pick-note">Setelah memilih, katalog dan form akan muncul sesuai pilihan.</div>
+  </section>
+  <!-- header brand -->
+  <div class="brand">
+    <div class="logo">
+      <img src="./assets/tuic-design-badge.png" alt="Tuic Design — Design Kaos Siap Cetak">
+    </div>
+    <div class="text">
+      <h1>Tuic Design</h1>
+      <div class="tagline">Design Kaos Siap Cetak · <span style="opacity:.8">Order Desain Kaos</span></div>
+    </div>
   </div>
 
-  <section class="card" style="margin-top:10px">
-    <div class="grid" id="grid"></div>
-    <p class="muted" style="margin-top:8px">Klik gambar untuk membuka ukuran penuh (tab baru).</p>
+  <!-- identitas -->
+  <div class="formbox">
+    <div style="flex:1;min-width:220px">
+      <input id="nama" placeholder="Nama Pemesan" autocomplete="name"/>
+      <div class="hint">Isi nama lengkap</div>
+    </div>
+    <div style="flex:1;min-width:220px">
+      <input id="telp" placeholder="No. Telp / WA (10–15 digit angka)" inputmode="numeric"/>
+      <div id="telpErr" class="error">No. telp salah (10–15 digit angka)</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button id="okBtn" type="button" class="btn">OK</button>
+      <div id="okTag" class="oktag">✔️ Terverifikasi</div>
+    </div>
+
+    <button id="cartBtn" type="button" class="btn cartBtn" style="margin-left:auto">
+      🧺 Keranjang <span id="cartBadge" class="badge">0</span>
+    </button>
+    <span id="capInfo" class="hint" style="margin-left:8px">0/12 dipilih</span>
+  </div>
+
+  <!-- list tabel -->
+  <section id="listTableSection" class="card">
+    <table class="table">
+      <thead><tr><th class="th no">No</th><th class="th">Judul</th><th class="th">Gambar Belakang</th><th class="th pick">Pilih</th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </section>
+
+  <!-- pesan limit -->
+  <section id="limitMsg" class="card" style="display:none;text-align:center">
+    <strong>Maksimal 12 gambar tercapai.</strong>
+    <div class="hint" style="margin-top:6px">Hapus sebagian di keranjang untuk pilih gambar lain.</div>
+    <div style="margin-top:10px">
+      <button id="openCartFromMsg" type="button" class="btn">Kelola Keranjang</button>
+    </div>
   </section>
 </div>
 
+<!-- keranjang -->
+<div id="backdrop" class="backdrop"></div>
+<aside id="cartPanel" class="cart-panel" aria-hidden="true">
+  <div class="cart-head"><strong>Pesanan</strong><button id="closeCart" type="button" class="btn">Tutup</button></div>
+  <div id="cartBody" class="cart-body"></div>
+  <div class="cart-foot">
+    <div class="total"><span>Total</span><span id="grand">Rp 0</span></div>
+    <button id="submitBtn" type="button" class="btn btn-primary">Submit & Cetak PDF + WA</button>
+    <div class="hint" style="margin-top:8px;text-align:center">Maksimum 12 gambar per pesanan</div>
+  </div>
+</aside>
+
+<!-- lightbox -->
+<div id="lightbox" class="lightbox" aria-hidden="true">
+  <div class="lb-inner">
+    <button class="close" id="lbClose" type="button">Tutup ✕</button>
+    <div class="lb-main">
+      <div id="lbPrev" class="nav">⟨</div>
+      <img id="lbImg" alt="preview">
+      <div id="lbNext" class="nav">⟩</div>
+    </div>
+    <div id="lbThumbs" class="thumbs"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
 <script>
-const SETS = [
-  {
-    id: "set-nothing",
-    title: "Nothing is Imposible",
-    logo:   "./gambar/Nothing_Logo.png",
-    back:   "./gambar/Nothing_Back.png",
-    mockup: "./gambar/Nothing_Mockup.png"
-  }
+/* ========= KONFIG UTAMA ========= */
+// MULTI-LOKASI: tambahkan beberapa titik (id, name, lat, lng, radius meter)
+const LOCATIONS = [
+  { id: 'T1', name: 'Workshop Tuic — Bandung', lat: -6.237204, lng: 106.801008, radius: 50 }, 
+  // { id: 'T2', name: 'Cabang Garut', lat: -7.227906, lng: 107.908699, radius: 75 },
+  // { id: 'T3', name: 'Pop-up Event', lat: -6.175392, lng: 106.827153, radius: 100 },
 ];
-const PRICE = 30000, LS_KEY = "orderCart";
-const loadCart = () => JSON.parse(localStorage.getItem(LS_KEY) || "{}");
-const saveCart = (c) => localStorage.setItem(LS_KEY, JSON.stringify(c));
 
-const params = new URLSearchParams(location.search);
-const id = params.get("id");
-const set = SETS.find(s=>s.id===id);
-const grid = document.getElementById("grid");
-const titleEl = document.getElementById("title");
-const metaEl = document.getElementById("meta");
-const badge = document.getElementById("badge");
-const pickBtn = document.getElementById("pickBtn");
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbyI0VlKIVZtWM02pXhfDW4srbZMW8whQ9iCz49AsZ74XT9JC_Wd0fx9WByJto4GosUehg/exec"; // katalog
+const PRICE      = 30000;
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby20E4jQz5pGqSn0atadu1QGSVaUVXStt8GYiNnBlKvr-eyU-fz7cJJXRxxQqKkMLDSLw/exec"; // submit pesanan (VALIDASI SERVER di GAS)
+const WA_NUMBER  = "628161472405";
+const MAX_PICK   = 12;
 
-function updateBadge(){
-  const count = Object.values(loadCart()).reduce((a,c)=>a+(c.qty||0),0);
-  badge.style.display = count ? "inline-block" : "none";
-  badge.textContent = count;
+/* ========= STATE & UTILS ========= */
+let SELECTED_LINE = null; // Executor | Zenius | Sweater
+let SETS = [];
+let USER_KEY=null, CONFIRMED=false;
+
+const lsKey=()=>`orderCart_${USER_KEY}`;
+const loadCart=()=>JSON.parse(localStorage.getItem(lsKey())||"{}");
+const saveCart=c=>localStorage.setItem(lsKey(),JSON.stringify(c));
+const cartCount=()=>Object.values(loadCart()).reduce((a,v)=>a+(v.qty||0),0);
+const formatIDR=n=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n);
+const validTelp=t=>/^\d{10,15}$/.test(t);
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800);} 
+function updateBadge(){const b=document.getElementById('cartBadge');const c=(USER_KEY&&CONFIRMED)?cartCount():0;b.style.display=c>0?'inline-block':'none';b.textContent=c;}
+const capInfo = document.getElementById('capInfo');
+function updateCapInfo(){const picked=(USER_KEY&&CONFIRMED)?cartCount():0;if(capInfo) capInfo.textContent=`${picked}/${MAX_PICK} dipilih`;}
+
+/* ========= GEOFENCE (multi-lokasi + watchPosition) ========= */
+const gate = document.getElementById('gate');
+const appRoot = document.getElementById('appRoot');
+const gateMsg = document.getElementById('gateMsg');
+const gateErr = document.getElementById('gateErr');
+const gateOK = document.getElementById('gateOK');
+const gateRadiusTxt = document.getElementById('gateRadius');
+
+// tampilkan ringkas radius (min dari semua lokasi)
+const minRadius = Math.min(...LOCATIONS.map(l=>l.radius));
+gateRadiusTxt.textContent = minRadius + '–' + Math.max(...LOCATIONS.map(l=>l.radius)) + ' m';
+
+let GEO_WATCH_ID = null;
+let LAST_FENCE = { ok:false, centerId:null, centerName:null, distanceM:null, coords:null };
+
+function distanceMeters(a,b){
+  const R=6371000; // meter
+  const dLat=(b.lat-a.lat)*Math.PI/180;
+  const dLng=(b.lng-a.lng)*Math.PI/180;
+  const la1=a.lat*Math.PI/180, la2=b.lat*Math.PI/180;
+  const x=Math.sin(dLat/2)**2 + Math.cos(la1)*Math.cos(la2)*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(x));
 }
 
-if(!set){
-  titleEl.textContent = "Desain tidak ditemukan";
-  metaEl.textContent = "Periksa kembali tautan/id.";
-}else{
-  titleEl.textContent = set.title;
-  metaEl.textContent  = `ID: ${set.id}`;
+function isSecureContextOK(){
+  return location.protocol==='https:' || location.hostname==='localhost' || location.hostname==='127.0.0.1';
+}
 
-  const imgs = [
-    {label:"Logo (kiri dada)", src:set.logo},
-    {label:"Desain Belakang", src:set.back},
-    {label:"Mockup", src:set.mockup}
-  ];
+function getPosition(){
+  return new Promise((resolve,reject)=>{
+    if(!('geolocation' in navigator)) return reject(new Error('Geolocation tidak didukung'));
+    navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true,timeout:15000,maximumAge:10000});
+  });
+}
 
-  imgs.forEach(it=>{
-    const card = document.createElement("div");
-    card.className = "tile";
-    card.innerHTML = `
-      <a href="${it.src}" target="_blank" rel="noopener">
-        <img loading="lazy" src="${it.src}" alt="${set.title} • ${it.label}">
-      </a>
-      <div class="label"><strong>${it.label}</strong><div class="muted">${it.src.split('/').pop()}</div></div>
-    `;
-    grid.appendChild(card);
+function nearestLocation(you){
+  let best=null; let bestD=Infinity;
+  for(const loc of LOCATIONS){
+    const d = distanceMeters(you, {lat:loc.lat, lng:loc.lng});
+    if(d < bestD){ bestD=d; best=loc; }
+  }
+  return { loc:best, distance:bestD };
+}
+
+async function checkFence(){
+  if(!isSecureContextOK()){
+    gateErr.style.display='block';
+    gateErr.textContent='Situs harus diakses via HTTPS atau localhost agar GPS bisa dipakai.';
+    LAST_FENCE = { ok:false, centerId:null, centerName:null, distanceM:null, coords:null };
+    return false;
+  }
+  gateErr.style.display='none';
+  gateMsg.textContent='Meminta izin lokasi…';
+  try{
+    const pos = await getPosition();
+    const you = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    const { loc, distance } = nearestLocation(you);
+    const d = Math.round(distance);
+    const ok = d <= (loc?.radius ?? 0);
+    LAST_FENCE = { ok, centerId: loc?.id||null, centerName: loc?.name||null, distanceM: d, coords: you };
+    if(ok){
+      gateMsg.textContent = `Lokasi OK (${loc.name}) – jarak ~${d} m (radius ${loc.radius} m).`;
+      gateOK.style.display='inline-flex';
+      return true;
+    } else {
+      gateErr.style.display='block';
+      gateErr.textContent = `Di luar area (${loc?.name||'-'}). Jarak ~${d} m, radius ${loc?.radius||'?'} m.`;
+      return false;
+    }
+  }catch(e){
+    gateErr.style.display='block';
+    gateErr.textContent = 'Tidak bisa mendapatkan lokasi. Izinkan akses lokasi dan coba lagi.';
+    LAST_FENCE = { ok:false, centerId:null, centerName:null, distanceM:null, coords:null };
+    return false;
+  }
+}
+
+function applyGateState(allow){
+  if(allow){
+    gate.setAttribute('aria-hidden','true');
+    gate.style.display='none';
+    appRoot.removeAttribute('aria-hidden');
+  } else {
+    appRoot.setAttribute('aria-hidden','true');
+    gate.removeAttribute('aria-hidden');
+    gate.style.display='flex';
+    gateOK.style.display='none';
+  }
+}
+
+async function openAppIfAllowed(){
+  const ok = await checkFence();
+  if(ok){
+    applyGateState(true);
+    // mulai app setelah lolos geofence
+    initApp();
+    startFenceWatcher();
+  } else {
+    applyGateState(false);
+  }
+}
+
+document.getElementById('gateAsk').onclick = openAppIfAllowed;
+
+document.getElementById('gateRetry').onclick = async ()=>{
+  gateOK.style.display='none';
+  await openAppIfAllowed();
+};
+
+function startFenceWatcher(){
+  if(!('geolocation' in navigator)) return;
+  if(GEO_WATCH_ID!==null){ navigator.geolocation.clearWatch(GEO_WATCH_ID); }
+  GEO_WATCH_ID = navigator.geolocation.watchPosition((pos)=>{
+    const you = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    const { loc, distance } = nearestLocation(you);
+    const d = Math.round(distance);
+    const ok = d <= (loc?.radius ?? 0);
+    LAST_FENCE = { ok, centerId: loc?.id||null, centerName: loc?.name||null, distanceM: d, coords: you };
+    if(!ok){
+      // kunci lagi bila keluar area
+      gateMsg.textContent = `Keluar area (${loc?.name||'-'}). Jarak ~${d} m (radius ${loc?.radius||'?'} m).`;
+      applyGateState(false);
+    }
+  },(err)=>{
+    console.warn('watchPosition error', err);
+  },{ enableHighAccuracy:true, timeout:20000, maximumAge:5000 });
+}
+
+window.addEventListener('beforeunload',()=>{ if(GEO_WATCH_ID!==null) navigator.geolocation.clearWatch(GEO_WATCH_ID); });
+
+/* ========= LOAD SETS DARI GOOGLE SHEET ========= */
+async function loadSets() {
+  try {
+    const res = await fetch(SHEET_URL, { cache: 'no-store' });
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data = await res.json();
+    if(!Array.isArray(data)) throw new Error('Format JSON tidak valid');
+    SETS = data;
+  } catch(e){
+    console.error('Gagal load katalog dari Sheet', e);
+    SETS=[];
+    toast('Gagal memuat katalog dari Google Sheet');
+  }
+}
+
+/* ========= LIGHTBOX ========= */
+const lb=document.getElementById('lightbox'), lbImg=document.getElementById('lbImg'),
+      lbThumbs=document.getElementById('lbThumbs'), lbPrev=document.getElementById('lbPrev'),
+      lbNext=document.getElementById('lbNext'), lbClose=document.getElementById('lbClose');
+let lbList=[], lbIndex=0;
+function imgsFor(s){const a=[s.back]; if(s.logo) a.unshift(s.logo); if(s.mockup) a.push(s.mockup); return [...new Set(a.filter(Boolean))];}
+function openLightbox(list,start=0){lbList=list;lbIndex=start;setLb();thumbs();lb.classList.add('show');}
+function closeLightbox(){lb.classList.remove('show');lbList=[];lbIndex=0;lbImg.src="";}
+function setLb(){lbImg.src=lbList[lbIndex];}
+function thumbs(){lbThumbs.innerHTML="";lbList.forEach((src,i)=>{const im=new Image();im.src=src;if(i===lbIndex)im.classList.add('active');im.onclick=()=>{lbIndex=i;setLb();thumbs();};lbThumbs.appendChild(im);});}
+lbPrev.onclick=()=>{if(!lbList.length)return;lbIndex=(lbIndex-1+lbList.length)%lbList.length;setLb();thumbs();};
+lbNext.onclick=()=>{if(!lbList.length)return;lbIndex=(lbIndex+1)%lbList.length;setLb();thumbs();};
+lbClose.onclick=closeLightbox; lb.addEventListener('click',e=>{if(e.target===lb)closeLightbox();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeLightbox(); closeCart();}});
+
+/* ========= RENDER LIST ========= */
+const tbody=document.getElementById('tbody');
+const listTableSection=document.getElementById('listTableSection');
+const limitMsg=document.getElementById('limitMsg');
+
+function render(){
+  if(!SELECTED_LINE){
+    // belum pilih lini -> sembunyikan detail lainnya
+    document.getElementById('linePicker').style.display='block';
+    document.querySelector('.formbox').style.display='none';
+    document.getElementById('listTableSection').style.display='none';
+    document.getElementById('limitMsg').style.display='none';
+    updateCapInfo();
+    return;
+  } else {
+    document.getElementById('linePicker').style.display='none';
+    document.querySelector('.formbox').style.display='flex';
+  }
+
+  const cart=(USER_KEY&&CONFIRMED)?loadCart():{};
+  tbody.innerHTML=""; let no=0;
+
+  const pickedCount=(USER_KEY&&CONFIRMED)?cartCount():0;
+  const maxReached=pickedCount>=MAX_PICK;
+
+  const filtered = SETS.filter(s=>{
+    // dukung field s.line atau s.tag, fallback: cek judul
+    const line = (s.line||'').toLowerCase();
+    const tags = (Array.isArray(s.tag)?s.tag.join(','):String(s.tag||'')).toLowerCase();
+    const title = String(s.title||'').toLowerCase();
+    const key = SELECTED_LINE.toLowerCase();
+    return line.includes(key) || tags.includes(key) || title.includes(key) || !s.line && !s.tag;
   });
 
-  pickBtn.onclick = ()=>{
-    const cart = loadCart();
-    cart[set.id] = { qty: (cart[set.id]?.qty||0) + 1, price: PRICE };
-    saveCart(cart);
-    updateBadge();
-    pickBtn.textContent = "✓ Ditambahkan (klik lagi untuk tambah qty)";
-  };
+  if(maxReached){
+    listTableSection.style.display='none';
+    limitMsg.style.display='block';
+    updateCapInfo();
+    return;
+  } else {
+    listTableSection.style.display='block';
+    limitMsg.style.display='none';
+  }
+
+  filtered.forEach(s=>{
+    if(cart[s.id]) return; no++;
+    const disabled=!(USER_KEY&&CONFIRMED);
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td class="td no">${no}</td>
+      <td class="td"><div class="title">${s.title}</div><div style="color:#9aa7c7">ID: ${s.id}${s.line?` · <span style='color:#7a88b3'>${s.line}</span>`:''}</div></td>
+      <td class="td"><div class="thumb"><img src="${s.back}" alt="${s.title}"/></div></td>
+      <td class="td pick">
+        <input type="checkbox" data-id="${s.id}" ${disabled?'disabled':''}>
+        ${disabled?'<div class="disabled-note">Klik OK dulu</div>':`<div class="hint">Sisa bisa pilih: ${MAX_PICK - pickedCount}</div>`}
+      </td>`;
+    tbody.appendChild(tr);
+    tr.querySelector('.thumb').onclick=()=>openLightbox(imgsFor(s),0);
+  });
+
+  tbody.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    cb.onchange=()=>{
+      if(cartCount()>=MAX_PICK){
+        cb.checked=false; toast('Maksimal 12 gambar per pesanan.'); render(); return;
+      }
+      const id=cb.dataset.id; const c=loadCart(); c[id]={qty:1,price:PRICE}; saveCart(c);
+      render(); renderCart(); updateBadge(); updateCapInfo(); toast('Ditambahkan ke keranjang');
+    };
+  });
+
+  updateCapInfo();
+};
+  tbody.innerHTML=""; let no=0;
+
+  const pickedCount=(USER_KEY&&CONFIRMED)?cartCount():0;
+  const maxReached=pickedCount>=MAX_PICK;
+
+  if(maxReached){
+    listTableSection.style.display='none';
+    limitMsg.style.display='block';
+    updateCapInfo();
+    return;
+  } else {
+    listTableSection.style.display='block';
+    limitMsg.style.display='none';
+  }
+
+  SETS.forEach(s=>{
+    if(cart[s.id]) return; no++;
+    const disabled=!(USER_KEY&&CONFIRMED);
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td class="td no">${no}</td>
+      <td class="td"><div class="title">${s.title}</div><div style="color:#9aa7c7">ID: ${s.id}</div></td>
+      <td class="td"><div class="thumb"><img src="${s.back}" alt="${s.title}"/></div></td>
+      <td class="td pick">
+        <input type="checkbox" data-id="${s.id}" ${disabled?'disabled':''}>
+        ${disabled?'<div class="disabled-note">Klik OK dulu</div>':`<div class="hint">Sisa bisa pilih: ${MAX_PICK - pickedCount}</div>`}
+      </td>`;
+    tbody.appendChild(tr);
+    tr.querySelector('.thumb').onclick=()=>openLightbox(imgsFor(s),0);
+  });
+
+  tbody.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    cb.onchange=()=>{
+      if(cartCount()>=MAX_PICK){
+        cb.checked=false; toast('Maksimal 12 gambar per pesanan.'); render(); return;
+      }
+      const id=cb.dataset.id; const c=loadCart(); c[id]={qty:1,price:PRICE}; saveCart(c);
+      render(); renderCart(); updateBadge(); updateCapInfo(); toast('Ditambahkan ke keranjang');
+    };
+  });
+
+  updateCapInfo();
 }
 
-updateBadge();
+/* ========= IDENTITAS ========= */
+const namaEl=document.getElementById('nama'), telpEl=document.getElementById('telp'), errEl=document.getElementById('telpErr'), okTag=document.getElementById('okTag');
+document.getElementById('okBtn').onclick=()=>{
+  const n=namaEl.value.trim(), t=telpEl.value.trim();
+  if(!n){toast('Nama belum diisi');return;}
+  if(!validTelp(t)){errEl.style.display='block';toast('No. telp salah');return;}
+  errEl.style.display='none'; USER_KEY=n.replace(/\s+/g,'_')+'_'+t; CONFIRMED=true; okTag.style.display='inline-flex';
+  render(); updateBadge(); updateCapInfo(); toast('Identitas OK. Pilih barang.');
+};
+
+/* ========= KERANJANG ========= */
+const cartPanel=document.getElementById('cartPanel'), backdrop=document.getElementById('backdrop');
+function openCart(){renderCart();cartPanel.classList.add('open');backdrop.classList.add('show');}
+function closeCart(){cartPanel.classList.remove('open');backdrop.classList.remove('show');}
+document.getElementById('cartBtn').onclick=openCart;
+document.getElementById('closeCart').onclick=closeCart;
+backdrop.onclick=closeCart;
+document.getElementById('openCartFromMsg').onclick=openCart;
+
+function renderCart(){
+  const c=(USER_KEY)?loadCart():{}; const body=document.getElementById('cartBody'); body.innerHTML=""; let total=0;
+  Object.entries(c).forEach(([id,{qty,price}])=>{
+    const s=SETS.find(x=>x.id===id); total+=qty*price;
+    body.insertAdjacentHTML('beforeend',`
+      <div class="cart-row">
+        <div class="cart-thumb"><img src="${s.back}" alt="${s.title}"/></div>
+        <div><div style="font-weight:800">${s.title}</div><div style="color:#9aa7c7">Qty: ${qty} × ${formatIDR(price)}</div></div>
+        <div><button class="xbtn" data-del="${id}">Hapus</button></div>
+      </div>`);
+  });
+  if(!Object.keys(c).length) body.innerHTML="<p style='color:#9aa7c7'>Keranjang kosong</p>";
+  document.getElementById('grand').textContent=formatIDR(total);
+  body.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{
+    const cc=loadCart(); delete cc[b.dataset.del]; saveCart(cc);
+    render(); renderCart(); updateBadge(); updateCapInfo();
+  });
+}
+
+/* ========= SEND TO SHEET ========= */
+function sendToSheet(url, payload){
+  const blob=new Blob([JSON.stringify(payload)],{type:'text/plain'});
+  if(navigator.sendBeacon){ if(navigator.sendBeacon(url,blob)) return; }
+  fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)})
+    .catch(()=>{ const q=encodeURIComponent(JSON.stringify(payload)); new Image().src=`${url}?q=${q}`; });
+}
+
+/* ========= OPEN WHATSAPP (auto + fallback) ========= */
+function openWhatsApp(phone, textPlain){
+  const num=String(phone||'').replace(/\D/g,'');
+  const txt=encodeURIComponent(textPlain||'');
+  const scheme=`whatsapp://send?phone=${num}&text=${txt}`;
+  const intent=`intent://send/?phone=${num}&text=${txt}#Intent;scheme=whatsapp;package=com.whatsapp;end`;
+  const wa1=`https://wa.me/${num}?text=${txt}`;
+  const wa2=`https://api.whatsapp.com/send?phone=${num}&text=${txt}`;
+  try{ window.location.assign(scheme); }catch(e){}
+  setTimeout(()=>{ if(document.visibilityState==='visible'){ try{window.location.assign(intent);}catch(e){} }},350);
+  setTimeout(()=>{ if(document.visibilityState==='visible'){ try{window.location.assign(wa1);}catch(e){window.location.assign(wa2);} }},700);
+  return true;
+}
+
+/* ========= SUBMIT ========= */
+document.getElementById('submitBtn').onclick = async ()=>{
+  if(!(USER_KEY&&CONFIRMED)){toast('Klik OK pada identitas dulu');return;}
+  // Re-validasi geofence sebelum submit
+  const okFence = await checkFence();
+  if(!okFence){ toast('Di luar area yang diizinkan. Aktifkan lokasi / masuk area.'); applyGateState(false); return; }
+
+  const cart=loadCart(); if(!Object.keys(cart).length){toast('Keranjang kosong');return;}
+  if(cartCount()>MAX_PICK){ toast('Maksimal 12 gambar. Hapus sebagian di keranjang.'); return; }
+
+  const idx=USER_KEY.lastIndexOf('_');
+  const nama=USER_KEY.slice(0,idx).replaceAll('_',' ');
+  const telp=USER_KEY.slice(idx+1);
+  const now=new Date();
+  const total=Object.values(cart).reduce((a,v)=>a+v.qty*v.price,0);
+  const noBon="BON-"+now.getFullYear().toString().slice(2)+(now.getMonth()+1+"").padStart(2,'0')+now.getDate().toString().padStart(2,'0')+"-"+Math.random().toString(36).slice(2,7).toUpperCase();
+
+  const items=Object.entries(cart).map(([id,{qty,price}],i)=>{
+    const s=SETS.find(x=>x.id===id);
+    return {no:i+1,id,title:s.title,qty,price,subtotal:qty*price};
+  });
+
+  // === Payload ke GAS termasuk info geofence (untuk validasi server-side) ===
+  const payload = {
+    noBon,
+    nama,
+    telp,
+    timestamp: new Date().toISOString(),
+    items,
+    total,
+    source: "order_design_geofenced.html",
+    selected_line: SELECTED_LINE,
+    fence_ok: LAST_FENCE.ok,
+    fence_center_id: LAST_FENCE.centerId,
+    fence_center_name: LAST_FENCE.centerName,
+    fence_distance_m: LAST_FENCE.distanceM,
+    fence_coords: LAST_FENCE.coords,
+  };
+
+  // kirim ke Google Sheet (pencatatan + validasi server-side)
+  sendToSheet(SCRIPT_URL, payload);
+
+  // pesan WA
+  let msg=`Pesanan Baru 🚨
+Nama: ${nama}
+Telp: ${telp}
+Tanggal: ${now.toLocaleString('id-ID')}
+Lokasi: ${LAST_FENCE.centerName||'-'} (~${LAST_FENCE.distanceM} m)
+
+`;
+  items.forEach(it=>{ msg+=`${it.no}. ${it.title} – ${it.qty} x ${formatIDR(it.price)}
+`; });
+  msg+=`
+Total: ${formatIDR(total)}`;
+
+  // bon (PDF)
+  const rows=items.map(it=>`<tr><td>${it.no}</td><td>${it.title}</td><td>${it.qty}</td><td>${formatIDR(it.price)}</td><td>${formatIDR(it.subtotal)}</td></tr>`).join("");
+  const bonHTML=`<!doctype html><html><head><meta charset="utf-8"><title>${noBon}</title>
+  <style>body{font-family:Arial;margin:24px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:6px}</style></head>
+  <body><h2>Bon Pesanan</h2><p>No: ${noBon}<br>Nama: ${nama}<br>Telp: ${telp}<br>Tanggal: ${now.toLocaleString('id-ID')}</p>
+  <table><tr><th>No</th><th>Judul</th><th>Qty</th><th>Harga</th><th>Subtotal</th></tr>${rows}
+  <tr><td colspan="4" style="text-align:right"><b>Total</b></td><td><b>${formatIDR(total)}</b></td></tr></table>
+  <script>window.print();<\/script></body></html>`;
+
+  openWhatsApp(WA_NUMBER, msg);
+  setTimeout(()=>{ const w=window.open("","_blank"); if(w){ w.document.write(bonHTML); w.document.close(); }},700);
+
+  // reset UI
+  localStorage.removeItem(lsKey());
+  render(); renderCart(); updateBadge(); updateCapInfo(); closeCart();
+  toast('Pesanan diproses. Terima kasih!');
+};
+  });
+
+  // kirim ke Google Sheet (pencatatan pesanan)
+  sendToSheet(SCRIPT_URL,{noBon,nama,telp,timestamp:new Date().toISOString(),items,total,source:"order_design_geofenced.html"});
+
+  // pesan WA
+  let msg=`Pesanan Baru 🚨\nNama: ${nama}\nTelp: ${telp}\nTanggal: ${now.toLocaleString('id-ID')}\n\n`;
+  items.forEach(it=>{ msg+=`${it.no}. ${it.title} – ${it.qty} x ${formatIDR(it.price)}\n`; });
+  msg+=`\nTotal: ${formatIDR(total)}`;
+
+  // bon (PDF)
+  const rows=items.map(it=>`<tr><td>${it.no}</td><td>${it.title}</td><td>${it.qty}</td><td>${formatIDR(it.price)}</td><td>${formatIDR(it.subtotal)}</td></tr>`).join("");
+  const bonHTML=`<!doctype html><html><head><meta charset="utf-8"><title>${noBon}</title>
+  <style>body{font-family:Arial;margin:24px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:6px}</style></head>
+  <body><h2>Bon Pesanan</h2><p>No: ${noBon}<br>Nama: ${nama}<br>Telp: ${telp}<br>Tanggal: ${now.toLocaleString('id-ID')}</p>
+  <table><tr><th>No</th><th>Judul</th><th>Qty</th><th>Harga</th><th>Subtotal</th></tr>${rows}
+  <tr><td colspan="4" style="text-align:right"><b>Total</b></td><td><b>${formatIDR(total)}</b></td></tr></table>
+  <script>window.print();<\/script></body></html>`;
+
+  openWhatsApp(WA_NUMBER, msg);
+  setTimeout(()=>{ const w=window.open("","_blank"); if(w){ w.document.write(bonHTML); w.document.close(); }},700);
+
+  // reset UI
+  localStorage.removeItem(lsKey());
+  render(); renderCart(); updateBadge(); updateCapInfo(); closeCart();
+  toast('Pesanan diproses. Terima kasih!');
+};
+
+/* ========= INIT APP (dipanggil setelah lolos geofence) ========= */
+async function initApp(){
+  await loadSets();
+  // tampilkan picker lebih dulu
+  SELECTED_LINE = null;
+  document.getElementById('linePicker').style.display='block';
+  document.querySelector('.formbox').style.display='none';
+  render(); updateBadge(); updateCapInfo();
+  // Wiring tombol picker
+  document.querySelectorAll('#linePicker .pick-card').forEach(btn=>{
+    btn.onclick=()=>{
+      SELECTED_LINE = btn.dataset.line;
+      // update brand subtitle
+      const tg = document.querySelector('.tagline');
+      if(tg) tg.innerHTML = `Design Kaos Siap Cetak · <span style="opacity:.8">${SELECTED_LINE}</span>`;
+      render();
+      toast(`Mode: ${SELECTED_LINE}`);
+    };
+  });
+}
+
+// Saat halaman dibuka, jangan jalankan app sampai geofence OK
+// Pengguna harus klik "Aktifkan Lokasi" (best practice), namun kita juga bisa auto-trigger di secure context
+if(isSecureContextOK()){
+  // Opsi: auto trigger sekali supaya prompt muncul
+  // openAppIfAllowed(); // aktifkan jika mau auto
+}
 </script>
 </body>
 </html>
