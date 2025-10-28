@@ -21,7 +21,7 @@ body{margin:0;background:var(--bg);color:var(--fg);font:500 15px/1.55 system-ui,
   .brand .logo{width:58px;height:58px}
 }
 
-/* line nav */
+/* line nav (back) */
 .linenav{display:none;align-items:center;justify-content:space-between;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0}
 .backlink{display:inline-flex;align-items:center;gap:8px;border:1px solid #2b3a66;background:#10172a;color:#eaf2ff;border-radius:10px;padding:8px 12px;cursor:pointer}
 .linelabel{color:#aab6da;font-size:13px}
@@ -30,8 +30,8 @@ body{margin:0;background:var(--bg);color:var(--fg);font:500 15px/1.55 system-ui,
 .formbox{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin:16px 0;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start}
 .formbox input{flex:1;min-width:180px;padding:10px 12px;border-radius:8px;border:1px solid #26304f;background:#0f1320;color:var(--fg)}
 .btn{border:1px solid #26304f;background:#0f1320;color:#dce6ff;border-radius:10px;padding:10px 14px;cursor:pointer}
-.hint{font-size:12px;color:#9aa7c7;margin-top:-6px}
-.error{font-size:12px;color:#ff8a8a;margin-top:-6px;display:none}
+.hint{font-size:12px;color:#9aa7c7;margin-top:6px}
+.error{font-size:12px;color:#ff8a8a;margin-top:6px;display:none}
 .oktag{display:none;align-items:center;gap:6px;background:#0c1f12;border:1px solid #1f5f3a;color:#b7ffd2;padding:6px 10px;border-radius:999px}
 .cartBtn{position:relative}
 .badge{display:none;position:absolute;top:-8px;right:-8px;background:#ef4444;color:#fff;border:2px solid #0f1320;border-radius:999px;font:700 11px/1 system-ui;padding:2px 6px}
@@ -79,16 +79,6 @@ body{margin:0;background:var(--bg);color:var(--fg);font:500 15px/1.55 system-ui,
 .toast{position:fixed;top:14px;right:14px;background:#1b2339;color:#eaf2ff;padding:10px 14px;border-radius:10px;z-index:9600;opacity:0;transform:translateY(-10px);transition:.2s}
 .toast.show{opacity:1;transform:translateY(0)}
 
-@media (max-width:760px){
-  thead{display:none}
-  .table, tbody, .row, .td{display:block;width:100%}
-  .row{border:1px solid var(--line);border-radius:12px;margin:10px 0}
-  .td{border-bottom:1px solid var(--line)}
-  .td:last-child{border-bottom:none}
-  .thumb{width:100%;height:0;padding-bottom:60%;position:relative}
-  .thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-}
-
 /* ====== GEOFENCE GATE ====== */
 .gate{position:fixed;inset:0;background:linear-gradient(180deg,#0b0f1d,#0a0c14);display:flex;align-items:center;justify-content:center;z-index:9999;border-top:2px solid #24355f}
 .gate .panel{max-width:640px;margin:20px;background:#111528;border:1px solid #26304f;border-radius:14px;padding:20px;box-shadow:0 10px 40px rgba(0,0,0,.45)}
@@ -96,8 +86,6 @@ body{margin:0;background:var(--bg);color:var(--fg);font:500 15px/1.55 system-ui,
 .gate p{margin:6px 0;color:#9aa7c7}
 .gate .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .gate .btn{background:#10172a}
-.gate .badge{display:inline-block;position:static;border:none;background:#1e2b4f}
-.gate .hint{margin-top:4px}
 .gok{display:none;align-items:center;gap:6px;background:#0c1f12;border:1px solid #1f5f3a;color:#b7ffd2;padding:6px 10px;border-radius:999px}
 .gerr{display:none;align-items:center;gap:6px;background:#1a0d0d;border:1px solid #5b2b2b;color:#ffc7c7;padding:6px 10px;border-radius:999px}
 
@@ -125,7 +113,7 @@ body{margin:0;background:var(--bg);color:var(--fg);font:500 15px/1.55 system-ui,
     </div>
     <p id="gateMsg" class="hint">Menunggu izin lokasi…</p>
     <p id="gateErr" class="gerr">Gagal mendapatkan lokasi.</p>
-    <p class="hint">Catatan: Pastikan situs diakses lewat <b>HTTPS</b> (atau <b>localhost</b>), dan GPS menyala. Jika izin ditolak, buka ulang halaman lalu izinkan lokasi.</p>
+    <p class="hint">Akses via <b>HTTPS</b> (atau <b>localhost</b>) dan pastikan GPS menyala.</p>
   </div>
 </div>
 
@@ -192,7 +180,7 @@ body{margin:0;background:var(--bg);color:var(--fg);font:500 15px/1.55 system-ui,
   </div>
 
   <!-- list tabel -->
-  <section id="listTableSection" class="card">
+  <section id="listTableSection" class="card" style="display:none">
     <table class="table">
       <thead><tr><th class="th no">No</th><th class="th">Judul</th><th class="th">Gambar Belakang</th><th class="th pick">Pilih</th></tr></thead>
       <tbody id="tbody"></tbody>
@@ -240,30 +228,29 @@ body{margin:0;background:var(--bg);color:var(--fg);font:500 15px/1.55 system-ui,
 /* ========= KONFIG UTAMA ========= */
 // MULTI-LOKASI geofence
 const LOCATIONS = [
-  { id: 'T1', name: 'Workshop Tuic — Lokasi Utama',  lat: -6.333959, lng: 106.660189, radius: 500 },
-  { id: 'T2', name: 'Workshop Tuic — Pintu Masuk',   lat: -6.333928875118919, lng: 106.66030911501599, radius: 500 }, 
+  { id: 'T1', name: 'Workshop Tuic — Lokasi Utama',  lat: -6.333959, lng: 106.660189, radius: 50 },
+  { id: 'T2', name: 'Workshop Tuic — Pintu Masuk',   lat: -6.334061, lng: 106.660147, radius: 50 },
 ];
-
 
 // Basis folder gambar per lini
 const LINE_MEDIA = {
   Executor: './media/executor/',
-  Zenius: './media/zenius/',
-  Sweater: './media/sweater/',
+  Zenius:   './media/zenius/',
+  Sweater:  './media/sweater/',
 };
 
-const SHEET_URL = "https://script.google.com/macros/s/AKfycbyI0VlKIVZtWM02pXhfDW4srbZMW8whQ9iCz49AsZ74XT9JC_Wd0fx9WByJto4GosUehg/exec"; // katalog
-const PRICE      = 30000;
+const SHEET_URL  = "https://script.google.com/macros/s/AKfycbyI0VlKIVZtWM02pXhfDW4srbZMW8whQ9iCz49AsZ74XT9JC_Wd0fx9WByJto4GosUehg/exec"; // katalog
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby20E4jQz5pGqSn0atadu1QGSVaUVXStt8GYiNnBlKvr-eyU-fz7cJJXRxxQqKkMLDSLw/exec"; // submit pesanan (VALIDASI SERVER di GAS)
 const WA_NUMBER  = "628161472405";
 const MAX_PICK   = 12;
+const PRICE      = 30000;
 
 /* ========= STATE & UTILS ========= */
 let SELECTED_LINE = null; // Executor | Zenius | Sweater
 let SETS = [];
 let USER_KEY=null, CONFIRMED=false;
 
-const lsKey=()=>`orderCart_${USER_KEY}`;
+const lsKey=()=>`orderCart_${USER_KEY||''}`;
 const loadCart=()=>JSON.parse(localStorage.getItem(lsKey())||"{}");
 const saveCart=c=>localStorage.setItem(lsKey(),JSON.stringify(c));
 const cartCount=()=>Object.values(loadCart()).reduce((a,v)=>a+(v.qty||0),0);
@@ -280,7 +267,7 @@ function resolveSrc(src){
   if(!src) return '';
   if(isAbsoluteSrc(src)) return src;
   const base = LINE_MEDIA[SELECTED_LINE] || '';
-  return base + src.replace(/^\\.\\/?/,'');
+  return base + src.replace(/^\.?\//,'');
 }
 
 /* ========= GEOFENCE (multi-lokasi + watchPosition) ========= */
@@ -292,8 +279,11 @@ const gateOK = document.getElementById('gateOK');
 const gateRadiusTxt = document.getElementById('gateRadius');
 
 // tampilkan ringkas radius (min–max)
-const minRadius = Math.min(...LOCATIONS.map(l=>l.radius));
-gateRadiusTxt.textContent = minRadius + '–' + Math.max(...LOCATIONS.map(l=>l.radius)) + ' m';
+(function(){
+  const minR = Math.min(...LOCATIONS.map(l=>l.radius));
+  const maxR = Math.max(...LOCATIONS.map(l=>l.radius));
+  gateRadiusTxt.textContent = (minR===maxR)? String(minR) : `${minR}–${maxR}`;
+})();
 
 let GEO_WATCH_ID = null;
 let LAST_FENCE = { ok:false, centerId:null, centerName:null, distanceM:null, coords:null };
@@ -385,10 +375,7 @@ async function openAppIfAllowed(){
 }
 
 document.getElementById('gateAsk').onclick = openAppIfAllowed;
-document.getElementById('gateRetry').onclick = async ()=>{
-  gateOK.style.display='none';
-  await openAppIfAllowed();
-};
+document.getElementById('gateRetry').onclick = async ()=>{ gateOK.style.display='none'; await openAppIfAllowed(); };
 
 function startFenceWatcher(){
   if(!('geolocation' in navigator)) return;
@@ -400,6 +387,7 @@ function startFenceWatcher(){
     const ok = d <= (loc?.radius ?? 0);
     LAST_FENCE = { ok, centerId: loc?.id||null, centerName: loc?.name||null, distanceM: d, coords: you };
     if(!ok){
+      // kunci lagi bila keluar area
       gateMsg.textContent = `Keluar area (${loc?.name||'-'}). Jarak ~${d} m (radius ${loc?.radius||'?'} m).`;
       applyGateState(false);
     }
@@ -431,7 +419,6 @@ const lb=document.getElementById('lightbox'), lbImg=document.getElementById('lbI
       lbNext=document.getElementById('lbNext'), lbClose=document.getElementById('lbClose');
 let lbList=[], lbIndex=0;
 function imgsFor(s){
-  // s.back wajib, s.logo & s.mockup opsional; dukung path relatif per lini
   const arr=[s.back, s.logo, s.mockup].filter(Boolean).map(resolveSrc);
   return [...new Set(arr)];
 }
@@ -664,7 +651,7 @@ async function initApp(){
   document.getElementById('linePicker').style.display='block';
   document.querySelector('.formbox').style.display='none';
   document.getElementById('lineNav').style.display='none';
-  render(); updateBadge(); updateCapInfo();
+  updateBadge(); updateCapInfo();
 
   // pilih lini
   document.querySelectorAll('#linePicker .pick-card').forEach(btn=>{
@@ -672,6 +659,7 @@ async function initApp(){
       SELECTED_LINE = btn.dataset.line;
       const tg = document.querySelector('.tagline');
       if(tg) tg.innerHTML = `Design Kaos Siap Cetak · <span style="opacity:.8">${SELECTED_LINE}</span>`;
+      document.getElementById('lineNav').style.display='flex';
       render();
       toast(`Mode: ${SELECTED_LINE}`);
     };
@@ -687,9 +675,7 @@ async function initApp(){
 }
 
 // Saat halaman dibuka, jangan jalankan app sampai geofence OK
-if(isSecureContextOK()){
-  // openAppIfAllowed(); // aktifkan jika ingin auto-prompt izin lokasi
-}
+// (Best practice: user klik tombol)
 </script>
 </body>
 </html>
