@@ -21,6 +21,11 @@ body{margin:0;background:var(--bg);color:var(--fg);font:500 15px/1.55 system-ui,
   .brand .logo{width:58px;height:58px}
 }
 
+/* line nav */
+.linenav{display:none;align-items:center;justify-content:space-between;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0}
+.backlink{display:inline-flex;align-items:center;gap:8px;border:1px solid #2b3a66;background:#10172a;color:#eaf2ff;border-radius:10px;padding:8px 12px;cursor:pointer}
+.linelabel{color:#aab6da;font-size:13px}
+
 /* form */
 .formbox{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin:16px 0;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start}
 .formbox input{flex:1;min-width:180px;padding:10px 12px;border-radius:8px;border:1px solid #26304f;background:#0f1320;color:var(--fg)}
@@ -148,6 +153,12 @@ body{margin:0;background:var(--bg);color:var(--fg);font:500 15px/1.55 system-ui,
     <div class="pick-note">Setelah memilih, katalog dan form akan muncul sesuai pilihan.</div>
   </section>
 
+  <!-- nav line + back -->
+  <div id="lineNav" class="linenav">
+    <button id="backToPicker" type="button" class="backlink">← Kembali</button>
+    <div class="linelabel">Mode: <strong id="lineLabel">-</strong></div>
+  </div>
+
   <!-- header brand -->
   <div class="brand">
     <div class="logo">
@@ -227,13 +238,19 @@ body{margin:0;background:var(--bg);color:var(--fg);font:500 15px/1.55 system-ui,
 
 <script>
 /* ========= KONFIG UTAMA ========= */
-// MULTI-LOKASI: tambahkan beberapa titik (id, name, lat, lng, radius meter)
 // MULTI-LOKASI geofence
 const LOCATIONS = [
   { id: 'T1', name: 'Workshop Tuic — Lokasi Utama',  lat: -6.333959, lng: 106.660189, radius: 50 },
   { id: 'T2', name: 'Workshop Tuic — Pintu Masuk',   lat: -6.334061, lng: 106.660147, radius: 50 },
 ];
 
+
+// Basis folder gambar per lini
+const LINE_MEDIA = {
+  Executor: './media/executor/',
+  Zenius: './media/zenius/',
+  Sweater: './media/sweater/',
+};
 
 const SHEET_URL = "https://script.google.com/macros/s/AKfycbyI0VlKIVZtWM02pXhfDW4srbZMW8whQ9iCz49AsZ74XT9JC_Wd0fx9WByJto4GosUehg/exec"; // katalog
 const PRICE      = 30000;
@@ -256,6 +273,15 @@ function toast(m){const t=document.getElementById('toast');t.textContent=m;t.cla
 function updateBadge(){const b=document.getElementById('cartBadge');const c=(USER_KEY&&CONFIRMED)?cartCount():0;b.style.display=c>0?'inline-block':'none';b.textContent=c;}
 const capInfo = document.getElementById('capInfo');
 function updateCapInfo(){const picked=(USER_KEY&&CONFIRMED)?cartCount():0;if(capInfo) capInfo.textContent=`${picked}/${MAX_PICK} dipilih`;}
+
+// Resolve path gambar: jika relatif -> prefix sesuai lini
+function isAbsoluteSrc(src){ return /^(https?:|data:|\/)/i.test(src||''); }
+function resolveSrc(src){
+  if(!src) return '';
+  if(isAbsoluteSrc(src)) return src;
+  const base = LINE_MEDIA[SELECTED_LINE] || '';
+  return base + src.replace(/^\\.\\/?/,'');
+}
 
 /* ========= GEOFENCE (multi-lokasi + watchPosition) ========= */
 const gate = document.getElementById('gate');
@@ -404,7 +430,11 @@ const lb=document.getElementById('lightbox'), lbImg=document.getElementById('lbI
       lbThumbs=document.getElementById('lbThumbs'), lbPrev=document.getElementById('lbPrev'),
       lbNext=document.getElementById('lbNext'), lbClose=document.getElementById('lbClose');
 let lbList=[], lbIndex=0;
-function imgsFor(s){const a=[s.back]; if(s.logo) a.unshift(s.logo); if(s.mockup) a.push(s.mockup); return [...new Set(a.filter(Boolean))];}
+function imgsFor(s){
+  // s.back wajib, s.logo & s.mockup opsional; dukung path relatif per lini
+  const arr=[s.back, s.logo, s.mockup].filter(Boolean).map(resolveSrc);
+  return [...new Set(arr)];
+}
 function openLightbox(list,start=0){lbList=list;lbIndex=start;setLb();thumbs();lb.classList.add('show');}
 function closeLightbox(){lb.classList.remove('show');lbList=[];lbIndex=0;lbImg.src="";}
 function setLb(){lbImg.src=lbList[lbIndex];}
@@ -420,8 +450,12 @@ const listTableSection=document.getElementById('listTableSection');
 const limitMsg=document.getElementById('limitMsg');
 
 function render(){
+  const lineNav = document.getElementById('lineNav');
+  const lineLabel = document.getElementById('lineLabel');
+
   if(!SELECTED_LINE){
     document.getElementById('linePicker').style.display='block';
+    lineNav.style.display='none';
     document.querySelector('.formbox').style.display='none';
     document.getElementById('listTableSection').style.display='none';
     document.getElementById('limitMsg').style.display='none';
@@ -429,6 +463,8 @@ function render(){
     return;
   } else {
     document.getElementById('linePicker').style.display='none';
+    lineNav.style.display='flex';
+    lineLabel.textContent = SELECTED_LINE;
     document.querySelector('.formbox').style.display='flex';
   }
 
@@ -460,10 +496,12 @@ function render(){
     if(cart[s.id]) return; no++;
     const disabled=!(USER_KEY&&CONFIRMED);
     const tr=document.createElement('tr');
+    const imgSrc = resolveSrc(s.back);
     tr.innerHTML=`
       <td class="td no">${no}</td>
-      <td class="td"><div class="title">${s.title}</div><div style="color:#9aa7c7">ID: ${s.id}${s.line?` · <span style='color:#7a88b3'>${s.line}</span>`:''}</div></td>
-      <td class="td"><div class="thumb"><img src="${s.back}" alt="${s.title}"/></div></td>
+      <td class="td"><div class="title">${s.title}</div>
+        <div style="color:#9aa7c7">ID: ${s.id}${s.line?` · <span style='color:#7a88b3'>${s.line}</span>`:''}</div></td>
+      <td class="td"><div class="thumb"><img src="${imgSrc}" alt="${s.title}"/></div></td>
       <td class="td pick">
         <input type="checkbox" data-id="${s.id}" ${disabled?'disabled':''}>
         ${disabled?'<div class="disabled-note">Klik OK dulu</div>':`<div class="hint">Sisa bisa pilih: ${MAX_PICK - pickedCount}</div>`}
@@ -508,9 +546,10 @@ function renderCart(){
   const c=(USER_KEY)?loadCart():{}; const body=document.getElementById('cartBody'); body.innerHTML=""; let total=0;
   Object.entries(c).forEach(([id,{qty,price}])=>{
     const s=SETS.find(x=>x.id===id); total+=qty*price;
+    const imgSrc = resolveSrc(s.back);
     body.insertAdjacentHTML('beforeend',`
       <div class="cart-row">
-        <div class="cart-thumb"><img src="${s.back}" alt="${s.title}"/></div>
+        <div class="cart-thumb"><img src="${imgSrc}" alt="${s.title}"/></div>
         <div><div style="font-weight:800">${s.title}</div><div style="color:#9aa7c7">Qty: ${qty} × ${formatIDR(price)}</div></div>
         <div><button class="xbtn" data-del="${id}">Hapus</button></div>
       </div>`);
@@ -624,8 +663,10 @@ async function initApp(){
   SELECTED_LINE = null;
   document.getElementById('linePicker').style.display='block';
   document.querySelector('.formbox').style.display='none';
+  document.getElementById('lineNav').style.display='none';
   render(); updateBadge(); updateCapInfo();
-  // Wiring tombol picker
+
+  // pilih lini
   document.querySelectorAll('#linePicker .pick-card').forEach(btn=>{
     btn.onclick=()=>{
       SELECTED_LINE = btn.dataset.line;
@@ -635,12 +676,19 @@ async function initApp(){
       toast(`Mode: ${SELECTED_LINE}`);
     };
   });
+
+  // tombol kembali
+  document.getElementById('backToPicker').onclick = ()=>{
+    SELECTED_LINE = null;
+    const tg = document.querySelector('.tagline');
+    if(tg) tg.innerHTML = 'Design Kaos Siap Cetak · <span style="opacity:.8">Order Desain Kaos</span>';
+    render();
+  };
 }
 
 // Saat halaman dibuka, jangan jalankan app sampai geofence OK
 if(isSecureContextOK()){
-  // Opsi: auto trigger supaya prompt izin lokasi muncul
-  // openAppIfAllowed();
+  // openAppIfAllowed(); // aktifkan jika ingin auto-prompt izin lokasi
 }
 </script>
 </body>
