@@ -228,10 +228,12 @@ body{margin:0;background:var(--bg);color:var(--fg);font:500 15px/1.55 system-ui,
 <script>
 /* ========= KONFIG UTAMA ========= */
 // MULTI-LOKASI: tambahkan beberapa titik (id, name, lat, lng, radius meter)
+// MULTI-LOKASI geofence
 const LOCATIONS = [
-  { id: 'T1', name: 'Workshop Tuic — Lokasi Utama', lat: -6.333959, lng: 106.660189, radius: 50 },
-  // { id: 'T2', name: 'Cabang Garut', lat: -7.227906, lng: 107.908699, radius: 75 },
+  { id: 'T1', name: 'Workshop Tuic — Lokasi Utama',  lat: -6.333959, lng: 106.660189, radius: 50 },
+  { id: 'T2', name: 'Workshop Tuic — Pintu Masuk',   lat: -6.334061, lng: 106.660147, radius: 50 },
 ];
+
 
 const SHEET_URL = "https://script.google.com/macros/s/AKfycbyI0VlKIVZtWM02pXhfDW4srbZMW8whQ9iCz49AsZ74XT9JC_Wd0fx9WByJto4GosUehg/exec"; // katalog
 const PRICE      = 30000;
