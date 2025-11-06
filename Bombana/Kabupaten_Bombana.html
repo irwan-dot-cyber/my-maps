@@ -9,7 +9,7 @@
   html, body {height:100%; margin:0}
   #header { background:#FFD700; color:#000; padding:10px; display:flex; align-items:center; font-weight:700; font-size:14px }
   #header img {height:40px; margin-right:10px}
-  #map {height:calc(100% - 140px)}
+  #map {height:calc(100% - 120px)}
   #route-info { background:#f9f9f9; padding:8px; font-size:14px; border-top:1px solid #ccc }
   #hit { background:#fff; padding:8px; font-size:12px; border-top:1px solid #eee; color:#444 }
 
@@ -62,9 +62,8 @@
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
 // ===== KONFIG =====
-const GEOJSON_URL_DEFAULT = "KabupatenBombana_JaringanJalan.json";
-const FOREST_URL_DEFAULT  = "Hutan_Bombana.geojson";
-
+const URL_JALAN  = "KabupatenBombana_JaringanJalan.json";
+const URL_HUTAN  = "Hutan_Bombana.geojson";
 const DEFAULT_VIEW = [-4.74, 121.70];
 const DEFAULT_ZOOM = 10;
 
@@ -78,19 +77,37 @@ const MIN_SCREEN_LEN_PX = 180;
 // ===== PETA =====
 const map = L.map('map', { zoomControl:true }).setView(DEFAULT_VIEW, DEFAULT_ZOOM);
 
-// Basemaps
-const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:20, attribution:'&copy; OpenStreetMap' }).addTo(map);
-const esriImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom:20, attribution:'&copy; Esri, Maxar' });
-const esriTopo    = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom:20, attribution:'&copy; Esri' });
-const esriLabels  = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom:20, attribution:'&copy; Esri' });
+// ----- Basemaps (DEFAULT = IMAGERY) -----
+const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom:20, attribution:'&copy; OpenStreetMap'
+}); // tidak ditambahkan ke map sebagai default
 
-// Layers control (handle)
+const esriImagery = L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  { maxZoom:20, attribution:'&copy; Esri, Maxar' }
+).addTo(map); // default
+
+const esriTopo = L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+  { maxZoom:20, attribution:'&copy; Esri' }
+);
+
+const esriLabels  = L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+  { maxZoom:20, attribution:'&copy; Esri' }
+);
+
+// Layers control
 const layerCtl = L.control.layers(
-  { "OSM Standard": osm, "Esri World Imagery (Citra)": esriImagery, "Esri Topographic": esriTopo },
+  { "Esri World Imagery (Citra)": esriImagery, "OSM Standard": osm, "Esri Topographic": esriTopo },
   {},
   { position:'topright', collapsed:false }
 ).addTo(map);
 layerCtl.addOverlay(esriLabels, "Esri Labels (nama tempat)");
+
+// ===== PANES: pastikan jalan di atas hutan =====
+map.createPane('forestPane'); map.getPane('forestPane').style.zIndex = 410;
+map.createPane('roadPane');   map.getPane('roadPane').style.zIndex   = 420; // lebih tinggi
 
 // ===== UTIL & STYLE =====
 const prop = (o,k)=> (o&&o[k]!=null&&String(o[k]).trim()!=="")? String(o[k]).trim() : "";
@@ -107,7 +124,7 @@ function weightByFungsi(f){
 }
 function styleLine(p){
   const fg = (p.Fungsi ?? p.fungsi ?? "").toString();
-  return { color:"#e53935", weight: weightByFungsi(fg), opacity:0.95 };
+  return { pane:'roadPane', color:"#e53935", weight: weightByFungsi(fg), opacity:0.95 };
 }
 function highlight(e){ const l=e.target; l.setStyle({weight: Math.max((l.options.weight||3.5)+2, 6.5), opacity:1}); l.bringToFront(); }
 function resetHighlight(e){ const l=e.target; lines.resetStyle(l); }
@@ -128,6 +145,7 @@ const metas = [];
 
 const lines = L.geoJSON(null, {
   style: f => styleLine(f.properties||{}),
+  pane: 'roadPane',
   onEachFeature: (feature, layer) => {
     const p = feature.properties || {};
     let nama = prop(p,"Nm_Ruas") || prop(p,"Nama") || prop(p,"name") || "Tanpa Nama";
@@ -187,7 +205,7 @@ const lines = L.geoJSON(null, {
     metas.push({ layer, name:nama, lengthM:len, tooltipCreated:false });
 
     layer.on({
-      mouseover: highlight,
+      mouseover: (e)=>{ highlight(e); }, // bringToFront sudah otomatis karena pane lebih tinggi
       mouseout: resetHighlight,
       click: () => { try{ map.fitBounds(layer.getBounds(), {padding:[20,20]}); }catch(e){} }
     });
@@ -197,10 +215,10 @@ const lines = L.geoJSON(null, {
 }).addTo(map);
 layerCtl.addOverlay(lines, "Jaringan Jalan");
 
-const points = L.geoJSON(null).addTo(map);
+const points = L.geoJSON(null, { pane:'roadPane' }).addTo(map);
 layerCtl.addOverlay(points, "Titik (jika ada)");
 
-// ===== LAYER HUTAN =====
+// ===== LAYER HUTAN (di bawah jalan) =====
 function fetchJSON(url){
   console.log("[FETCH]", new URL(url, location.href).href);
   return fetch(url).then(r=>{
@@ -220,13 +238,14 @@ function pickName(props){
 }
 const forestNamesSet = new Set();
 const forest = L.geoJSON(null, {
+  pane:'forestPane',
   style: f=>{
     const nm = pickName(f.properties||{});
     const c = colorFromName(nm);
     const isPoly = ["Polygon","MultiPolygon"].includes((f.geometry||{}).type);
     return isPoly
-      ? { color:c, weight:1.2, fillColor:c, fillOpacity:0.28 }
-      : { color:c, weight:2.2, opacity:0.9 };
+      ? { color:c, weight:1.2, fillColor:c, fillOpacity:0.28, pane:'forestPane' }
+      : { color:c, weight:2.0, opacity:0.9, pane:'forestPane' };
   },
   onEachFeature: (feature, layer)=>{
     const nm  = pickName(feature.properties||{});
@@ -235,6 +254,37 @@ const forest = L.geoJSON(null, {
     layer.bindPopup(`<b>Hutan: ${nm}</b><br>Kabupaten: ${kab}`);
   }
 });
+
+// ===== MUAT GEOJSON =====
+function showErr(msg){
+  const el = document.getElementById('err');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(()=> el.style.display='none', 4000);
+}
+
+function applyGeoJSON(gj){
+  clearData();
+
+  const feats = (gj && gj.features) ? gj.features : [];
+  const lineFeats  = feats.filter(f => ["LineString","MultiLineString"].includes((f.geometry||{}).type));
+  const pointFeats = feats.filter(f => (f.geometry||{}).type==="Point");
+
+  lines.addData({type:"FeatureCollection", features: lineFeats});
+  points.addData({type:"FeatureCollection", features: pointFeats});
+
+  // muat hutan sesudah jalan (tetap di pane bawah)
+  fetchJSON(URL_HUTAN)
+    .then(gjf => applyForest(gjf, true))
+    .catch(e => { console.error(e); showErr("GeoJSON Hutan tidak ditemukan (404). Pastikan nama/path benar."); });
+
+  const group = L.featureGroup([lines, points]);
+  try { fullBounds = group.getBounds(); map.fitBounds(fullBounds, {padding:[20,20]}); }
+  catch(e){ map.setView(DEFAULT_VIEW, DEFAULT_ZOOM); }
+
+  buildRoadLegend(lineFeats);
+  updateLabels();
+}
 
 function applyForest(gj, addToMapNow=false){
   forest.clearLayers();
@@ -259,37 +309,6 @@ function applyForest(gj, addToMapNow=false){
   buildForestLegend();
 }
 
-// ===== MUAT GEOJSON (otomatis) =====
-function showErr(msg){
-  const el = document.getElementById('err');
-  el.textContent = msg;
-  el.style.display = 'block';
-  setTimeout(()=> el.style.display='none', 4000);
-}
-
-function applyGeoJSON(gj){
-  clearData();
-
-  const feats = (gj && gj.features) ? gj.features : [];
-  const lineFeats  = feats.filter(f => ["LineString","MultiLineString"].includes((f.geometry||{}).type));
-  const pointFeats = feats.filter(f => (f.geometry||{}).type==="Point");
-
-  lines.addData({type:"FeatureCollection", features: lineFeats});
-  points.addData({type:"FeatureCollection", features: pointFeats});
-
-  // muat hutan sesudah jalan
-  fetchJSON(FOREST_URL_DEFAULT)
-    .then(gjf => applyForest(gjf, true))
-    .catch(e => { console.error(e); showErr("GeoJSON Hutan tidak ditemukan (404). Pastikan nama/path benar."); });
-
-  const group = L.featureGroup([lines, points]);
-  try { fullBounds = group.getBounds(); map.fitBounds(fullBounds, {padding:[20,20]}); }
-  catch(e){ map.setView(DEFAULT_VIEW, DEFAULT_ZOOM); }
-
-  buildRoadLegend(lineFeats);
-  updateLabels();
-}
-
 function clearData(){
   lines.clearLayers();
   points.clearLayers();
@@ -302,7 +321,7 @@ function clearData(){
 }
 
 // load default files
-fetchJSON(GEOJSON_URL_DEFAULT)
+fetchJSON(URL_JALAN)
   .then(applyGeoJSON)
   .catch(e => { console.error(e); showErr("GeoJSON Jalan tidak ditemukan (404). Pastikan nama/path benar."); });
 
