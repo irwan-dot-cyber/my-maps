@@ -26,20 +26,18 @@
   #suggestions div { padding:6px 8px; cursor:pointer }
   #suggestions div:hover { background:#eee }
 
-  .legend { background:white; padding:8px 10px; line-height:1.6; font-size:12px; border-radius:6px; box-shadow:0 0 6px rgba(0,0,0,.2)}
-  .swatch { display:inline-block; width:18px; height:0; margin-right:6px; vertical-align:middle; border-bottom: 4px solid #e53935; }
+  /* legend swatches */
+  .swatch { display:inline-block; width:18px; height:0; margin-right:6px; vertical-align:middle; border-bottom:4px solid #e53935; }
   .swatch-box{display:inline-block; width:14px; height:14px; border-radius:3px; margin-right:6px; border:1px solid rgba(0,0,0,.15); vertical-align:middle}
 
-  /* === LABEL STYLES === */
-  /* Jalan: jelas & kebaca di imagery */
+  /* labels */
   .leaflet-tooltip.label-road{
     font-weight:700; color:#111;
     background:rgba(255,255,255,.9);
     border:1px solid #ddd; padding:2px 4px;
   }
-  /* Hutan: beda dari jalan, tanpa background dengan halo */
   .leaflet-tooltip.label-forest{
-    font-weight:700; color:#9aa3ad;   /* abu-abu netral */
+    font-weight:700; color:#9aa3ad;
     background:transparent; border:none; padding:0 2px;
     text-shadow:
       -1px  0   2px #fff,
@@ -49,7 +47,34 @@
        0    0   4px rgba(0,0,0,.25);
   }
 
+  /* place layer control a bit lower (mobile friendly) */
   .leaflet-top.leaflet-right .leaflet-control-layers { margin-top: 70px; }
+
+  /* unified legend panel (bottom-right) */
+  .legend-unified{
+    background:rgba(33,33,33,.92); color:#fff;
+    border-radius:10px; box-shadow:0 6px 20px rgba(0,0,0,.35);
+    font-size:12px; line-height:1.6; max-width:280px; overflow:hidden;
+  }
+  .legend-unified .head{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:8px; padding:8px 10px; background:rgba(0,0,0,.25); font-weight:800;
+  }
+  .legend-unified .btn{
+    width:24px; height:24px; border-radius:6px; border:1px solid rgba(255,255,255,.25);
+    background:rgba(255,255,255,.08); color:#fff; cursor:pointer; font-weight:900;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .legend-unified .body{ padding:8px 10px; max-height:240px; overflow:auto; }
+  .legend-unified .grp{ margin-bottom:8px; }
+  .legend-unified .grp b{ display:block; margin-bottom:4px; color:#ffd86a; }
+  .legend-unified .row{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+  /* default collapsed on narrow screens */
+  @media (max-width: 640px){
+    .legend-unified .body{ display:none; }
+  }
+
   .error-banner{position:absolute; top:10px; left:50%; transform:translateX(-50%); background:#ffefef; color:#b00020; padding:6px 10px; border:1px solid #f5c2c2; border-radius:6px; z-index:2000; display:none}
 </style>
 </head>
@@ -74,13 +99,13 @@
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
-// ===== KONFIG =====
+// ===== CONFIG =====
 const URL_JALAN  = "KabupatenBombana_JaringanJalan.json";
 const URL_HUTAN  = "Hutan_Bombana.geojson";
 const DEFAULT_VIEW = [-4.74, 121.70];
 const DEFAULT_ZOOM = 10;
 
-// Label rules
+// label rules
 const ROAD_SHOW_SOME_ZOOM = 10, ROAD_SHOW_ALL_ZOOM = 16, ROAD_MAX_LABELS = 12;
 const FOREST_SHOW_SOME_ZOOM = 9, FOREST_SHOW_ALL_ZOOM = 15, FOREST_MAX_LABELS = 8;
 const MIN_LABEL_DIST_PX = 120, MIN_SCREEN_LEN_PX = 140;
@@ -88,13 +113,13 @@ const MIN_LABEL_DIST_PX = 120, MIN_SCREEN_LEN_PX = 140;
 // ===== MAP =====
 const map = L.map('map', { zoomControl:true }).setView(DEFAULT_VIEW, DEFAULT_ZOOM);
 
-// Basemaps (default imagery)
+// basemaps (default imagery)
 const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20, attribution:'&copy; OpenStreetMap'});
 const esriImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20, attribution:'&copy; Esri, Maxar'}).addTo(map);
 const esriTopo = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:20, attribution:'&copy; Esri'});
 const esriLabels  = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{maxZoom:20, attribution:'&copy; Esri'});
 
-// Control
+// control (TOP-RIGHT, di atas legenda)
 const layerCtl = L.control.layers(
   { "Esri World Imagery (Citra)": esriImagery, "OSM Standard": osm, "Esri Topographic": esriTopo },
   {},
@@ -102,7 +127,7 @@ const layerCtl = L.control.layers(
 ).addTo(map);
 layerCtl.addOverlay(esriLabels, "Esri Labels (nama tempat)");
 
-// Panes: jalan di atas hutan
+// panes: jalan di atas hutan
 map.createPane('forestPane'); map.getPane('forestPane').style.zIndex = 410;
 map.createPane('roadPane');   map.getPane('roadPane').style.zIndex   = 420;
 
@@ -126,8 +151,10 @@ function haversine(lat1,lon1,lat2,lon2){ const R=6371000,toRad=d=>d*Math.PI/180;
 // ===== LAYERS =====
 const index = [];
 let fullBounds = null;
-const metas = [];        // jalan (untuk label)
-const forestMetas = [];  // hutan (untuk label)
+const metas = [];        // jalan
+const forestMetas = [];  // hutan
+let roadLegendItems = [];  // strings for unified legend
+let forestLegendItems = []; // strings for unified legend
 
 const lines = L.geoJSON(null, {
   pane:'roadPane',
@@ -170,7 +197,7 @@ const lines = L.geoJSON(null, {
       <a href="${mapUrl}" target="_blank" rel="noopener">Lihat Peta</a>
     `, {maxWidth:360});
 
-    // hitung panjang utk prioritas label
+    // panjang utk prioritas label
     const coords = (feature.geometry && feature.geometry.coordinates) || [];
     let len = 0; function sumLine(arr){ for(let i=1;i<arr.length;i++){ const [lon1,lat1]=arr[i-1],[lon2,lat2]=arr[i]; len += haversine(lat1,lon1,lat2,lon2); } }
     if(feature.geometry.type==="LineString") sumLine(coords);
@@ -189,7 +216,7 @@ const lines = L.geoJSON(null, {
 }).addTo(map);
 layerCtl.addOverlay(lines, "Jaringan Jalan");
 
-// points ada tapi tidak didaftarkan ke control
+// points ada tapi tidak ditampilkan di control
 const points = L.geoJSON(null, { pane:'roadPane' }).addTo(map);
 
 const forest = L.geoJSON(null, {
@@ -211,64 +238,89 @@ layerCtl.addOverlay(forest, "Hutan Bombana");
 
 // ===== LOAD =====
 function applyGeoJSON_Jalan(gj){
-  lines.clearLayers(); points.clearLayers(); metas.length=0; index.length=0;
+  lines.clearLayers(); points.clearLayers(); metas.length=0; index.length=0; roadLegendItems=[];
   const feats=(gj&&gj.features)?gj.features:[];
   const lineFeats=feats.filter(f=>["LineString","MultiLineString"].includes((f.geometry||{}).type));
   const pointFeats=feats.filter(f=>(f.geometry||{}).type==="Point");
   lines.addData({type:"FeatureCollection", features:lineFeats});
   points.addData({type:"FeatureCollection", features:pointFeats});
 
+  // siapkan item legenda jalan
+  const fungsiSet = Array.from(new Set(lineFeats.map(f => (f.properties||{}).Fungsi).filter(Boolean)));
+  roadLegendItems = fungsiSet.map(fg=>{
+    const w = weightByFungsi(String(fg));
+    return `<div class="row"><span class="swatch" style="border-bottom:${w}px solid #e53935"></span>${fg}</div>`;
+  });
+
   const group = L.featureGroup([lines, points]);
   try { fullBounds = group.getBounds(); map.fitBounds(fullBounds, {padding:[20,20]}); }
   catch(e){ map.setView(DEFAULT_VIEW, DEFAULT_ZOOM); }
 
-  buildRoadLegend(lineFeats);
   updateRoadLabels();
+  renderUnifiedLegend(); // render/refresh gabungan
 }
 function applyGeoJSON_Hutan(gj){
-  forest.clearLayers(); forestMetas.length=0;
+  forest.clearLayers(); forestMetas.length=0; forestLegendItems=[];
   const feats=(gj&&gj.features)?gj.features:[];
   const ok=feats.filter(f=>["Polygon","MultiPolygon","LineString","MultiLineString"].includes((f.geometry||{}).type));
   if(!ok.length){ showErr("GeoJSON Hutan tidak berisi geometri yang didukung."); return; }
   forest.addData({type:"FeatureCollection", features:ok});
+
+  // siapkan item legenda hutan
+  const names = Array.from(new Set(ok.map(f=>pickForestName(f.properties||{})))).sort((a,b)=>a.localeCompare(b,'id'));
+  forestLegendItems = names.map(n=>{
+    const c = colorFromName(n);
+    return `<div class="row"><span class="swatch-box" style="background:${c}"></span>${n}</div>`;
+  });
+
   try{ const g=L.featureGroup([lines, points, forest]); fullBounds=g.getBounds(); map.fitBounds(fullBounds,{padding:[20,20]}); }catch(e){}
-  buildForestLegend();
   updateForestLabels();
+  renderUnifiedLegend();
 }
 
 fetchJSON(URL_JALAN).then(applyGeoJSON_Jalan).catch(e=>{console.error(e); showErr("GeoJSON Jalan tidak ditemukan (404).");});
 fetchJSON(URL_HUTAN).then(applyGeoJSON_Hutan).catch(e=>{console.error(e); showErr("GeoJSON Hutan tidak ditemukan (404).");});
 
-// ===== LEGENDS =====
-function buildRoadLegend(lineFeats){
-  if(window._legendRoadCtl){ map.removeControl(window._legendRoadCtl); window._legendRoadCtl=null; }
-  const list = Array.from(new Set(lineFeats.map(f => (f.properties||{}).Fungsi).filter(Boolean)));
-  if(!list.length) return;
-  const lg = L.control({position:"bottomright"});
-  lg.onAdd = function(){
-    const div = L.DomUtil.create('div','legend');
-    div.innerHTML = '<b>Fungsi Jalan</b><br/>' + list.map(fg => {
-      const w = weightByFungsi(String(fg));
-      return `<span class="swatch" style="border-bottom:${w}px solid #e53935"></span>${fg}`;
-    }).join('<br/>');
-    return div;
+// ===== UNIFIED LEGEND (bottom-right) =====
+let unifiedLegendCtl=null;
+function renderUnifiedLegend(){
+  if(unifiedLegendCtl){ map.removeControl(unifiedLegendCtl); unifiedLegendCtl=null; }
+  unifiedLegendCtl = L.control({position:"bottomright"});
+  unifiedLegendCtl.onAdd = function(){
+    const wrap = L.DomUtil.create('div','legend-unified');
+    wrap.innerHTML = `
+      <div class="head">
+        <span>Legenda</span>
+        <button class="btn" id="lgToggle" title="Ciut/Buka">−</button>
+      </div>
+      <div class="body" id="lgBody">
+        <div class="grp">
+          <b>Fungsi Jalan</b>
+          ${roadLegendItems.join("") || '<div class="row">–</div>'}
+        </div>
+        <div class="grp">
+          <b>Hutan (berdasarkan <i>name</i>)</b>
+          ${forestLegendItems.join("") || '<div class="row">–</div>'}
+        </div>
+      </div>
+    `;
+    // stop map interactions when hovering legend
+    L.DomEvent.disableClickPropagation(wrap); L.DomEvent.disableScrollPropagation(wrap);
+
+    // restore collapsed state
+    const body = wrap.querySelector('#lgBody');
+    const btn  = wrap.querySelector('#lgToggle');
+    const KEY='legend-collapsed';
+    let collapsed = (localStorage.getItem(KEY) ?? (window.matchMedia('(max-width: 640px)').matches ? '1':'0')) === '1';
+    function applyState(){
+      body.style.display = collapsed ? 'none' : 'block';
+      btn.textContent = collapsed ? '+' : '−';
+    }
+    btn.addEventListener('click', ()=>{ collapsed = !collapsed; localStorage.setItem(KEY, collapsed?'1':'0'); applyState(); });
+    applyState();
+    return wrap;
   };
-  lg.addTo(map); window._legendRoadCtl = lg;
-}
-function buildForestLegend(){
-  if(window._legendForestCtl){ map.removeControl(window._legendForestCtl); window._legendForestCtl=null; }
-  const names = Array.from(new Set(forestMetas.map(m=>m.name))).sort((a,b)=>a.localeCompare(b,'id'));
-  if(!names.length) return;
-  const lg = L.control({position:"bottomleft"});
-  lg.onAdd = function(){
-    const div = L.DomUtil.create('div','legend');
-    div.innerHTML = '<b>Hutan (berdasarkan <i>name</i>)</b><br/>' + names.map(n=>{
-      const c = colorFromName(n);
-      return `<span class="swatch-box" style="background:${c}"></span>${n}`;
-    }).join('<br/>');
-    return div;
-  };
-  lg.addTo(map); window._legendForestCtl = lg;
+  unifiedLegendCtl.addTo(map);
 }
 
 // ===== LABELS (declutter) =====
@@ -334,8 +386,7 @@ function updateForestLabels(){
 function estimateScreenLengthPx(layer){
   const latlngs = layer.getLatLngs(); if(!latlngs||!latlngs.length) return 0;
   const flat = []; (function walk(a){ if(!a) return; if(Array.isArray(a)&&a.length&&'lat' in a[0]) a.forEach(v=>flat.push(v)); else if(Array.isArray(a)) a.forEach(walk); })(latlngs);
-  let pxLen=0;
-  for(let i=1;i<flat.length;i++){ const p1=map.latLngToLayerPoint(flat[i-1]); const p2=map.latLngToLayerPoint(flat[i]); pxLen+=Math.hypot(p2.x-p1.x,p2.y-p1.y); }
+  let pxLen=0; for(let i=1;i<flat.length;i++){ const p1=map.latLngToLayerPoint(flat[i-1]); const p2=map.latLngToLayerPoint(flat[i]); pxLen+=Math.hypot(p2.x-p1.x,p2.y-p1.y); }
   return pxLen;
 }
 function layerCenterPx(layer){ try{ const c=layer.getBounds().getCenter(); return map.latLngToLayerPoint(c); }catch(e){ return null; } }
