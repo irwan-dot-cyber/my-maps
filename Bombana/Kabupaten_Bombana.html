@@ -28,14 +28,14 @@
 
   .legend { background:white; padding:8px 10px; line-height:1.6; font-size:12px; border-radius:6px; box-shadow:0 0 6px rgba(0,0,0,.2)}
   .swatch { display:inline-block; width:18px; height:0; margin-right:6px; vertical-align:middle; border-bottom: 4px solid #e53935; }
+  .swatch-box{display:inline-block; width:14px; height:14px; border-radius:3px; margin-right:6px; border:1px solid rgba(0,0,0,.15); vertical-align:middle}
 
   .leaflet-tooltip.feature-label{
-    font-weight:700; color:#111; background:rgba(255,255,255,.85);
-    border:1px solid #ddd; padding:2px 4px;
+    font-weight:700; color:#111; background:rgba(255,255,255,.9);
+    border:1px solid #ddd; padding:2px 4px; text-shadow:0 0 2px rgba(255,255,255,.8);
   }
   .leaflet-top.leaflet-right .leaflet-control-layers { margin-top: 70px; }
 
-  .swatch-box{display:inline-block; width:14px; height:14px; border-radius:3px; margin-right:6px; border:1px solid rgba(0,0,0,.15); vertical-align:middle}
   .error-banner{position:absolute; top:10px; left:50%; transform:translateX(-50%); background:#ffefef; color:#b00020; padding:6px 10px; border:1px solid #f5c2c2; border-radius:6px; z-index:2000; display:none}
 </style>
 </head>
@@ -56,7 +56,6 @@
 <div id="map"></div>
 <div id="route-info">Jarak &amp; Waktu tempuh akan muncul di sini</div>
 <div id="hit">Kunjungan halaman ini: <span id="hitCount">0</span> kali</div>
-
 <div id="err" class="error-banner"></div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -67,37 +66,28 @@ const URL_HUTAN  = "Hutan_Bombana.geojson";
 const DEFAULT_VIEW = [-4.74, 121.70];
 const DEFAULT_ZOOM = 10;
 
-// Label strategy
-const SHOW_SOME_ZOOM = 14;
-const SHOW_ALL_ZOOM  = 18;
-const MAX_LABELS     = 8;
-const MIN_LABEL_DIST_PX = 140;
-const MIN_SCREEN_LEN_PX = 180;
+// ===== Strategi label (rapi & dinamis) =====
+const ROAD_SHOW_SOME_ZOOM = 10;    // mulai tampil sebagian
+const ROAD_SHOW_ALL_ZOOM  = 16;    // tampil semua label jalan
+const ROAD_MAX_LABELS     = 12;    // kuota label saat zoom menengah
+
+const FOREST_SHOW_SOME_ZOOM = 9;   // mulai tampil sebagian
+const FOREST_SHOW_ALL_ZOOM  = 15;  // tampil semua label hutan
+const FOREST_MAX_LABELS     = 8;   // kuota label saat zoom menengah
+
+const MIN_LABEL_DIST_PX = 120;     // jarak minimum antar label
+const MIN_SCREEN_LEN_PX = 140;     // syarat panjang ruas (px) agar dilabeli
 
 // ===== PETA =====
 const map = L.map('map', { zoomControl:true }).setView(DEFAULT_VIEW, DEFAULT_ZOOM);
 
-// ----- Basemaps (DEFAULT = IMAGERY) -----
-const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom:20, attribution:'&copy; OpenStreetMap'
-}); // tidak ditambahkan ke map sebagai default
+// Basemaps (default imagery)
+const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20, attribution:'&copy; OpenStreetMap'});
+const esriImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20, attribution:'&copy; Esri, Maxar'}).addTo(map);
+const esriTopo = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:20, attribution:'&copy; Esri'});
+const esriLabels  = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{maxZoom:20, attribution:'&copy; Esri'});
 
-const esriImagery = L.tileLayer(
-  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-  { maxZoom:20, attribution:'&copy; Esri, Maxar' }
-).addTo(map); // default
-
-const esriTopo = L.tileLayer(
-  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
-  { maxZoom:20, attribution:'&copy; Esri' }
-);
-
-const esriLabels  = L.tileLayer(
-  'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-  { maxZoom:20, attribution:'&copy; Esri' }
-);
-
-// Layers control
+// Layer control
 const layerCtl = L.control.layers(
   { "Esri World Imagery (Citra)": esriImagery, "OSM Standard": osm, "Esri Topographic": esriTopo },
   {},
@@ -105,47 +95,39 @@ const layerCtl = L.control.layers(
 ).addTo(map);
 layerCtl.addOverlay(esriLabels, "Esri Labels (nama tempat)");
 
-// ===== PANES: pastikan jalan di atas hutan =====
+// Panes: pastikan jalan di atas hutan
 map.createPane('forestPane'); map.getPane('forestPane').style.zIndex = 410;
-map.createPane('roadPane');   map.getPane('roadPane').style.zIndex   = 420; // lebih tinggi
+map.createPane('roadPane');   map.getPane('roadPane').style.zIndex   = 420;
 
-// ===== UTIL & STYLE =====
+// ===== UTIL =====
 const prop = (o,k)=> (o&&o[k]!=null&&String(o[k]).trim()!=="")? String(o[k]).trim() : "";
-
+function fetchJSON(url){
+  console.log("[FETCH]", new URL(url, location.href).href);
+  return fetch(url).then(r=>{ if(!r.ok) throw new Error(`HTTP ${r.status} ${r.statusText} — ${url}`); return r.json(); });
+}
+function showErr(msg){ const el=document.getElementById('err'); el.textContent=msg; el.style.display='block'; setTimeout(()=>el.style.display='none',4000); }
 function weightByFungsi(f){
-  if(!f) return 3.5;
-  const s = f.toLowerCase();
-  if(/arteri\s*primer/.test(s))      return 6;
-  if(/kolektor/.test(s))             return 4.5;
-  if(/lingkungan\s*primer/.test(s))  return 4;
-  if(/lokal\s*sekunder/.test(s))     return 3.5;
-  if(/lingkungan\s*sekunder/.test(s))return 2.8;
+  if(!f) return 3.5; const s=f.toLowerCase();
+  if(/arteri\s*primer/.test(s)) return 6;
+  if(/kolektor/.test(s)) return 4.5;
+  if(/lingkungan\s*primer/.test(s)) return 4;
+  if(/lokal\s*sekunder/.test(s)) return 3.5;
+  if(/lingkungan\s*sekunder/.test(s)) return 2.8;
   return 3.5;
 }
-function styleLine(p){
-  const fg = (p.Fungsi ?? p.fungsi ?? "").toString();
-  return { pane:'roadPane', color:"#e53935", weight: weightByFungsi(fg), opacity:0.95 };
-}
-function highlight(e){ const l=e.target; l.setStyle({weight: Math.max((l.options.weight||3.5)+2, 6.5), opacity:1}); l.bringToFront(); }
-function resetHighlight(e){ const l=e.target; lines.resetStyle(l); }
+function colorFromName(name){ const s=String(name||"Hutan").toLowerCase(); let h=0; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0; return `hsl(${h%360} 60% 45%)`; }
+function pickForestName(props){ return prop(props,"name")||prop(props,"Name")||prop(props,"NAMA")||"Hutan"; }
+function haversine(lat1,lon1,lat2,lon2){ const R=6371000,toRad=d=>d*Math.PI/180; const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1); const a=Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2; return 2*R*Math.asin(Math.sqrt(a)); }
 
-// Haversine meter
-function haversine(lat1, lon1, lat2, lon2){
-  const R = 6371000;
-  const toRad = d => d*Math.PI/180;
-  const dLat = toRad(lat2-lat1), dLon = toRad(lon2-lon1);
-  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
-  return 2*R*Math.asin(Math.sqrt(a));
-}
-
-// ===== LAYERS & INDEX =====
+// ===== LAYERS =====
 const index = [];
 let fullBounds = null;
-const metas = [];
+const metas = [];        // jalan
+const forestMetas = [];  // hutan
 
 const lines = L.geoJSON(null, {
-  style: f => styleLine(f.properties||{}),
-  pane: 'roadPane',
+  pane:'roadPane',
+  style: f => ({ pane:'roadPane', color:"#e53935", weight:weightByFungsi((f.properties||{}).Fungsi), opacity:0.95 }),
   onEachFeature: (feature, layer) => {
     const p = feature.properties || {};
     let nama = prop(p,"Nm_Ruas") || prop(p,"Nama") || prop(p,"name") || "Tanpa Nama";
@@ -159,15 +141,11 @@ const lines = L.geoJSON(null, {
     const mendukung= prop(p,"Mendukung")|| "-";
     const ura      = prop(p,"Ura_Dukung") || "-";
     const kabkot   = prop(p,"Kab_Kot") || "-";
-    const kec     = prop(p,"Kecamatan") || "-";
-    const desa    = prop(p,"Desa_Kel") || "-";
+    const kec      = prop(p,"Kecamatan") || "-";
+    const desa     = prop(p,"Desa_Kel") || "-";
 
-    // center for Street View/Map
     let cLat=DEFAULT_VIEW[0], cLng=DEFAULT_VIEW[1];
-    try{
-      const c = layer.getBounds().getCenter();
-      cLat = c.lat; cLng = c.lng;
-    }catch(e){}
+    try{ const c=layer.getBounds().getCenter(); cLat=c.lat; cLng=c.lng; }catch(e){}
 
     const sv  = `https://www.google.com/maps?cbll=${cLat},${cLng}&layer=c`;
     const mapUrl = `https://www.google.com/maps?q=${cLat},${cLng}&z=18`;
@@ -188,25 +166,20 @@ const lines = L.geoJSON(null, {
       <a href="${sv}" target="_blank" rel="noopener">Buka Street View</a> &middot;
       <a href="${mapUrl}" target="_blank" rel="noopener">Lihat Peta</a>
     `;
-    layer.bindPopup(popup, {maxWidth: 360});
+    layer.bindPopup(popup, {maxWidth:360});
 
     // panjang utk prioritas label
     const coords = (feature.geometry && feature.geometry.coordinates) || [];
     let len = 0;
-    function sumLine(arr){
-      for(let i=1;i<arr.length;i++){
-        const [lon1,lat1] = arr[i-1], [lon2,lat2] = arr[i];
-        len += haversine(lat1,lon1,lat2,lon2);
-      }
-    }
-    if(feature.geometry.type === "LineString"){ sumLine(coords); }
-    else if(feature.geometry.type === "MultiLineString"){ coords.forEach(sumLine); }
+    function sumLine(arr){ for(let i=1;i<arr.length;i++){ const [lon1,lat1]=arr[i-1],[lon2,lat2]=arr[i]; len += haversine(lat1,lon1,lat2,lon2); } }
+    if(feature.geometry.type==="LineString") sumLine(coords);
+    else if(feature.geometry.type==="MultiLineString") coords.forEach(sumLine);
 
     metas.push({ layer, name:nama, lengthM:len, tooltipCreated:false });
 
     layer.on({
-      mouseover: (e)=>{ highlight(e); }, // bringToFront sudah otomatis karena pane lebih tinggi
-      mouseout: resetHighlight,
+      mouseover: e => { const l=e.target; l.setStyle({weight: Math.max((l.options.weight||3.5)+2, 6.5), opacity:1}); l.bringToFront(); },
+      mouseout:  e => { const l=e.target; lines.resetStyle(l); },
       click: () => { try{ map.fitBounds(layer.getBounds(), {padding:[20,20]}); }catch(e){} }
     });
 
@@ -215,122 +188,65 @@ const lines = L.geoJSON(null, {
 }).addTo(map);
 layerCtl.addOverlay(lines, "Jaringan Jalan");
 
+// (tetap ada tapi tidak ditampilkan di control)
 const points = L.geoJSON(null, { pane:'roadPane' }).addTo(map);
-layerCtl.addOverlay(points, "Titik (jika ada)");
 
-// ===== LAYER HUTAN (di bawah jalan) =====
-function fetchJSON(url){
-  console.log("[FETCH]", new URL(url, location.href).href);
-  return fetch(url).then(r=>{
-    if(!r.ok) throw new Error(`HTTP ${r.status} ${r.statusText} — ${url}`);
-    return r.json();
-  });
-}
-function colorFromName(name){
-  const s = String(name||"Hutan").toLowerCase();
-  let hash = 0;
-  for(let i=0;i<s.length;i++){ hash = (hash*31 + s.charCodeAt(i)) >>> 0; }
-  const hue = hash % 360;
-  return `hsl(${hue} 60% 45%)`;
-}
-function pickName(props){
-  return prop(props,"name") || prop(props,"Name") || prop(props,"NAMA") || "Hutan";
-}
-const forestNamesSet = new Set();
 const forest = L.geoJSON(null, {
   pane:'forestPane',
   style: f=>{
-    const nm = pickName(f.properties||{});
+    const nm = pickForestName(f.properties||{});
     const c = colorFromName(nm);
     const isPoly = ["Polygon","MultiPolygon"].includes((f.geometry||{}).type);
-    return isPoly
-      ? { color:c, weight:1.2, fillColor:c, fillOpacity:0.28, pane:'forestPane' }
-      : { color:c, weight:2.0, opacity:0.9, pane:'forestPane' };
+    return isPoly ? { pane:'forestPane', color:c, weight:1.2, fillColor:c, fillOpacity:0.28 }
+                  : { pane:'forestPane', color:c, weight:2.0, opacity:0.9 };
   },
   onEachFeature: (feature, layer)=>{
-    const nm  = pickName(feature.properties||{});
+    const nm  = pickForestName(feature.properties||{});
     const kab = prop(feature.properties,"kabupaten") || prop(feature.properties,"Kab_Kot") || "Kab. Bombana";
-    forestNamesSet.add(nm);
     layer.bindPopup(`<b>Hutan: ${nm}</b><br>Kabupaten: ${kab}`);
+    forestMetas.push({ layer, name:nm, tooltipCreated:false });
   }
 });
+layerCtl.addOverlay(forest, "Hutan Bombana");
 
-// ===== MUAT GEOJSON =====
-function showErr(msg){
-  const el = document.getElementById('err');
-  el.textContent = msg;
-  el.style.display = 'block';
-  setTimeout(()=> el.style.display='none', 4000);
-}
-
-function applyGeoJSON(gj){
-  clearData();
-
+// ===== LOAD DATA =====
+function applyGeoJSON_Jalan(gj){
+  lines.clearLayers(); points.clearLayers(); metas.length=0; index.length=0;
   const feats = (gj && gj.features) ? gj.features : [];
   const lineFeats  = feats.filter(f => ["LineString","MultiLineString"].includes((f.geometry||{}).type));
   const pointFeats = feats.filter(f => (f.geometry||{}).type==="Point");
-
   lines.addData({type:"FeatureCollection", features: lineFeats});
   points.addData({type:"FeatureCollection", features: pointFeats});
-
-  // muat hutan sesudah jalan (tetap di pane bawah)
-  fetchJSON(URL_HUTAN)
-    .then(gjf => applyForest(gjf, true))
-    .catch(e => { console.error(e); showErr("GeoJSON Hutan tidak ditemukan (404). Pastikan nama/path benar."); });
 
   const group = L.featureGroup([lines, points]);
   try { fullBounds = group.getBounds(); map.fitBounds(fullBounds, {padding:[20,20]}); }
   catch(e){ map.setView(DEFAULT_VIEW, DEFAULT_ZOOM); }
 
   buildRoadLegend(lineFeats);
-  updateLabels();
+  updateRoadLabels();
 }
-
-function applyForest(gj, addToMapNow=false){
-  forest.clearLayers();
-  forestNamesSet.clear();
-
+function applyGeoJSON_Hutan(gj){
+  forest.clearLayers(); forestMetas.length=0;
   const feats = (gj && gj.features) ? gj.features : [];
-  const okTypes = new Set(["Polygon","MultiPolygon","LineString","MultiLineString"]);
-  const useFeats = feats.filter(f => okTypes.has((f.geometry||{}).type));
-
-  if(!useFeats.length){
-    showErr("GeoJSON Hutan tidak berisi Polygon/MultiPolygon/LineString.");
-    return;
-  }
-
-  forest.addData({type:"FeatureCollection", features: useFeats});
-  layerCtl.addOverlay(forest, "Hutan Bombana");
-  if(addToMapNow && !map.hasLayer(forest)) forest.addTo(map);
-
-  const group = L.featureGroup([lines, points, forest]);
-  try { fullBounds = group.getBounds(); map.fitBounds(fullBounds, {padding:[20,20]}); } catch(e){}
-
+  const ok = feats.filter(f => ["Polygon","MultiPolygon","LineString","MultiLineString"].includes((f.geometry||{}).type));
+  if(!ok.length){ showErr("GeoJSON Hutan tidak berisi geometri yang didukung."); return; }
+  forest.addData({type:"FeatureCollection", features: ok});
+  // fit ke gabungan
+  try{ const g=L.featureGroup([lines, points, forest]); fullBounds=g.getBounds(); map.fitBounds(fullBounds,{padding:[20,20]}); }catch(e){}
   buildForestLegend();
+  updateForestLabels();
 }
 
-function clearData(){
-  lines.clearLayers();
-  points.clearLayers();
-  forest.clearLayers();
-  metas.length = 0;
-  index.length = 0;
-  removeAllLabels();
-  if(window._legendRoadCtl){ map.removeControl(window._legendRoadCtl); window._legendRoadCtl=null; }
-  if(window._legendForestCtl){ map.removeControl(window._legendForestCtl); window._legendForestCtl=null; }
-}
+fetchJSON(URL_JALAN).then(applyGeoJSON_Jalan).catch(e=>{console.error(e); showErr("GeoJSON Jalan tidak ditemukan (404).");});
+fetchJSON(URL_HUTAN).then(applyGeoJSON_Hutan).catch(e=>{console.error(e); showErr("GeoJSON Hutan tidak ditemukan (404).");});
 
-// load default files
-fetchJSON(URL_JALAN)
-  .then(applyGeoJSON)
-  .catch(e => { console.error(e); showErr("GeoJSON Jalan tidak ditemukan (404). Pastikan nama/path benar."); });
-
-// ===== LEGEND JALAN =====
+// ===== LEGENDS =====
 function buildRoadLegend(lineFeats){
+  if(window._legendRoadCtl){ map.removeControl(window._legendRoadCtl); window._legendRoadCtl=null; }
   const list = Array.from(new Set(lineFeats.map(f => (f.properties||{}).Fungsi).filter(Boolean)));
   if(!list.length) return;
-  const legend = L.control({position:"bottomright"});
-  legend.onAdd = function(){
+  const lg = L.control({position:"bottomright"});
+  lg.onAdd = function(){
     const div = L.DomUtil.create('div','legend');
     div.innerHTML = '<b>Fungsi Jalan</b><br/>' + list.map(fg => {
       const w = weightByFungsi(String(fg));
@@ -338,102 +254,98 @@ function buildRoadLegend(lineFeats){
     }).join('<br/>');
     return div;
   };
-  legend.addTo(map);
-  window._legendRoadCtl = legend;
+  lg.addTo(map); window._legendRoadCtl = lg;
 }
-
-// ===== LEGEND HUTAN =====
 function buildForestLegend(){
-  if(!forestNamesSet.size) return;
-  const names = Array.from(forestNamesSet).sort((a,b)=>a.localeCompare(b,'id'));
-  const legend = L.control({position:"bottomleft"});
-  legend.onAdd = function(){
+  if(window._legendForestCtl){ map.removeControl(window._legendForestCtl); window._legendForestCtl=null; }
+  const names = Array.from(new Set(forestMetas.map(m=>m.name))).sort((a,b)=>a.localeCompare(b,'id'));
+  if(!names.length) return;
+  const lg = L.control({position:"bottomleft"});
+  lg.onAdd = function(){
     const div = L.DomUtil.create('div','legend');
-    div.innerHTML = '<b>Hutan (berdasarkan <i>name</i>)</b><br/>' + names.map(nm=>{
-      const c = colorFromName(nm);
-      return `<span class="swatch-box" style="background:${c}"></span>${nm}`;
+    div.innerHTML = '<b>Hutan (berdasarkan <i>name</i>)</b><br/>' + names.map(n=>{
+      const c = colorFromName(n);
+      return `<span class="swatch-box" style="background:${c}"></span>${n}`;
     }).join('<br/>');
     return div;
   };
-  legend.addTo(map);
-  window._legendForestCtl = legend;
+  lg.addTo(map); window._legendForestCtl = lg;
 }
 
-// ===== LABELS =====
-map.on('zoomend moveend', updateLabels);
-map.on('zoomstart', removeAllLabels);
+// ===== LABELS (jalan + hutan, declutter) =====
+map.on('zoomend moveend', ()=>{ updateRoadLabels(); updateForestLabels(); });
+map.on('zoomstart', ()=>{ removeAllRoadLabels(); removeAllForestLabels(); });
 
-function removeAllLabels(){
-  metas.forEach(m => {
-    if(m.tooltipCreated){ m.layer.unbindTooltip(); m.tooltipCreated = false; }
-  });
+// ROAD
+function removeAllRoadLabels(){
+  metas.forEach(m => { if(m.tooltipCreated){ m.layer.unbindTooltip(); m.tooltipCreated=false; } });
 }
-function updateLabels(){
-  const z = map.getZoom();
-  const bounds = map.getBounds();
-  if(z < SHOW_SOME_ZOOM){ removeAllLabels(); return; }
+function updateRoadLabels(){
+  const z = map.getZoom(), bounds = map.getBounds();
+  if(z < ROAD_SHOW_SOME_ZOOM){ removeAllRoadLabels(); return; }
 
-  const candidates = metas.filter(m => {
+  const candidates = metas.filter(m=>{
     if(!m.layer.getBounds || !bounds.intersects(m.layer.getBounds())) return false;
-    const pxLen = estimateScreenLengthPx(m.layer);
-    return pxLen >= MIN_SCREEN_LEN_PX;
+    return estimateScreenLengthPx(m.layer) >= MIN_SCREEN_LEN_PX;
   }).sort((a,b)=> b.lengthM - a.lengthM);
 
-  const chosen = [];
-  const occupied = [];
-  const limit = (z >= SHOW_ALL_ZOOM) ? Infinity : MAX_LABELS;
-
+  const limit = (z >= ROAD_SHOW_ALL_ZOOM) ? Infinity : ROAD_MAX_LABELS;
+  const chosen=[], occupied=[];
   for(const m of candidates){
-    if(chosen.length >= limit) break;
-    const pt = labelAnchorPx(m.layer);
-    if(!pt) continue;
-    let ok = true;
-    for(const p of occupied){
-      const dx = pt.x - p.x, dy = pt.y - p.y;
-      if(Math.hypot(dx,dy) < MIN_LABEL_DIST_PX){ ok = false; break; }
-    }
+    if(chosen.length>=limit) break;
+    const pt = layerCenterPx(m.layer); if(!pt) continue;
+    let ok=true; for(const p of occupied){ if(dist(pt,p)<MIN_LABEL_DIST_PX){ ok=false; break; } }
     if(ok){ occupied.push(pt); chosen.push(m); }
   }
-
   const chosenSet = new Set(chosen);
-  metas.forEach(m => {
-    const shouldShow = chosenSet.has(m);
-    if(shouldShow && !m.tooltipCreated){
-      m.layer.bindTooltip(m.name, {direction:"center", permanent:true, className:"feature-label"}); 
-      m.tooltipCreated = true;
-    } else if(!shouldShow && m.tooltipCreated){
-      m.layer.unbindTooltip(); 
-      m.tooltipCreated = false;
-    }
+  metas.forEach(m=>{
+    const on = chosenSet.has(m);
+    if(on && !m.tooltipCreated){ m.layer.bindTooltip(m.name,{direction:"center",permanent:true,className:"feature-label"}); m.tooltipCreated=true; }
+    else if(!on && m.tooltipCreated){ m.layer.unbindTooltip(); m.tooltipCreated=false; }
   });
 }
-function estimateScreenLengthPx(layer){
-  const latlngs = layer.getLatLngs();
-  if(!latlngs || !latlngs.length) return 0;
-  const flat = flattenLatLngs(latlngs);
-  let pxLen = 0;
-  for(let i=1;i<flat.length;i++){
-    const p1 = map.latLngToLayerPoint(flat[i-1]);
-    const p2 = map.latLngToLayerPoint(flat[i]);
-    pxLen += Math.hypot(p2.x - p1.x, p2.y - p1.y);
+
+// FOREST
+function removeAllForestLabels(){
+  forestMetas.forEach(m => { if(m.tooltipCreated){ m.layer.unbindTooltip(); m.tooltipCreated=false; } });
+}
+function updateForestLabels(){
+  const z = map.getZoom(), bounds = map.getBounds();
+  if(z < FOREST_SHOW_SOME_ZOOM){ removeAllForestLabels(); return; }
+
+  const candidates = forestMetas.filter(m=> m.layer.getBounds && bounds.intersects(m.layer.getBounds()));
+  // skor berdasar ukuran di layar (luas bbox px^2)
+  const scored = candidates.map(m=>{
+    let s=0; try{ const b=m.layer.getBounds(); const p1=map.latLngToLayerPoint(b.getNorthWest()); const p2=map.latLngToLayerPoint(b.getSouthEast()); s=Math.abs((p2.x-p1.x)*(p2.y-p1.y)); }catch(e){}
+    return {m,score:s};
+  }).sort((a,b)=> b.score-a.score).map(o=>o.m);
+
+  const limit = (z >= FOREST_SHOW_ALL_ZOOM) ? Infinity : FOREST_MAX_LABELS;
+  const chosen=[], occupied=[];
+  for(const m of scored){
+    if(chosen.length>=limit) break;
+    const pt = layerCenterPx(m.layer); if(!pt) continue;
+    let ok=true; for(const p of occupied){ if(dist(pt,p)<MIN_LABEL_DIST_PX){ ok=false; break; } }
+    if(ok){ occupied.push(pt); chosen.push(m); }
   }
+  const chosenSet = new Set(chosen);
+  forestMetas.forEach(m=>{
+    const on = chosenSet.has(m);
+    if(on && !m.tooltipCreated){ m.layer.bindTooltip(m.name,{direction:"center",permanent:true,className:"feature-label"}); m.tooltipCreated=true; }
+    else if(!on && m.tooltipCreated){ m.layer.unbindTooltip(); m.tooltipCreated=false; }
+  });
+}
+
+// Helpers
+function estimateScreenLengthPx(layer){
+  const latlngs = layer.getLatLngs(); if(!latlngs||!latlngs.length) return 0;
+  const flat = []; (function walk(a){ if(!a) return; if(Array.isArray(a)&&a.length&&'lat' in a[0]) a.forEach(v=>flat.push(v)); else if(Array.isArray(a)) a.forEach(walk); })(latlngs);
+  let pxLen=0;
+  for(let i=1;i<flat.length;i++){ const p1=map.latLngToLayerPoint(flat[i-1]); const p2=map.latLngToLayerPoint(flat[i]); pxLen+=Math.hypot(p2.x-p1.x,p2.y-p1.y); }
   return pxLen;
 }
-function flattenLatLngs(arr){
-  const out = [];
-  (function walk(a){
-    if(!a) return;
-    if(Array.isArray(a) && a.length && 'lat' in a[0]){ a.forEach(v=> out.push(v)); }
-    else if(Array.isArray(a)){ a.forEach(walk); }
-  })(arr);
-  return out;
-}
-function labelAnchorPx(layer){
-  try{
-    const c = layer.getBounds().getCenter();
-    return map.latLngToLayerPoint(c);
-  }catch(e){ return null; }
-}
+function layerCenterPx(layer){ try{ const c=layer.getBounds().getCenter(); return map.latLngToLayerPoint(c); }catch(e){ return null; } }
+function dist(a,b){ const dx=a.x-b.x, dy=a.y-b.y; return Math.hypot(dx,dy); }
 
 // ===== SEARCH =====
 function onSearchInput(q){
@@ -441,27 +353,21 @@ function onSearchInput(q){
   showSuggestions(q);
 }
 function clearSearch(){
-  const inp = document.getElementById('search');
-  const box = document.getElementById('suggestions');
-  inp.value = ""; box.innerHTML = ""; box.style.display = "none";
-  document.getElementById('clearBtn').style.display = 'none';
-  if(fullBounds){ map.fitBounds(fullBounds, {padding:[20,20]}); }
+  const inp=document.getElementById('search'), box=document.getElementById('suggestions');
+  inp.value=""; box.innerHTML=""; box.style.display="none";
+  document.getElementById('clearBtn').style.display='none';
+  if(fullBounds) map.fitBounds(fullBounds,{padding:[20,20]});
 }
 function showSuggestions(q){
-  const box=document.getElementById('suggestions');
-  box.innerHTML="";
+  const box=document.getElementById('suggestions'); box.innerHTML="";
   if(!q){ box.style.display="none"; return; }
-  const hits=index
-    .filter(it => it.name && it.name.toLowerCase().includes(q.toLowerCase()))
-    .slice(0,100);
+  const hits=index.filter(it=>it.name && it.name.toLowerCase().includes(q.toLowerCase())).slice(0,100);
   hits.forEach(it=>{
     const d=document.createElement('div'); d.textContent=it.name;
-    d.onclick=()=>{ 
-      document.getElementById('search').value=it.name; 
-      document.getElementById('clearBtn').style.display='block';
-      box.style.display="none";
-      try { map.fitBounds(it.layer.getBounds(), {padding:[20,20]}); }
-      catch(e){ if(it.layer.getLatLng) map.setView(it.layer.getLatLng(), 14); }
+    d.onclick=()=>{
+      document.getElementById('search').value=it.name;
+      document.getElementById('clearBtn').style.display='block'; box.style.display="none";
+      try{ map.fitBounds(it.layer.getBounds(),{padding:[20,20]}); }catch(e){ if(it.layer.getLatLng) map.setView(it.layer.getLatLng(),14); }
       it.layer.openPopup && it.layer.openPopup();
     };
     box.appendChild(d);
@@ -471,11 +377,9 @@ function showSuggestions(q){
 
 // ===== HIT COUNTER =====
 (function(){
-  const KEY = "bombana-webgis-hit";
-  let n = parseInt(localStorage.getItem(KEY)||"0",10);
-  n = isNaN(n) ? 0 : n;
-  n += 1;
-  localStorage.setItem(KEY, String(n));
+  const KEY="bombana-webgis-hit";
+  let n=parseInt(localStorage.getItem(KEY)||"0",10); n=isNaN(n)?0:n; n+=1;
+  localStorage.setItem(KEY,String(n));
   document.getElementById('hitCount').textContent = n.toLocaleString('id-ID');
 })();
 </script>
