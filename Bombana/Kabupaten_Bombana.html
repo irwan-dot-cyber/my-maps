@@ -49,7 +49,7 @@
        0    0   4px rgba(0,0,0,.25);
   }
 
-  /* layer control a bit lower (mobile friendly) */
+  /* layer control pos a bit lower (mobile friendly) */
   .leaflet-top.leaflet-right .leaflet-control-layers { margin-top: 70px; }
 
   /* unified legend panel (bottom-right) */
@@ -72,12 +72,20 @@
   .legend-unified .grp b{ display:block; margin-bottom:4px; color:#ffd86a; }
   .legend-unified .row{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
-  /* floating show button */
+  /* FAB show legend */
   .legend-fab{
     position:absolute; right:16px; bottom:16px; z-index:900;
     background:rgba(33,33,33,.92); color:#fff; border:1px solid rgba(255,255,255,.25);
     border-radius:999px; padding:10px 14px; font-weight:800; font-size:12px;
     display:none; box-shadow:0 6px 20px rgba(0,0,0,.35); cursor:pointer;
+  }
+
+  /* LAYERS toggle button (top-right) */
+  .layers-fab{
+    position:absolute; right:10px; top:60px; z-index:1001;
+    background:rgba(33,33,33,.92); color:#fff; border:1px solid rgba(255,255,255,.25);
+    border-radius:8px; padding:6px 10px; font-weight:800; font-size:12px;
+    cursor:pointer; box-shadow:0 6px 20px rgba(0,0,0,.35);
   }
 
   /* default collapsed on narrow screens */
@@ -107,8 +115,9 @@
 <div id="hit">Kunjungan halaman ini: <span id="hitCount">0</span> kali</div>
 <div id="err" class="error-banner"></div>
 
-<!-- floating button to reopen legend -->
+<!-- floating buttons -->
 <button id="legendFab" class="legend-fab">Legenda</button>
+<button id="layersFab" class="layers-fab">Layer</button>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
@@ -132,7 +141,7 @@ const esriImagery = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/ser
 const esriTopo = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:20, attribution:'&copy; Esri'});
 const esriLabels  = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{maxZoom:20, attribution:'&copy; Esri'});
 
-// control (TOP-RIGHT, di atas legenda)
+// control (TOP-RIGHT)
 const layerCtl = L.control.layers(
   { "Esri World Imagery (Citra)": esriImagery, "OSM Standard": osm, "Esri Topographic": esriTopo },
   {},
@@ -146,9 +155,7 @@ map.createPane('roadPane');   map.getPane('roadPane').style.zIndex   = 420;
 
 // ===== UTIL =====
 const prop = (o,k)=> (o&&o[k]!=null&&String(o[k]).trim()!=="")? String(o[k]).trim() : "";
-function fetchJSON(url){ console.log("[FETCH]", new URL(url, location.href).href);
-  return fetch(url).then(r=>{ if(!r.ok) throw new Error(`HTTP ${r.status} ${r.statusText} — ${url}`); return r.json(); });
-}
+function fetchJSON(url){ return fetch(url).then(r=>{ if(!r.ok) throw new Error(`HTTP ${r.status} — ${url}`); return r.json(); }); }
 function showErr(msg){ const el=document.getElementById('err'); el.textContent=msg; el.style.display='block'; setTimeout(()=>el.style.display='none',4000); }
 function weightByFungsi(f){ if(!f) return 3.5; const s=String(f).toLowerCase();
   if(/arteri\s*primer/.test(s)) return 6; if(/kolektor/.test(s)) return 4.5;
@@ -343,27 +350,37 @@ function renderUnifiedLegend(){
   legendBtnEl = fab;
   fab.onclick = ()=>{ setLegendCollapsed(false); };
 }
-
-// helper untuk collapse/expand legend dari event peta
 function setLegendCollapsed(state){
-  // state=false -> expand
   const collapsed = state;
   localStorage.setItem(LEGEND_KEY, collapsed ? '1':'0');
-  if(legendBodyEl){
-    legendBodyEl.style.display = collapsed ? 'none' : 'block';
-  }
-  if(legendBtnEl){
-    legendBtnEl.style.display = collapsed ? 'block' : 'none';
-  }
-  // update tombol minus/plus bila ada
-  if(legendWrapEl){
-    const t = legendWrapEl.querySelector('#lgToggle');
-    if(t) t.textContent = collapsed ? '+' : '−';
-  }
+  if(legendBodyEl) legendBodyEl.style.display = collapsed ? 'none' : 'block';
+  const fab = document.getElementById('legendFab');
+  if(fab) fab.style.display = collapsed ? 'block' : 'none';
+  if(legendWrapEl){ const t=legendWrapEl.querySelector('#lgToggle'); if(t) t.textContent = collapsed ? '+' : '−'; }
 }
-
 // Auto-hide legend saat user geser/zoom peta
 map.on('movestart zoomstart', ()=>{ setLegendCollapsed(true); });
+
+// ===== LAYERS TOGGLER (top-right) =====
+const LAYERS_KEY='layers-collapsed';
+const layersFab = document.getElementById('layersFab');
+layersFab.addEventListener('click', toggleLayersPanel);
+
+function getLayersContainer(){ return layerCtl && layerCtl.getContainer ? layerCtl.getContainer() : null; }
+function applyLayersState(){
+  const box = getLayersContainer(); if(!box) return;
+  const collapsed = (localStorage.getItem(LAYERS_KEY) ?? (window.matchMedia('(max-width: 640px)').matches ? '1':'0')) === '1';
+  box.style.display = collapsed ? 'none' : 'block';
+  layersFab.textContent = collapsed ? 'Layer' : 'Layer ×';
+}
+function toggleLayersPanel(){
+  const box = getLayersContainer(); if(!box) return;
+  const collapsedNow = box.style.display === 'none';
+  localStorage.setItem(LAYERS_KEY, collapsedNow ? '0':'1'); // if visible -> set 0
+  applyLayersState();
+}
+// apply initial state after control exists
+setTimeout(applyLayersState, 0);
 
 // ===== LABELS (declutter) =====
 map.on('zoomend moveend', ()=>{ updateRoadLabels(); updateForestLabels(); });
