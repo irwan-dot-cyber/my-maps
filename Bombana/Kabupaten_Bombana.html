@@ -29,6 +29,8 @@
   /* legend swatches */
   .swatch { display:inline-block; width:18px; height:0; margin-right:6px; vertical-align:middle; border-bottom:4px solid #e53935; }
   .swatch-box{display:inline-block; width:14px; height:14px; border-radius:3px; margin-right:6px; border:1px solid rgba(0,0,0,.15); vertical-align:middle}
+  .badge{display:inline-block; min-width:18px; padding:0 6px; margin-left:6px; border-radius:999px;
+         font-weight:700; font-size:11px; line-height:18px; text-align:center; color:#111; background:#ffd86a}
 
   /* labels */
   .leaflet-tooltip.label-road{
@@ -47,14 +49,14 @@
        0    0   4px rgba(0,0,0,.25);
   }
 
-  /* place layer control a bit lower (mobile friendly) */
+  /* layer control a bit lower (mobile friendly) */
   .leaflet-top.leaflet-right .leaflet-control-layers { margin-top: 70px; }
 
   /* unified legend panel (bottom-right) */
   .legend-unified{
     background:rgba(33,33,33,.92); color:#fff;
     border-radius:10px; box-shadow:0 6px 20px rgba(0,0,0,.35);
-    font-size:12px; line-height:1.6; max-width:280px; overflow:hidden;
+    font-size:12px; line-height:1.6; max-width:300px; overflow:hidden;
   }
   .legend-unified .head{
     display:flex; align-items:center; justify-content:space-between;
@@ -65,10 +67,18 @@
     background:rgba(255,255,255,.08); color:#fff; cursor:pointer; font-weight:900;
     display:flex; align-items:center; justify-content:center;
   }
-  .legend-unified .body{ padding:8px 10px; max-height:240px; overflow:auto; }
+  .legend-unified .body{ padding:8px 10px; max-height:280px; overflow:auto; }
   .legend-unified .grp{ margin-bottom:8px; }
   .legend-unified .grp b{ display:block; margin-bottom:4px; color:#ffd86a; }
   .legend-unified .row{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+  /* floating show button */
+  .legend-fab{
+    position:absolute; right:16px; bottom:16px; z-index:900;
+    background:rgba(33,33,33,.92); color:#fff; border:1px solid rgba(255,255,255,.25);
+    border-radius:999px; padding:10px 14px; font-weight:800; font-size:12px;
+    display:none; box-shadow:0 6px 20px rgba(0,0,0,.35); cursor:pointer;
+  }
 
   /* default collapsed on narrow screens */
   @media (max-width: 640px){
@@ -96,6 +106,9 @@
 <div id="route-info">Jarak &amp; Waktu tempuh akan muncul di sini</div>
 <div id="hit">Kunjungan halaman ini: <span id="hitCount">0</span> kali</div>
 <div id="err" class="error-banner"></div>
+
+<!-- floating button to reopen legend -->
+<button id="legendFab" class="legend-fab">Legenda</button>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
@@ -153,8 +166,8 @@ const index = [];
 let fullBounds = null;
 const metas = [];        // jalan
 const forestMetas = [];  // hutan
-let roadLegendItems = [];  // strings for unified legend
-let forestLegendItems = []; // strings for unified legend
+let roadLegendItems = [];   // strings with counts
+let forestLegendItems = []; // strings with counts
 
 const lines = L.geoJSON(null, {
   pane:'roadPane',
@@ -216,7 +229,7 @@ const lines = L.geoJSON(null, {
 }).addTo(map);
 layerCtl.addOverlay(lines, "Jaringan Jalan");
 
-// points ada tapi tidak ditampilkan di control
+// points ada tapi tidak didaftarkan ke control
 const points = L.geoJSON(null, { pane:'roadPane' }).addTo(map);
 
 const forest = L.geoJSON(null, {
@@ -245,11 +258,12 @@ function applyGeoJSON_Jalan(gj){
   lines.addData({type:"FeatureCollection", features:lineFeats});
   points.addData({type:"FeatureCollection", features:pointFeats});
 
-  // siapkan item legenda jalan
-  const fungsiSet = Array.from(new Set(lineFeats.map(f => (f.properties||{}).Fungsi).filter(Boolean)));
-  roadLegendItems = fungsiSet.map(fg=>{
-    const w = weightByFungsi(String(fg));
-    return `<div class="row"><span class="swatch" style="border-bottom:${w}px solid #e53935"></span>${fg}</div>`;
+  // item legenda jalan + count
+  const counts = {};
+  lineFeats.forEach(f=>{ const k=(f.properties||{}).Fungsi||"Lainnya"; counts[k]=(counts[k]||0)+1; });
+  roadLegendItems = Object.keys(counts).map(k=>{
+    const w = weightByFungsi(String(k));
+    return `<div class="row"><span class="swatch" style="border-bottom:${w}px solid #e53935"></span>${k}<span class="badge">${counts[k]}</span></div>`;
   });
 
   const group = L.featureGroup([lines, points]);
@@ -257,7 +271,7 @@ function applyGeoJSON_Jalan(gj){
   catch(e){ map.setView(DEFAULT_VIEW, DEFAULT_ZOOM); }
 
   updateRoadLabels();
-  renderUnifiedLegend(); // render/refresh gabungan
+  renderUnifiedLegend(); // refresh
 }
 function applyGeoJSON_Hutan(gj){
   forest.clearLayers(); forestMetas.length=0; forestLegendItems=[];
@@ -266,11 +280,12 @@ function applyGeoJSON_Hutan(gj){
   if(!ok.length){ showErr("GeoJSON Hutan tidak berisi geometri yang didukung."); return; }
   forest.addData({type:"FeatureCollection", features:ok});
 
-  // siapkan item legenda hutan
-  const names = Array.from(new Set(ok.map(f=>pickForestName(f.properties||{})))).sort((a,b)=>a.localeCompare(b,'id'));
-  forestLegendItems = names.map(n=>{
-    const c = colorFromName(n);
-    return `<div class="row"><span class="swatch-box" style="background:${c}"></span>${n}</div>`;
+  // item legenda hutan + count
+  const counts = {};
+  ok.forEach(f=>{ const k = pickForestName(f.properties||{}); counts[k]=(counts[k]||0)+1; });
+  forestLegendItems = Object.keys(counts).sort((a,b)=>a.localeCompare(b,'id')).map(k=>{
+    const c = colorFromName(k);
+    return `<div class="row"><span class="swatch-box" style="background:${c}"></span>${k}<span class="badge">${counts[k]}</span></div>`;
   });
 
   try{ const g=L.featureGroup([lines, points, forest]); fullBounds=g.getBounds(); map.fitBounds(fullBounds,{padding:[20,20]}); }catch(e){}
@@ -282,7 +297,8 @@ fetchJSON(URL_JALAN).then(applyGeoJSON_Jalan).catch(e=>{console.error(e); showEr
 fetchJSON(URL_HUTAN).then(applyGeoJSON_Hutan).catch(e=>{console.error(e); showErr("GeoJSON Hutan tidak ditemukan (404).");});
 
 // ===== UNIFIED LEGEND (bottom-right) =====
-let unifiedLegendCtl=null;
+let unifiedLegendCtl=null, legendBodyEl=null, legendBtnEl=null, legendWrapEl=null;
+const LEGEND_KEY='legend-collapsed';
 function renderUnifiedLegend(){
   if(unifiedLegendCtl){ map.removeControl(unifiedLegendCtl); unifiedLegendCtl=null; }
   unifiedLegendCtl = L.control({position:"bottomright"});
@@ -304,24 +320,50 @@ function renderUnifiedLegend(){
         </div>
       </div>
     `;
-    // stop map interactions when hovering legend
     L.DomEvent.disableClickPropagation(wrap); L.DomEvent.disableScrollPropagation(wrap);
-
-    // restore collapsed state
     const body = wrap.querySelector('#lgBody');
     const btn  = wrap.querySelector('#lgToggle');
-    const KEY='legend-collapsed';
-    let collapsed = (localStorage.getItem(KEY) ?? (window.matchMedia('(max-width: 640px)').matches ? '1':'0')) === '1';
-    function applyState(){
+    legendBodyEl = body; legendWrapEl = wrap;
+
+    // restore collapsed state (default collapsed on mobile)
+    let collapsed = (localStorage.getItem(LEGEND_KEY) ?? (window.matchMedia('(max-width: 640px)').matches ? '1':'0')) === '1';
+    const applyState = ()=>{
       body.style.display = collapsed ? 'none' : 'block';
       btn.textContent = collapsed ? '+' : '−';
-    }
-    btn.addEventListener('click', ()=>{ collapsed = !collapsed; localStorage.setItem(KEY, collapsed?'1':'0'); applyState(); });
+      document.getElementById('legendFab').style.display = collapsed ? 'block' : 'none';
+    };
+    btn.addEventListener('click', ()=>{ collapsed = !collapsed; localStorage.setItem(LEGEND_KEY, collapsed?'1':'0'); applyState(); });
     applyState();
     return wrap;
   };
   unifiedLegendCtl.addTo(map);
+
+  // hook FAB
+  const fab = document.getElementById('legendFab');
+  legendBtnEl = fab;
+  fab.onclick = ()=>{ setLegendCollapsed(false); };
 }
+
+// helper untuk collapse/expand legend dari event peta
+function setLegendCollapsed(state){
+  // state=false -> expand
+  const collapsed = state;
+  localStorage.setItem(LEGEND_KEY, collapsed ? '1':'0');
+  if(legendBodyEl){
+    legendBodyEl.style.display = collapsed ? 'none' : 'block';
+  }
+  if(legendBtnEl){
+    legendBtnEl.style.display = collapsed ? 'block' : 'none';
+  }
+  // update tombol minus/plus bila ada
+  if(legendWrapEl){
+    const t = legendWrapEl.querySelector('#lgToggle');
+    if(t) t.textContent = collapsed ? '+' : '−';
+  }
+}
+
+// Auto-hide legend saat user geser/zoom peta
+map.on('movestart zoomstart', ()=>{ setLegendCollapsed(true); });
 
 // ===== LABELS (declutter) =====
 map.on('zoomend moveend', ()=>{ updateRoadLabels(); updateForestLabels(); });
