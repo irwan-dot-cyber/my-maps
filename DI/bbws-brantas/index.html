@@ -79,34 +79,65 @@
     const btnSV  = document.getElementById('btnSV');
     let lastLat = null, lastLon = null;
 
-    // Cache ketersediaan Street View biar hemat request
-    const svCache = new Map(); // key: "lat,lon" dibulatkan
+    // ====== Street View availability cache ======
+    const svCache = new Map(); // key: "lat,lon,radius"
 
-    // URL builders
+    // ====== URL builders ======
     function svUrl(lat, lon){ return `https://www.google.com/maps?layer=c&cbll=${lat},${lon}`; }
     function mapTopDownUrl(lat, lon){ return `https://www.google.com/maps?q=${lat},${lon}&t=k&z=18`; }
 
-    // Kunci cache dibulatkan biar konsisten
-    function keyLL(lat, lon){ return `${lat.toFixed(5)},${lon.toFixed(5)}`; }
+    // ====== Helpers for cache key & offsets ======
+    function keyLL(lat, lon, r){ return `${lat.toFixed(5)},${lon.toFixed(5)},r${r}`; }
 
-    async function probeStreetView(lat, lon, timeoutMs = 2000){
-      const key = keyLL(lat, lon);
-      if(svCache.has(key)) return svCache.get(key);
+    function offsetLatLon(lat, lon, meters, bearingDeg){
+      const R = 6378137; // m
+      const br = bearingDeg * Math.PI/180;
+      const dByR = meters / R;
+      const lat1 = lat * Math.PI/180;
+      const lon1 = lon * Math.PI/180;
+      const lat2 = Math.asin(Math.sin(lat1)*Math.cos(dByR) + Math.cos(lat1)*Math.sin(dByR)*Math.cos(br));
+      const lon2 = lon1 + Math.atan2(Math.sin(br)*Math.sin(dByR)*Math.cos(lat1), Math.cos(dByR)-Math.sin(lat1)*Math.sin(lat2));
+      return [lat2*180/Math.PI, lon2*180/Math.PI];
+    }
 
-      const u = `https://cbks0.googleapis.com/cbk?output=json&ll=${lat},${lon}`;
-      let has = false;
+    async function fetchCBK(url, timeoutMs){
       try{
         const ctrl = new AbortController();
         const t = setTimeout(()=>ctrl.abort(), timeoutMs);
-        const r = await fetch(u, { signal: ctrl.signal });
+        const r = await fetch(url, { signal: ctrl.signal });
         clearTimeout(t);
-        if(r.ok){
-          const j = await r.json();
-          has = !!(j && j.Location && j.Location.panoId);
-        }
+        if (!r.ok) return false;
+        const j = await r.json();
+        return !!(j && j.Location && j.Location.panoId);
       }catch(e){
-        has = false;
+        return false;
       }
+    }
+
+    // ====== Robust probe: radius + ring search untuk minim false-negative ======
+    async function probeStreetView(lat, lon, {radius=150, timeoutMs=3500} = {}){
+      const key = keyLL(lat, lon, radius);
+      if (svCache.has(key)) return svCache.get(key);
+
+      // 1) Cek titik dengan radius hint (kadang sudah cukup)
+      let url = `https://cbks0.googleapis.com/cbk?output=json&ll=${lat},${lon}&radius=${radius}`;
+      let has = await fetchCBK(url, timeoutMs);
+
+      // 2) Kalau belum ketemu, ring search di sekitar titik (geser 60-150 m, 8 arah)
+      if (!has) {
+        const meters = [60, 100, 150];
+        const dirs = [0,45,90,135,180,225,270,315];
+        for (const m of meters){
+          for (const d of dirs){
+            const [la, lo] = offsetLatLon(lat, lon, m, d);
+            url = `https://cbks0.googleapis.com/cbk?output=json&ll=${la},${lo}&radius=40`;
+            has = await fetchCBK(url, timeoutMs);
+            if (has) break;
+          }
+          if (has) break;
+        }
+      }
+
       svCache.set(key, has);
       return has;
     }
@@ -133,7 +164,7 @@
       lastLat = lat; lastLon = lon;
       btnSV.disabled = false;
 
-      // update teks tombol sesuai ketersediaan SV
+      // Update teks tombol sesuai ketersediaan SV
       const hasSV = await probeStreetView(lat, lon);
       btnSV.textContent = hasSV ? '👁️ Lihat Street View' : '🗺️ Lihat dari Atas';
     }
@@ -218,7 +249,7 @@
             const nama = pickName(p);
             const di   = p?.N_DI || "-";
 
-            // Popup link awal placeholder → akan diupdate saat popup terbuka
+            // Popup link → akan diupdate teksnya saat popup dibuka
             l.bindPopup(`
               <div style="font-size:13px">
                 <b>${nama}</b><br/>
@@ -230,7 +261,6 @@
 
             l.on('click', ()=> setDetail(p, lat, lon));
 
-            // Saat popup dibuka, update teks link sesuai ketersediaan SV
             l.on('popupopen', async (e) => {
               const a = e.popup.getElement().querySelector('.sv-link');
               if(!a) return;
@@ -246,7 +276,8 @@
           map.fitBounds(pointLayer.getBounds(), { maxZoom: 13, padding:[20,20] });
         }catch(e){
           const f0 = feats[0]; const [lon,lat]=f0.geometry.coordinates;
-          map.setView([lat,lat], 14); // fallback
+          map.setView([lat, lon], 14); // fallback yang benar
+          setDetail(f0.properties||{}, lat, lon);
         }
 
         refreshLabels();
