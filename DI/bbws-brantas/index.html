@@ -238,4 +238,69 @@
       .then(gj=>{
         feats = (gj && gj.features) ? gj.features : [];
         if(!feats.length){
-          infoEl.innerHTML='<span style="color:#fca5a5">Tidak ada
+          infoEl.innerHTML='<span style="color:#fca5a5">Tidak ada fitur di file.</span>';
+          return;
+        }
+
+        pointLayer = L.geoJSON(gj, {
+          pointToLayer: (f, latlng) => L.circleMarker(latlng, {
+            radius: 7, color:'#0d9488', weight:1.5, fillColor:'#22c55e', fillOpacity:.95
+          }),
+          onEachFeature: (f, l) => {
+            const [lon, lat] = f.geometry.coordinates;
+            const p = f.properties || {};
+            const nama = pickName(p);
+            const di   = p?.N_DI || "-";
+
+            l.bindPopup(`
+              <div style="font-size:13px">
+                <b>${nama}</b><br/>
+                <span style="color:#94a3b8">${di}</span><br/>
+                ${lat.toFixed(6)}, ${lon.toFixed(6)}<br/>
+                <a href="#" class="sv-link" data-lat="${lat}" data-lon="${lon}" style="color:#1d5fd1;font-weight:700" title="Shift+klik untuk paksa Street View">👁️ Buka Google</a>
+              </div>
+            `);
+
+            l.on('click', ()=> setDetail(p, lat, lon));
+
+            l.on('popupopen', async (e) => {
+              const a = e.popup.getElement().querySelector('.sv-link');
+              if(!a) return;
+              const plat = parseFloat(a.dataset.lat);
+              const plon = parseFloat(a.dataset.lon);
+              const hasSV = await probeStreetView(plat, plon);
+              a.textContent = hasSV ? '👁️ Lihat Street View' : '🗺️ Lihat dari Atas';
+            });
+          }
+        }).addTo(map);
+
+        try{
+          map.fitBounds(pointLayer.getBounds(), { maxZoom: 13, padding:[20,20] });
+        }catch(e){
+          const f0 = feats[0]; const [lon,lat]=f0.geometry.coordinates;
+          map.setView([lat, lon], 14);
+          setDetail(f0.properties||{}, lat, lon);
+        }
+
+        refreshLabels();
+      })
+      .catch(err=>{
+        console.error(err);
+        infoEl.innerHTML = '<span style="color:#fca5a5">Gagal memuat <code>bendung_brantas.geojson</code>.</span>';
+      });
+
+    // Delegasi klik link popup → openBestView / paksa SV saat Shift
+    document.addEventListener('click', (ev)=>{
+      const a = ev.target.closest('.sv-link');
+      if(!a) return;
+      ev.preventDefault();
+      const lat = parseFloat(a.dataset.lat);
+      const lon = parseFloat(a.dataset.lon);
+      if(!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+      if (ev.shiftKey) window.open(svUrl(lat, lon), '_blank');
+      else openBestView(lat, lon);
+    });
+  });
+  </script>
+</body>
+</html>
