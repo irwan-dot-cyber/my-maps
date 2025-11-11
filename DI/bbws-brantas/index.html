@@ -60,7 +60,7 @@
   <div class="dock">
     <div class="row">
       <div id="info"><i style="color:#cbd5e1">Belum ada bendung dipilih.</i></div>
-      <button id="btnSV" class="btn" disabled>👁️ Buka Google</button>
+      <button id="btnSV" class="btn" disabled title="Shift+klik untuk paksa Street View">👁️ Buka Google</button>
     </div>
     <div class="hint">Data: <code>bendung_brantas.geojson</code> — kolom: <code>NAMA/N_ASET</code>, <code>N_DI</code>, <code>KEWENANGAN</code></div>
   </div>
@@ -79,14 +79,17 @@
     const btnSV  = document.getElementById('btnSV');
     let lastLat = null, lastLon = null;
 
-    // ====== Street View availability cache ======
+    // ====== Cache ketersediaan Street View ======
     const svCache = new Map(); // key: "lat,lon,radius"
 
     // ====== URL builders ======
-    function svUrl(lat, lon){ return `https://www.google.com/maps?layer=c&cbll=${lat},${lon}`; }
+    function svUrl(lat, lon){
+      // Mode Street View langsung, biarkan Google cari pano terdekat
+      return `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lon}`;
+    }
     function mapTopDownUrl(lat, lon){ return `https://www.google.com/maps?q=${lat},${lon}&t=k&z=18`; }
 
-    // ====== Helpers for cache key & offsets ======
+    // ====== Helpers ======
     function keyLL(lat, lon, r){ return `${lat.toFixed(5)},${lon.toFixed(5)},r${r}`; }
 
     function offsetLatLon(lat, lon, meters, bearingDeg){
@@ -114,23 +117,21 @@
       }
     }
 
-    // ====== Robust probe: radius + ring search untuk minim false-negative ======
-    async function probeStreetView(lat, lon, {radius=150, timeoutMs=3500} = {}){
+    // ====== Probe Street View: radius besar + ring-search ======
+    async function probeStreetView(lat, lon, {radius=300, timeoutMs=4500} = {}){
       const key = keyLL(lat, lon, radius);
       if (svCache.has(key)) return svCache.get(key);
 
-      // 1) Cek titik dengan radius hint (kadang sudah cukup)
       let url = `https://cbks0.googleapis.com/cbk?output=json&ll=${lat},${lon}&radius=${radius}`;
       let has = await fetchCBK(url, timeoutMs);
 
-      // 2) Kalau belum ketemu, ring search di sekitar titik (geser 60-150 m, 8 arah)
       if (!has) {
-        const meters = [60, 100, 150];
-        const dirs = [0,45,90,135,180,225,270,315];
+        const meters = [80, 150, 220, 300];
+        const dirs = [0,36,72,108,144,180,216,252,288,324]; // 10 arah
         for (const m of meters){
           for (const d of dirs){
             const [la, lo] = offsetLatLon(lat, lon, m, d);
-            url = `https://cbks0.googleapis.com/cbk?output=json&ll=${la},${lo}&radius=40`;
+            url = `https://cbks0.googleapis.com/cbk?output=json&ll=${la},${lo}&radius=60`;
             has = await fetchCBK(url, timeoutMs);
             if (has) break;
           }
@@ -164,13 +165,15 @@
       lastLat = lat; lastLon = lon;
       btnSV.disabled = false;
 
-      // Update teks tombol sesuai ketersediaan SV
       const hasSV = await probeStreetView(lat, lon);
       btnSV.textContent = hasSV ? '👁️ Lihat Street View' : '🗺️ Lihat dari Atas';
     }
 
-    btnSV.addEventListener('click', () => {
-      if(lastLat!=null && lastLon!=null) openBestView(lastLat, lastLon);
+    // Shift+klik = paksa Street View (skip probe)
+    btnSV.addEventListener('click', (ev) => {
+      if(lastLat==null || lastLon==null) return;
+      if (ev.shiftKey) window.open(svUrl(lastLat, lastLon), '_blank');
+      else openBestView(lastLat, lastLon);
     });
 
     // ===== Label declutter =====
@@ -235,68 +238,4 @@
       .then(gj=>{
         feats = (gj && gj.features) ? gj.features : [];
         if(!feats.length){
-          infoEl.innerHTML='<span style="color:#fca5a5">Tidak ada fitur di file.</span>';
-          return;
-        }
-
-        pointLayer = L.geoJSON(gj, {
-          pointToLayer: (f, latlng) => L.circleMarker(latlng, {
-            radius: 7, color:'#0d9488', weight:1.5, fillColor:'#22c55e', fillOpacity:.95
-          }),
-          onEachFeature: (f, l) => {
-            const [lon, lat] = f.geometry.coordinates;
-            const p = f.properties || {};
-            const nama = pickName(p);
-            const di   = p?.N_DI || "-";
-
-            // Popup link → akan diupdate teksnya saat popup dibuka
-            l.bindPopup(`
-              <div style="font-size:13px">
-                <b>${nama}</b><br/>
-                <span style="color:#94a3b8">${di}</span><br/>
-                ${lat.toFixed(6)}, ${lon.toFixed(6)}<br/>
-                <a href="#" class="sv-link" data-lat="${lat}" data-lon="${lon}" style="color:#1d5fd1;font-weight:700">👁️ Buka Google</a>
-              </div>
-            `);
-
-            l.on('click', ()=> setDetail(p, lat, lon));
-
-            l.on('popupopen', async (e) => {
-              const a = e.popup.getElement().querySelector('.sv-link');
-              if(!a) return;
-              const plat = parseFloat(a.dataset.lat);
-              const plon = parseFloat(a.dataset.lon);
-              const hasSV = await probeStreetView(plat, plon);
-              a.textContent = hasSV ? '👁️ Lihat Street View' : '🗺️ Lihat dari Atas';
-            });
-          }
-        }).addTo(map);
-
-        try{
-          map.fitBounds(pointLayer.getBounds(), { maxZoom: 13, padding:[20,20] });
-        }catch(e){
-          const f0 = feats[0]; const [lon,lat]=f0.geometry.coordinates;
-          map.setView([lat, lon], 14); // fallback yang benar
-          setDetail(f0.properties||{}, lat, lon);
-        }
-
-        refreshLabels();
-      })
-      .catch(err=>{
-        console.error(err);
-        infoEl.innerHTML = '<span style="color:#fca5a5">Gagal memuat <code>bendung_brantas.geojson</code>.</span>';
-      });
-
-    // Delegasi klik link popup → openBestView
-    document.addEventListener('click', (ev)=>{
-      const a = ev.target.closest('.sv-link');
-      if(!a) return;
-      ev.preventDefault();
-      const lat = parseFloat(a.dataset.lat);
-      const lon = parseFloat(a.dataset.lon);
-      if(Number.isFinite(lat) && Number.isFinite(lon)) openBestView(lat, lon);
-    });
-  });
-  </script>
-</body>
-</html>
+          infoEl.innerHTML='<span style="color:#fca5a5">Tidak ada
