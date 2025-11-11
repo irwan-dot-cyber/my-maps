@@ -12,7 +12,7 @@
       --border:rgba(255,255,255,.12); --hdrH:64px; --brand:#0d47a1; --brand2:#123b88;
     }
     html,body{height:100%;margin:0;font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
-    /* Header seperti landing page */
+    /* Header (samain seperti landing page) */
     .header{
       position:fixed;left:0;right:0;top:0;height:var(--hdrH);z-index:900;
       display:flex;align-items:center;gap:12px;padding:10px 14px;
@@ -48,8 +48,8 @@
     <div class="brand">
       <img src="assets/LogoPUPR.png" alt="PUPR"/>
       <div>
-        <div class="title">BBWS Brantas Bendung</div>
-        <div class="subtitle">Klik titik → Street View (fallback: tampak atas)</div>
+        <div class="title">BBWS Brantas — Preview Bendung</div>
+        <div class="subtitle">Klik titik → Street View bila ada (fallback: tampak atas)</div>
       </div>
     </div>
   </div>
@@ -79,46 +79,48 @@
     const btnSV  = document.getElementById('btnSV');
     let lastLat = null, lastLon = null;
 
-    // URL builders
-    function svUrl(lat, lon){
-      // Street View langsung (kalau ada)
-      return `https://www.google.com/maps?layer=c&cbll=${lat},${lon}`;
-    }
-    function mapTopDownUrl(lat, lon){
-      // Tampilan atas (satellite), zoom 18
-      return `https://www.google.com/maps?q=${lat},${lon}&t=k&z=18`;
-    }
+    // Cache ketersediaan Street View biar hemat request
+    const svCache = new Map(); // key: "lat,lon" dibulatkan
 
-    // Cek ketersediaan Street View (tanpa API key).
-    // Jika gagal (CORS/time out) → anggap tidak ada & fallback ke tampak atas.
+    // URL builders
+    function svUrl(lat, lon){ return `https://www.google.com/maps?layer=c&cbll=${lat},${lon}`; }
+    function mapTopDownUrl(lat, lon){ return `https://www.google.com/maps?q=${lat},${lon}&t=k&z=18`; }
+
+    // Kunci cache dibulatkan biar konsisten
+    function keyLL(lat, lon){ return `${lat.toFixed(5)},${lon.toFixed(5)}`; }
+
     async function probeStreetView(lat, lon, timeoutMs = 2000){
+      const key = keyLL(lat, lon);
+      if(svCache.has(key)) return svCache.get(key);
+
       const u = `https://cbks0.googleapis.com/cbk?output=json&ll=${lat},${lon}`;
+      let has = false;
       try{
         const ctrl = new AbortController();
         const t = setTimeout(()=>ctrl.abort(), timeoutMs);
         const r = await fetch(u, { signal: ctrl.signal });
         clearTimeout(t);
-        if(!r.ok) return false;
-        const j = await r.json();
-        // Ada panoId → Street View tersedia
-        return !!(j && j.Location && j.Location.panoId);
+        if(r.ok){
+          const j = await r.json();
+          has = !!(j && j.Location && j.Location.panoId);
+        }
       }catch(e){
-        return false;
+        has = false;
       }
+      svCache.set(key, has);
+      return has;
     }
 
     async function openBestView(lat, lon){
-      // Prioritaskan Street View jika ada; kalau tidak, buka tampak atas
       const hasSV = await probeStreetView(lat, lon);
-      const url = hasSV ? svUrl(lat, lon) : mapTopDownUrl(lat, lon);
-      window.open(url, '_blank');
+      window.open(hasSV ? svUrl(lat, lon) : mapTopDownUrl(lat, lon), '_blank');
     }
 
     function pickName(p){
       return (p?.NAMA && p.NAMA !== "Bendung") ? p.NAMA : (p?.N_ASET || "Bendung");
     }
 
-    function setDetail(p, lat, lon){
+    async function setDetail(p, lat, lon){
       const nama = pickName(p);
       const di   = p?.N_DI || "-";
       const kew  = p?.KEWENANGAN || "-";
@@ -130,18 +132,21 @@
       `;
       lastLat = lat; lastLon = lon;
       btnSV.disabled = false;
+
+      // update teks tombol sesuai ketersediaan SV
+      const hasSV = await probeStreetView(lat, lon);
+      btnSV.textContent = hasSV ? '👁️ Lihat Street View' : '🗺️ Lihat dari Atas';
     }
 
     btnSV.addEventListener('click', () => {
       if(lastLat!=null && lastLon!=null) openBestView(lastLat, lastLon);
     });
 
-    // ===== Layers =====
+    // ===== Label declutter =====
     let pointLayer = null;
     const labelsLayer = L.layerGroup().addTo(map);
-    let feats = []; // cache fitur buat label refresh
+    let feats = [];
 
-    // ===== Label refresher (declutter) =====
     function refreshLabels(){
       labelsLayer.clearLayers();
       const z = map.getZoom();
@@ -212,6 +217,8 @@
             const p = f.properties || {};
             const nama = pickName(p);
             const di   = p?.N_DI || "-";
+
+            // Popup link awal placeholder → akan diupdate saat popup terbuka
             l.bindPopup(`
               <div style="font-size:13px">
                 <b>${nama}</b><br/>
@@ -220,7 +227,18 @@
                 <a href="#" class="sv-link" data-lat="${lat}" data-lon="${lon}" style="color:#1d5fd1;font-weight:700">👁️ Buka Google</a>
               </div>
             `);
+
             l.on('click', ()=> setDetail(p, lat, lon));
+
+            // Saat popup dibuka, update teks link sesuai ketersediaan SV
+            l.on('popupopen', async (e) => {
+              const a = e.popup.getElement().querySelector('.sv-link');
+              if(!a) return;
+              const plat = parseFloat(a.dataset.lat);
+              const plon = parseFloat(a.dataset.lon);
+              const hasSV = await probeStreetView(plat, plon);
+              a.textContent = hasSV ? '👁️ Lihat Street View' : '🗺️ Lihat dari Atas';
+            });
           }
         }).addTo(map);
 
@@ -228,7 +246,7 @@
           map.fitBounds(pointLayer.getBounds(), { maxZoom: 13, padding:[20,20] });
         }catch(e){
           const f0 = feats[0]; const [lon,lat]=f0.geometry.coordinates;
-          map.setView([lat,lon], 14); setDetail(f0.properties||{}, lat, lon);
+          map.setView([lat,lat], 14); // fallback
         }
 
         refreshLabels();
