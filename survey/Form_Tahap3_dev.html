@@ -211,10 +211,13 @@
 </div>
 
 <script>
-/* ===== CONFIG Tahap 3 ===== */
-// ganti URL di bawah dengan Web App Apps Script Tahap 3 lo
-const DATA_URL = 'https://script.google.com/macros/s/AKfycbzJWczpH10Ccp_9Kh2gPlXFbjXzbbb1KNvEqgaDiBISc5OhMaUqTtXKui20IRuB6Jp8yQ/exec';
-const ENDPOINT = DATA_URL; // kalau mau lewat proxy, ganti ke URL proxy
+/* ===== CONFIG Tahap 3 (via Cloudflare Worker) ===== */
+// Worker yang forward ke Apps Script + tambahin header CORS
+const PROXY_URL = 'https://gas-proxy2.tuic1677.workers.dev/';
+
+// Semua request browser diarahkan ke PROXY_URL
+const DATA_URL = PROXY_URL;   // untuk GET baseline & history
+const ENDPOINT = PROXY_URL;   // untuk POST submit form
 
 /* ===== Utils ===== */
 const toast = (m)=>{
@@ -355,7 +358,7 @@ lng.addEventListener('change', tryUpdateFromInputs);
 let INDEX={};
 async function loadData(){
   try{
-    const url = DATA_URL + (DATA_URL.includes('?')?'&':'?') + 't=' + Date.now();
+    const url = DATA_URL + (DATA_URL.endsWith('/') ? '' : '/') + '?t=' + Date.now();
     const resp = await fetch(url,{cache:'no-store'});
     const raw = await resp.text();
     const cleaned = raw.replace(/^\)\]\}'\s*/, '');
@@ -530,7 +533,8 @@ function renderHistoryPhotos(photos){
 
 async function fetchHistory(bws, p, k, d){
   const qs = new URLSearchParams({fn:'history', bws, prov:p, kab:k, di:d});
-  const url = DATA_URL + (DATA_URL.includes('?')?'&':'?') + qs.toString() + '&t=' + Date.now();
+  const base = DATA_URL.endsWith('/') ? DATA_URL : DATA_URL + '/';
+  const url = base + '?' + qs.toString() + '&t=' + Date.now();
   const res = await fetch(url, {cache:'no-store'});
   try{
     const j=await res.json();
@@ -654,7 +658,7 @@ form.addEventListener('submit', async (e)=>{
 
   let b64='', photo=null;
   if (selectedFile) {
-    photo = await compressImage(selectedFile,{maxDim:2000,quality:0.82});
+    photo = await compressImage(selectedFile,{maxDim=2000,quality=0.82});
     const dt = new DataTransfer();
     dt.items.add(photo);
     fileInput.files = dt.files;
