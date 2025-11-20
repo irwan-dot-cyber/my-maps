@@ -11,7 +11,6 @@
     *{box-sizing:border-box}
     body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;background:var(--bg);color:#e5e7eb}
 
-    /* HEADER Tahap 3 */
     header{
       padding:14px 18px;
       border-bottom:1px solid #1f2937;
@@ -212,142 +211,151 @@
 
 <script>
 /* ===== CONFIG Tahap 3 (via Cloudflare Worker) ===== */
-// Worker yang forward ke Apps Script + tambahin header CORS
-const PROXY_URL = 'https://gas-proxy2.tuic1677.workers.dev/';
-
-// Semua request browser diarahkan ke PROXY_URL
-const DATA_URL = PROXY_URL;   // untuk GET baseline & history
-const ENDPOINT = PROXY_URL;   // untuk POST submit form
+var DATA_URL = 'https://gas-proxy2.tuic1677.workers.dev';
+var ENDPOINT = DATA_URL;
 
 /* ===== Utils ===== */
-const toast = (m)=>{
-  const t=document.getElementById('toast');
+function toast(m){
+  var t=document.getElementById('toast');
   t.textContent=m;
   t.style.display='block';
   clearTimeout(window.__t);
-  window.__t=setTimeout(()=>t.style.display='none',4200);
-};
-function fillSelect(el, items, ph='-- pilih --'){
+  window.__t=setTimeout(function(){t.style.display='none';},4200);
+}
+function fillSelect(el, items, ph){
+  if(typeof ph==='undefined') ph='-- pilih --';
   el.innerHTML='';
   if(ph && !el.multiple){
-    const o=document.createElement('option');
+    var o=document.createElement('option');
     o.value=''; o.textContent=ph; el.appendChild(o);
   }
-  (items||[]).forEach(v=>{
-    const o=document.createElement('option');
-    o.value=o.textContent=v;
+  (items||[]).forEach(function(v){
+    var o=document.createElement('option');
+    o.value=v; o.textContent=v;
     el.appendChild(o);
   });
   el.disabled=!(items&&items.length);
 }
-const titleCase = s => String(s||'').split(/(\s+|[-/])/).map(tok=>{
-  if(/^\s+$/.test(tok)||tok==='-'||tok==='/') return tok;
-  const up = tok.toUpperCase();
-  if (up==='BBWS'||up==='BWS') return up;
-  if (/^(D\.?I\.?|DI)$/.test(up)) return 'D.I.';
-  return tok.charAt(0).toUpperCase()+tok.slice(1).toLowerCase();
-}).join('');
-const $overlay=document.getElementById('uploadOverlay'), $bar=document.getElementById('progressBar');
-function setUploadingUI({show,percent}){
-  if(typeof percent==='number')
-    $bar.style.width=Math.max(0,Math.min(100,Math.round(percent)))+'%';
+function titleCase(s){
+  return String(s||'').split(/(\s+|[-/])/).map(function(tok){
+    if(/^\s+$/.test(tok)||tok==='-'||tok==='/') return tok;
+    var up = tok.toUpperCase();
+    if (up==='BBWS'||up==='BWS') return up;
+    if (/^(D\.?I\.?|DI)$/.test(up)) return 'D.I.';
+    return tok.charAt(0).toUpperCase()+tok.slice(1).toLowerCase();
+  }).join('');
+}
+var $overlay=document.getElementById('uploadOverlay');
+var $bar=document.getElementById('progressBar');
+function setUploadingUI(opts){
+  var show=opts.show;
+  var percent=opts.percent;
+  if(typeof percent==='number'){
+    var w=Math.max(0,Math.min(100,Math.round(percent)))+'%';
+    $bar.style.width=w;
+  }
   $overlay.style.display=show?'flex':'none';
 }
 function disableForm(b){
-  document.querySelectorAll('#surveyForm input, #surveyForm select, #surveyForm button')
-    .forEach(e=>e.disabled=!!b);
+  var els=document.querySelectorAll('#surveyForm input, #surveyForm select, #surveyForm button');
+  els.forEach(function(e){ e.disabled=!!b; });
 }
 
 /* ===== Map ===== */
-const baseOSM=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+var baseOSM=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
   maxZoom:20, attribution:'© OpenStreetMap'
 });
-const baseImg=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
+var baseImg=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
   maxZoom:20, attribution:'Tiles © Esri/Maxar'
 });
-const map=L.map('map',{zoomControl:true,layers:[baseOSM]});
+var map=L.map('map',{zoomControl:true,layers:[baseOSM]});
 L.control.layers({OSM:baseOSM,'Esri Imagery':baseImg}, {}, {position:'topright', collapsed:false}).addTo(map);
 map.setView([-2.5,118],5);
-const coordsTxt=document.getElementById('coords');
+var coordsTxt=document.getElementById('coords');
 function upd(){
-  const c=map.getCenter();
-  coordsTxt.textContent=`Lat: ${c.lat.toFixed(6)}, Lng: ${c.lng.toFixed(6)}`;
+  var c=map.getCenter();
+  coordsTxt.textContent='Lat: '+c.lat.toFixed(6)+', Lng: '+c.lng.toFixed(6);
 }
 map.on('move',upd); map.whenReady(upd);
 
 /* ===== Marker utk titik terpilih ===== */
-let pickedMarker = null;
-const pickedIcon = L.icon({
+var pickedMarker = null;
+var pickedIcon = L.icon({
   iconUrl: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
   iconSize: [25,41],
   iconAnchor: [12,41],
   shadowUrl: 'https://unpkg.com/leaflet/dist/images/marker-shadow.png',
   shadowSize: [41,41]
 });
-function showPicked(lat, lng, {bounce=true, zoom=null}={}){
-  if(!Number.isFinite(lat) || !Number.isFinite(lng)) return;
-  const ll = L.latLng(lat, lng);
+function showPicked(lat, lng, opts){
+  opts = opts || {};
+  var bounce = (typeof opts.bounce==='undefined')?true:opts.bounce;
+  var zoom   = (typeof opts.zoom==='undefined')?null:opts.zoom;
+  if(!isFinite(lat) || !isFinite(lng)) return;
+  var ll = L.latLng(lat, lng);
   if(!pickedMarker){
     pickedMarker = L.marker(ll, {icon:pickedIcon}).addTo(map);
   }else{
     pickedMarker.setLatLng(ll);
   }
-  const el = pickedMarker._icon;
+  var el = pickedMarker._icon;
   if (bounce && el){
     el.classList.remove('bump');
     void el.offsetWidth;
     el.classList.add('bump');
   }
-  if(zoom!=null){
+  if(zoom!==null){
     map.setView(ll, zoom);
   }
 }
 
 /* ===== DOM refs ===== */
-const balai=document.getElementById('balai'),
-      prov=document.getElementById('prov'),
-      kab=document.getElementById('kab'),
-      di=document.getElementById('di');
-const lat=document.getElementById('lat'),
-      lng=document.getElementById('lng'),
-      form=document.getElementById('surveyForm'),
-      btnSubmit=document.getElementById('btnSubmit');
-const coordBadge=document.getElementById('coordBadge'),
-      coordBadgeText=document.getElementById('coordBadgeText');
-const btnPick   = document.getElementById('btnPick');
-const btnPan    = document.getElementById('btnPan');
-const btnLocate = document.getElementById('btnLocate');
+var balai=document.getElementById('balai'),
+    prov=document.getElementById('prov'),
+    kab=document.getElementById('kab'),
+    di=document.getElementById('di');
+var lat=document.getElementById('lat'),
+    lng=document.getElementById('lng'),
+    form=document.getElementById('surveyForm'),
+    btnSubmit=document.getElementById('btnSubmit');
+var coordBadge=document.getElementById('coordBadge'),
+    coordBadgeText=document.getElementById('coordBadgeText');
+var btnPick   = document.getElementById('btnPick');
+var btnPan    = document.getElementById('btnPan');
+var btnLocate = document.getElementById('btnLocate');
 
 /* ===== Tombol map ===== */
-btnLocate.addEventListener('click',()=>{
+btnLocate.addEventListener('click',function(){
   map.locate({setView:true,maxZoom:17,enableHighAccuracy:true});
 });
-map.on('locationfound', (e)=>{
+map.on('locationfound', function(e){
   lat.value = e.latitude.toFixed(6);
   lng.value = e.longitude.toFixed(6);
   showPicked(e.latitude, e.longitude, {bounce:true, zoom:17});
 });
-map.on('locationerror',()=>alert('Izin lokasi ditolak. Geser peta manual.'));
+map.on('locationerror',function(){
+  alert('Izin lokasi ditolak. Geser peta manual.');
+});
 
-btnPick.addEventListener('click',()=>{
-  const c=map.getCenter();
+btnPick.addEventListener('click',function(){
+  var c=map.getCenter();
   lat.value=c.lat.toFixed(6);
   lng.value=c.lng.toFixed(6);
   showPicked(c.lat, c.lng, {bounce:true});
 });
 
-btnPan.addEventListener('click',()=>{
-  const la=+lat.value, lo=+lng.value;
-  if(!Number.isNaN(la)&&!Number.isNaN(lo)){
+btnPan.addEventListener('click',function(){
+  var la=+lat.value, lo=+lng.value;
+  if(!isNaN(la)&&!isNaN(lo)){
     showPicked(la, lo, {bounce:true, zoom:Math.max(map.getZoom(),16)});
   }
 });
 
 /* update marker jika user ketik koordinat manual */
 function tryUpdateFromInputs(){
-  const la = parseFloat(lat.value),
-        lo = parseFloat(lng.value);
-  if(Number.isFinite(la) && Number.isFinite(lo)){
+  var la = parseFloat(lat.value),
+      lo = parseFloat(lng.value);
+  if(isFinite(la) && isFinite(lo)){
     showPicked(la, lo, {bounce:false});
   }
 }
@@ -355,60 +363,64 @@ lat.addEventListener('change', tryUpdateFromInputs);
 lng.addEventListener('change', tryUpdateFromInputs);
 
 /* ===== Baseline (BWS, Prov, Kab, DI dari sheet) ===== */
-let INDEX={};
+var INDEX={};
 async function loadData(){
   try{
-    const url = DATA_URL + (DATA_URL.endsWith('/') ? '' : '/') + '?t=' + Date.now();
-    const resp = await fetch(url,{cache:'no-store'});
-    const raw = await resp.text();
-    const cleaned = raw.replace(/^\)\]\}'\s*/, '');
-    let rows = JSON.parse(cleaned);
+    var url = DATA_URL + '?t=' + Date.now();
+    var resp = await fetch(url,{cache:'no-store'});
+    var raw = await resp.text();
+    var cleaned = raw.replace(/^\)\]\}'\s*/, '');
+    var rows = JSON.parse(cleaned);
     if(!Array.isArray(rows)){
       toast('⚠️ Baseline kosong/invalid.');
       console.error(rows);
       return;
     }
     INDEX={};
-    rows.forEach(row=>{
-      const BWS = titleCase(
+    rows.forEach(function(row){
+      var BWS = titleCase(
         row['B/BWS'] ||
         row['B/BWS PELAKSANA'] ||
         row['BWS'] ||
         row['Balai']
       );
-      const PROV = titleCase(
+      var PROV = titleCase(
         row['Provinsi'] ||
         row['PROVINSI']
       );
-      const KAB = titleCase(
+      var KAB = titleCase(
         row['Kab/Kota'] ||
         row['KABUPATEN'] ||
         row['Kabupaten']
       );
-      const DI  = titleCase(
+      var DI  = titleCase(
         row['Nama DI'] ||
         row['NAMA DI/DIR'] ||
         row['nama di'] ||
         row['DI'] ||
         row['Paket']
       );
-      const KEC  = row['Kec']  || row['KECAMATAN'] || row['Kecamatan'] || '';
-      const DESA = row['Desa'] || row['DESA']      || '';
+      var KEC  = row['Kec']  || row['KECAMATAN'] || row['Kecamatan'] || '';
+      var DESA = row['Desa'] || row['DESA']      || '';
 
       if(!(BWS && PROV && KAB && DI)) return;
 
-      INDEX[BWS] ??= {};
-      INDEX[BWS][PROV] ??= {};
-      INDEX[BWS][PROV][KAB] ??= {};
-      INDEX[BWS][PROV][KAB][DI] ??= {kecamatan:new Set(), desa:new Set()};
+      if(!INDEX[BWS]) INDEX[BWS]={};
+      if(!INDEX[BWS][PROV]) INDEX[BWS][PROV]={};
+      if(!INDEX[BWS][PROV][KAB]) INDEX[BWS][PROV][KAB]={};
+      if(!INDEX[BWS][PROV][KAB][DI]) INDEX[BWS][PROV][KAB][DI]={kecamatan:new Set(), desa:new Set()};
 
-      (String(KEC).split(/\s*[,;/]\s*|[\r\n]+/).filter(Boolean))
-        .forEach(k=>INDEX[BWS][PROV][KAB][DI].kecamatan.add(titleCase(k)));
-      (String(DESA).split(/\s*[,;/]\s*|[\r\n]+/).filter(Boolean))
-        .forEach(d=>INDEX[BWS][PROV][KAB][DI].desa.add(titleCase(d)));
+      String(KEC).split(/\s*[,;/]\s*|[\r\n]+/).filter(Boolean)
+        .forEach(function(kec){
+          INDEX[BWS][PROV][KAB][DI].kecamatan.add(titleCase(kec));
+        });
+      String(DESA).split(/\s*[,;/]\s*|[\r\n]+/).filter(Boolean)
+        .forEach(function(desa){
+          INDEX[BWS][PROV][KAB][DI].desa.add(titleCase(desa));
+        });
     });
     fillSelect(balai, Object.keys(INDEX).sort(), '-- pilih B/BWS --');
-    prov.disabled=kab.disabled=di.disabled=true;
+    prov.disabled=true; kab.disabled=true; di.disabled=true;
   }catch(e){
     console.error(e);
     toast('⚠️ Gagal memuat baseline.');
@@ -417,15 +429,18 @@ async function loadData(){
 
 /* ===== Badge & kunci koordinat ===== */
 function setCoordBadge(type, text){
-  coordBadge.querySelector('.dot')?.classList.remove('green','orange','gray');
-  const dot = coordBadge.querySelector('.dot') || document.createElement('span');
-  dot.className = 'dot ' + (type==='locked' ? 'green' : type==='none' ? 'orange' : 'gray');
-  if (!coordBadge.contains(dot)) coordBadge.prepend(dot);
+  var dotEl = coordBadge.querySelector('.dot');
+  if(dotEl){
+    dotEl.classList.remove('green','orange','gray');
+    if(type==='locked') dotEl.classList.add('green');
+    else if(type==='none') dotEl.classList.add('orange');
+    else dotEl.classList.add('gray');
+  }
   coordBadgeText.textContent = text;
 }
 function setCoordLock(locked, la, ln){
   if (locked) {
-    if (Number.isFinite(la) && Number.isFinite(ln)) {
+    if (isFinite(la) && isFinite(ln)) {
       lat.value = Number(la).toFixed(6);
       lng.value = Number(ln).toFixed(6);
       showPicked(Number(la), Number(ln), {bounce:false, zoom:17});
@@ -441,8 +456,8 @@ function setCoordLock(locked, la, ln){
 }
 
 /* ===== Cascade dropdown ===== */
-balai.addEventListener('change', ()=>{
-  const b=balai.value;
+balai.addEventListener('change', function(){
+  var b=balai.value;
   if(!b){
     fillSelect(prov,[], '-- pilih Provinsi --');
     prov.disabled=true;
@@ -455,11 +470,10 @@ balai.addEventListener('change', ()=>{
   fillSelect(kab,[], '-- pilih Kab/Kota --'); kab.disabled=true;
   fillSelect(di,[], '-- pilih DI --'); di.disabled=true;
 });
-prov.addEventListener('change', ()=>{
-  const b=balai.value, p=prov.value;
+prov.addEventListener('change', function(){
+  var b=balai.value, p=prov.value;
   if(!p){
-    fillSelect(kab,[], '-- pilih Kab/Kota --');
-    kab.disabled=true;
+    fillSelect(kab,[], '-- pilih Kab/Kota --'); kab.disabled=true;
     fillSelect(di,[], '-- pilih DI --'); di.disabled=true;
     return;
   }
@@ -467,11 +481,10 @@ prov.addEventListener('change', ()=>{
   kab.disabled=false;
   fillSelect(di,[], '-- pilih DI --'); di.disabled=true;
 });
-kab.addEventListener('change', ()=>{
-  const b=balai.value, p=prov.value, k=kab.value;
+kab.addEventListener('change', function(){
+  var b=balai.value, p=prov.value, k=kab.value;
   if(!k){
-    fillSelect(di,[], '-- pilih DI --');
-    di.disabled=true;
+    fillSelect(di,[], '-- pilih DI --'); di.disabled=true;
     return;
   }
   fillSelect(di, Object.keys((((INDEX[b]||{})[p]||{})[k]||{})).sort(),'-- pilih DI --');
@@ -479,26 +492,26 @@ kab.addEventListener('change', ()=>{
 });
 
 /* ===== History / Stage ===== */
-let currentStage=null;
-const lastStageEl=document.getElementById('lastStage');
-const historyGals=document.getElementById('historyGals');
+var currentStage=null;
+var lastStageEl=document.getElementById('lastStage');
+var historyGals=document.getElementById('historyGals');
 
 function renderStageButtons(maxStage){
-  const wrap=document.getElementById('stageBtns');
+  var wrap=document.getElementById('stageBtns');
   wrap.innerHTML='';
-  const stages=[25,50,75,100];
-  const nextStage = (maxStage>=100) ? null : (maxStage===0 ? 25 : (maxStage+25));
-  stages.forEach(st=>{
-    const btn=document.createElement('button');
+  var stages=[25,50,75,100];
+  var nextStage = (maxStage>=100) ? null : (maxStage===0 ? 25 : (maxStage+25));
+  stages.forEach(function(st){
+    var btn=document.createElement('button');
     btn.type='button';
-    btn.textContent=`Progres ${st}%`;
-    const enabled = (st===nextStage);
+    btn.textContent='Progres '+st+'%';
+    var enabled = (st===nextStage);
     btn.className = enabled ? 'primary' : 'ghost';
     btn.disabled = !enabled;
-    btn.addEventListener('click', ()=>{
+    btn.addEventListener('click', function(){
       currentStage=st;
       btnSubmit.disabled=false;
-      toast(`Stage dipilih: ${st}%`);
+      toast('Stage dipilih: '+st+'%');
       updateSubmitState();
     });
     wrap.appendChild(btn);
@@ -509,64 +522,69 @@ function renderStageButtons(maxStage){
 }
 
 function renderHistoryPhotos(photos){
-  const order=[25,50,75,100];
-  let html='', has=false;
-  order.forEach(st=>{
-    const p=photos[String(st)];
+  var order=[25,50,75,100];
+  var html='', has=false;
+  order.forEach(function(st){
+    var p=photos[String(st)];
     if(p&&p.url){
       has=true;
-      html+=`
-        <div style="margin-bottom:10px">
-          <div class="hint">Foto Progres ${st}%:</div>
-          <div class="gallery">
-            <a href="${p.url}" target="_blank" title="${p.name||('Stage '+st)}">
-              <img loading="lazy" src="${p.url}" alt="Progres ${st}%"/>
-            </a>
-          </div>
-        </div>`;
+      html+=
+        '<div style="margin-bottom:10px">'+
+          '<div class="hint">Foto Progres '+st+'%:</div>'+
+          '<div class="gallery">'+
+            '<a href="'+p.url+'" target="_blank" title="'+(p.name||('Stage '+st))+'">'+
+              '<img loading="lazy" src="'+p.url+'" alt="Progres '+st+'%"/>'+
+            '</a>'+
+          '</div>'+
+        '</div>';
     }
   });
   historyGals.innerHTML = has
     ? html
-    : `<div class="hint muted">Belum ada foto progres untuk kombinasi terpilih.</div>`;
+    : '<div class="hint muted">Belum ada foto progres untuk kombinasi terpilih.</div>';
 }
 
 async function fetchHistory(bws, p, k, d){
-  const qs = new URLSearchParams({fn:'history', bws, prov:p, kab:k, di:d});
-  const base = DATA_URL.endsWith('/') ? DATA_URL : DATA_URL + '/';
-  const url = base + '?' + qs.toString() + '&t=' + Date.now();
-  const res = await fetch(url, {cache:'no-store'});
+  var qs = 'fn=history'
+    +'&bws='+encodeURIComponent(bws)
+    +'&prov='+encodeURIComponent(p)
+    +'&kab='+encodeURIComponent(k)
+    +'&di='+encodeURIComponent(d)
+    +'&t='+Date.now();
+  var url = DATA_URL + '?' + qs;
+  var res = await fetch(url, {cache:'no-store'});
   try{
-    const j=await res.json();
-    return j&&j.ok?j:{ok:false,maxStage:0,coords:null,photos:{}};
-  }catch{
+    var j=await res.json();
+    if(j && j.ok) return j;
+    return {ok:false,maxStage:0,coords:null,photos:{}};
+  }catch(e){
     return {ok:false,maxStage:0,coords:null,photos:{}};
   }
 }
 
 /* === DI dipilih: isi kec/desa, ambil history, kunci koordinat === */
-di.addEventListener('change', async ()=>{
-  const b=balai.value, p=prov.value, k=kab.value, d=di.value;
-  const entry = (((INDEX[b]||{})[p]||{})[k]||{})[d];
+di.addEventListener('change', async function(){
+  var b=balai.value, p=prov.value, k=kab.value, d=di.value;
+  var entry = (((INDEX[b]||{})[p]||{})[k]||{})[d];
 
-  const kecEl = document.getElementById('kecamatan');
-  const desaEl = document.getElementById('desa');
+  var kecEl = document.getElementById('kecamatan');
+  var desaEl = document.getElementById('desa');
 
-  const kecs  = entry ? [...entry.kecamatan] : [];
-  const desas = entry ? [...entry.desa] : [];
+  var kecs  = entry ? Array.from(entry.kecamatan) : [];
+  var desas = entry ? Array.from(entry.desa) : [];
 
   kecEl.value  = (kecs[0]  || '');
   desaEl.value = (desas[0] || '');
 
-  kecEl.placeholder  = kecs.length  > 1 ? `Opsi: ${kecs.join(', ')}`  : '(otomatis/isi manual)';
-  desaEl.placeholder = desas.length > 1 ? `Opsi: ${desas.join(', ')}` : '(otomatis/isi manual)';
+  kecEl.placeholder  = kecs.length  > 1 ? 'Opsi: '+kecs.join(', ')  : '(otomatis/isi manual)';
+  desaEl.placeholder = desas.length > 1 ? 'Opsi: '+desas.join(', ') : '(otomatis/isi manual)';
 
-  const hist = await fetchHistory(b,p,k,d);
+  var hist = await fetchHistory(b,p,k,d);
   lastStageEl.textContent = (hist.maxStage||0) + '%';
   renderHistoryPhotos(hist.photos||{});
   renderStageButtons(hist.maxStage||0);
 
-  const hasCoord = hist.coords && Number.isFinite(hist.coords.lat) && Number.isFinite(hist.coords.lng);
+  var hasCoord = hist.coords && isFinite(hist.coords.lat) && isFinite(hist.coords.lng);
   if (hasCoord){
     setCoordLock(true, hist.coords.lat, hist.coords.lng);
     setCoordBadge('locked','Koordinat: terkunci (pakai entri sebelumnya)');
@@ -578,40 +596,45 @@ di.addEventListener('change', async ()=>{
 });
 
 /* ===== Foto + kompresi ===== */
-let selectedFile=null;
-const fileInput=document.getElementById('fileInput');
-const photoMeta=document.getElementById('photoMeta');
+var selectedFile=null;
+var fileInput=document.getElementById('fileInput');
+var photoMeta=document.getElementById('photoMeta');
 
-document.getElementById('btnCamera').addEventListener('click',()=>{
+document.getElementById('btnCamera').addEventListener('click',function(){
   fileInput.setAttribute('capture','environment');
   fileInput.click();
 });
-document.getElementById('btnGallery').addEventListener('click',()=>{
+document.getElementById('btnGallery').addEventListener('click',function(){
   fileInput.removeAttribute('capture');
   fileInput.click();
 });
-fileInput.addEventListener('change',()=>{
-  selectedFile = fileInput.files?.[0] || null;
+fileInput.addEventListener('change',function(){
+  selectedFile = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
   photoMeta.textContent = selectedFile
-    ? `Dipilih: ${selectedFile.name} • ${(selectedFile.size/1024).toFixed(1)} KB`
+    ? 'Dipilih: '+selectedFile.name+' • '+(selectedFile.size/1024).toFixed(1)+' KB'
     : '';
 });
 
-async function compressImage(file,{maxDim=2000,quality=0.82,mime='image/jpeg'}={}){ 
+async function compressImage(file,opts){
+  opts = opts || {};
+  var maxDim = (typeof opts.maxDim==='number')?opts.maxDim:2000;
+  var quality = (typeof opts.quality==='number')?opts.quality:0.82;
+  var mime = opts.mime || 'image/jpeg';
   try{
     if(!(file&&file.type&&file.type.startsWith('image/'))) return file;
-    const bitmap = await createImageBitmap(file,{imageOrientation:'from-image'});
-    const W=bitmap.width,H=bitmap.height;
-    const s=Math.min(1,maxDim/Math.max(W,H));
-    const w=Math.round(W*s), h=Math.round(H*s);
+    var bitmap = await createImageBitmap(file,{imageOrientation:'from-image'});
+    var W=bitmap.width,H=bitmap.height;
+    var s=Math.min(1,maxDim/Math.max(W,H));
+    var w=Math.round(W*s), h=Math.round(H*s);
     if(s===1 && file.type==='image/jpeg' && file.size<700*1024) return file;
-    const c=document.createElement('canvas');
+    var c=document.createElement('canvas');
     c.width=w; c.height=h;
-    const ctx=c.getContext('2d');
+    var ctx=c.getContext('2d');
     ctx.drawImage(bitmap,0,0,w,h);
-    const blob=await new Promise(r=>c.toBlob(r,mime,quality));
+    var blob=await new Promise(function(r){c.toBlob(r,mime,quality);});
     if(!blob||blob.size>=file.size) return file;
-    const name=(file.name.replace(/\.(jpe?g|png|webp|heic|heif)$/i,'')||'foto')+'.jpg';
+    var baseName=file.name.replace(/\.(jpe?g|png|webp|heic|heif)$/i,'')||'foto';
+    var name=baseName+'.jpg';
     return new File([blob],name,{type:mime});
   }catch(e){
     console.warn('compress fail',e);
@@ -621,7 +644,7 @@ async function compressImage(file,{maxDim=2000,quality=0.82,mime='image/jpeg'}={
 
 /* ===== Validasi tombol Kirim ===== */
 function missingList(){
-  const m = [];
+  var m = [];
   if(!balai.value) m.push('B/BWS');
   if(!prov.value) m.push('Provinsi');
   if(!kab.value)  m.push('Kab/Kota');
@@ -635,44 +658,44 @@ function missingList(){
   return m;
 }
 function updateSubmitState(){
-  const ok = missingList().length === 0;
+  var ok = missingList().length === 0;
   document.getElementById('btnSubmit').disabled = !ok;
 }
 document.getElementById('surveyForm').addEventListener('input', updateSubmitState);
 document.getElementById('surveyForm').addEventListener('change', updateSubmitState);
-btnPick.addEventListener('click', ()=>{ setTimeout(updateSubmitState, 0); });
-btnPan.addEventListener('click',  ()=>{ setTimeout(updateSubmitState, 0); });
+btnPick.addEventListener('click', function(){ setTimeout(updateSubmitState, 0); });
+btnPan.addEventListener('click',  function(){ setTimeout(updateSubmitState, 0); });
 
 /* ===== Submit ===== */
-form.addEventListener('submit', async (e)=>{
+form.addEventListener('submit', async function(e){
   e.preventDefault();
 
-  const miss = missingList();
+  var miss = missingList();
   if (miss.length){
     toast('⚠️ Harus diisi dulu: ' + miss.join(', '));
     updateSubmitState();
     return;
   }
 
-  const b=balai.value, p=prov.value, k=kab.value, d=di.value;
+  var b=balai.value, p=prov.value, k=kab.value, d=di.value;
 
-  let b64='', photo=null;
+  var b64='', photo=null;
   if (selectedFile) {
-    photo = await compressImage(selectedFile,{maxDim=2000,quality=0.82});
-    const dt = new DataTransfer();
+    photo = await compressImage(selectedFile,{maxDim:2000,quality:0.82});
+    var dt = new DataTransfer();
     dt.items.add(photo);
     fileInput.files = dt.files;
-    b64 = await new Promise((res, rej) => {
-      const r = new FileReader();
-      r.onload=()=>res(String(r.result));
+    b64 = await new Promise(function(res, rej){
+      var r = new FileReader();
+      r.onload=function(){res(String(r.result));};
       r.onerror=rej;
       r.readAsDataURL(photo);
     });
-    const kb = (photo.size/1024).toFixed(1);
-    photoMeta.textContent = `Akan dikirim: ${photo.name} • ${kb} KB`;
+    var kb = (photo.size/1024).toFixed(1);
+    photoMeta.textContent = 'Akan dikirim: '+photo.name+' • '+kb+' KB';
   }
 
-  const fd = new FormData(form);
+  var fd = new FormData(form);
   fd.set('progress_stage', String(currentStage));
   if (b64) {
     fd.set('foto_b64', b64);
@@ -682,29 +705,29 @@ form.addEventListener('submit', async (e)=>{
 
   disableForm(true);
   setUploadingUI({show:true, percent:6});
-  const xhr = new XMLHttpRequest();
+  var xhr = new XMLHttpRequest();
   xhr.open('POST', ENDPOINT, true);
-  xhr.upload.onprogress = (ev)=>{
+  xhr.upload.onprogress = function(ev){
     if (ev.lengthComputable)
       setUploadingUI({show:true, percent:(ev.loaded/ev.total)*100});
   };
-  xhr.onloadstart = ()=> setUploadingUI({show:true, percent:5});
-  xhr.onreadystatechange = ()=>{
+  xhr.onloadstart = function(){ setUploadingUI({show:true, percent:5}); };
+  xhr.onreadystatechange = function(){
     if (xhr.readyState === XMLHttpRequest.HEADERS_RECEIVED)
       setUploadingUI({show:true, percent:95});
   };
-  xhr.onerror = ()=>{
+  xhr.onerror = function(){
     setUploadingUI({show:false});
     disableForm(false);
     toast('❌ Gagal kirim (jaringan/proxy).');
   };
-  xhr.onload = async ()=>{
-    let data={};
+  xhr.onload = async function(){
+    var data={};
     try{ data = JSON.parse(xhr.responseText||'{}'); }catch(e){}
     if (xhr.status>=200 && xhr.status<300 && data && data.ok) {
       setUploadingUI({show:true, percent:100});
       toast('✅ Terkirim!');
-      const hist = await fetchHistory(b, p, k, d);
+      var hist = await fetchHistory(b, p, k, d);
       lastStageEl.textContent = (hist.maxStage||0) + '%';
       renderHistoryPhotos(hist.photos||{});
       renderStageButtons(hist.maxStage||0);
@@ -712,7 +735,7 @@ form.addEventListener('submit', async (e)=>{
         setCoordLock(true, hist.coords.lat, hist.coords.lng);
         setCoordBadge('locked','Koordinat: terkunci (pakai entri sebelumnya)');
       }
-      setTimeout(()=>{ setUploadingUI({show:false}); }, 600);
+      setTimeout(function(){ setUploadingUI({show:false}); }, 600);
     } else {
       setUploadingUI({show:false});
       disableForm(false);
@@ -725,7 +748,7 @@ form.addEventListener('submit', async (e)=>{
 });
 
 /* ===== Reset ===== */
-document.getElementById('btnReset').addEventListener('click', ()=>{
+document.getElementById('btnReset').addEventListener('click', function(){
   selectedFile=null;
   photoMeta.textContent='';
   fillSelect(prov,[], '-- pilih Provinsi --'); prov.disabled=true;
