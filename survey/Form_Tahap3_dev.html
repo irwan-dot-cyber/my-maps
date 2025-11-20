@@ -11,7 +11,7 @@
     *{box-sizing:border-box}
     body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;background:var(--bg);color:#e5e7eb}
 
-    /* HEADER (kanan ada tombol Beranda) */
+    /* HEADER Tahap 3 */
     header{
       padding:14px 18px;
       border-bottom:1px solid #1f2937;
@@ -57,7 +57,6 @@
     .gallery img{display:block;width:100%;height:140px;object-fit:cover}
     .muted{opacity:.7}
 
-    /* animasi kecil saat marker dipindah */
     .leaflet-marker-icon.bump{animation:bump .6s ease; transform-origin:bottom center}
     @keyframes bump{
       0%{transform:translateY(0)}
@@ -212,10 +211,10 @@
 </div>
 
 <script>
-/* ===== CONFIG ===== */
-/* TODO: ganti dengan endpoint GAS/proxy lo sendiri */
-const ENDPOINT = 'https://gas-proxy2.tuic1677.workers.dev/'; // POST via proxy
-const DATA_URL = 'https://script.google.com/macros/s/AKfycbwWe8SY1T51LL3yp_OlLlOORuMLjcVkbaL1td5pOm1EX0-POztzV-6CUl-tQo91OMzT/exec'; // GET baseline (B/BWS, Prov, Kab, DI, Kec, Desa)
+/* ===== CONFIG Tahap 3 ===== */
+// ganti URL di bawah dengan Web App Apps Script Tahap 3 lo
+const DATA_URL = 'https://script.google.com/macros/s/AKfycbzJWczpH10Ccp_9Kh2gPlXFbjXzbbb1KNvEqgaDiBISc5OhMaUqTtXKui20IRuB6Jp8yQ/exec';
+const ENDPOINT = DATA_URL; // kalau mau lewat proxy, ganti ke URL proxy
 
 /* ===== Utils ===== */
 const toast = (m)=>{
@@ -273,7 +272,7 @@ function upd(){
 }
 map.on('move',upd); map.whenReady(upd);
 
-/* ===== Marker untuk titik terpilih ===== */
+/* ===== Marker utk titik terpilih ===== */
 let pickedMarker = null;
 const pickedIcon = L.icon({
   iconUrl: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
@@ -301,7 +300,7 @@ function showPicked(lat, lng, {bounce=true, zoom=null}={}){
   }
 }
 
-/* ===== DOM ===== */
+/* ===== DOM refs ===== */
 const balai=document.getElementById('balai'),
       prov=document.getElementById('prov'),
       kab=document.getElementById('kab'),
@@ -316,7 +315,7 @@ const btnPick   = document.getElementById('btnPick');
 const btnPan    = document.getElementById('btnPan');
 const btnLocate = document.getElementById('btnLocate');
 
-/* tombol map */
+/* ===== Tombol map ===== */
 btnLocate.addEventListener('click',()=>{
   map.locate({setView:true,maxZoom:17,enableHighAccuracy:true});
 });
@@ -341,7 +340,7 @@ btnPan.addEventListener('click',()=>{
   }
 });
 
-/* update marker jika user mengetik koordinat manual */
+/* update marker jika user ketik koordinat manual */
 function tryUpdateFromInputs(){
   const la = parseFloat(lat.value),
         lo = parseFloat(lng.value);
@@ -352,7 +351,7 @@ function tryUpdateFromInputs(){
 lat.addEventListener('change', tryUpdateFromInputs);
 lng.addEventListener('change', tryUpdateFromInputs);
 
-/* ===== Baseline (menu BWS, Prov, Kab, DI dari GAS) ===== */
+/* ===== Baseline (BWS, Prov, Kab, DI dari sheet) ===== */
 let INDEX={};
 async function loadData(){
   try{
@@ -368,17 +367,38 @@ async function loadData(){
     }
     INDEX={};
     rows.forEach(row=>{
-      const BWS=titleCase(row['B/BWS PELAKSANA']||row['Balai']||row['BWS']);
-      const PROV=titleCase(row['PROVINSI']||row['Provinsi']);
-      const KAB=titleCase(row['KABUPATEN']||row['Kabupaten']);
-      const DI=titleCase(row['NAMA DI/DIR']||row['nama di']||row['DI']||row['Paket']);
-      const KEC=row['KECAMATAN']||row['Kecamatan']||'';
-      const DESA=row['DESA']||row['Desa']||'';
-      if(!(BWS&&PROV&&KAB&&DI)) return;
+      const BWS = titleCase(
+        row['B/BWS'] ||
+        row['B/BWS PELAKSANA'] ||
+        row['BWS'] ||
+        row['Balai']
+      );
+      const PROV = titleCase(
+        row['Provinsi'] ||
+        row['PROVINSI']
+      );
+      const KAB = titleCase(
+        row['Kab/Kota'] ||
+        row['KABUPATEN'] ||
+        row['Kabupaten']
+      );
+      const DI  = titleCase(
+        row['Nama DI'] ||
+        row['NAMA DI/DIR'] ||
+        row['nama di'] ||
+        row['DI'] ||
+        row['Paket']
+      );
+      const KEC  = row['Kec']  || row['KECAMATAN'] || row['Kecamatan'] || '';
+      const DESA = row['Desa'] || row['DESA']      || '';
+
+      if(!(BWS && PROV && KAB && DI)) return;
+
       INDEX[BWS] ??= {};
       INDEX[BWS][PROV] ??= {};
       INDEX[BWS][PROV][KAB] ??= {};
       INDEX[BWS][PROV][KAB][DI] ??= {kecamatan:new Set(), desa:new Set()};
+
       (String(KEC).split(/\s*[,;/]\s*|[\r\n]+/).filter(Boolean))
         .forEach(k=>INDEX[BWS][PROV][KAB][DI].kecamatan.add(titleCase(k)));
       (String(DESA).split(/\s*[,;/]\s*|[\r\n]+/).filter(Boolean))
@@ -392,7 +412,7 @@ async function loadData(){
   }
 }
 
-/* ===== Helper Badge & Lock ===== */
+/* ===== Badge & kunci koordinat ===== */
 function setCoordBadge(type, text){
   coordBadge.querySelector('.dot')?.classList.remove('green','orange','gray');
   const dot = coordBadge.querySelector('.dot') || document.createElement('span');
@@ -417,12 +437,14 @@ function setCoordLock(locked, la, ln){
   }
 }
 
-/* ===== Cascade ===== */
+/* ===== Cascade dropdown ===== */
 balai.addEventListener('change', ()=>{
   const b=balai.value;
   if(!b){
     fillSelect(prov,[], '-- pilih Provinsi --');
     prov.disabled=true;
+    fillSelect(kab,[], '-- pilih Kab/Kota --'); kab.disabled=true;
+    fillSelect(di,[], '-- pilih DI --'); di.disabled=true;
     return;
   }
   fillSelect(prov, Object.keys(INDEX[b]||{}).sort(),'-- pilih Provinsi --');
@@ -435,6 +457,7 @@ prov.addEventListener('change', ()=>{
   if(!p){
     fillSelect(kab,[], '-- pilih Kab/Kota --');
     kab.disabled=true;
+    fillSelect(di,[], '-- pilih DI --'); di.disabled=true;
     return;
   }
   fillSelect(kab, Object.keys((INDEX[b]||{})[p]||{}).sort(),'-- pilih Kab/Kota --');
@@ -517,7 +540,7 @@ async function fetchHistory(bws, p, k, d){
   }
 }
 
-/* === DI selected: isi kec/desa, ambil history, kunci koordinat === */
+/* === DI dipilih: isi kec/desa, ambil history, kunci koordinat === */
 di.addEventListener('change', async ()=>{
   const b=balai.value, p=prov.value, k=kab.value, d=di.value;
   const entry = (((INDEX[b]||{})[p]||{})[k]||{})[d];
@@ -592,7 +615,7 @@ async function compressImage(file,{maxDim=2000,quality=0.82,mime='image/jpeg'}={
   }
 }
 
-/* ===== Wajib Terisi: toggle tombol Kirim ===== */
+/* ===== Validasi tombol Kirim ===== */
 function missingList(){
   const m = [];
   if(!balai.value) m.push('B/BWS');
@@ -642,8 +665,7 @@ form.addEventListener('submit', async (e)=>{
       r.readAsDataURL(photo);
     });
     const kb = (photo.size/1024).toFixed(1);
-    document.getElementById('photoMeta').textContent =
-      `Akan dikirim: ${photo.name} • ${kb} KB`;
+    photoMeta.textContent = `Akan dikirim: ${photo.name} • ${kb} KB`;
   }
 
   const fd = new FormData(form);
@@ -701,7 +723,7 @@ form.addEventListener('submit', async (e)=>{
 /* ===== Reset ===== */
 document.getElementById('btnReset').addEventListener('click', ()=>{
   selectedFile=null;
-  document.getElementById('photoMeta').textContent='';
+  photoMeta.textContent='';
   fillSelect(prov,[], '-- pilih Provinsi --'); prov.disabled=true;
   fillSelect(kab,[], '-- pilih Kab/Kota --'); kab.disabled=true;
   fillSelect(di,[], '-- pilih DI --'); di.disabled=true;
@@ -712,6 +734,8 @@ document.getElementById('btnReset').addEventListener('click', ()=>{
     map.removeLayer(pickedMarker);
     pickedMarker=null;
   }
+  currentStage=null;
+  renderHistoryPhotos({});
   updateSubmitState();
 });
 
