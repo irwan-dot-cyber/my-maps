@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Form Tahap 3 (Koordinat Auto-Lock)</title>
 
-  <!-- Leaflet via unpkg (biar nggak di-block tracking prevention) -->
+  <!-- Leaflet via unpkg (lebih aman dari tracking prevention) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -130,7 +130,18 @@
         </div>
       </div>
 
+      <div class="row">
         <div>
+          <label>Kecamatan</label>
+          <input id="kecamatan" name="kecamatan" placeholder="Isi manual (lihat Informasi Paket)" required/>
+        </div>
+        <div>
+          <label>Desa/Kelurahan</label>
+          <input id="desa" name="desa" placeholder="Isi manual (lihat Informasi Paket)" required/>
+        </div>
+      </div>
+
+      <div>
         <label>Peta Lokasi</label>
         <div class="mapwrap">
           <div id="map"></div>
@@ -467,14 +478,31 @@ async function loadData(){
       var KEC  = row['Kec']  || row['KECAMATAN'] || row['Kecamatan'] || '';
       var DESA = row['Desa'] || row['DESA']      || '';
 
-      // baca field meta dengan pencocokan longgar (nama kolom boleh beda2 dikit)
+      // meta utama
       var MENU    = pickFieldLike(row, ['menu kegiatan','menu keg']);
       var JENUS   = pickFieldLike(row, ['jenis usulan kegiatan','jenis usulan']);
       var URUT    = pickFieldLike(row, ['urutan prioritas','prioritas']);
-      var IPSEM   = pickFieldLike(row, ['ip padi semula','ip semula']);
-      var IPMEN   = pickFieldLike(row, ['ip padi menjadi','ip menjadi']);
-      var OUTCOME = pickFieldLike(row, ['outcome']);
-      var MASA    = pickFieldLike(row, ['masa pelaksanaan','masa pelaksana']);
+
+      // IP & Outcome: exact key + fallback
+      var IPSEM   =
+        row['IP Padi Semula (%)']   ||
+        row['IP Padi Semula']       ||
+        pickFieldLike(row, ['ip padi semula','ip semula']);
+
+      var IPMEN   =
+        row['IP Padi Menjadi (%)']  ||
+        row['IP Padi Menjadi']      ||
+        pickFieldLike(row, ['ip padi menjadi','ip menjadi']);
+
+      var OUTCOME =
+        row['Outcome (Ha)']         ||
+        row['Outcome']              ||
+        pickFieldLike(row, ['outcome']);
+
+      var MASA    =
+        row['Masa Pelaksanaan']     ||
+        row['MASA PELAKSANAAN']     ||
+        pickFieldLike(row, ['masa pelaksanaan','masa pelaksana']);
 
       if(!(BWS && PROV && KAB && DI)) return;
 
@@ -653,7 +681,7 @@ async function fetchHistory(bws, p, k, d){
   }
 }
 
-/* === DI dipilih: isi kec/desa, info, history, kunci koordinat === */
+/* === DI dipilih: info, history, koordinat (tanpa auto-isi kec/desa) === */
 di.addEventListener('change', async function(){
   var b=balai.value, p=prov.value, k=kab.value, d=di.value;
   var entry = (((INDEX[b]||{})[p]||{})[k]||{})[d];
@@ -664,11 +692,9 @@ di.addEventListener('change', async function(){
   var kecs  = entry && entry.kecamatan ? Array.from(entry.kecamatan) : [];
   var desas = entry && entry.desa ? Array.from(entry.desa) : [];
 
-  kecEl.value  = (kecs[0]  || '');
-  desaEl.value = (desas[0] || '');
-
-  kecEl.placeholder  = kecs.length  > 1 ? 'Opsi: '+kecs.join(', ')  : '(otomatis/isi manual)';
-  desaEl.placeholder = desas.length > 1 ? 'Opsi: '+desas.join(', ') : '(otomatis/isi manual)';
+  // TIDAK lagi auto-isi value, hanya kasih hint di placeholder
+  kecEl.placeholder  = kecs.length  ? 'Opsi: '+kecs.join(', ')  : 'Isi manual (lihat Informasi Paket)';
+  desaEl.placeholder = desas.length ? 'Opsi: '+desas.join(', ') : 'Isi manual (lihat Informasi Paket)';
 
   setInfoPanelFromEntry(entry || null);
 
