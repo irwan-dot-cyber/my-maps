@@ -4,8 +4,11 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Form Tahap 3 (Koordinat Auto-Lock)</title>
+
+  <!-- Leaflet via unpkg (biar nggak di-block tracking prevention) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
   <style>
     :root{--bg:#0b1224;--card:#0f172a;--mut:#9aa3b2;--accent:#22c55e;--warn:#f59e0b}
     *{box-sizing:border-box}
@@ -127,18 +130,7 @@
         </div>
       </div>
 
-      <div class="row">
         <div>
-          <label>Kecamatan</label>
-          <input id="kecamatan" name="kecamatan" placeholder="(otomatis/isi manual)" required/>
-        </div>
-        <div>
-          <label>Desa/Kelurahan</label>
-          <input id="desa" name="desa" placeholder="(otomatis/isi manual)" required/>
-        </div>
-      </div>
-
-      <div>
         <label>Peta Lokasi</label>
         <div class="mapwrap">
           <div id="map"></div>
@@ -256,6 +248,24 @@ function titleCase(s){
     return tok.charAt(0).toUpperCase()+tok.slice(1).toLowerCase();
   }).join('');
 }
+
+// cari field berdasarkan kata kunci di nama kolom (lebih fleksibel)
+function pickFieldLike(row, substrings){
+  substrings = (substrings || []).map(function(s){
+    return String(s).toLowerCase();
+  });
+  for (var key in row){
+    if (!row.hasOwnProperty(key)) continue;
+    var norm = String(key).toLowerCase().replace(/\s+/g,' ').trim();
+    for (var i=0;i<substrings.length;i++){
+      if (norm.indexOf(substrings[i]) !== -1){
+        return row[key];
+      }
+    }
+  }
+  return '';
+}
+
 var $overlay=document.getElementById('uploadOverlay');
 var $bar=document.getElementById('progressBar');
 function setUploadingUI(opts){
@@ -457,13 +467,14 @@ async function loadData(){
       var KEC  = row['Kec']  || row['KECAMATAN'] || row['Kecamatan'] || '';
       var DESA = row['Desa'] || row['DESA']      || '';
 
-      var MENU = row['Menu Kegiatan'] || row['MENU KEGIATAN'] || row['Menu'] || '';
-      var JENUS = row['Jenis Usulan Kegiatan'] || row['JENIS USULAN KEGIATAN'] || '';
-      var URUT = row['Urutan Prioritas'] || row['URUTAN PRIORITAS'] || row['Urutan'] || '';
-      var IPSEM = row['IP Padi Semula (%)'] || row['IP Padi Semula'] || '';
-      var IPMEN = row['IP Padi Menjadi (%)'] || row['IP Padi Menjadi'] || '';
-      var OUTCOME = row['Outcome (Ha)'] || row['Outcome'] || '';
-      var MASA = row['Masa Pelaksanaan'] || row['MASA PELAKSANAAN'] || '';
+      // baca field meta dengan pencocokan longgar (nama kolom boleh beda2 dikit)
+      var MENU    = pickFieldLike(row, ['menu kegiatan','menu keg']);
+      var JENUS   = pickFieldLike(row, ['jenis usulan kegiatan','jenis usulan']);
+      var URUT    = pickFieldLike(row, ['urutan prioritas','prioritas']);
+      var IPSEM   = pickFieldLike(row, ['ip padi semula','ip semula']);
+      var IPMEN   = pickFieldLike(row, ['ip padi menjadi','ip menjadi']);
+      var OUTCOME = pickFieldLike(row, ['outcome']);
+      var MASA    = pickFieldLike(row, ['masa pelaksanaan','masa pelaksana']);
 
       if(!(BWS && PROV && KAB && DI)) return;
 
@@ -485,12 +496,12 @@ async function loadData(){
 
       entry.meta = {
         menuKegiatan: MENU,
-        jenisUsulan: JENUS,
+        jenisUsulan:  JENUS,
         urutanPrioritas: URUT,
-        ipSemula: IPSEM,
-        ipMenjadi: IPMEN,
-        outcome: OUTCOME,
-        masa: MASA
+        ipSemula:   IPSEM,
+        ipMenjadi:  IPMEN,
+        outcome:    OUTCOME,
+        masa:       MASA
       };
     });
     fillSelect(balai, Object.keys(INDEX).sort(), '-- pilih B/BWS --');
