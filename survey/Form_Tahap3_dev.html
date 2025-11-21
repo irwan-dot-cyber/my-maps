@@ -693,8 +693,8 @@ di.addEventListener('change', async function(){
   var desas = entry && entry.desa ? Array.from(entry.desa) : [];
 
   // TIDAK lagi auto-isi value, hanya kasih hint di placeholder
-  kecEl.placeholder  = kecs.length  ? 'Opsi: '+kecs.join(', ')  : 'Isi manual (lihat Informasi Paket)';
-  desaEl.placeholder = desas.length ? 'Opsi: '+desas.join(', ') : 'Isi manual (lihat Informasi Paket)';
+ // kecEl.placeholder  = kecs.length  ? 'Opsi: '+kecs.join(', ')  : 'Isi manual (lihat Informasi Paket)';
+  // desaEl.placeholder = desas.length ? 'Opsi: '+desas.join(', ') : 'Isi manual (lihat Informasi Paket)';
 
   setInfoPanelFromEntry(entry || null);
 
