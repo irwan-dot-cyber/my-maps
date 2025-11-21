@@ -1,18 +1,15 @@
+
 <!doctype html>
 <html lang="id">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Form Tahap 3 (Koordinat Auto-Lock)</title>
- <!-- CSS Leaflet -->
-<link
-  rel="stylesheet"
-  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-/>
-<!-- JS Leaflet -->
-<script
-  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
-</script>
+
+  <!-- Leaflet via unpkg (lebih aman dari tracking prevention) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
   <style>
     :root{--bg:#0b1224;--card:#0f172a;--mut:#9aa3b2;--accent:#22c55e;--warn:#f59e0b}
     *{box-sizing:border-box}
@@ -123,16 +120,27 @@
         </span>
       </div>
 
-      <div class="row">
+      <!-- Informasi Paket dari baseline -->
+      <div id="infoBlock" class="card" style="border-radius:12px;margin-top:6px">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-bottom:1px solid #1f2937">
+          <div style="font-size:14px;font-weight:600">Informasi Paket</div>
+          <button type="button" id="btnInfoToggle" class="ghost" style="padding:4px 10px;font-size:11px">Ciutkan</button>
+        </div>
+        <div id="infoBody" style="padding:10px 14px;font-size:12px;">
+          <div class="hint muted">Pilih B/BWS, Provinsi, Kab/Kota, dan DI untuk melihat detail.</div>
+        </div>
+      </div>
+
+     <!--  <div class="row">
         <div>
           <label>Kecamatan</label>
-          <input id="kecamatan" name="kecamatan" placeholder="(otomatis/isi manual)" required/>
+          <input id="kecamatan" name="kecamatan" placeholder="Isi manual (lihat Informasi Paket)" required/>
         </div>
         <div>
           <label>Desa/Kelurahan</label>
-          <input id="desa" name="desa" placeholder="(otomatis/isi manual)" required/>
+          <input id="desa" name="desa" placeholder="Isi manual (lihat Informasi Paket)" required/>
         </div>
-      </div>
+      </div> -->
 
       <div>
         <label>Peta Lokasi</label>
@@ -218,7 +226,7 @@
 
 <script>
 /* ===== CONFIG Tahap 3 (via Cloudflare Worker) ===== */
-var DATA_URL = 'https://gas-proxy2.tuic1677.workers.dev';
+var DATA_URL = 'https://gas-proxy3.tuic1677.workers.dev';
 var ENDPOINT = DATA_URL;
 
 /* ===== Utils ===== */
@@ -252,6 +260,24 @@ function titleCase(s){
     return tok.charAt(0).toUpperCase()+tok.slice(1).toLowerCase();
   }).join('');
 }
+
+// cari field berdasarkan kata kunci di nama kolom (lebih fleksibel)
+function pickFieldLike(row, substrings){
+  substrings = (substrings || []).map(function(s){
+    return String(s).toLowerCase();
+  });
+  for (var key in row){
+    if (!row.hasOwnProperty(key)) continue;
+    var norm = String(key).toLowerCase().replace(/\s+/g,' ').trim();
+    for (var i=0;i<substrings.length;i++){
+      if (norm.indexOf(substrings[i]) !== -1){
+        return row[key];
+      }
+    }
+  }
+  return '';
+}
+
 var $overlay=document.getElementById('uploadOverlay');
 var $bar=document.getElementById('progressBar');
 function setUploadingUI(opts){
@@ -330,6 +356,49 @@ var coordBadge=document.getElementById('coordBadge'),
 var btnPick   = document.getElementById('btnPick');
 var btnPan    = document.getElementById('btnPan');
 var btnLocate = document.getElementById('btnLocate');
+
+var infoBody = document.getElementById('infoBody');
+var btnInfoToggle = document.getElementById('btnInfoToggle');
+
+/* ===== Toggle info ===== */
+if(btnInfoToggle){
+  btnInfoToggle.addEventListener('click', function(){
+    if(!infoBody) return;
+    var hidden = infoBody.style.display === 'none';
+    infoBody.style.display = hidden ? 'block' : 'none';
+    btnInfoToggle.textContent = hidden ? 'Ciutkan' : 'Tampilkan';
+  });
+}
+
+/* helper untuk panel info */
+function safeText(v){
+  if(v===undefined || v===null) return '-';
+  var s=String(v).trim();
+  return s? s : '-';
+}
+function setInfoPanelFromEntry(entry){
+  if(!infoBody) return;
+  if(!entry){
+    infoBody.innerHTML = '<div class="hint muted">Pilih B/BWS, Provinsi, Kab/Kota, dan DI untuk melihat detail.</div>';
+    return;
+  }
+  var meta = entry.meta || {};
+  var kecs = entry.kecamatan ? Array.from(entry.kecamatan) : [];
+  var desas= entry.desa ? Array.from(entry.desa) : [];
+  var html =
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px 16px">' +
+      '<div><div class="hint">Kecamatan</div><div>'+safeText(kecs[0])+'</div></div>' +
+      '<div><div class="hint">Desa</div><div>'+safeText(desas[0])+'</div></div>' +
+      '<div><div class="hint">Menu Kegiatan</div><div>'+safeText(meta.menuKegiatan)+'</div></div>' +
+      '<div><div class="hint">Jenis Usulan Kegiatan</div><div>'+safeText(meta.jenisUsulan)+'</div></div>' +
+      '<div><div class="hint">Urutan Prioritas</div><div>'+safeText(meta.urutanPrioritas)+'</div></div>' +
+      '<div><div class="hint">IP Padi Semula (%)</div><div>'+safeText(meta.ipSemula)+'</div></div>' +
+      '<div><div class="hint">IP Padi Menjadi (%)</div><div>'+safeText(meta.ipMenjadi)+'</div></div>' +
+      '<div><div class="hint">Outcome (Ha)</div><div>'+safeText(meta.outcome)+'</div></div>' +
+      '<div><div class="hint">Masa Pelaksanaan</div><div>'+safeText(meta.masa)+'</div></div>' +
+    '</div>';
+  infoBody.innerHTML = html;
+}
 
 /* ===== Tombol map ===== */
 btnLocate.addEventListener('click',function(){
@@ -410,21 +479,59 @@ async function loadData(){
       var KEC  = row['Kec']  || row['KECAMATAN'] || row['Kecamatan'] || '';
       var DESA = row['Desa'] || row['DESA']      || '';
 
+      // meta utama
+      var MENU    = pickFieldLike(row, ['menu kegiatan','menu keg']);
+      var JENUS   = pickFieldLike(row, ['jenis usulan kegiatan','jenis usulan']);
+      var URUT    = pickFieldLike(row, ['urutan prioritas','prioritas']);
+
+      // IP & Outcome: exact key + fallback
+      var IPSEM   =
+        row['IP Padi Semula (%)']   ||
+        row['IP Padi Semula']       ||
+        pickFieldLike(row, ['ip padi semula','ip semula']);
+
+      var IPMEN   =
+        row['IP Padi Menjadi (%)']  ||
+        row['IP Padi Menjadi']      ||
+        pickFieldLike(row, ['ip padi menjadi','ip menjadi']);
+
+      var OUTCOME =
+        row['Outcome (Ha)']         ||
+        row['Outcome']              ||
+        pickFieldLike(row, ['outcome']);
+
+      var MASA    =
+        row['Masa Pelaksanaan']     ||
+        row['MASA PELAKSANAAN']     ||
+        pickFieldLike(row, ['masa pelaksanaan','masa pelaksana']);
+
       if(!(BWS && PROV && KAB && DI)) return;
 
       if(!INDEX[BWS]) INDEX[BWS]={};
       if(!INDEX[BWS][PROV]) INDEX[BWS][PROV]={};
       if(!INDEX[BWS][PROV][KAB]) INDEX[BWS][PROV][KAB]={};
-      if(!INDEX[BWS][PROV][KAB][DI]) INDEX[BWS][PROV][KAB][DI]={kecamatan:new Set(), desa:new Set()};
+      if(!INDEX[BWS][PROV][KAB][DI]) INDEX[BWS][PROV][KAB][DI]={kecamatan:new Set(), desa:new Set(), meta:null};
+
+      var entry = INDEX[BWS][PROV][KAB][DI];
 
       String(KEC).split(/\s*[,;/]\s*|[\r\n]+/).filter(Boolean)
         .forEach(function(kec){
-          INDEX[BWS][PROV][KAB][DI].kecamatan.add(titleCase(kec));
+          entry.kecamatan.add(titleCase(kec));
         });
       String(DESA).split(/\s*[,;/]\s*|[\r\n]+/).filter(Boolean)
         .forEach(function(desa){
-          INDEX[BWS][PROV][KAB][DI].desa.add(titleCase(desa));
+          entry.desa.add(titleCase(desa));
         });
+
+      entry.meta = {
+        menuKegiatan: MENU,
+        jenisUsulan:  JENUS,
+        urutanPrioritas: URUT,
+        ipSemula:   IPSEM,
+        ipMenjadi:  IPMEN,
+        outcome:    OUTCOME,
+        masa:       MASA
+      };
     });
     fillSelect(balai, Object.keys(INDEX).sort(), '-- pilih B/BWS --');
     prov.disabled=true; kab.disabled=true; di.disabled=true;
@@ -470,32 +577,38 @@ balai.addEventListener('change', function(){
     prov.disabled=true;
     fillSelect(kab,[], '-- pilih Kab/Kota --'); kab.disabled=true;
     fillSelect(di,[], '-- pilih DI --'); di.disabled=true;
+    setInfoPanelFromEntry(null);
     return;
   }
   fillSelect(prov, Object.keys(INDEX[b]||{}).sort(),'-- pilih Provinsi --');
   prov.disabled=false;
   fillSelect(kab,[], '-- pilih Kab/Kota --'); kab.disabled=true;
   fillSelect(di,[], '-- pilih DI --'); di.disabled=true;
+  setInfoPanelFromEntry(null);
 });
 prov.addEventListener('change', function(){
   var b=balai.value, p=prov.value;
   if(!p){
     fillSelect(kab,[], '-- pilih Kab/Kota --'); kab.disabled=true;
     fillSelect(di,[], '-- pilih DI --'); di.disabled=true;
+    setInfoPanelFromEntry(null);
     return;
   }
   fillSelect(kab, Object.keys((INDEX[b]||{})[p]||{}).sort(),'-- pilih Kab/Kota --');
   kab.disabled=false;
   fillSelect(di,[], '-- pilih DI --'); di.disabled=true;
+  setInfoPanelFromEntry(null);
 });
 kab.addEventListener('change', function(){
   var b=balai.value, p=prov.value, k=kab.value;
   if(!k){
     fillSelect(di,[], '-- pilih DI --'); di.disabled=true;
+    setInfoPanelFromEntry(null);
     return;
   }
   fillSelect(di, Object.keys((((INDEX[b]||{})[p]||{})[k]||{})).sort(),'-- pilih DI --');
   di.disabled=false;
+  setInfoPanelFromEntry(null);
 });
 
 /* ===== History / Stage ===== */
@@ -569,7 +682,7 @@ async function fetchHistory(bws, p, k, d){
   }
 }
 
-/* === DI dipilih: isi kec/desa, ambil history, kunci koordinat === */
+/* === DI dipilih: info, history, koordinat (tanpa auto-isi kec/desa) === */
 di.addEventListener('change', async function(){
   var b=balai.value, p=prov.value, k=kab.value, d=di.value;
   var entry = (((INDEX[b]||{})[p]||{})[k]||{})[d];
@@ -577,14 +690,14 @@ di.addEventListener('change', async function(){
   var kecEl = document.getElementById('kecamatan');
   var desaEl = document.getElementById('desa');
 
-  var kecs  = entry ? Array.from(entry.kecamatan) : [];
-  var desas = entry ? Array.from(entry.desa) : [];
+  var kecs  = entry && entry.kecamatan ? Array.from(entry.kecamatan) : [];
+  var desas = entry && entry.desa ? Array.from(entry.desa) : [];
 
-  kecEl.value  = (kecs[0]  || '');
-  desaEl.value = (desas[0] || '');
+  // TIDAK lagi auto-isi value, hanya kasih hint di placeholder
+ // kecEl.placeholder  = kecs.length  ? 'Opsi: '+kecs.join(', ')  : 'Isi manual (lihat Informasi Paket)';
+  // desaEl.placeholder = desas.length ? 'Opsi: '+desas.join(', ') : 'Isi manual (lihat Informasi Paket)';
 
-  kecEl.placeholder  = kecs.length  > 1 ? 'Opsi: '+kecs.join(', ')  : '(otomatis/isi manual)';
-  desaEl.placeholder = desas.length > 1 ? 'Opsi: '+desas.join(', ') : '(otomatis/isi manual)';
+  setInfoPanelFromEntry(entry || null);
 
   var hist = await fetchHistory(b,p,k,d);
   lastStageEl.textContent = (hist.maxStage||0) + '%';
@@ -770,6 +883,7 @@ document.getElementById('btnReset').addEventListener('click', function(){
   }
   currentStage=null;
   renderHistoryPhotos({});
+  setInfoPanelFromEntry(null);
   updateSubmitState();
 });
 
