@@ -14,52 +14,104 @@
       --survey:#0d47a1; --accent:#1d5fd1; --panel:rgba(11,18,34,.92);
       --border:rgba(255,255,255,.12); --hdrH:88px; --radius:12px;
     }
-    html, body {height:100%; margin:0; font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--text)}
+    html, body {
+      height:100%; margin:0;
+      font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:var(--bg); color:var(--text)
+    }
+
     /* Header */
-    .header{position:fixed; top:0; left:0; right:0; z-index:900; background:var(--survey);
-      border-bottom:1px solid rgba(255,255,255,.18); padding:10px 16px; display:flex; align-items:center; gap:14px;
-      box-shadow:0 6px 18px rgba(13,71,161,.25)}
+    .header{
+      position:fixed; top:0; left:0; right:0; z-index:900;
+      background:var(--survey);
+      border-bottom:1px solid rgba(255,255,255,.18);
+      padding:10px 16px;
+      display:flex; align-items:center; gap:14px;
+      box-shadow:0 6px 18px rgba(13,71,161,.25)
+    }
     .header img{height:54px}
     .header .text{flex:1; color:#fff}
     .header .title{font-weight:800; font-size:14px; line-height:1.35}
     .header .subtitle{font-weight:600; font-size:12px; color:rgba(255,255,255,.9); margin-top:4px}
-    .btn-home{background:#fff; color:var(--survey); font-weight:700; padding:8px 14px; border-radius:10px; text-decoration:none; font-size:13px}
+    .btn-home{
+      background:#fff; color:var(--survey);
+      font-weight:700; padding:8px 14px;
+      border-radius:10px; text-decoration:none; font-size:13px
+    }
     .btn-home:hover{background:#f1f5f9}
     .spacer{height:var(--hdrH)}
     #map{height:calc(100vh - var(--hdrH))}
+
     /* Dock */
-    .dock{position:fixed; left:0; right:0; bottom:0; background:var(--panel); border-top:1px solid var(--border);
-      max-height:46vh; overflow:auto; padding:12px 14px; box-shadow:0 -10px 22px rgba(0,0,0,.28); z-index:950; backdrop-filter:blur(6px)}
+    .dock{
+      position:fixed; left:0; right:0; bottom:0;
+      background:var(--panel); border-top:1px solid var(--border);
+      max-height:46vh; overflow:auto; padding:12px 14px;
+      box-shadow:0 -10px 22px rgba(0,0,0,.28);
+      z-index:950; backdrop-filter:blur(6px)
+    }
     .dock h2{font-size:14px; margin:0 0 8px; font-weight:800; color:#fff}
     .grid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
     label{font-size:12px; color:var(--muted)}
-    select{width:100%; padding:10px 12px; font-size:14px; background:rgba(255,255,255,.06); color:#fff; border:1px solid var(--border); border-radius:var(--radius); outline:none; appearance:none}
+    select{
+      width:100%; padding:10px 12px; font-size:14px;
+      background:rgba(255,255,255,.06); color:#fff;
+      border:1px solid var(--border); border-radius:var(--radius);
+      outline:none; appearance:none
+    }
     option{color:#000; background:#fff}
     .meta{font-size:13px; border-collapse:collapse; width:100%; color:var(--text)}
     .meta td{border-bottom:1px dashed rgba(255,255,255,.08); padding:6px 2px}
     .key{color:var(--muted-2); width:42%}
-    .row{display:grid; grid-template-columns:1fr auto 1fr auto; gap:12px; font-size:13px; color:var(--muted)}
+    .row{
+      display:grid; grid-template-columns:1fr auto 1fr auto;
+      gap:12px; font-size:13px; color:var(--muted)
+    }
     .row b{color:#fff}
     .err{color:#fca5a5; font-size:12px; margin-top:6px}
-    .di-label{background:rgba(255,255,255,.9); border:1px solid #d1d5db; padding:2px 6px; border-radius:6px; font-size:12px; color:#111}
-    @media(max-width:680px){.grid{grid-template-columns:1fr}:root{--hdrH:96px}}
+    .di-label{
+      background:rgba(255,255,255,.9);
+      border:1px solid #d1d5db;
+      padding:2px 6px; border-radius:6px;
+      font-size:12px; color:#111
+    }
+    @media(max-width:680px){
+      .grid{grid-template-columns:1fr}
+      :root{--hdrH:96px}
+    }
 
     /* Badge */
-    .badge-irwan{position:fixed; right:12px; bottom:96px; z-index:1200; background:rgba(13,71,161,.85);
-      border:1px solid rgba(255,255,255,.25); color:#fff; font-size:12px; font-weight:700; padding:6px 12px; border-radius:10px;
-      box-shadow:0 0 10px rgba(13,71,161,.6); backdrop-filter:blur(6px); animation:glow 2.8s ease-in-out infinite}
+    .badge-irwan{
+      position:fixed; right:12px; bottom:96px; z-index:1200;
+      background:rgba(13,71,161,.85);
+      border:1px solid rgba(255,255,255,.25);
+      color:#fff; font-size:12px; font-weight:700;
+      padding:6px 12px; border-radius:10px;
+      box-shadow:0 0 10px rgba(13,71,161,.6);
+      backdrop-filter:blur(6px);
+      animation:glow 2.8s ease-in-out infinite
+    }
     .badge-irwan span{color:#FFD700}
     .badge-irwan:hover{transform:scale(1.03); transition:transform .2s ease}
-    @keyframes glow{0%,100%{box-shadow:0 0 8px rgba(13,71,161,.6)}50%{box-shadow:0 0 18px rgba(255,215,0,.8)}}
+    @keyframes glow{
+      0%,100%{box-shadow:0 0 8px rgba(13,71,161,.6)}
+      50%{box-shadow:0 0 18px rgba(255,215,0,.8)}
+    }
 
-    /* Legend (naikkan sedikit) */
+    /* Legend */
     .legend{
       position: fixed; left: 12px; bottom: 148px; z-index: 1200;
-      background: rgba(0,0,0,.4); color: #fff; font-size:12px; border:1px solid var(--border);
-      border-radius:10px; padding:8px 10px; backdrop-filter: blur(6px)
+      background: rgba(0,0,0,.4); color: #fff; font-size:12px;
+      border:1px solid var(--border);
+      border-radius:10px; padding:8px 10px;
+      backdrop-filter: blur(6px)
     }
     .legend .item{display:flex; align-items:center; gap:8px; margin:4px 0}
-    .legend .swatch{width:16px; height:16px; border-radius:4px; border:1px solid rgba(255,255,255,.6)}
+    .legend .swatch{
+      width:16px; height:16px;
+      border-radius:4px;
+      border:1px solid rgba(255,255,255,.6)
+    }
     .swatch-di{background:#3388ff}
     .swatch-saluran{background:#10b981}
     .swatch-bendung{background:#f59e0b}
@@ -94,14 +146,32 @@
       font-weight:700;
       cursor:pointer;
     }
-    .btn-primary:hover{
-      background:#2563eb;
-    }
+    .btn-primary:hover{background:#2563eb}
     #uploadMsg{
       font-size:12px;
       margin-top:4px;
       color:#e5e7eb;
     }
+
+    /* My Location button */
+    .loc-btn{
+      position:fixed;
+      right:14px;
+      top:110px;
+      z-index:1200;
+      width:40px; height:40px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:rgba(15,23,42,.95);
+      color:#e5e7eb;
+      font-size:18px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      box-shadow:0 4px 12px rgba(0,0,0,.45);
+    }
+    .loc-btn:hover{background:#111827}
   </style>
 </head>
 <body>
@@ -119,6 +189,9 @@
 
   <!-- MAP -->
   <div id="map"></div>
+
+  <!-- MY LOCATION BUTTON -->
+  <button id="locBtn" class="loc-btn" title="Lokasi saya">◎</button>
 
   <!-- DOCK -->
   <div class="dock">
@@ -165,9 +238,9 @@
   document.addEventListener('DOMContentLoaded', () => {
     /* ========= PATH DATA ========= */
     const PATHS = {
-      DI: "./LuasBaku_SerayuOpak_3.geojson",      // sesuaikan path
-      SALURAN: "./Saluran_SerayuOpak.geojson",    // sesuaikan path
-      BENDUNG: "./contoh_bendung.geojson",        // file bendung (opsional, ada fallback)
+      DI: "./LuasBaku_SerayuOpak_3.geojson",
+      SALURAN: "./Saluran_SerayuOpak.geojson",
+      BENDUNG: "./contoh_bendung.geojson",
     };
 
     // Fallback contoh bendung bila file belum tersedia
@@ -184,29 +257,31 @@
     // GAS (Google Apps Script) — integrasi tabel info
     const GAS_URL = "https://script.google.com/macros/s/AKfycbybsLoQu-8S-MlR_kB2989FZV0C-c1gRzUqcIZWBWuYb-_We03B_BShX8Q3AQqWhOTvzg/exec?sheet=SO_Integrasi&t=" + Date.now();
 
-    // URL Apps Script (web app) untuk upload file ke Google Drive
-    // TODO: ganti dengan URL web app yang menangani upload ke Drive
-    const UPLOAD_URL = "https://script.google.com/macros/s/REPLACE_WITH_UPLOAD_WEB_APP/exec";
+    // URL Web App upload ke Google Drive
+    const UPLOAD_URL = "https://script.google.com/macros/s/AKfycbzmMWkf3M4Hk8clh9tI19ClAcID5xsVpRc_tDVGldJv1JDGsuSDQaaP8kDQTqaqBfb8Mg/exec";
 
-    const diSel=document.getElementById('diSel');
-    const clusterSel=document.getElementById('clusterSel');
-    const statsEl=document.getElementById('stats');
-    const detailEl=document.getElementById('detail');
-    const msgEl=document.getElementById('msg');
-    const uploadInput=document.getElementById('geojsonFile');
-    const uploadBtn=document.getElementById('btnUpload');
-    const uploadMsg=document.getElementById('uploadMsg');
-    const note=(m)=>msgEl.textContent=m||"";
+    const diSel     = document.getElementById('diSel');
+    const clusterSel= document.getElementById('clusterSel');
+    const statsEl   = document.getElementById('stats');
+    const detailEl  = document.getElementById('detail');
+    const msgEl     = document.getElementById('msg');
+    const uploadInput = document.getElementById('geojsonFile');
+    const uploadBtn   = document.getElementById('btnUpload');
+    const uploadMsg   = document.getElementById('uploadMsg');
+    const locBtn      = document.getElementById('locBtn');
 
-    // Map + PANES (atur zIndex supaya saluran & bendung di atas poligon)
-    const map=L.map('map',{preferCanvas:true}).setView([-7.8,110.3],8);
+    const note = (m)=>msgEl.textContent=m||"";
+
+    // Map
+    const map = L.map('map',{preferCanvas:true}).setView([-7.8,110.3],8);
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
       attribution:'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics'
     }).addTo(map);
 
-    map.createPane('diPane');        map.getPane('diPane').style.zIndex = 410;
-    map.createPane('saluranPane');   map.getPane('saluranPane').style.zIndex = 420;
-    map.createPane('bendungPane');   map.getPane('bendungPane').style.zIndex = 430;
+    // panes
+    map.createPane('diPane');      map.getPane('diPane').style.zIndex = 410;
+    map.createPane('saluranPane'); map.getPane('saluranPane').style.zIndex = 420;
+    map.createPane('bendungPane'); map.getPane('bendungPane').style.zIndex = 430;
 
     let lookup={},rows=[],groups={},headers=[];
     const labelLayer=L.layerGroup().addTo(map);
@@ -217,22 +292,25 @@
     const addLabel=(latlng,text)=>{
       if(!latlng)return;
       L.tooltip({permanent:true,direction:'center',className:'di-label'})
-      .setLatLng(latlng).setContent(text).addTo(labelLayer);
+        .setLatLng(latlng).setContent(text).addTo(labelLayer);
     };
+
     function buildTable(obj,fields){
       const keys=fields&&fields.length?fields:Object.keys(obj||{});
       const html=(keys||[]).filter(k=>k&&k!=="Kd_Inf").map(k=>{
-        const v=obj[k];if(v==null||v==="")return"";
+        const v=obj[k]; if(v==null||v==="")return"";
         return `<tr><td class="key">${k}</td><td>${v}</td></tr>`;
       }).join("");
       return `<table class="meta">${html||'<tr><td>(tidak ada data)</td></tr>'}</table>`;
     }
+
     function normalizeGas(json){
       if(json&&json.lookup&&json.rows)return json;
       let _rows=Array.isArray(json)?json:(json?.rows||Object.values(json.lookup||{}));
       const _headers=_rows.length?Object.keys(_rows[0]):[];
       return{rows:_rows,headers:_headers,lookup:Object.fromEntries(_rows.map(r=>[r.Kd_Inf,r]))};
     }
+
     function buildFixedGroups(headers){
       const g={};
       g["__ALL__"]=headers;
@@ -247,6 +325,7 @@
       g["Tanggal Perubahan"]=headers.slice(49,50);
       return g;
     }
+
     function updateStats(){
       const diCount=diLayer?diLayer.getLayers().length:0;
       const saluranCount=saluranLayer?saluranLayer.getLayers().length:0;
@@ -254,7 +333,7 @@
       statsEl.innerHTML=`<span>DI</span><b>${diCount}</b><span>Saluran</span><b>${saluranCount}</b><span>Bendung</span><b>${bendungCount}</b>`;
     }
 
-    // Helper: bikin link Google Street View (tanpa API key)
+    // Helper Street View link
     function svLink(lat, lng, heading=0, pitch=0, fov=75){
       const q = new URLSearchParams({
         api: 1,
@@ -265,66 +344,125 @@
       return `https://www.google.com/maps/@?${q.toString()}`;
     }
 
-    // ============ HANDLER UPLOAD GEOJSON → DRIVE (via Apps Script) ============
-    if(uploadBtn){
-      uploadBtn.addEventListener('click', async () => {
+    /* ============ UPLOAD GEOJSON → DRIVE ============ */
+    if (uploadBtn) {
+      uploadBtn.addEventListener('click', () => {
         uploadMsg.style.color = '#e5e7eb';
         uploadMsg.textContent = '';
 
         const file = uploadInput.files[0];
-        if(!file){
+        if (!file) {
           uploadMsg.style.color = '#f87171';
           uploadMsg.textContent = 'Pilih dulu file GeoJSON / JSON yang mau diupload.';
           return;
         }
 
-        // Cek ekstensi dasar
-        if(!/(\.geojson|\.json)$/i.test(file.name)){
-          uploadMsg.style.color = '#f97316';
-          uploadMsg.textContent = 'File tidak ber-ekstensi .geojson / .json, tapi tetap dicoba upload ke Drive.';
-        } else {
+        const reader = new FileReader();
+        reader.onload = async (evt) => {
+          const content = evt.target.result;
+
+          const bbwsName = 'BBWS Serayu Opak'; // folder BBWS di Drive
+
+          const payload = {
+            filename: file.name,
+            mimeType: file.type || 'application/json',
+            content: content,
+            bbwsName: bbwsName
+          };
+
           uploadMsg.textContent = 'Mengunggah & menyimpan ke Drive...';
-        }
 
-        const fd = new FormData();
-        fd.append('file', file);
-        fd.append('filename', file.name);
-        fd.append('mimeType', file.type || 'application/json');
+          try {
+            const res = await fetch(UPLOAD_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
 
-        try{
-          const res = await fetch(UPLOAD_URL, { method:'POST', body:fd });
-          const text = await res.text();
-          if(!res.ok){
-            uploadMsg.style.color = '#f87171';
-            uploadMsg.textContent = 'Upload gagal: ' + res.status + ' ' + res.statusText;
-            return;
-          }
+            const text = await res.text();
+            let data = null;
+            try { data = JSON.parse(text); } catch (e) {}
 
-          let data = null;
-          try{ data = JSON.parse(text); }catch(e){}
-
-          // Asumsi Apps Script balas {ok:true, webViewLink:"...", url:"..."}
-          if(data && (data.ok || data.success)){
-            const link = data.webViewLink || data.url || data.link;
-            uploadMsg.style.color = '#4ade80';
-            if(link){
-              uploadMsg.innerHTML = 'Berhasil tersimpan di Drive. <a href="'+link+'" target="_blank" rel="noopener" style="color:#93c5fd;text-decoration:underline">Buka file</a>';
-            }else{
-              uploadMsg.textContent = 'Berhasil tersimpan di Drive. Cek folder tujuan di Google Drive.';
+            if (!res.ok || !data) {
+              uploadMsg.style.color = '#f87171';
+              uploadMsg.textContent = 'Upload gagal: ' + (res.statusText || 'respons tidak valid');
+              return;
             }
-          }else{
-            uploadMsg.style.color = '#4ade80';
-            uploadMsg.textContent = 'Upload selesai. Cek Google Drive / log Apps Script untuk konfirmasi.';
+
+            if (data.ok) {
+              uploadMsg.style.color = '#4ade80';
+              if (data.webViewLink) {
+                uploadMsg.innerHTML = 'Berhasil tersimpan di folder <b>' + (data.folderName || bbwsName) +
+                  '</b>. <a href="' + data.webViewLink +
+                  '" target="_blank" rel="noopener" style="color:#93c5fd;text-decoration:underline">Buka file</a>';
+              } else {
+                uploadMsg.textContent = 'Berhasil tersimpan di Google Drive (folder: ' +
+                  (data.folderName || bbwsName) + ').';
+              }
+            } else {
+              uploadMsg.style.color = '#f97316';
+              uploadMsg.textContent = 'Server balas error: ' + (data.error || 'tidak diketahui');
+            }
+
+          } catch (err) {
+            uploadMsg.style.color = '#f87171';
+            uploadMsg.textContent = 'Gagal menghubungi server upload: ' + err;
           }
-        }catch(err){
-          uploadMsg.style.color = '#f87171';
-          uploadMsg.textContent = 'Gagal menghubungi server upload. Pastikan UPLOAD_URL sudah diganti dengan URL web app Apps Script yang aktif.';
-        }
+        };
+
+        reader.readAsText(file);
       });
     }
 
-    // ==========================================================================
+    /* ============ MY LOCATION BUTTON ============ */
+    let myLocMarker = null;
+    let myLocCircle = null;
 
+    if (locBtn) {
+      locBtn.addEventListener('click', () => {
+        if (!navigator.geolocation) {
+          note('Browser tidak mendukung geolokasi.');
+          return;
+        }
+
+        note('Mencari lokasi Anda...');
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            const acc = pos.coords.accuracy || 0;
+
+            const latlng = [lat, lng];
+
+            if (!myLocMarker) {
+              myLocMarker = L.marker(latlng).addTo(map).bindPopup('Lokasi saya');
+            } else {
+              myLocMarker.setLatLng(latlng);
+            }
+
+            if (acc && !isNaN(acc)) {
+              if (!myLocCircle) {
+                myLocCircle = L.circle(latlng, { radius: acc, color:'#38bdf8', weight:1, fillOpacity:0.15 })
+                  .addTo(map);
+              } else {
+                myLocCircle.setLatLng(latlng);
+                myLocCircle.setRadius(acc);
+              }
+            }
+
+            map.setView(latlng, Math.max(map.getZoom(), 15));
+            note('');
+            if (myLocMarker) myLocMarker.openPopup();
+          },
+          (err) => {
+            note('Gagal mendapatkan lokasi: ' + err.message);
+          },
+          { enableHighAccuracy:true, timeout:10000, maximumAge:0 }
+        );
+      });
+    }
+
+    /* ============ LOAD DATA ============ */
     Promise.allSettled([
       fetch(GAS_URL).then(r=>r.json()),
       fetch(PATHS.DI).then(r=>r.json()),
@@ -364,7 +502,7 @@
         if(diLayer.getLayers().length){map.fitBounds(diLayer.getBounds());}
       }
 
-      // Saluran (line) di atas poligon
+      // Saluran (line)
       if(salRes.status==='fulfilled'){
         const fc={type:'FeatureCollection',features:salRes.value?.features||[]};
         saluranLayer=L.geoJSON(fc,{
@@ -374,7 +512,7 @@
         saluranLayer.bringToFront();
       }
 
-      // Bendung (point) + Popup Street View
+      // Bendung (point)
       let bendungData = (bendungRes.status==='fulfilled' && bendungRes.value) ? bendungRes.value : BENDUNG_SAMPLE;
       bendungLayer=L.geoJSON(bendungData,{
         pane:'bendungPane',
