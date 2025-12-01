@@ -24,7 +24,7 @@
     .header .title{font-weight:800; font-size:14px; line-height:1.35}
     .header .subtitle{font-weight:600; font-size:12px; color:rgba(255,255,255,.9); margin-top:4px}
     .btn-home{background:#fff; color:var(--survey); font-weight:700; padding:8px 14px; border-radius:10px; text-decoration:none; font-size:13px}
-    .btn-home:hover{background:#f1f5f9; text-decoration:none}
+    .btn-home:hover{background:#f1f5f9}
     .spacer{height:var(--hdrH)}
     #map{height:calc(100vh - var(--hdrH))}
     /* Dock */
@@ -38,11 +38,12 @@
     .meta{font-size:13px; border-collapse:collapse; width:100%; color:var(--text)}
     .meta td{border-bottom:1px dashed rgba(255,255,255,.08); padding:6px 2px}
     .key{color:var(--muted-2); width:42%}
-    .row{display:grid; grid-template-columns:1fr auto; gap:8px; font-size:13px; color:var(--muted)}
+    .row{display:grid; grid-template-columns:1fr auto 1fr auto; gap:12px; font-size:13px; color:var(--muted)}
     .row b{color:#fff}
     .err{color:#fca5a5; font-size:12px; margin-top:6px}
     .di-label{background:rgba(255,255,255,.9); border:1px solid #d1d5db; padding:2px 6px; border-radius:6px; font-size:12px; color:#111}
     @media(max-width:680px){.grid{grid-template-columns:1fr}:root{--hdrH:96px}}
+
     /* Badge */
     .badge-irwan{position:fixed; right:12px; bottom:96px; z-index:1200; background:rgba(13,71,161,.85);
       border:1px solid rgba(255,255,255,.25); color:#fff; font-size:12px; font-weight:700; padding:6px 12px; border-radius:10px;
@@ -50,17 +51,28 @@
     .badge-irwan span{color:#FFD700}
     .badge-irwan:hover{transform:scale(1.03); transition:transform .2s ease}
     @keyframes glow{0%,100%{box-shadow:0 0 8px rgba(13,71,161,.6)}50%{box-shadow:0 0 18px rgba(255,215,0,.8)}}
+
+    /* Legend (naikkan sedikit) */
+    .legend{
+      position: fixed; left: 12px; bottom: 148px; z-index: 1200;
+      background: rgba(0,0,0,.4); color: #fff; font-size:12px; border:1px solid var(--border);
+      border-radius:10px; padding:8px 10px; backdrop-filter: blur(6px)
+    }
+    .legend .item{display:flex; align-items:center; gap:8px; margin:4px 0}
+    .legend .swatch{width:16px; height:16px; border-radius:4px; border:1px solid rgba(255,255,255,.6)}
+    .swatch-di{background:#3388ff}
+    .swatch-saluran{background:#10b981}
+    .swatch-bendung{background:#f59e0b}
   </style>
 </head>
 <body>
-
   <!-- HEADER -->
   <div class="header">
     <img src="../../assets/LogoPUPR.png" alt="Logo PU"/>
     <div class="text">
-      <div class="title">Kementerian Pekerjaan Umum </div>
+      <div class="title">Kementerian Pekerjaan Umum</div>
       <div class="subtitle">Direktorat Jenderal Sumber Daya Air — Direktorat Irigasi dan Rawa</div>
-      <div class="subtitle">Daerah Irigasi Kewenangan BBWS Serayu Opak</div>
+      <div class="subtitle">Daerah Irigasi Kewenangan <b>BBWS Serayu Opak</b></div>
     </div>
     <a href="../../si-irwan.html" class="btn-home">Beranda</a>
   </div>
@@ -78,7 +90,7 @@
         <select id="diSel"><option value="">— Semua —</option></select>
       </div>
       <div>
-        <label>Cluster Informasi</label>
+        <label>Cluster Informasi (GAS)</label>
         <select id="clusterSel"><option value="__ALL__">— Semua —</option></select>
       </div>
     </div>
@@ -88,59 +100,84 @@
     <div id="detail" style="margin-top:8px"></div>
   </div>
 
+  <!-- LEGEND -->
+  <div class="legend">
+    <div class="item"><span class="swatch swatch-di"></span> DI (Polygon)</div>
+    <div class="item"><span class="swatch swatch-saluran"></span> Saluran (Line)</div>
+    <div class="item"><span class="swatch swatch-bendung"></span> Bendung (Point)</div>
+  </div>
+
   <!-- BADGE -->
   <div class="badge-irwan" title="Sistem Informasi Irigasi & Rawa Nasional">
     <span>Si-Irwan v1.0</span>
   </div>
 
   <!-- Scripts -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
   document.addEventListener('DOMContentLoaded', () => {
-    /* ========= KONFIG =========
-       Ganti path ini sesuai lokasi file di repo kamu */
-    const GEOJSON_URL = "../bbws-serayu-opak/LuasBaku_SerayuOpak_3.geojson";
+    /* ========= PATH DATA ========= */
+    const PATHS = {
+      DI: "./LuasBaku_SerayuOpak_3.geojson",      // sesuaikan path
+      SALURAN: "./Saluran_SerayuOpak.geojson",    // sesuaikan path
+      BENDUNG: "./contoh_bendung.geojson",        // file bendung (opsional, ada fallback)
+    };
+
+    // Fallback contoh bendung bila file belum tersedia
+    const BENDUNG_SAMPLE = {
+      "type":"FeatureCollection",
+      "features":[
+        {"type":"Feature","properties":{"nama":"Bendung Papah","Kd_Inf":"SO-0001","sungai":"Opak","heading":120,"pitch":-5,"fov":80},
+         "geometry":{"type":"Point","coordinates":[110.4472,-7.9074]}},
+        {"type":"Feature","properties":{"nama":"Bendung Progo Hilir","Kd_Inf":"SO-0002","sungai":"Progo","heading":40,"pitch":0,"fov":80},
+         "geometry":{"type":"Point","coordinates":[110.2340,-7.6550]}}
+      ]
+    };
+
+    // GAS (Google Apps Script) — integrasi tabel info
     const GAS_URL = "https://script.google.com/macros/s/AKfycbybsLoQu-8S-MlR_kB2989FZV0C-c1gRzUqcIZWBWuYb-_We03B_BShX8Q3AQqWhOTvzg/exec?sheet=SO_Integrasi&t=" + Date.now();
 
-    const diSel = document.getElementById('diSel');
-    const clusterSel = document.getElementById('clusterSel');
-    const statsEl = document.getElementById('stats');
-    const detailEl = document.getElementById('detail');
-    const msgEl = document.getElementById('msg');
-    function note(msg){ msgEl.textContent = msg || ""; }
+    const diSel=document.getElementById('diSel');
+    const clusterSel=document.getElementById('clusterSel');
+    const statsEl=document.getElementById('stats');
+    const detailEl=document.getElementById('detail');
+    const msgEl=document.getElementById('msg');
+    const note=(m)=>msgEl.textContent=m||"";
 
-    /* ==== Leaflet Map ==== */
-    const map = L.map('map').setView([-7.5,110.3], 8);
-    L.tileLayer(
-      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      { attribution: 'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics' }
-    ).addTo(map);
+    // Map + PANES (atur zIndex supaya saluran & bendung di atas poligon)
+    const map=L.map('map',{preferCanvas:true}).setView([-7.8,110.3],8);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
+      attribution:'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics'
+    }).addTo(map);
 
-    let lookup={}, rows=[], groups={}, headers=[];
-    let geoLayer, joined=[];
-    const labelLayer = L.layerGroup().addTo(map);
-    let activeKey=null, activeTitle=null;
+    map.createPane('diPane');        map.getPane('diPane').style.zIndex = 410;
+    map.createPane('saluranPane');   map.getPane('saluranPane').style.zIndex = 420;
+    map.createPane('bendungPane');   map.getPane('bendungPane').style.zIndex = 430;
 
-    /* ===== Util ===== */
-    function getNamaDI(obj){ return obj?.Nama_DI || obj?.["Nama Aset"] || obj?.["Nama DI"] || ""; }
-    function addLabel(latlng,text){
-      if(!latlng) return;
-      L.tooltip({permanent:true,direction:'center',className:'di-label'}).setLatLng(latlng).setContent(text).addTo(labelLayer);
-    }
-    function buildTable(obj,g){
-      const useAll = (g==="__ALL__");
-      const fields = useAll ? headers : (groups[g] || []);
-      const html = (fields||[]).filter(k=>k && k!=="Kd_Inf").map(k=>{
-        const v = obj[k]; if(v==null || v==="") return "";
+    let lookup={},rows=[],groups={},headers=[];
+    const labelLayer=L.layerGroup().addTo(map);
+    let diLayer,saluranLayer,bendungLayer;
+    let diIndex=[],activeKey=null,activeTitle=null;
+
+    const getNamaDI=(o)=>o?.Nama_DI||o?.["Nama Aset"]||o?.["Nama DI"]||o?.nama_infrastruktur||"";
+    const addLabel=(latlng,text)=>{
+      if(!latlng)return;
+      L.tooltip({permanent:true,direction:'center',className:'di-label'})
+      .setLatLng(latlng).setContent(text).addTo(labelLayer);
+    };
+    function buildTable(obj,fields){
+      const keys=fields&&fields.length?fields:Object.keys(obj||{});
+      const html=(keys||[]).filter(k=>k&&k!=="Kd_Inf").map(k=>{
+        const v=obj[k];if(v==null||v==="")return"";
         return `<tr><td class="key">${k}</td><td>${v}</td></tr>`;
       }).join("");
-      return `<table class="meta">${html || '<tr><td>(tidak ada data)</td></tr>'}</table>`;
+      return `<table class="meta">${html||'<tr><td>(tidak ada data)</td></tr>'}</table>`;
     }
     function normalizeGas(json){
-      if(json && json.lookup && json.rows) return json;
-      let _rows = Array.isArray(json)? json : (json?.rows || Object.values(json.lookup||{}));
-      const _headers = _rows.length ? Object.keys(_rows[0]) : [];
-      return { rows:_rows, headers:_headers, lookup:Object.fromEntries(_rows.map(r=>[r.Kd_Inf, r])) };
+      if(json&&json.lookup&&json.rows)return json;
+      let _rows=Array.isArray(json)?json:(json?.rows||Object.values(json.lookup||{}));
+      const _headers=_rows.length?Object.keys(_rows[0]):[];
+      return{rows:_rows,headers:_headers,lookup:Object.fromEntries(_rows.map(r=>[r.Kd_Inf,r]))};
     }
     function buildFixedGroups(headers){
       const g={};
@@ -156,112 +193,144 @@
       g["Tanggal Perubahan"]=headers.slice(49,50);
       return g;
     }
+    function updateStats(){
+      const diCount=diLayer?diLayer.getLayers().length:0;
+      const saluranCount=saluranLayer?saluranLayer.getLayers().length:0;
+      const bendungCount=bendungLayer?bendungLayer.getLayers().length:0;
+      statsEl.innerHTML=`<span>DI</span><b>${diCount}</b><span>Saluran</span><b>${saluranCount}</b><span>Bendung</span><b>${bendungCount}</b>`;
+    }
 
-    /* ===== Load Data ===== */
-    Promise.all([
-      fetch(GEOJSON_URL).then(r=>r.json()),
-      fetch(GAS_URL).then(r=>r.json())
-    ]).then(([gj,data])=>{
-      const norm = normalizeGas(data);
-      lookup = norm.lookup; rows = norm.rows; headers = norm.headers; groups = buildFixedGroups(headers);
+    // Helper: bikin link Google Street View (tanpa API key)
+    function svLink(lat, lng, heading=0, pitch=0, fov=75){
+      const q = new URLSearchParams({
+        api: 1,
+        map_action: 'pano',
+        viewpoint: `${lat},${lng}`,
+        heading, pitch, fov
+      });
+      return `https://www.google.com/maps/@?${q.toString()}`;
+    }
 
-      // Tambahkan opsi cluster (hindari duplikasi __ALL__)
-      Object.keys(groups)
-        .filter(k => k !== '__ALL__')
-        .forEach(k => {
-          clusterSel.insertAdjacentHTML('beforeend', `<option value="${k}">${k}</option>`);
-        });
+    Promise.allSettled([
+      fetch(GAS_URL).then(r=>r.json()),
+      fetch(PATHS.DI).then(r=>r.json()),
+      fetch(PATHS.SALURAN).then(r=>r.json()),
+      fetch(PATHS.BENDUNG).then(r=>r.json())
+    ]).then(results=>{
+      const [gasRes,diRes,salRes,bendungRes]=results;
 
-      // Isi dropdown DI dari tabel GAS (kalau ada)
-      const diNames = [...new Set(rows.map(r=>getNamaDI(r)).filter(Boolean))].sort();
-      diNames.forEach(nm => diSel.insertAdjacentHTML('beforeend', `<option value="${nm}">${nm}</option>`));
+      if(gasRes.status==='fulfilled'){
+        const norm=normalizeGas(gasRes.value);
+        lookup=norm.lookup;rows=norm.rows;headers=norm.headers;groups=buildFixedGroups(headers);
+        Object.keys(groups).filter(k=>k!=='__ALL__')
+          .forEach(k=>clusterSel.insertAdjacentHTML('beforeend',`<option value="${k}">${k}</option>`));
+        const diNames=[...new Set(rows.map(r=>getNamaDI(r)).filter(Boolean))].sort();
+        diNames.forEach(nm=>diSel.insertAdjacentHTML('beforeend',`<option value="${nm}">${nm}</option>`));
+      }
 
-      // ==== Layer DI (Polygon) ====
-      geoLayer = L.geoJSON(gj, {
-        style: ()=> ({ color:'#1d5fd1', weight:1, fillColor:'#3388ff', fillOpacity:0.35 }),
-        onEachFeature:(f, layer)=>{
-          const key = String(f.properties?.Kd_Inf || "").trim();
-          const info = lookup[key] || {};
-          const title = getNamaDI(info) || key || 'DI';
-          const center = layer.getBounds().getCenter();
+      // DI (polygon)
+      if(diRes.status==='fulfilled'){
+        const fc={type:'FeatureCollection',features:diRes.value?.features||[]};
+        diLayer=L.geoJSON(fc,{
+          pane: 'diPane',
+          style:()=>({color:'#1d5fd1',weight:1,fillColor:'#3388ff',fillOpacity:0.30}),
+          onEachFeature:(f,layer)=>{
+            const key=String(f.properties?.Kd_Inf||"").trim();
+            const info=lookup[key]||{};
+            const title=getNamaDI(info)||key||'DI';
+            const center=layer.getBounds().getCenter();
+            diIndex.push({layer,key,title,nama:title.toLowerCase(),dataObj:info,center});
+            layer.on('click',()=>{
+              activeKey=key;activeTitle=title;
+              renderDetailDI(info,title,key);
+              layer.bringToFront();
+            });
+          }
+        }).addTo(map);
+        if(diLayer.getLayers().length){map.fitBounds(diLayer.getBounds());}
+      }
 
-          joined.push({ layer, key, title, nama:title.toLowerCase(), dataObj:info, center });
+      // Saluran (line) di atas poligon
+      if(salRes.status==='fulfilled'){
+        const fc={type:'FeatureCollection',features:salRes.value?.features||[]};
+        saluranLayer=L.geoJSON(fc,{
+          pane: 'saluranPane',
+          style:()=>({color:'#10b981',weight:2,opacity:.95})
+        }).addTo(map);
+        saluranLayer.bringToFront();
+      }
 
-          // interaksi
-          layer.on('click', ()=>{
-            activeKey = key; activeTitle = title;
-            renderDetail(info, title, key);
-            // sinkron ke dropdown (kalau ada)
-            const opt = [...diSel.options].find(o => o.value.toLowerCase() === title.toLowerCase());
-            if(opt) diSel.value = opt.value;
-          });
+      // Bendung (point) + Popup Street View
+      let bendungData = (bendungRes.status==='fulfilled' && bendungRes.value) ? bendungRes.value : BENDUNG_SAMPLE;
+      bendungLayer=L.geoJSON(bendungData,{
+        pane:'bendungPane',
+        pointToLayer:(feat,latlng)=>L.circleMarker(latlng,{radius:6,weight:2,opacity:1,fillOpacity:.9,color:'#f59e0b',fillColor:'#f59e0b'}),
+        onEachFeature:(f,l)=>{
+          const p=f.properties||{};
+          const nm=p.nama||'Bendung';
+          const sungai=p.sungai||'-';
+          const kd=p.Kd_Inf||'-';
+          const lat = l.getLatLng().lat.toFixed(6);
+          const lng = l.getLatLng().lng.toFixed(6);
+          const heading = Number(p.heading || 0);
+          const pitch = Number(p.pitch || 0);
+          const fov = Number(p.fov || 75);
+          const svURL = svLink(lat, lng, heading, pitch, fov);
+          const gmapsURL = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+
+          const html = `
+            <div style="min-width:220px">
+              <div style="font-weight:800;margin-bottom:4px">${nm}</div>
+              <div style="font-size:12px;color:#64748b;margin-bottom:6px">
+                <div><b>Sungai:</b> ${sungai}</div>
+                <div><b>Kd_Inf:</b> ${kd}</div>
+                <div><b>Koordinat:</b> ${lat}, ${lng}</div>
+              </div>
+              <div style="display:flex; gap:8px; flex-wrap:wrap">
+                <a href="${svURL}" target="_blank" rel="noopener"
+                   style="background:#0ea5e9;color:#fff;padding:6px 10px;border-radius:8px;text-decoration:none;font-weight:700;font-size:12px">
+                   Buka Street View
+                </a>
+                <a href="${gmapsURL}" target="_blank" rel="noopener"
+                   style="background:#111827;color:#fff;padding:6px 10px;border-radius:8px;text-decoration:none;font-weight:700;font-size:12px">
+                   Buka di Google Maps
+                </a>
+              </div>
+            </div>
+          `;
+          l.bindPopup(html);
         }
       }).addTo(map);
+      bendungLayer.bringToFront();
 
-      if(geoLayer.getLayers().length) map.fitBounds(geoLayer.getBounds());
-      refreshView();
-      detailEl.innerHTML = '<i style="color:#cbd5e1">Klik poligon atau pilih DI untuk lihat detail.</i>';
-    }).catch(e=>{
-      console.error(e);
-      note('Gagal load data.');
+      const overlays={};
+      if(diLayer)overlays['DI (Polygon)']=diLayer;
+      if(saluranLayer)overlays['Saluran (Line)']=saluranLayer;
+      if(bendungLayer)overlays['Bendung (Point)']=bendungLayer;
+      L.control.layers(null,overlays,{collapsed:true}).addTo(map);
+
+      refreshLabelsAndStats();
+      detailEl.innerHTML='<i style="color:#cbd5e1">Klik poligon DI atau pilih DI untuk lihat detail.</i>';
     });
 
-    /* ===== Renderers ===== */
-    function renderDetail(info, title, key){
-      const g = clusterSel.value || "__ALL__";
-      detailEl.innerHTML = `
-        <h3 style="margin:6px 0;color:#fff">${title}</h3>
-        <div style="font-size:12px;color:#cbd5e1;margin-bottom:6px">Kd_Inf: ${key}</div>
-        ${buildTable(info, g)}
-      `;
+    function renderDetailDI(info,title,key){
+      const g=clusterSel.value||"__ALL__";
+      const table=(lookup[key])
+        ?buildTable(info,(g==="__ALL__")?headers:(groups[g]||headers))
+        :`<div style="color:#cbd5e1;font-size:12px">Data GAS tidak ditemukan.</div>`;
+      detailEl.innerHTML=`<h3 style="margin:6px 0;color:#fff">${title}</h3>
+      <div style="font-size:12px;color:#cbd5e1;margin-bottom:6px">Kd_Inf: ${key}</div>${table}`;
     }
 
-    function refreshView(){
-      const sel = (diSel.value||"").toLowerCase();
+    function refreshLabelsAndStats(){
       labelLayer.clearLayers();
-      let total = 0;
-
-      joined.forEach(o=>{
-        const match = !sel || (o.nama === sel);
-        o.layer.setStyle({ opacity: match?1:0, fillOpacity: match?0.35:0 });
-        if(match){
-          total++;
-          if(map.getZoom() >= 10){
-            addLabel(o.center, o.title);
-          }
-        }
-      });
-
-      statsEl.innerHTML = `<span>Total DI tampil</span><b>${total}</b>`;
+      if(diIndex.length&&map.getZoom()>=10){
+        diIndex.forEach(o=>addLabel(o.center,o.title));
+      }
+      updateStats();
     }
 
-    map.on('zoomend', refreshView);
-
-    /* ===== Events ===== */
-    diSel.addEventListener('change', ()=>{
-      const sel = (diSel.value||"").toLowerCase();
-      refreshView();
-      if(!sel){
-        activeKey=null; activeTitle=null;
-        detailEl.innerHTML = '<i style="color:#cbd5e1">Pilih DI untuk lihat detail.</i>';
-        try{ map.fitBounds(geoLayer.getBounds()); }catch(_){}
-        return;
-      }
-      const hit = joined.find(o=>o.nama===sel);
-      if(hit){
-        activeKey = hit.key; activeTitle = hit.title;
-        map.fitBounds(hit.layer.getBounds(), { maxZoom:14 });
-        renderDetail(lookup[activeKey]||{}, activeTitle, activeKey);
-      }
-    });
-
-    clusterSel.addEventListener('change', ()=>{
-      if(activeKey && lookup[activeKey]){
-        renderDetail(lookup[activeKey], activeTitle || getNamaDI(lookup[activeKey]) || activeKey, activeKey);
-      }else{
-        detailEl.innerHTML = '<i style="color:#cbd5e1">Pilih DI terlebih dahulu.</i>';
-      }
-    });
+    map.on('zoomend',refreshLabelsAndStats);
   });
   </script>
 </body>
