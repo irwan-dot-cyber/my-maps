@@ -165,6 +165,60 @@
       color:#e5e7eb;
     }
 
+    /* List file GeoJSON tersimpan */
+    .upload-list-card{
+      margin-top:6px;
+      padding:8px 10px;
+      border-radius:10px;
+      border:1px solid var(--border);
+      background:rgba(15,23,42,.92);
+    }
+    .upload-list-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      font-size:11px;
+      color:var(--muted);
+    }
+    .upload-list{
+      margin-top:4px;
+      max-height:120px;
+      overflow:auto;
+      font-size:11px;
+    }
+    .upload-item{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:3px 0;
+      border-bottom:1px dashed rgba(148,163,184,.4);
+    }
+    .upload-item:last-child{border-bottom:none;}
+    .upload-name{
+      flex:1;
+      margin-right:4px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .btn-mini{
+      background:#1e293b;
+      border:none;
+      border-radius:999px;
+      color:#e5e7eb;
+      font-size:10px;
+      padding:2px 6px;
+      margin-left:4px;
+      cursor:pointer;
+    }
+    .btn-mini:hover{background:#0f172a;}
+    .btn-mini.danger{
+      background:#b91c1c;
+    }
+    .btn-mini.danger:hover{
+      background:#7f1d1d;
+    }
+
     /* Leaflet custom controls */
     .myloc-btn{
       width:32px;
@@ -277,6 +331,17 @@
         <button type="button" id="btnUpload" class="btn-primary">Upload &amp; Simpan</button>
         <div id="uploadMsg"></div>
       </div>
+
+      <!-- LIST FILE GEOJSON TERSIMPAN -->
+      <div class="upload-list-card">
+        <div class="upload-list-header">
+          <span>GeoJSON tersimpan</span>
+          <span style="font-size:10px;color:#64748b">klik Tampil / Hapus</span>
+        </div>
+        <div id="uploadList" class="upload-list">
+          <!-- diisi via JS -->
+        </div>
+      </div>
     </div>
   </div>
 
@@ -307,6 +372,7 @@
 
     const GAS_URL = "https://script.google.com/macros/s/AKfycbybsLoQu-8S-MlR_kB2989FZV0C-c1gRzUqcIZWBWuYb-_We03B_BShX8Q3AQqWhOTvzg/exec?sheet=SO_Integrasi&t=" + Date.now();
     const UPLOAD_URL = "https://script.google.com/macros/s/AKfycbzmMWkf3M4Hk8clh9tI19ClAcID5xsVpRc_tDVGldJv1JDGsuSDQaaP8kDQTqaqBfb8Mg/exec";
+    const BBWS_NAME = "BBWS Serayu Opak";
 
     const diSel       = document.getElementById('diSel');
     const clusterSel  = document.getElementById('clusterSel');
@@ -316,6 +382,7 @@
     const uploadInput = document.getElementById('geojsonFile');
     const uploadBtn   = document.getElementById('btnUpload');
     const uploadMsg   = document.getElementById('uploadMsg');
+    const uploadListEl= document.getElementById('uploadList');
     const dock        = document.getElementById('dock');
     const dockToggle  = document.getElementById('dockToggle');
     const note        = (m)=>msgEl.textContent=m||"";
@@ -342,10 +409,14 @@
 
     let lookup={},rows=[],groups={},headers=[];
     const labelLayer=L.layerGroup().addTo(map);
-    let diLayer,saluranLayer,bendungLayer,uploadedLayer=null;
+    let diLayer,saluranLayer,bendungLayer;
     let diIndex=[];
     let myLocMarker = null;
     let myLocCircle = null;
+
+    // file GeoJSON tersimpan
+    const savedLayers = {};   // id -> Leaflet layer
+    let savedFilesMeta = [];  // {id,name,webViewLink?}
 
     const getNamaDI=(o)=>o?.Nama_DI||o?.["Nama Aset"]||o?.["Nama DI"]||o?.nama_infrastruktur||"";
     const addLabel=(latlng,text)=>{
@@ -468,7 +539,81 @@
     });
     map.addControl(new MyLocationControl());
 
-    /* Upload GeoJSON → Drive + tampil di peta */
+    /* ===== Helper popup untuk GeoJSON upload/list ===== */
+    function bindUploadedPopup(f, l){
+      const p = f.properties || {};
+      const title =
+        p["Nama Aset"] || p["NAMA_ASET"] ||
+        p.nama || p.Name || p.NAMOBJ || "Fitur";
+
+      // koordinat: dari geometry atau atribut latitude/longitude
+      let lat = null, lng = null;
+      if (f.geometry && f.geometry.type === "Point" && Array.isArray(f.geometry.coordinates)) {
+        lng = f.geometry.coordinates[0];
+        lat = f.geometry.coordinates[1];
+      }
+      if (p.latitude != null && p.longitude != null) {
+        lat = Number(p.latitude);
+        lng = Number(p.longitude);
+      }
+
+      let rows = [];
+      function addRow(label, key) {
+        const v = p[key];
+        if (v !== undefined && v !== null && v !== "") {
+          rows.push(
+            `<tr><td style="padding:2px 4px;color:#64748b">${label}</td>`+
+            `<td style="padding:2px 4px">${v}</td></tr>`
+          );
+        }
+      }
+
+      addRow("Nama Aset","Nama Aset");
+      addRow("Nama Aset","NAMA_ASET");
+      addRow("Kd_Inf","Kd_Inf");
+      addRow("Sungai","Sungai");
+      addRow("Sungai","sungai");
+      addRow("Daerah Irigasi","Daerah Irigasi");
+      addRow("Kabupaten","Kabupaten");
+      addRow("Provinsi","Provinsi");
+
+      let coordRow = "";
+      let svButtons = "";
+      if (lat != null && lng != null && !Number.isNaN(lat) && !Number.isNaN(lng)) {
+        const latFixed = lat.toFixed(6);
+        const lngFixed = lng.toFixed(6);
+        coordRow =
+          `<tr><td style="padding:2px 4px;color:#64748b">Koordinat</td>`+
+          `<td style="padding:2px 4px">${latFixed}, ${lngFixed}</td></tr>`;
+        const svURL = svLink(latFixed, lngFixed, 0, 0, 75);
+        const gmapsURL = `https://www.google.com/maps/search/?api=1&query=${latFixed},${lngFixed}`;
+        svButtons = `
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+            <a href="${svURL}" target="_blank" rel="noopener"
+               style="background:#0ea5e9;color:#fff;padding:6px 10px;border-radius:8px;text-decoration:none;font-weight:700;font-size:12px">
+               Buka Street View
+            </a>
+            <a href="${gmapsURL}" target="_blank" rel="noopener"
+               style="background:#111827;color:#fff;padding:6px 10px;border-radius:8px;text-decoration:none;font-weight:700;font-size:12px">
+               Buka di Google Maps
+            </a>
+          </div>`;
+      }
+
+      const tableHtml = (rows.length || coordRow)
+        ? `<table style="border-collapse:collapse;font-size:12px;margin-top:4px">${rows.join("")}${coordRow}</table>`
+        : `<div style="font-size:11px;color:#94a3b8;margin-top:4px">(atribut terbatas)</div>`;
+
+      l.bindPopup(`
+        <div style="min-width:220px">
+          <div style="font-weight:800;margin-bottom:4px">${title}</div>
+          ${tableHtml}
+          ${svButtons}
+        </div>
+      `);
+    }
+
+    /* ===== Upload GeoJSON → Drive + list ===== */
     if (uploadBtn) {
       uploadBtn.addEventListener('click', () => {
         uploadMsg.style.color = '#e5e7eb';
@@ -484,111 +629,16 @@
         const reader = new FileReader();
         reader.onload = async (evt) => {
           const content = evt.target.result;
-          const bbwsName = 'BBWS Serayu Opak';
 
           const payload = {
             filename: file.name,
             mimeType: file.type || 'application/json',
             content: content,
-            bbwsName: bbwsName
+            bbwsName: BBWS_NAME
           };
 
           uploadMsg.textContent = 'Mengunggah & menyimpan ke Drive...';
 
-          // tampilkan di peta dengan popup informatif
-          try {
-            const gj = JSON.parse(content);
-            if (uploadedLayer) {
-              map.removeLayer(uploadedLayer);
-              if (layerCtl) { layerCtl.removeLayer(uploadedLayer); }
-            }
-            uploadedLayer = L.geoJSON(gj, {
-              interactive:true,
-              style: () => ({color:'#e11d48',weight:2,fillOpacity:0.2}),
-              pointToLayer:(f,latlng)=>L.circleMarker(latlng,{
-                radius:5,weight:1,color:'#e11d48',
-                fillColor:'#fb7185',fillOpacity:0.9,interactive:true
-              }),
-              onEachFeature:(f,l)=>{
-                const p = f.properties || {};
-                const title =
-                  p["Nama Aset"] || p["NAMA_ASET"] ||
-                  p.nama || p.Name || p.NAMOBJ || "Fitur";
-
-                // koordinat: dari geometry atau atribut latitude/longitude
-                let lat = null, lng = null;
-                if (f.geometry && f.geometry.type === "Point" && Array.isArray(f.geometry.coordinates)) {
-                  lng = f.geometry.coordinates[0];
-                  lat = f.geometry.coordinates[1];
-                }
-                if (p.latitude != null && p.longitude != null) {
-                  lat = Number(p.latitude);
-                  lng = Number(p.longitude);
-                }
-
-                let rows = [];
-                function addRow(label, key) {
-                  const v = p[key];
-                  if (v !== undefined && v !== null && v !== "") {
-                    rows.push(
-                      `<tr><td style="padding:2px 4px;color:#64748b">${label}</td>`+
-                      `<td style="padding:2px 4px">${v}</td></tr>`
-                    );
-                  }
-                }
-
-                addRow("Nama Aset","Nama Aset");
-                addRow("Nama Aset","NAMA_ASET");
-                addRow("Kd_Inf","Kd_Inf");
-                addRow("Sungai","Sungai");
-                addRow("Sungai","sungai");
-                addRow("Daerah Irigasi","Daerah Irigasi");
-                addRow("Kabupaten","Kabupaten");
-                addRow("Provinsi","Provinsi");
-
-                let coordRow = "";
-                let svButtons = "";
-                if (lat != null && lng != null && !Number.isNaN(lat) && !Number.isNaN(lng)) {
-                  const latFixed = lat.toFixed(6);
-                  const lngFixed = lng.toFixed(6);
-                  coordRow =
-                    `<tr><td style="padding:2px 4px;color:#64748b">Koordinat</td>`+
-                    `<td style="padding:2px 4px">${latFixed}, ${lngFixed}</td></tr>`;
-                  const svURL = svLink(latFixed, lngFixed, 0, 0, 75);
-                  const gmapsURL = `https://www.google.com/maps/search/?api=1&query=${latFixed},${lngFixed}`;
-                  svButtons = `
-                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-                      <a href="${svURL}" target="_blank" rel="noopener"
-                         style="background:#0ea5e9;color:#fff;padding:6px 10px;border-radius:8px;text-decoration:none;font-weight:700;font-size:12px">
-                         Buka Street View
-                      </a>
-                      <a href="${gmapsURL}" target="_blank" rel="noopener"
-                         style="background:#111827;color:#fff;padding:6px 10px;border-radius:8px;text-decoration:none;font-weight:700;font-size:12px">
-                         Buka di Google Maps
-                      </a>
-                    </div>`;
-                }
-
-                const tableHtml = (rows.length || coordRow)
-                  ? `<table style="border-collapse:collapse;font-size:12px;margin-top:4px">${rows.join("")}${coordRow}</table>`
-                  : `<div style="font-size:11px;color:#94a3b8;margin-top:4px">(atribut terbatas)</div>`;
-
-                l.bindPopup(`
-                  <div style="min-width:220px">
-                    <div style="font-weight:800;margin-bottom:4px">${title}</div>
-                    ${tableHtml}
-                    ${svButtons}
-                  </div>
-                `);
-              }
-            }).addTo(map);
-            if (layerCtl) layerCtl.addOverlay(uploadedLayer,'Upload Terakhir');
-            try { map.fitBounds(uploadedLayer.getBounds()); } catch(e){}
-          } catch(e){
-            console.warn('Gagal parse GeoJSON upload:',e);
-          }
-
-          // kirim ke Apps Script (Drive)
           try {
             const res = await fetch(UPLOAD_URL, {
               method: 'POST',
@@ -606,15 +656,26 @@
             }
 
             if (data.ok) {
+              const meta = {
+                id: data.id,
+                name: data.name || file.name,
+                webViewLink: data.webViewLink || ""
+              };
+              savedFilesMeta.push(meta);
+              renderUploadList(savedFilesMeta);
+
               uploadMsg.style.color = '#4ade80';
               if (data.webViewLink) {
-                uploadMsg.innerHTML = 'Berhasil tersimpan di folder <b>' + (data.folderName || bbwsName) +
+                uploadMsg.innerHTML = 'Berhasil tersimpan di folder <b>' + (data.folderName || BBWS_NAME) +
                   '</b>. <a href="' + data.webViewLink +
                   '" target="_blank" rel="noopener" style="color:#93c5fd;text-decoration:underline">Buka file</a>';
               } else {
                 uploadMsg.textContent = 'Berhasil tersimpan di Google Drive (folder: ' +
-                  (data.folderName || bbwsName) + ').';
+                  (data.folderName || BBWS_NAME) + ').';
               }
+
+              // tampilkan layer baru & zoom
+              loadFileLayer(meta, true);
             } else {
               uploadMsg.style.color = '#f97316';
               uploadMsg.textContent = 'Server balas error: ' + (data.error || 'tidak diketahui');
@@ -629,7 +690,7 @@
       });
     }
 
-    /* Load data utama */
+    /* ====== DATA UTAMA DI/SALURAN/BENDUNG ====== */
     Promise.allSettled([
       fetch(GAS_URL).then(r=>r.json()),
       fetch(PATHS.DI).then(r=>r.json()),
@@ -856,6 +917,9 @@
 
       refreshLabelsAndStats();
       detailEl.innerHTML='<i style="color:#cbd5e1">Klik poligon DI, saluran, bendung, atau layer hasil upload untuk popup + Street View. Dock & legend bisa diciutkan.</i>';
+
+      // setelah semua layer dasar siap, load daftar GeoJSON yang sudah tersimpan
+      loadSavedList();
     });
 
     function renderDetailDI(info,title,key){
@@ -876,6 +940,136 @@
     }
 
     map.on('zoomend',refreshLabelsAndStats);
+
+    /* ====== FILE LIST / LOAD / DELETE ====== */
+
+    async function loadSavedList(){
+      try{
+        const res = await fetch(
+          UPLOAD_URL + '?action=list&bbws=' + encodeURIComponent(BBWS_NAME)
+        );
+        if(!res.ok) return;
+        const data = await res.json();
+        if(!data.ok) return;
+        savedFilesMeta = data.items || [];
+        renderUploadList(savedFilesMeta);
+
+        // otomatis tampilkan semua di peta (tanpa zoom satu per satu)
+        for(const item of savedFilesMeta){
+          await loadFileLayer(item,false);
+        }
+      }catch(e){
+        console.error('Gagal load list GeoJSON:',e);
+      }
+    }
+
+    function renderUploadList(items){
+      uploadListEl.innerHTML = "";
+      if(!items || !items.length){
+        uploadListEl.innerHTML =
+          '<div style="color:#94a3b8;font-size:11px">Belum ada GeoJSON tersimpan.</div>';
+        return;
+      }
+      items.forEach(item=>{
+        const row = document.createElement('div');
+        row.className = 'upload-item';
+
+        const nameSpan = document.createElement('div');
+        nameSpan.className = 'upload-name';
+        nameSpan.textContent = '• ' + item.name;
+        row.appendChild(nameSpan);
+
+        const btnShow = document.createElement('button');
+        btnShow.className = 'btn-mini';
+        btnShow.textContent = 'Tampil';
+        btnShow.addEventListener('click', ()=>loadFileLayer(item,true));
+        row.appendChild(btnShow);
+
+        const btnDel = document.createElement('button');
+        btnDel.className = 'btn-mini danger';
+        btnDel.textContent = 'Hapus';
+        btnDel.addEventListener('click', ()=>deleteFile(item));
+        row.appendChild(btnDel);
+
+        uploadListEl.appendChild(row);
+      });
+    }
+
+    async function loadFileLayer(item, zoomOnLoad){
+      try{
+        // kalau sudah ada layarnya, tinggal nyalakan + zoom
+        if(savedLayers[item.id]){
+          if(!map.hasLayer(savedLayers[item.id])) map.addLayer(savedLayers[item.id]);
+          if(layerCtl) layerCtl.addOverlay(savedLayers[item.id], item.name);
+          if(zoomOnLoad){
+            try{ map.fitBounds(savedLayers[item.id].getBounds()); }catch(e){}
+          }
+          return;
+        }
+
+        const res = await fetch(
+          UPLOAD_URL + '?action=geojson&id=' + encodeURIComponent(item.id)
+        );
+        if(!res.ok) return;
+        const gj = await res.json();
+
+        const layer = L.geoJSON(gj,{
+          interactive:true,
+          style: () => ({color:'#e11d48',weight:2,fillOpacity:0.2}),
+          pointToLayer:(f,latlng)=>L.circleMarker(latlng,{
+            radius:5,weight:1,color:'#e11d48',
+            fillColor:'#fb7185',fillOpacity:0.9,interactive:true
+          }),
+          onEachFeature:(f,l)=>bindUploadedPopup(f,l)
+        }).addTo(map);
+
+        if(layerCtl) layerCtl.addOverlay(layer, item.name);
+        savedLayers[item.id] = layer;
+
+        if(zoomOnLoad){
+          try{ map.fitBounds(layer.getBounds()); }catch(e){}
+        }
+      }catch(e){
+        console.error('Gagal load GeoJSON untuk',item,e);
+      }
+    }
+
+    async function deleteFile(item){
+      if(!confirm('Hapus file "'+item.name+'" dari Google Drive dan peta?')) return;
+
+      uploadMsg.style.color = '#e5e7eb';
+      uploadMsg.textContent = 'Menghapus ' + item.name + '...';
+
+      try{
+        const res = await fetch(UPLOAD_URL,{
+          method:'POST',
+          body: JSON.stringify({action:'delete', id:item.id})
+        });
+        const data = await res.json();
+        if(!res.ok || !data.ok){
+          throw new Error(data && data.error ? data.error : 'delete gagal');
+        }
+
+        // hapus layer dari map + layer control
+        const layer = savedLayers[item.id];
+        if(layer){
+          map.removeLayer(layer);
+          if(layerCtl) layerCtl.removeLayer(layer);
+          delete savedLayers[item.id];
+        }
+
+        // hapus dari meta & list
+        savedFilesMeta = savedFilesMeta.filter(f=>f.id!==item.id);
+        renderUploadList(savedFilesMeta);
+
+        uploadMsg.style.color = '#4ade80';
+        uploadMsg.textContent = 'Berhasil dihapus.';
+      }catch(err){
+        uploadMsg.style.color = '#f87171';
+        uploadMsg.textContent = 'Gagal menghapus: ' + err.message;
+      }
+    }
+
   });
   </script>
 </body>
