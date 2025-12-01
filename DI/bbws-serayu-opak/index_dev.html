@@ -41,7 +41,11 @@
     }
     .btn-home:hover{background:#f1f5f9}
     .spacer{height:var(--hdrH)}
-    #map{height:calc(100vh - var(--hdrH))}
+    #map{
+      height:calc(100vh - var(--hdrH));
+      position:relative;
+      z-index:1; /* pastikan di atas background lain */
+    }
 
     /* Dock + collapsible */
     .dock{
@@ -253,11 +257,11 @@
     <div class="dock-body" id="dockBody">
       <div class="grid">
         <div>
-          <label>Pilih Daerah Irigasi</label>
+          <label for="diSel">Pilih Daerah Irigasi</label>
           <select id="diSel"><option value="">— Semua —</option></select>
         </div>
         <div>
-          <label>Cluster Informasi (GAS)</label>
+          <label for="clusterSel">Cluster Informasi (GAS)</label>
           <select id="clusterSel"><option value="__ALL__">— Semua —</option></select>
         </div>
       </div>
@@ -316,7 +320,8 @@
     const dockToggle  = document.getElementById('dockToggle');
     const note        = (m)=>msgEl.textContent=m||"";
 
-    const map = L.map('map',{preferCanvas:true}).setView([-7.8,110.3],8);
+    // gunakan renderer default (SVG), tanpa preferCanvas
+    const map = L.map('map').setView([-7.8,110.3],8);
 
     const imagery = L.tileLayer(
       'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -405,7 +410,7 @@
       dockToggle.textContent = dockCollapsed ? 'Tampilkan' : 'Ciutkan';
     });
 
-    /* My Location */
+    /* My Location control */
     const MyLocationControl = L.Control.extend({
       position: 'topright',
       onAdd: function(map){
@@ -490,7 +495,7 @@
 
           uploadMsg.textContent = 'Mengunggah & menyimpan ke Drive...';
 
-          // TAMPILKAN DI PETA dari file lokal
+          // tampilkan di peta
           try {
             const gj = JSON.parse(content);
             if (uploadedLayer) {
@@ -498,10 +503,11 @@
               if (layerCtl) { layerCtl.removeLayer(uploadedLayer); }
             }
             uploadedLayer = L.geoJSON(gj, {
+              interactive:true,
               style: () => ({color:'#e11d48',weight:2,fillOpacity:0.2}),
               pointToLayer:(f,latlng)=>L.circleMarker(latlng,{
                 radius:5,weight:1,color:'#e11d48',
-                fillColor:'#fb7185',fillOpacity:0.9
+                fillColor:'#fb7185',fillOpacity:0.9,interactive:true
               }),
               onEachFeature:(f,l)=>{
                 const p=f.properties||{};
@@ -522,7 +528,7 @@
           try {
             const res = await fetch(UPLOAD_URL, {
               method: 'POST',
-              body: JSON.stringify(payload)   // tanpa header Content-Type manual
+              body: JSON.stringify(payload)
             });
 
             const text = await res.text();
@@ -582,7 +588,8 @@
         const fc={type:'FeatureCollection',features:diRes.value?.features||[]};
         diLayer=L.geoJSON(fc,{
           pane: 'diPane',
-          style:()=>({color:'#1d5fd1',weight:1,fillColor:'#3388ff',fillOpacity:0.30,interactive:true}),
+          interactive:true,
+          style:()=>({color:'#1d5fd1',weight:1,fillColor:'#3388ff',fillOpacity:0.30}),
           onEachFeature:(f,layer)=>{
             const key=String(f.properties?.Kd_Inf||"").trim();
             const info=lookup[key]||{};
@@ -624,6 +631,7 @@
         const fc={type:'FeatureCollection',features:salRes.value?.features||[]};
         saluranLayer=L.geoJSON(fc,{
           pane: 'saluranPane',
+          interactive:true,
           style:()=>({color:'#10b981',weight:2,opacity:.95}),
           onEachFeature:(f,layer)=>{
             const p=f.properties||{};
@@ -658,9 +666,10 @@
       let bendungData = (bendungRes.status==='fulfilled' && bendungRes.value) ? bendungRes.value : BENDUNG_SAMPLE;
       bendungLayer=L.geoJSON(bendungData,{
         pane:'bendungPane',
+        interactive:true,
         pointToLayer:(feat,latlng)=>L.circleMarker(latlng,{
           radius:6,weight:2,opacity:1,fillOpacity:.9,
-          color:'#f59e0b',fillColor:'#f59e0b'
+          color:'#f59e0b',fillColor:'#f59e0b',interactive:true
         }),
         onEachFeature:(f,l)=>{
           const p=f.properties||{};
