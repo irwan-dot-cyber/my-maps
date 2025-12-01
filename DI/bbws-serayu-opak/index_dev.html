@@ -12,7 +12,7 @@
     :root{
       --bg:#0b1222; --text:#e5e7eb; --muted:#cbd5e1; --muted-2:#94a3b8;
       --survey:#0d47a1; --accent:#1d5fd1; --panel:rgba(11,18,34,.92);
-      --border:rgba(255,255,255,.12); --hdrH:88px; --radius:12px;
+      --border:rgba(255,255,255,.12); --hdrH:80px; --radius:12px;
     }
     html, body {
       height:100%; margin:0;
@@ -20,23 +20,24 @@
       background:var(--bg); color:var(--text)
     }
 
-    /* Header */
+    /* Header ringkas */
     .header{
       position:fixed; top:0; left:0; right:0; z-index:900;
       background:var(--survey);
       border-bottom:1px solid rgba(255,255,255,.18);
-      padding:10px 16px;
-      display:flex; align-items:center; gap:14px;
+      padding:8px 12px;
+      display:flex; align-items:center; gap:10px;
       box-shadow:0 6px 18px rgba(13,71,161,.25)
     }
-    .header img{height:54px}
+    .header img{height:44px}
     .header .text{flex:1; color:#fff}
-    .header .title{font-weight:800; font-size:14px; line-height:1.35}
-    .header .subtitle{font-weight:600; font-size:12px; color:rgba(255,255,255,.9); margin-top:4px}
+    .header .title{font-weight:800; font-size:13px; line-height:1.3}
+    .header .subtitle{font-weight:600; font-size:11px; color:rgba(255,255,255,.9); margin-top:2px}
     .btn-home{
       background:#fff; color:var(--survey);
-      font-weight:700; padding:8px 14px;
-      border-radius:10px; text-decoration:none; font-size:13px
+      font-weight:700; padding:6px 12px;
+      border-radius:10px; text-decoration:none; font-size:11px;
+      white-space:nowrap;
     }
     .btn-home:hover{background:#f1f5f9}
     .spacer{height:var(--hdrH)}
@@ -46,47 +47,47 @@
     .dock{
       position:fixed; left:0; right:0; bottom:0;
       background:var(--panel); border-top:1px solid var(--border);
-      max-height:46vh; overflow:auto; padding:12px 14px;
+      max-height:46vh; overflow:auto; padding:10px 12px;
       box-shadow:0 -10px 22px rgba(0,0,0,.28);
       z-index:950; backdrop-filter:blur(6px)
     }
-    .dock h2{font-size:14px; margin:0 0 8px; font-weight:800; color:#fff}
-    .grid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
-    label{font-size:12px; color:var(--muted)}
+    .dock h2{font-size:14px; margin:0 0 6px; font-weight:800; color:#fff}
+    .grid{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+    label{font-size:11px; color:var(--muted)}
     select{
-      width:100%; padding:10px 12px; font-size:14px;
+      width:100%; padding:8px 10px; font-size:13px;
       background:rgba(255,255,255,.06); color:#fff;
       border:1px solid var(--border); border-radius:var(--radius);
       outline:none; appearance:none
     }
     option{color:#000; background:#fff}
-    .meta{font-size:13px; border-collapse:collapse; width:100%; color:var(--text)}
-    .meta td{border-bottom:1px dashed rgba(255,255,255,.08); padding:6px 2px}
+    .meta{font-size:12px; border-collapse:collapse; width:100%; color:var(--text)}
+    .meta td{border-bottom:1px dashed rgba(255,255,255,.08); padding:4px 2px}
     .key{color:var(--muted-2); width:42%}
     .row{
       display:grid; grid-template-columns:1fr auto 1fr auto;
-      gap:12px; font-size:13px; color:var(--muted)
+      gap:8px; font-size:12px; color:var(--muted)
     }
     .row b{color:#fff}
-    .err{color:#fca5a5; font-size:12px; margin-top:6px}
+    .err{color:#fca5a5; font-size:11px; margin-top:4px}
     .di-label{
       background:rgba(255,255,255,.9);
       border:1px solid #d1d5db;
       padding:2px 6px; border-radius:6px;
-      font-size:12px; color:#111
+      font-size:11px; color:#111
     }
     @media(max-width:680px){
       .grid{grid-template-columns:1fr}
-      :root{--hdrH:96px}
+      :root{--hdrH:88px}
     }
 
     /* Badge */
     .badge-irwan{
-      position:fixed; right:12px; bottom:96px; z-index:1200;
+      position:fixed; right:12px; bottom:92px; z-index:1200;
       background:rgba(13,71,161,.85);
       border:1px solid rgba(255,255,255,.25);
-      color:#fff; font-size:12px; font-weight:700;
-      padding:6px 12px; border-radius:10px;
+      color:#fff; font-size:11px; font-weight:700;
+      padding:5px 10px; border-radius:10px;
       box-shadow:0 0 10px rgba(13,71,161,.6);
       backdrop-filter:blur(6px);
       animation:glow 2.8s ease-in-out infinite
@@ -98,27 +99,9 @@
       50%{box-shadow:0 0 18px rgba(255,215,0,.8)}
     }
 
-    /* Legend */
-    .legend{
-      position: fixed; left: 12px; bottom: 148px; z-index: 1200;
-      background: rgba(0,0,0,.4); color: #fff; font-size:12px;
-      border:1px solid var(--border);
-      border-radius:10px; padding:8px 10px;
-      backdrop-filter: blur(6px)
-    }
-    .legend .item{display:flex; align-items:center; gap:8px; margin:4px 0}
-    .legend .swatch{
-      width:16px; height:16px;
-      border-radius:4px;
-      border:1px solid rgba(255,255,255,.6)
-    }
-    .swatch-di{background:#3388ff}
-    .swatch-saluran{background:#10b981}
-    .swatch-bendung{background:#f59e0b}
-
     /* Upload card */
     .upload-card{
-      margin-top:10px;
+      margin-top:8px;
       padding:8px 10px;
       border-radius:10px;
       border:1px solid var(--border);
@@ -126,14 +109,14 @@
     }
     .upload-card label{
       display:block;
-      margin-bottom:6px;
-      font-size:12px;
+      margin-bottom:4px;
+      font-size:11px;
       color:var(--muted);
     }
     .upload-card input[type="file"]{
       width:100%;
-      font-size:12px;
-      margin-bottom:8px;
+      font-size:11px;
+      margin-bottom:6px;
       color:var(--muted-2);
     }
     .btn-primary{
@@ -148,30 +131,58 @@
     }
     .btn-primary:hover{background:#2563eb}
     #uploadMsg{
-      font-size:12px;
+      font-size:11px;
       margin-top:4px;
       color:#e5e7eb;
     }
 
-    /* My Location button */
-    .loc-btn{
-      position:fixed;
-      right:14px;
-      top:110px;
-      z-index:1200;
-      width:40px; height:40px;
-      border-radius:999px;
-      border:1px solid var(--border);
-      background:rgba(15,23,42,.95);
+    /* Leaflet custom controls */
+    .myloc-btn{
+      width:32px;
+      height:32px;
+      border:none;
+      background:rgba(15,23,42,.96);
       color:#e5e7eb;
-      font-size:18px;
+      font-size:16px;
+      cursor:pointer;
       display:flex;
       align-items:center;
       justify-content:center;
-      cursor:pointer;
-      box-shadow:0 4px 12px rgba(0,0,0,.45);
+      border-radius:4px;
     }
-    .loc-btn:hover{background:#111827}
+    .myloc-btn:hover{background:#111827}
+
+    .layer-legend{
+      background:rgba(15,23,42,.95);
+      color:#f9fafb;
+      padding:6px 8px;
+      border-radius:6px;
+      border:1px solid rgba(148,163,184,.6);
+      font-size:11px;
+    }
+    .layer-legend-title{
+      font-weight:700;
+      margin-bottom:4px;
+    }
+    .layer-legend .item{
+      display:flex;
+      align-items:center;
+      gap:4px;
+      margin:3px 0;
+    }
+    .layer-legend .swatch{
+      width:12px; height:12px;
+      border-radius:3px;
+      border:1px solid rgba(255,255,255,.7);
+    }
+    .swatch-di{background:#3388ff}
+    .swatch-saluran{background:#10b981}
+    .swatch-bendung{background:#f59e0b}
+    .layer-legend input[type="checkbox"]{
+      margin:0;
+      width:12px;
+      height:12px;
+    }
   </style>
 </head>
 <body>
@@ -179,9 +190,9 @@
   <div class="header">
     <img src="../../assets/LogoPUPR.png" alt="Logo PU"/>
     <div class="text">
-      <div class="title">Kementerian Pekerjaan Umum</div>
-      <div class="subtitle">Direktorat Jenderal Sumber Daya Air — Direktorat Irigasi dan Rawa</div>
-      <div class="subtitle">Daerah Irigasi Kewenangan <b>BBWS Serayu Opak</b></div>
+      <div class="title">Kementerian PUPR</div>
+      <div class="subtitle">Ditjen SDA · Dir. Irigasi &amp; Rawa</div>
+      <div class="subtitle">DI Kewenangan <b>BBWS Serayu Opak</b></div>
     </div>
     <a href="../../si-irwan.html" class="btn-home">Beranda</a>
   </div>
@@ -189,9 +200,6 @@
 
   <!-- MAP -->
   <div id="map"></div>
-
-  <!-- MY LOCATION BUTTON -->
-  <button id="locBtn" class="loc-btn" title="Lokasi saya">◎</button>
 
   <!-- DOCK -->
   <div class="dock">
@@ -207,9 +215,9 @@
       </div>
     </div>
     <div id="msg" class="err"></div>
-    <hr style="border:none;border-top:1px solid var(--border);margin:10px 0"/>
+    <hr style="border:none;border-top:1px solid var(--border);margin:8px 0"/>
     <div id="stats" class="row"></div>
-    <div id="detail" style="margin-top:8px"></div>
+    <div id="detail" style="margin-top:6px;font-size:12px"></div>
 
     <!-- UPLOAD GEOJSON/JSON -->
     <div class="upload-card">
@@ -218,13 +226,6 @@
       <button type="button" id="btnUpload" class="btn-primary">Upload &amp; Simpan</button>
       <div id="uploadMsg"></div>
     </div>
-  </div>
-
-  <!-- LEGEND -->
-  <div class="legend">
-    <div class="item"><span class="swatch swatch-di"></span> DI (Polygon)</div>
-    <div class="item"><span class="swatch swatch-saluran"></span> Saluran (Line)</div>
-    <div class="item"><span class="swatch swatch-bendung"></span> Bendung (Point)</div>
   </div>
 
   <!-- BADGE -->
@@ -260,17 +261,15 @@
     // URL Web App upload ke Google Drive
     const UPLOAD_URL = "https://script.google.com/macros/s/AKfycbzmMWkf3M4Hk8clh9tI19ClAcID5xsVpRc_tDVGldJv1JDGsuSDQaaP8kDQTqaqBfb8Mg/exec";
 
-    const diSel     = document.getElementById('diSel');
-    const clusterSel= document.getElementById('clusterSel');
-    const statsEl   = document.getElementById('stats');
-    const detailEl  = document.getElementById('detail');
-    const msgEl     = document.getElementById('msg');
+    const diSel       = document.getElementById('diSel');
+    const clusterSel  = document.getElementById('clusterSel');
+    const statsEl     = document.getElementById('stats');
+    const detailEl    = document.getElementById('detail');
+    const msgEl       = document.getElementById('msg');
     const uploadInput = document.getElementById('geojsonFile');
     const uploadBtn   = document.getElementById('btnUpload');
     const uploadMsg   = document.getElementById('uploadMsg');
-    const locBtn      = document.getElementById('locBtn');
-
-    const note = (m)=>msgEl.textContent=m||"";
+    const note        = (m)=>msgEl.textContent=m||"";
 
     // Map
     const map = L.map('map',{preferCanvas:true}).setView([-7.8,110.3],8);
@@ -286,7 +285,11 @@
     let lookup={},rows=[],groups={},headers=[];
     const labelLayer=L.layerGroup().addTo(map);
     let diLayer,saluranLayer,bendungLayer;
-    let diIndex=[],activeKey=null,activeTitle=null;
+    let diIndex=[];
+    let activeKey=null,activeTitle=null;
+
+    let myLocMarker = null;
+    let myLocCircle = null;
 
     const getNamaDI=(o)=>o?.Nama_DI||o?.["Nama Aset"]||o?.["Nama DI"]||o?.nama_infrastruktur||"";
     const addLabel=(latlng,text)=>{
@@ -344,6 +347,64 @@
       return `https://www.google.com/maps/@?${q.toString()}`;
     }
 
+    /* ============ My Location Control (Leaflet) ============ */
+    const MyLocationControl = L.Control.extend({
+      position: 'topright',
+      onAdd: function(map){
+        const container = L.DomUtil.create('div','leaflet-bar');
+        const btn = L.DomUtil.create('button','myloc-btn',container);
+        btn.type='button';
+        btn.innerHTML='◎';
+        btn.title='Lokasi saya';
+        L.DomEvent.disableClickPropagation(container);
+        L.DomEvent.on(btn,'click',function(e){
+          if (!navigator.geolocation) {
+            note('Browser tidak mendukung geolokasi.');
+            return;
+          }
+          note('Mencari lokasi Anda...');
+          navigator.geolocation.getCurrentPosition(
+            (pos)=>{
+              const lat = pos.coords.latitude;
+              const lng = pos.coords.longitude;
+              const acc = pos.coords.accuracy || 0;
+              const latlng=[lat,lng];
+
+              if (!myLocMarker) {
+                myLocMarker = L.marker(latlng).addTo(map).bindPopup('Lokasi saya');
+              } else {
+                myLocMarker.setLatLng(latlng);
+              }
+
+              if (acc && !isNaN(acc)) {
+                if (!myLocCircle) {
+                  myLocCircle = L.circle(latlng,{
+                    radius:acc,
+                    color:'#38bdf8',
+                    weight:1,
+                    fillOpacity:0.15
+                  }).addTo(map);
+                } else {
+                  myLocCircle.setLatLng(latlng);
+                  myLocCircle.setRadius(acc);
+                }
+              }
+
+              map.setView(latlng, Math.max(map.getZoom(), 15));
+              note('');
+              if (myLocMarker) myLocMarker.openPopup();
+            },
+            (err)=>{
+              note('Gagal mendapatkan lokasi: ' + err.message);
+            },
+            { enableHighAccuracy:true, timeout:10000, maximumAge:0 }
+          );
+        });
+        return container;
+      }
+    });
+    map.addControl(new MyLocationControl());
+
     /* ============ UPLOAD GEOJSON → DRIVE ============ */
     if (uploadBtn) {
       uploadBtn.addEventListener('click', () => {
@@ -360,7 +421,6 @@
         const reader = new FileReader();
         reader.onload = async (evt) => {
           const content = evt.target.result;
-
           const bbwsName = 'BBWS Serayu Opak'; // folder BBWS di Drive
 
           const payload = {
@@ -403,7 +463,6 @@
               uploadMsg.style.color = '#f97316';
               uploadMsg.textContent = 'Server balas error: ' + (data.error || 'tidak diketahui');
             }
-
           } catch (err) {
             uploadMsg.style.color = '#f87171';
             uploadMsg.textContent = 'Gagal menghubungi server upload: ' + err;
@@ -411,54 +470,6 @@
         };
 
         reader.readAsText(file);
-      });
-    }
-
-    /* ============ MY LOCATION BUTTON ============ */
-    let myLocMarker = null;
-    let myLocCircle = null;
-
-    if (locBtn) {
-      locBtn.addEventListener('click', () => {
-        if (!navigator.geolocation) {
-          note('Browser tidak mendukung geolokasi.');
-          return;
-        }
-
-        note('Mencari lokasi Anda...');
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            const lat = pos.coords.latitude;
-            const lng = pos.coords.longitude;
-            const acc = pos.coords.accuracy || 0;
-
-            const latlng = [lat, lng];
-
-            if (!myLocMarker) {
-              myLocMarker = L.marker(latlng).addTo(map).bindPopup('Lokasi saya');
-            } else {
-              myLocMarker.setLatLng(latlng);
-            }
-
-            if (acc && !isNaN(acc)) {
-              if (!myLocCircle) {
-                myLocCircle = L.circle(latlng, { radius: acc, color:'#38bdf8', weight:1, fillOpacity:0.15 })
-                  .addTo(map);
-              } else {
-                myLocCircle.setLatLng(latlng);
-                myLocCircle.setRadius(acc);
-              }
-            }
-
-            map.setView(latlng, Math.max(map.getZoom(), 15));
-            note('');
-            if (myLocMarker) myLocMarker.openPopup();
-          },
-          (err) => {
-            note('Gagal mendapatkan lokasi: ' + err.message);
-          },
-          { enableHighAccuracy:true, timeout:10000, maximumAge:0 }
-        );
       });
     }
 
@@ -480,7 +491,7 @@
         diNames.forEach(nm=>diSel.insertAdjacentHTML('beforeend',`<option value="${nm}">${nm}</option>`));
       }
 
-      // DI (polygon)
+      // DI (polygon) + popup + Street View (centroid)
       if(diRes.status==='fulfilled'){
         const fc={type:'FeatureCollection',features:diRes.value?.features||[]};
         diLayer=L.geoJSON(fc,{
@@ -491,7 +502,27 @@
             const info=lookup[key]||{};
             const title=getNamaDI(info)||key||'DI';
             const center=layer.getBounds().getCenter();
+            const lat = center.lat.toFixed(6);
+            const lng = center.lng.toFixed(6);
+            const svURL = svLink(lat,lng,0,0,75);
+
             diIndex.push({layer,key,title,nama:title.toLowerCase(),dataObj:info,center});
+
+            const popupHtml = `
+              <div style="min-width:220px">
+                <div style="font-weight:800;margin-bottom:4px">${title}</div>
+                <div style="font-size:12px;color:#64748b;margin-bottom:6px">
+                  <div><b>Kd_Inf:</b> ${key||'-'}</div>
+                  <div><b>Centroid:</b> ${lat}, ${lng}</div>
+                </div>
+                <a href="${svURL}" target="_blank" rel="noopener"
+                   style="background:#0ea5e9;color:#fff;padding:6px 10px;border-radius:8px;text-decoration:none;font-weight:700;font-size:12px">
+                   Street View (tengah DI)
+                </a>
+              </div>
+            `;
+            layer.bindPopup(popupHtml);
+
             layer.on('click',()=>{
               activeKey=key;activeTitle=title;
               renderDetailDI(info,title,key);
@@ -502,17 +533,41 @@
         if(diLayer.getLayers().length){map.fitBounds(diLayer.getBounds());}
       }
 
-      // Saluran (line)
+      // Saluran (line) + popup + Street View (tengah garis)
       if(salRes.status==='fulfilled'){
         const fc={type:'FeatureCollection',features:salRes.value?.features||[]};
         saluranLayer=L.geoJSON(fc,{
           pane: 'saluranPane',
-          style:()=>({color:'#10b981',weight:2,opacity:.95})
+          style:()=>({color:'#10b981',weight:2,opacity:.95}),
+          onEachFeature:(f,layer)=>{
+            const p=f.properties||{};
+            const nm = p.nama || p.NAMA || p.NM_SALURAN || p.Name || 'Saluran';
+            const kd = p.Kd_Inf || p.KD_INF || '-';
+            const center = layer.getBounds().getCenter();
+            const lat = center.lat.toFixed(6);
+            const lng = center.lng.toFixed(6);
+            const svURL = svLink(lat,lng,0,0,75);
+
+            const popupHtml = `
+              <div style="min-width:220px">
+                <div style="font-weight:800;margin-bottom:4px">${nm}</div>
+                <div style="font-size:12px;color:#64748b;margin-bottom:6px">
+                  <div><b>Kd_Inf:</b> ${kd}</div>
+                  <div><b>Posisi (tengah):</b> ${lat}, ${lng}</div>
+                </div>
+                <a href="${svURL}" target="_blank" rel="noopener"
+                   style="background:#0ea5e9;color:#fff;padding:6px 10px;border-radius:8px;text-decoration:none;font-weight:700;font-size:12px">
+                   Street View saluran
+                </a>
+              </div>
+            `;
+            layer.bindPopup(popupHtml);
+          }
         }).addTo(map);
         saluranLayer.bringToFront();
       }
 
-      // Bendung (point)
+      // Bendung (point) + popup Street View existing
       let bendungData = (bendungRes.status==='fulfilled' && bendungRes.value) ? bendungRes.value : BENDUNG_SAMPLE;
       bendungLayer=L.geoJSON(bendungData,{
         pane:'bendungPane',
@@ -555,14 +610,68 @@
       }).addTo(map);
       bendungLayer.bringToFront();
 
-      const overlays={};
-      if(diLayer)overlays['DI (Polygon)']=diLayer;
-      if(saluranLayer)overlays['Saluran (Line)']=saluranLayer;
-      if(bendungLayer)overlays['Bendung (Point)']=bendungLayer;
-      L.control.layers(null,overlays,{collapsed:true}).addTo(map);
+      // Custom legend + layer on/off (DI, Saluran, Bendung)
+      const LayerLegendControl = L.Control.extend({
+        position:'topright',
+        onAdd:function(map){
+          const container = L.DomUtil.create('div','layer-legend');
+          container.innerHTML = `
+            <div class="layer-legend-title">Layer</div>
+            <div class="item">
+              <input type="checkbox" id="chk-di" checked>
+              <span class="swatch swatch-di"></span>
+              <label for="chk-di">DI (Polygon)</label>
+            </div>
+            <div class="item">
+              <input type="checkbox" id="chk-saluran" checked>
+              <span class="swatch swatch-saluran"></span>
+              <label for="chk-saluran">Saluran (Line)</label>
+            </div>
+            <div class="item">
+              <input type="checkbox" id="chk-bendung" checked>
+              <span class="swatch swatch-bendung"></span>
+              <label for="chk-bendung">Bendung (Point)</label>
+            </div>
+          `;
+          L.DomEvent.disableClickPropagation(container);
+
+          const chkDi       = container.querySelector('#chk-di');
+          const chkSaluran  = container.querySelector('#chk-saluran');
+          const chkBendung  = container.querySelector('#chk-bendung');
+
+          if(!diLayer){ chkDi.disabled=true; }
+          if(!saluranLayer){ chkSaluran.disabled=true; }
+          if(!bendungLayer){ chkBendung.disabled=true; }
+
+          chkDi.addEventListener('change',()=>{
+            if(diLayer){
+              if(chkDi.checked){ map.addLayer(diLayer); }
+              else { map.removeLayer(diLayer); }
+              refreshLabelsAndStats();
+            }
+          });
+          chkSaluran.addEventListener('change',()=>{
+            if(saluranLayer){
+              if(chkSaluran.checked){ map.addLayer(saluranLayer); }
+              else { map.removeLayer(saluranLayer); }
+              refreshLabelsAndStats();
+            }
+          });
+          chkBendung.addEventListener('change',()=>{
+            if(bendungLayer){
+              if(chkBendung.checked){ map.addLayer(bendungLayer); }
+              else { map.removeLayer(bendungLayer); }
+              refreshLabelsAndStats();
+            }
+          });
+
+          return container;
+        }
+      });
+      map.addControl(new LayerLegendControl());
 
       refreshLabelsAndStats();
-      detailEl.innerHTML='<i style="color:#cbd5e1">Klik poligon DI atau pilih DI untuk lihat detail.</i>';
+      detailEl.innerHTML='<i style="color:#cbd5e1">Klik poligon DI atau pilih DI untuk lihat detail. Semua objek bisa diklik untuk Street View.</i>';
     });
 
     function renderDetailDI(info,title,key){
@@ -570,13 +679,13 @@
       const table=(lookup[key])
         ?buildTable(info,(g==="__ALL__")?headers:(groups[g]||headers))
         :`<div style="color:#cbd5e1;font-size:12px">Data GAS tidak ditemukan.</div>`;
-      detailEl.innerHTML=`<h3 style="margin:6px 0;color:#fff">${title}</h3>
-      <div style="font-size:12px;color:#cbd5e1;margin-bottom:6px">Kd_Inf: ${key}</div>${table}`;
+      detailEl.innerHTML=`<h3 style="margin:4px 0;color:#fff">${title}</h3>
+      <div style="font-size:11px;color:#cbd5e1;margin-bottom:4px">Kd_Inf: ${key}</div>${table}`;
     }
 
     function refreshLabelsAndStats(){
       labelLayer.clearLayers();
-      if(diIndex.length&&map.getZoom()>=10){
+      if(diIndex.length && diLayer && map.hasLayer(diLayer) && map.getZoom()>=10){
         diIndex.forEach(o=>addLabel(o.center,o.title));
       }
       updateStats();
