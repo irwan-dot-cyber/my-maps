@@ -63,6 +63,45 @@
     .swatch-di{background:#3388ff}
     .swatch-saluran{background:#10b981}
     .swatch-bendung{background:#f59e0b}
+
+    /* Upload card */
+    .upload-card{
+      margin-top:10px;
+      padding:8px 10px;
+      border-radius:10px;
+      border:1px solid var(--border);
+      background:rgba(15,23,42,.92);
+    }
+    .upload-card label{
+      display:block;
+      margin-bottom:6px;
+      font-size:12px;
+      color:var(--muted);
+    }
+    .upload-card input[type="file"]{
+      width:100%;
+      font-size:12px;
+      margin-bottom:8px;
+      color:var(--muted-2);
+    }
+    .btn-primary{
+      background:var(--accent);
+      color:#fff;
+      border:none;
+      border-radius:999px;
+      padding:6px 12px;
+      font-size:12px;
+      font-weight:700;
+      cursor:pointer;
+    }
+    .btn-primary:hover{
+      background:#2563eb;
+    }
+    #uploadMsg{
+      font-size:12px;
+      margin-top:4px;
+      color:#e5e7eb;
+    }
   </style>
 </head>
 <body>
@@ -98,6 +137,14 @@
     <hr style="border:none;border-top:1px solid var(--border);margin:10px 0"/>
     <div id="stats" class="row"></div>
     <div id="detail" style="margin-top:8px"></div>
+
+    <!-- UPLOAD GEOJSON/JSON -->
+    <div class="upload-card">
+      <label for="geojsonFile">Upload GeoJSON / JSON → simpan ke Google Drive</label>
+      <input type="file" id="geojsonFile" accept=".geojson,.json,application/json"/>
+      <button type="button" id="btnUpload" class="btn-primary">Upload &amp; Simpan</button>
+      <div id="uploadMsg"></div>
+    </div>
   </div>
 
   <!-- LEGEND -->
@@ -137,11 +184,18 @@
     // GAS (Google Apps Script) — integrasi tabel info
     const GAS_URL = "https://script.google.com/macros/s/AKfycbybsLoQu-8S-MlR_kB2989FZV0C-c1gRzUqcIZWBWuYb-_We03B_BShX8Q3AQqWhOTvzg/exec?sheet=SO_Integrasi&t=" + Date.now();
 
+    // URL Apps Script (web app) untuk upload file ke Google Drive
+    // TODO: ganti dengan URL web app yang menangani upload ke Drive
+    const UPLOAD_URL = "https://script.google.com/macros/s/REPLACE_WITH_UPLOAD_WEB_APP/exec";
+
     const diSel=document.getElementById('diSel');
     const clusterSel=document.getElementById('clusterSel');
     const statsEl=document.getElementById('stats');
     const detailEl=document.getElementById('detail');
     const msgEl=document.getElementById('msg');
+    const uploadInput=document.getElementById('geojsonFile');
+    const uploadBtn=document.getElementById('btnUpload');
+    const uploadMsg=document.getElementById('uploadMsg');
     const note=(m)=>msgEl.textContent=m||"";
 
     // Map + PANES (atur zIndex supaya saluran & bendung di atas poligon)
@@ -210,6 +264,66 @@
       });
       return `https://www.google.com/maps/@?${q.toString()}`;
     }
+
+    // ============ HANDLER UPLOAD GEOJSON → DRIVE (via Apps Script) ============
+    if(uploadBtn){
+      uploadBtn.addEventListener('click', async () => {
+        uploadMsg.style.color = '#e5e7eb';
+        uploadMsg.textContent = '';
+
+        const file = uploadInput.files[0];
+        if(!file){
+          uploadMsg.style.color = '#f87171';
+          uploadMsg.textContent = 'Pilih dulu file GeoJSON / JSON yang mau diupload.';
+          return;
+        }
+
+        // Cek ekstensi dasar
+        if(!/(\.geojson|\.json)$/i.test(file.name)){
+          uploadMsg.style.color = '#f97316';
+          uploadMsg.textContent = 'File tidak ber-ekstensi .geojson / .json, tapi tetap dicoba upload ke Drive.';
+        } else {
+          uploadMsg.textContent = 'Mengunggah & menyimpan ke Drive...';
+        }
+
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('filename', file.name);
+        fd.append('mimeType', file.type || 'application/json');
+
+        try{
+          const res = await fetch(UPLOAD_URL, { method:'POST', body:fd });
+          const text = await res.text();
+          if(!res.ok){
+            uploadMsg.style.color = '#f87171';
+            uploadMsg.textContent = 'Upload gagal: ' + res.status + ' ' + res.statusText;
+            return;
+          }
+
+          let data = null;
+          try{ data = JSON.parse(text); }catch(e){}
+
+          // Asumsi Apps Script balas {ok:true, webViewLink:"...", url:"..."}
+          if(data && (data.ok || data.success)){
+            const link = data.webViewLink || data.url || data.link;
+            uploadMsg.style.color = '#4ade80';
+            if(link){
+              uploadMsg.innerHTML = 'Berhasil tersimpan di Drive. <a href="'+link+'" target="_blank" rel="noopener" style="color:#93c5fd;text-decoration:underline">Buka file</a>';
+            }else{
+              uploadMsg.textContent = 'Berhasil tersimpan di Drive. Cek folder tujuan di Google Drive.';
+            }
+          }else{
+            uploadMsg.style.color = '#4ade80';
+            uploadMsg.textContent = 'Upload selesai. Cek Google Drive / log Apps Script untuk konfirmasi.';
+          }
+        }catch(err){
+          uploadMsg.style.color = '#f87171';
+          uploadMsg.textContent = 'Gagal menghubungi server upload. Pastikan UPLOAD_URL sudah diganti dengan URL web app Apps Script yang aktif.';
+        }
+      });
+    }
+
+    // ==========================================================================
 
     Promise.allSettled([
       fetch(GAS_URL).then(r=>r.json()),
