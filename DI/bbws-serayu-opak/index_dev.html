@@ -142,7 +142,7 @@
       width:100%;
       font-size:11px;
       margin-bottom:6px;
-      color:var(--muted-2);
+      color:#muted-2;
     }
     .btn-primary{
       background:var(--accent);
@@ -292,7 +292,6 @@
       BENDUNG: "./contoh_bendung.geojson",
     };
 
-    // Fallback contoh bendung bila file belum tersedia
     const BENDUNG_SAMPLE = {
       "type":"FeatureCollection",
       "features":[
@@ -303,10 +302,7 @@
       ]
     };
 
-    // GAS (Google Apps Script) — integrasi tabel info
     const GAS_URL = "https://script.google.com/macros/s/AKfycbybsLoQu-8S-MlR_kB2989FZV0C-c1gRzUqcIZWBWuYb-_We03B_BShX8Q3AQqWhOTvzg/exec?sheet=SO_Integrasi&t=" + Date.now();
-
-    // URL Web App upload ke Google Drive
     const UPLOAD_URL = "https://script.google.com/macros/s/AKfycbzmMWkf3M4Hk8clh9tI19ClAcID5xsVpRc_tDVGldJv1JDGsuSDQaaP8kDQTqaqBfb8Mg/exec";
 
     const diSel       = document.getElementById('diSel');
@@ -409,7 +405,7 @@
       return `https://www.google.com/maps/@?${q.toString()}`;
     }
 
-    /* ============ Dock toggle ============ */
+    /* Dock toggle */
     let dockCollapsed = false;
     dockToggle.addEventListener('click',()=>{
       dockCollapsed = !dockCollapsed;
@@ -417,7 +413,7 @@
       dockToggle.textContent = dockCollapsed ? 'Tampilkan' : 'Ciutkan';
     });
 
-    /* ============ My Location Control (Leaflet) ============ */
+    /* My Location control */
     const MyLocationControl = L.Control.extend({
       position: 'topright',
       onAdd: function(map){
@@ -427,7 +423,7 @@
         btn.innerHTML='📍';
         btn.title='Lokasi saya';
         L.DomEvent.disableClickPropagation(container);
-        L.DomEvent.on(btn,'click',function(e){
+        L.DomEvent.on(btn,'click',function(){
           if (!navigator.geolocation) {
             note('Browser tidak mendukung geolokasi.');
             return;
@@ -475,7 +471,7 @@
     });
     map.addControl(new MyLocationControl());
 
-    /* ============ UPLOAD GEOJSON → DRIVE ============ */
+    /* Upload GeoJSON → Drive (tanpa header manual, biar aman CORS) */
     if (uploadBtn) {
       uploadBtn.addEventListener('click', () => {
         uploadMsg.style.color = '#e5e7eb';
@@ -505,7 +501,7 @@
           try {
             const res = await fetch(UPLOAD_URL, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              // jangan set Content-Type manual, biar nggak preflight
               body: JSON.stringify(payload)
             });
 
@@ -543,7 +539,7 @@
       });
     }
 
-    /* ============ LOAD DATA ============ */
+    /* Load data */
     Promise.allSettled([
       fetch(GAS_URL).then(r=>r.json()),
       fetch(PATHS.DI).then(r=>r.json()),
@@ -682,7 +678,7 @@
       if(layerCtl) layerCtl.addOverlay(bendungLayer,'Bendung (Point)');
       bendungLayer.bringToFront();
 
-      /* ============ Custom Legend + on/off + collapse ============ */
+      /* Legend + layer toggle + collapse */
       const LayerLegendControl = L.Control.extend({
         position:'topright',
         onAdd:function(map){
