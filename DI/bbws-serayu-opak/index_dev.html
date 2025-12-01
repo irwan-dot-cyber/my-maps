@@ -43,15 +43,40 @@
     .spacer{height:var(--hdrH)}
     #map{height:calc(100vh - var(--hdrH))}
 
-    /* Dock */
+    /* Dock + collapsible */
     .dock{
       position:fixed; left:0; right:0; bottom:0;
       background:var(--panel); border-top:1px solid var(--border);
-      max-height:46vh; overflow:auto; padding:10px 12px;
+      max-height:46vh; padding:8px 12px;
       box-shadow:0 -10px 22px rgba(0,0,0,.28);
-      z-index:950; backdrop-filter:blur(6px)
+      z-index:950; backdrop-filter:blur(6px);
+      display:flex; flex-direction:column; gap:6px;
+      transition:max-height .2s ease, padding .2s ease;
     }
-    .dock h2{font-size:14px; margin:0 0 6px; font-weight:800; color:#fff}
+    .dock-header{
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .dock-header h2{
+      font-size:14px; margin:0; font-weight:800; color:#fff;
+    }
+    .dock-toggle{
+      background:rgba(15,23,42,.9);
+      border:1px solid var(--border);
+      border-radius:999px;
+      color:#e5e7eb;
+      font-size:11px;
+      padding:2px 10px;
+      cursor:pointer;
+    }
+    .dock-toggle:hover{background:#111827}
+    .dock-body{font-size:12px;}
+    .dock.collapsed{
+      max-height:40px;
+      padding-top:6px;
+      padding-bottom:6px;
+    }
+    .dock.collapsed .dock-body{display:none;}
+
     .grid{display:grid; grid-template-columns:1fr 1fr; gap:8px}
     label{font-size:11px; color:var(--muted)}
     select{
@@ -159,12 +184,27 @@
       border-radius:6px;
       border:1px solid rgba(148,163,184,.6);
       font-size:11px;
+      min-width:130px;
+    }
+    .layer-legend-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:2px;
     }
     .layer-legend-title{
       font-weight:700;
-      margin-bottom:4px;
     }
-    .layer-legend .item{
+    .layer-toggle-btn{
+      background:transparent;
+      border:1px solid rgba(148,163,184,.8);
+      color:#e5e7eb;
+      border-radius:999px;
+      font-size:10px;
+      padding:0 6px;
+      cursor:pointer;
+    }
+    .layer-legend-body .item{
       display:flex;
       align-items:center;
       gap:4px;
@@ -182,6 +222,9 @@
       margin:0;
       width:12px;
       height:12px;
+    }
+    .layer-legend.collapsed .layer-legend-body{
+      display:none;
     }
   </style>
 </head>
@@ -201,30 +244,35 @@
   <!-- MAP -->
   <div id="map"></div>
 
-  <!-- DOCK -->
-  <div class="dock">
-    <h2>Dashboard Daerah Irigasi</h2>
-    <div class="grid">
-      <div>
-        <label>Pilih Daerah Irigasi</label>
-        <select id="diSel"><option value="">— Semua —</option></select>
-      </div>
-      <div>
-        <label>Cluster Informasi (GAS)</label>
-        <select id="clusterSel"><option value="__ALL__">— Semua —</option></select>
-      </div>
+  <!-- DOCK (collapsible) -->
+  <div class="dock" id="dock">
+    <div class="dock-header">
+      <h2>Dashboard Daerah Irigasi</h2>
+      <button id="dockToggle" class="dock-toggle">Ciutkan</button>
     </div>
-    <div id="msg" class="err"></div>
-    <hr style="border:none;border-top:1px solid var(--border);margin:8px 0"/>
-    <div id="stats" class="row"></div>
-    <div id="detail" style="margin-top:6px;font-size:12px"></div>
+    <div class="dock-body" id="dockBody">
+      <div class="grid">
+        <div>
+          <label>Pilih Daerah Irigasi</label>
+          <select id="diSel"><option value="">— Semua —</option></select>
+        </div>
+        <div>
+          <label>Cluster Informasi (GAS)</label>
+          <select id="clusterSel"><option value="__ALL__">— Semua —</option></select>
+        </div>
+      </div>
+      <div id="msg" class="err"></div>
+      <hr style="border:none;border-top:1px solid var(--border);margin:8px 0"/>
+      <div id="stats" class="row"></div>
+      <div id="detail" style="margin-top:6px;font-size:12px"></div>
 
-    <!-- UPLOAD GEOJSON/JSON -->
-    <div class="upload-card">
-      <label for="geojsonFile">Upload GeoJSON / JSON → simpan ke Google Drive</label>
-      <input type="file" id="geojsonFile" accept=".geojson,.json,application/json"/>
-      <button type="button" id="btnUpload" class="btn-primary">Upload &amp; Simpan</button>
-      <div id="uploadMsg"></div>
+      <!-- UPLOAD GEOJSON/JSON -->
+      <div class="upload-card">
+        <label for="geojsonFile">Upload GeoJSON / JSON → simpan ke Google Drive</label>
+        <input type="file" id="geojsonFile" accept=".geojson,.json,application/json"/>
+        <button type="button" id="btnUpload" class="btn-primary">Upload &amp; Simpan</button>
+        <div id="uploadMsg"></div>
+      </div>
     </div>
   </div>
 
@@ -269,13 +317,30 @@
     const uploadInput = document.getElementById('geojsonFile');
     const uploadBtn   = document.getElementById('btnUpload');
     const uploadMsg   = document.getElementById('uploadMsg');
+    const dock        = document.getElementById('dock');
+    const dockToggle  = document.getElementById('dockToggle');
     const note        = (m)=>msgEl.textContent=m||"";
 
     // Map
     const map = L.map('map',{preferCanvas:true}).setView([-7.8,110.3],8);
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
-      attribution:'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics'
-    }).addTo(map);
+
+    // Basemaps
+    const imagery = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      { attribution:'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics' }
+    ).addTo(map);
+
+    const osm = L.tileLayer(
+      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      { attribution:'© OpenStreetMap contributors' }
+    );
+
+    const baseLayers = {
+      "Imagery": imagery,
+      "OSM": osm
+    };
+
+    let layerCtl = L.control.layers(baseLayers, null, { collapsed:true, position:'topright' }).addTo(map);
 
     // panes
     map.createPane('diPane');      map.getPane('diPane').style.zIndex = 410;
@@ -286,8 +351,6 @@
     const labelLayer=L.layerGroup().addTo(map);
     let diLayer,saluranLayer,bendungLayer;
     let diIndex=[];
-    let activeKey=null,activeTitle=null;
-
     let myLocMarker = null;
     let myLocCircle = null;
 
@@ -330,13 +393,12 @@
     }
 
     function updateStats(){
-      const diCount=diLayer?diLayer.getLayers().length:0;
-      const saluranCount=saluranLayer?saluranLayer.getLayers().length:0;
-      const bendungCount=bendungLayer?bendungLayer.getLayers().length:0;
+      const diCount=diLayer&&map.hasLayer(diLayer)?diLayer.getLayers().length:0;
+      const saluranCount=saluranLayer&&map.hasLayer(saluranLayer)?saluranLayer.getLayers().length:0;
+      const bendungCount=bendungLayer&&map.hasLayer(bendungLayer)?bendungLayer.getLayers().length:0;
       statsEl.innerHTML=`<span>DI</span><b>${diCount}</b><span>Saluran</span><b>${saluranCount}</b><span>Bendung</span><b>${bendungCount}</b>`;
     }
 
-    // Helper Street View link
     function svLink(lat, lng, heading=0, pitch=0, fov=75){
       const q = new URLSearchParams({
         api: 1,
@@ -347,6 +409,14 @@
       return `https://www.google.com/maps/@?${q.toString()}`;
     }
 
+    /* ============ Dock toggle ============ */
+    let dockCollapsed = false;
+    dockToggle.addEventListener('click',()=>{
+      dockCollapsed = !dockCollapsed;
+      dock.classList.toggle('collapsed', dockCollapsed);
+      dockToggle.textContent = dockCollapsed ? 'Tampilkan' : 'Ciutkan';
+    });
+
     /* ============ My Location Control (Leaflet) ============ */
     const MyLocationControl = L.Control.extend({
       position: 'topright',
@@ -354,7 +424,7 @@
         const container = L.DomUtil.create('div','leaflet-bar');
         const btn = L.DomUtil.create('button','myloc-btn',container);
         btn.type='button';
-        btn.innerHTML='◎';
+        btn.innerHTML='📍';
         btn.title='Lokasi saya';
         L.DomEvent.disableClickPropagation(container);
         L.DomEvent.on(btn,'click',function(e){
@@ -421,7 +491,7 @@
         const reader = new FileReader();
         reader.onload = async (evt) => {
           const content = evt.target.result;
-          const bbwsName = 'BBWS Serayu Opak'; // folder BBWS di Drive
+          const bbwsName = 'BBWS Serayu Opak';
 
           const payload = {
             filename: file.name,
@@ -491,7 +561,7 @@
         diNames.forEach(nm=>diSel.insertAdjacentHTML('beforeend',`<option value="${nm}">${nm}</option>`));
       }
 
-      // DI (polygon) + popup + Street View (centroid)
+      // DI (polygon)
       if(diRes.status==='fulfilled'){
         const fc={type:'FeatureCollection',features:diRes.value?.features||[]};
         diLayer=L.geoJSON(fc,{
@@ -517,23 +587,23 @@
                 </div>
                 <a href="${svURL}" target="_blank" rel="noopener"
                    style="background:#0ea5e9;color:#fff;padding:6px 10px;border-radius:8px;text-decoration:none;font-weight:700;font-size:12px">
-                   Street View (tengah DI)
+                   Street View DI
                 </a>
               </div>
             `;
             layer.bindPopup(popupHtml);
 
             layer.on('click',()=>{
-              activeKey=key;activeTitle=title;
               renderDetailDI(info,title,key);
               layer.bringToFront();
             });
           }
         }).addTo(map);
+        if(layerCtl) layerCtl.addOverlay(diLayer,'DI (Polygon)');
         if(diLayer.getLayers().length){map.fitBounds(diLayer.getBounds());}
       }
 
-      // Saluran (line) + popup + Street View (tengah garis)
+      // Saluran (line)
       if(salRes.status==='fulfilled'){
         const fc={type:'FeatureCollection',features:salRes.value?.features||[]};
         saluranLayer=L.geoJSON(fc,{
@@ -564,10 +634,11 @@
             layer.bindPopup(popupHtml);
           }
         }).addTo(map);
+        if(layerCtl) layerCtl.addOverlay(saluranLayer,'Saluran (Line)');
         saluranLayer.bringToFront();
       }
 
-      // Bendung (point) + popup Street View existing
+      // Bendung (point)
       let bendungData = (bendungRes.status==='fulfilled' && bendungRes.value) ? bendungRes.value : BENDUNG_SAMPLE;
       bendungLayer=L.geoJSON(bendungData,{
         pane:'bendungPane',
@@ -608,29 +679,35 @@
           l.bindPopup(html);
         }
       }).addTo(map);
+      if(layerCtl) layerCtl.addOverlay(bendungLayer,'Bendung (Point)');
       bendungLayer.bringToFront();
 
-      // Custom legend + layer on/off (DI, Saluran, Bendung)
+      /* ============ Custom Legend + on/off + collapse ============ */
       const LayerLegendControl = L.Control.extend({
         position:'topright',
         onAdd:function(map){
           const container = L.DomUtil.create('div','layer-legend');
           container.innerHTML = `
-            <div class="layer-legend-title">Layer</div>
-            <div class="item">
-              <input type="checkbox" id="chk-di" checked>
-              <span class="swatch swatch-di"></span>
-              <label for="chk-di">DI (Polygon)</label>
+            <div class="layer-legend-header">
+              <span class="layer-legend-title">Layer</span>
+              <button type="button" class="layer-toggle-btn">Ciut</button>
             </div>
-            <div class="item">
-              <input type="checkbox" id="chk-saluran" checked>
-              <span class="swatch swatch-saluran"></span>
-              <label for="chk-saluran">Saluran (Line)</label>
-            </div>
-            <div class="item">
-              <input type="checkbox" id="chk-bendung" checked>
-              <span class="swatch swatch-bendung"></span>
-              <label for="chk-bendung">Bendung (Point)</label>
+            <div class="layer-legend-body">
+              <div class="item">
+                <input type="checkbox" id="chk-di" checked>
+                <span class="swatch swatch-di"></span>
+                <label for="chk-di">DI (Polygon)</label>
+              </div>
+              <div class="item">
+                <input type="checkbox" id="chk-saluran" checked>
+                <span class="swatch swatch-saluran"></span>
+                <label for="chk-saluran">Saluran (Line)</label>
+              </div>
+              <div class="item">
+                <input type="checkbox" id="chk-bendung" checked>
+                <span class="swatch swatch-bendung"></span>
+                <label for="chk-bendung">Bendung (Point)</label>
+              </div>
             </div>
           `;
           L.DomEvent.disableClickPropagation(container);
@@ -638,6 +715,8 @@
           const chkDi       = container.querySelector('#chk-di');
           const chkSaluran  = container.querySelector('#chk-saluran');
           const chkBendung  = container.querySelector('#chk-bendung');
+          const toggleBtn   = container.querySelector('.layer-toggle-btn');
+          const body        = container.querySelector('.layer-legend-body');
 
           if(!diLayer){ chkDi.disabled=true; }
           if(!saluranLayer){ chkSaluran.disabled=true; }
@@ -665,13 +744,25 @@
             }
           });
 
+          let collapsed=false;
+          toggleBtn.addEventListener('click',()=>{
+            collapsed=!collapsed;
+            if(collapsed){
+              container.classList.add('collapsed');
+              toggleBtn.textContent='Tampil';
+            }else{
+              container.classList.remove('collapsed');
+              toggleBtn.textContent='Ciut';
+            }
+          });
+
           return container;
         }
       });
       map.addControl(new LayerLegendControl());
 
       refreshLabelsAndStats();
-      detailEl.innerHTML='<i style="color:#cbd5e1">Klik poligon DI atau pilih DI untuk lihat detail. Semua objek bisa diklik untuk Street View.</i>';
+      detailEl.innerHTML='<i style="color:#cbd5e1">Klik poligon DI atau objek di peta untuk lihat popup + Street View. Dock & legend bisa diciutkan.</i>';
     });
 
     function renderDetailDI(info,title,key){
