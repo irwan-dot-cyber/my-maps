@@ -291,8 +291,8 @@
   <div class="header">
     <img src="../../assets/LogoPUPR.png" alt="Logo PU"/>
     <div class="text">
-      <div class="title">Kementerian PUPR</div>
-      <div class="subtitle">Ditjen SDA · Dir. Irigasi &amp; Rawa</div>
+      <div class="title">Kementerian PU</div>
+      <div class="subtitle">Ditjen SDA · Dit. Irigasi &amp; Rawa</div>
       <div class="subtitle">DI Kewenangan <b>BBWS Serayu Opak</b></div>
     </div>
     <a href="../../si-irwan.html" class="btn-home">Beranda</a>
@@ -338,7 +338,9 @@
           <span>GeoJSON tersimpan</span>
           <span style="font-size:10px;color:#64748b">klik Tampil / Hapus</span>
         </div>
-        <div id="uploadList" class="upload-list"></div>
+        <div id="uploadList" class="upload-list">
+          <div style="color:#94a3b8;font-size:11px">Memuat daftar dari Google Drive...</div>
+        </div>
       </div>
     </div>
   </div>
@@ -410,7 +412,8 @@
     let myLocMarker = null;
     let myLocCircle = null;
 
-    const savedLayers = {};   // key -> Leaflet layer
+    // koleksi layer GeoJSON dari Drive
+    const savedLayers = {};   // id -> Leaflet layer
     let savedFilesMeta = [];  // {id,name,webViewLink?}
 
     const getNamaDI=(o)=>o?.Nama_DI||o?.["Nama Aset"]||o?.["Nama DI"]||o?.nama_infrastruktur||"";
@@ -607,6 +610,36 @@
       `);
     }
 
+    /* Fungsi pembuat layer dari GeoJSON */
+    function createUploadedLayer(gj){
+      return L.geoJSON(gj,{
+        interactive:true,
+        style: () => ({color:'#e11d48',weight:2,fillOpacity:0.2}),
+        pointToLayer:(f,latlng)=>L.circleMarker(latlng,{
+          radius:5,weight:1,color:'#e11d48',
+          fillColor:'#fb7185',fillOpacity:0.9,interactive:true
+        }),
+        onEachFeature:(f,l)=>bindUploadedPopup(f,l)
+      });
+    }
+
+    /* Render GeoJSON object ke peta + simpan ke savedLayers */
+    function renderGeoFromObject(gj, meta, zoomOnLoad){
+      if (!meta || !meta.id) return;
+      // kalau sudah ada layer untuk id ini, hapus dulu
+      const prev = savedLayers[meta.id];
+      if (prev) {
+        map.removeLayer(prev);
+        if (layerCtl) layerCtl.removeLayer(prev);
+      }
+      const layer = createUploadedLayer(gj).addTo(map);
+      savedLayers[meta.id] = layer;
+      if (layerCtl) layerCtl.addOverlay(layer, meta.name);
+      if (zoomOnLoad){
+        try{ map.fitBounds(layer.getBounds()); }catch(e){}
+      }
+    }
+
     /* ===== Upload GeoJSON → Drive + langsung tampil ===== */
     if (uploadBtn) {
       uploadBtn.addEventListener('click', () => {
@@ -668,21 +701,10 @@
                   (data.folderName || BBWS_NAME) + ').';
               }
 
-              // TAMPILKAN LANGSUNG DI PETA pakai konten lokal
+              // tampilkan langsung di peta dari konten lokal
               try {
                 const gj = JSON.parse(content);
-                const layer = L.geoJSON(gj,{
-                  interactive:true,
-                  style: () => ({color:'#e11d48',weight:2,fillOpacity:0.2}),
-                  pointToLayer:(f,latlng)=>L.circleMarker(latlng,{
-                    radius:5,weight:1,color:'#e11d48',
-                    fillColor:'#fb7185',fillOpacity:0.9,interactive:true
-                  }),
-                  onEachFeature:(f,l)=>bindUploadedPopup(f,l)
-                }).addTo(map);
-                savedLayers[meta.id] = layer;
-                if(layerCtl) layerCtl.addOverlay(layer, meta.name);
-                try{ map.fitBounds(layer.getBounds()); }catch(e){}
+                renderGeoFromObject(gj, meta, true);
               } catch(parseErr){
                 console.error('Gagal parse GeoJSON lokal:', parseErr);
               }
@@ -701,7 +723,7 @@
       });
     }
 
-    /* ===== DATA UTAMA DI/SALURAN/BENDUNG ===== */
+    /* ====== DATA UTAMA DI/SALURAN/BENDUNG ====== */
     Promise.allSettled([
       fetch(GAS_URL).then(r=>r.json()),
       fetch(PATHS.DI).then(r=>r.json()),
@@ -925,9 +947,8 @@
       refreshLabelsAndStats();
       detailEl.innerHTML='<i style="color:#cbd5e1">Klik poligon DI, saluran, bendung, atau layer hasil upload untuk popup + Street View. Dock & legend bisa diciutkan.</i>';
 
-      // kalau Apps Script sudah di-upgrade dengan action=list & action=geojson,
-      // bagian loadSavedList() di bawah bisa dipasang lagi untuk auto-load saat refresh.
-      // (kalau belum, map tetap jalan dan file tampil saat baru diupload.)
+      // setelah semua layer utama siap → load GeoJSON yang sudah tersimpan di Drive
+      loadSavedList();
     });
 
     function renderDetailDI(info,title,key){
@@ -949,9 +970,38 @@
 
     map.on('zoomend',refreshLabelsAndStats);
 
-    /* LIST UI (Tampil/Hapus) — tombolnya siap,
-       tapi fungsi loadSavedList/deleteFile butuh Apps Script yang sudah diupgrade.
-       Untuk sekarang tombol Tampil bisa kita pakai nanti setelah backend siap. */
+    /* ====== LIST / LOAD / DELETE GeoJSON dari Drive ====== */
+
+    async function loadSavedList(){
+      try{
+        const res = await fetch(
+          UPLOAD_URL + '?action=list&bbws=' + encodeURIComponent(BBWS_NAME)
+        );
+        if(!res.ok){
+          uploadListEl.innerHTML =
+            '<div style="color:#f97316;font-size:11px">Gagal memuat daftar GeoJSON.</div>';
+          return;
+        }
+        const data = await res.json();
+        if(!data.ok){
+          uploadListEl.innerHTML =
+            '<div style="color:#f97316;font-size:11px">Server error saat list GeoJSON.</div>';
+          return;
+        }
+        savedFilesMeta = data.items || [];
+        renderUploadList(savedFilesMeta);
+
+        // tampilkan semua GeoJSON tersimpan
+        for(const item of savedFilesMeta){
+          await loadFileLayer(item,false);
+        }
+      }catch(e){
+        console.error('Gagal load list GeoJSON:',e);
+        uploadListEl.innerHTML =
+          '<div style="color:#f97316;font-size:11px">Tidak bisa terhubung ke server list GeoJSON.</div>';
+      }
+    }
+
     function renderUploadList(items){
       uploadListEl.innerHTML = "";
       if(!items || !items.length){
@@ -971,17 +1021,75 @@
         const btnShow = document.createElement('button');
         btnShow.className = 'btn-mini';
         btnShow.textContent = 'Tampil';
-        btnShow.disabled = true; // sementara, aktifkan kalau backend list/geojson sudah jadi
+        btnShow.addEventListener('click', ()=>loadFileLayer(item,true));
         row.appendChild(btnShow);
 
         const btnDel = document.createElement('button');
         btnDel.className = 'btn-mini danger';
         btnDel.textContent = 'Hapus';
-        btnDel.disabled = true; // sementara
+        btnDel.addEventListener('click', ()=>deleteFile(item));
         row.appendChild(btnDel);
 
         uploadListEl.appendChild(row);
       });
+    }
+
+    async function loadFileLayer(item, zoomOnLoad){
+      try{
+        if(savedLayers[item.id]){
+          const layer = savedLayers[item.id];
+          if(!map.hasLayer(layer)) map.addLayer(layer);
+          if(layerCtl) layerCtl.addOverlay(layer, item.name);
+          if(zoomOnLoad){
+            try{ map.fitBounds(layer.getBounds()); }catch(e){}
+          }
+          return;
+        }
+
+        const res = await fetch(
+          UPLOAD_URL + '?action=geojson&id=' + encodeURIComponent(item.id)
+        );
+        if(!res.ok) return;
+        const gj = await res.json();
+
+        renderGeoFromObject(gj, item, zoomOnLoad);
+      }catch(e){
+        console.error('Gagal load GeoJSON untuk',item,e);
+      }
+    }
+
+    async function deleteFile(item){
+      if(!confirm('Hapus file "'+item.name+'" dari Google Drive dan peta?')) return;
+
+      uploadMsg.style.color = '#e5e7eb';
+      uploadMsg.textContent = 'Menghapus ' + item.name + '...';
+
+      try{
+        const res = await fetch(UPLOAD_URL,{
+          method:'POST',
+          body: JSON.stringify({action:'delete', id:item.id})
+        });
+        const data = await res.json();
+        if(!res.ok || !data.ok){
+          throw new Error(data && data.error ? data.error : 'delete gagal');
+        }
+
+        const layer = savedLayers[item.id];
+        if(layer){
+          map.removeLayer(layer);
+          if(layerCtl) layerCtl.removeLayer(layer);
+          delete savedLayers[item.id];
+        }
+
+        savedFilesMeta = savedFilesMeta.filter(f=>f.id!==item.id);
+        renderUploadList(savedFilesMeta);
+
+        uploadMsg.style.color = '#4ade80';
+        uploadMsg.textContent = 'Berhasil dihapus.';
+      }catch(err){
+        uploadMsg.style.color = '#f87171';
+        uploadMsg.textContent = 'Gagal menghapus: ' + err.message;
+      }
     }
 
   });
