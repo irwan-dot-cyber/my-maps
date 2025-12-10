@@ -2,10 +2,10 @@
 <html lang="id">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Form Tahap 3 (Koordinat Auto-Lock)</title>
 
-  <!-- Leaflet via unpkg (lebih aman dari tracking prevention) -->
+  <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -50,6 +50,7 @@
     .crosshair .reticle .h,.crosshair .reticle .v{position:absolute;background:#e5e7ebaa;box-shadow:0 0 6px #0008}
     .crosshair .reticle .h{width:14px;height:2px;left:50%;top:50%;transform:translate(-50%,-50%)}
     .crosshair .reticle .v{width:2px;height:14px;left:50%;top:50%;transform:translate(-50%,-50%)}
+
     .toast{margin:10px 14px;padding:10px 12px;border-radius:10px;background:#052e1a;border:1px solid #14532d;color:#bbf7d0;display:none}
     .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid #334155;border-radius:999px;background:#0b1224;font-size:12px}
     .badge .dot{width:8px;height:8px;border-radius:50%}
@@ -130,7 +131,8 @@
         </div>
       </div>
 
-     <!--  <div class="row">
+      <!-- Kec / Desa disembunyikan dulu (tidak wajib)
+      <div class="row">
         <div>
           <label>Kecamatan</label>
           <input id="kecamatan" name="kecamatan" placeholder="Isi manual (lihat Informasi Paket)" required/>
@@ -445,12 +447,32 @@ async function loadData(){
     var resp = await fetch(url,{cache:'no-store'});
     var raw = await resp.text();
     var cleaned = raw.replace(/^\)\]\}'\s*/, '');
-    var rows = JSON.parse(cleaned);
-    if(!Array.isArray(rows)){
-      toast('⚠️ Baseline kosong/invalid.');
-      console.error(rows);
+
+    var parsed;
+    try{
+      parsed = JSON.parse(cleaned);
+    }catch(e){
+      console.error('Gagal parse baseline:', raw);
+      toast('⚠️ Gagal membaca baseline (JSON error).');
       return;
     }
+
+    var rows;
+    if (Array.isArray(parsed)) {
+      rows = parsed;
+    } else if (parsed && Array.isArray(parsed.items)) {
+      rows = parsed.items;
+    } else {
+      console.error('Baseline tidak dalam format yang diharapkan:', parsed);
+      toast('⚠️ Baseline kosong / format tidak dikenali.');
+      return;
+    }
+
+    if (!rows.length){
+      toast('⚠️ Baseline kosong (tidak ada DI).');
+      return;
+    }
+
     INDEX={};
     rows.forEach(function(row){
       var BWS = titleCase(
@@ -483,13 +505,12 @@ async function loadData(){
       var JENUS   = pickFieldLike(row, ['jenis usulan kegiatan','jenis usulan']);
       var URUT    = pickFieldLike(row, ['urutan prioritas','prioritas']);
 
-      // IP & Outcome: exact key + fallback
-      var IPSEM   =
+      var IPSEM =
         row['IP Padi Semula (%)']   ||
         row['IP Padi Semula']       ||
         pickFieldLike(row, ['ip padi semula','ip semula']);
 
-      var IPMEN   =
+      var IPMEN =
         row['IP Padi Menjadi (%)']  ||
         row['IP Padi Menjadi']      ||
         pickFieldLike(row, ['ip padi menjadi','ip menjadi']);
@@ -499,7 +520,7 @@ async function loadData(){
         row['Outcome']              ||
         pickFieldLike(row, ['outcome']);
 
-      var MASA    =
+      var MASA =
         row['Masa Pelaksanaan']     ||
         row['MASA PELAKSANAAN']     ||
         pickFieldLike(row, ['masa pelaksanaan','masa pelaksana']);
@@ -523,20 +544,21 @@ async function loadData(){
         });
 
       entry.meta = {
-        menuKegiatan: MENU,
-        jenisUsulan:  JENUS,
+        menuKegiatan:    MENU,
+        jenisUsulan:     JENUS,
         urutanPrioritas: URUT,
-        ipSemula:   IPSEM,
-        ipMenjadi:  IPMEN,
-        outcome:    OUTCOME,
-        masa:       MASA
+        ipSemula:        IPSEM,
+        ipMenjadi:       IPMEN,
+        outcome:         OUTCOME,
+        masa:            MASA
       };
     });
+
     fillSelect(balai, Object.keys(INDEX).sort(), '-- pilih B/BWS --');
     prov.disabled=true; kab.disabled=true; di.disabled=true;
   }catch(e){
     console.error(e);
-    toast('⚠️ Gagal memuat baseline.');
+    toast('⚠️ Gagal memuat baseline (network/worker).');
   }
 }
 
@@ -629,7 +651,6 @@ function renderStageButtons(maxStage){
     btn.disabled = !enabled;
     btn.addEventListener('click', function(){
       currentStage=st;
-      btnSubmit.disabled=false;
       toast('Stage dipilih: '+st+'%');
       updateSubmitState();
     });
@@ -692,9 +713,7 @@ di.addEventListener('change', async function(){
   var kecs  = entry && entry.kecamatan ? Array.from(entry.kecamatan) : [];
   var desas = entry && entry.desa ? Array.from(entry.desa) : [];
 
-  // TIDAK lagi auto-isi value, hanya kasih hint di placeholder
-  // if (kecEl)  kecEl.placeholder  = kecs.length  ? 'Opsi: '+kecs.join(', ')  : 'Isi manual (lihat Informasi Paket)';
-  // if (desaEl) desaEl.placeholder = desas.length ? 'Opsi: '+desas.join(', ') : 'Isi manual (lihat Informasi Paket)';
+  // placeholder kec/desa sudah dimatikan; field juga di-comment
 
   setInfoPanelFromEntry(entry || null);
 
@@ -765,22 +784,19 @@ async function compressImage(file,opts){
 function missingList(){
   var m = [];
   if(!balai.value) m.push('B/BWS');
-  if(!prov.value)  m.push('Provinsi');
-  if(!kab.value)   m.push('Kab/Kota');
-  if(!di.value)    m.push('DI');
+  if(!prov.value) m.push('Provinsi');
+  if(!kab.value)  m.push('Kab/Kota');
+  if(!di.value)   m.push('DI');
 
-  // koordinat wajib
-  if(!lat.value || !lng.value) m.push('Koordinat');
+  var kecEl = document.getElementById('kecamatan');
+  if(kecEl && !kecEl.value) m.push('Kecamatan');
+  var desaEl = document.getElementById('desa');
+  if(desaEl && !desaEl.value) m.push('Desa/Kelurahan');
 
-  // nama & telepon
-  var namaEl = document.getElementById('nama');
-  var telEl  = document.getElementById('telepon');
-  if(namaEl && !namaEl.value.trim()) m.push('Nama');
-  if(telEl && !telEl.value.trim())   m.push('Nomor WA/HP');
-
-  // stage progres
-  if(!currentStage) m.push('Stage Progres');
-
+  if(!lat.value || !lng.value)                    m.push('Koordinat');
+  if(!document.getElementById('nama').value)      m.push('Nama');
+  if(!document.getElementById('telepon').value)   m.push('Nomor WA/HP');
+  if(!currentStage)                               m.push('Stage Progres');
   return m;
 }
 function updateSubmitState(){
