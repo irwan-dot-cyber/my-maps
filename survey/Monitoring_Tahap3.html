@@ -84,8 +84,12 @@
 
 <div class="top-controls">
   <div class="filters">
-    <select id="f-bbws"><option value="">— Semua B/BWS (yang sudah upload) —</option></select>
-    <select id="f-di" style="min-width:220px" disabled><option value="">— Pilih B/BWS dulu —</option></select>
+    <select id="f-bbws" aria-label="Filter B/BWS">
+      <option value="">— Semua B/BWS (yang sudah upload) —</option>
+    </select>
+    <select id="f-di" aria-label="Filter DI" style="min-width:220px" disabled>
+      <option value="">— Pilih B/BWS dulu —</option>
+    </select>
   </div>
   <div class="search-box">
     <input id="search" type="text" placeholder="Cari DI (yang sudah upload)…" />
@@ -102,11 +106,11 @@
 
 <script>
 /* ===== CONFIG TAHAP 3 ===== */
-// Spreadsheet Tahap 3 (link yang lo kasih)
+// Spreadsheet Tahap 3
 const SHEET_ID      = "197S3CrVfqJ1sOLubafAIa2U8BeCP5fc9HjLVg0cm0vY";
-// GANTI dua ini sesuai nama sheet di file tsb:
-const SHEET_BASELINE = "baseline";      // misal: "Baseline_T3"
-const SHEET_LOG      = "log_tahap3";  // misal: "Log_Tahap3"
+// GANTI dua ini kalau nama sheet di file beda:
+const SHEET_BASELINE = "baseline";   // contoh: "Baseline_T3"
+const SHEET_LOG      = "log_tahap3"; // contoh: "Log_Tahap3"
 
 const URL_BASELINE = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_BASELINE)}`;
 const URL_LOG      = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_LOG)}`;
@@ -144,6 +148,21 @@ function fillSelect(el, items, placeholder){
   if ([...items,''].includes(cur)) el.value=cur;
 }
 
+// cari field berdasar kata kunci di nama kolom (fallback fleksibel)
+function pickFieldLike(row, substrings){
+  const subs = (substrings||[]).map(s=>String(s).toLowerCase());
+  for (const key in row){
+    if (!row.hasOwnProperty(key)) continue;
+    const k = String(key).toLowerCase();
+    for (let i=0;i<subs.length;i++){
+      if (k.indexOf(subs[i]) !== -1){
+        return row[key];
+      }
+    }
+  }
+  return '';
+}
+
 /* ===== Map + Basemap Control ===== */
 const osm  = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19, attribution:'© OpenStreetMap'});
 const img  = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19, attribution:'Tiles © Esri/Maxar'});
@@ -169,9 +188,9 @@ async function loadBaseline(){
   const rows = parseGviz(t);
   return rows.map(r=>{
     const bb = r['B/BWS PELAKSANA'] || r['B/BWS'] || r['BBWS'] || r['BWS'] || '';
-    const di = r['NAMA DI/DIR'] || r['Nama DI'] || r['Nama DI/DIR'] || r['DI'] || '';
-    const prov = r['PROVINSI'] || r['Provinsi'] || '';
-    const kab  = r['KABUPATEN'] || r['Kabupaten'] || '';
+    const di = r['NAMA DI/DIR']     || r['Nama DI'] || r['Nama DI/DIR'] || r['DI'] || '';
+    const prov = r['PROVINSI']      || r['Provinsi'] || '';
+    const kab  = r['KABUPATEN']     || r['Kabupaten'] || '';
     return {bbws:norm(bb), di:norm(di), prov:norm(prov), kab:norm(kab)};
   }).filter(r=>r.di);
 }
@@ -183,16 +202,33 @@ async function loadLog(){
   // Kelompokkan per B/BWS+DI; simpan foto per stage (25/50/75/100), koordinat terakhir, stage max
   const groups = new Map();
   rows.forEach(r=>{
-    const bbws  = norm(r['BWS'] || r['B/BWS'] || r['BBWS'] || r['B/BWS PELAKSANA'] || '');
-    const di    = norm(r['NAMA_DI'] || r['Nama DI'] || r['DI'] || r['Daerah Irigasi'] || '');
-    if(!di) return;
-    const lat   = parseFloat(r['LAT'] || r['Lat'] || r['Latitude'] || r['latitude'] || r['lat']);
-    const lng   = parseFloat(r['LNG'] || r['Long'] || r['Longitude'] || r['longitude'] || r['lng']);
-    const stage = Number(
-      r['Progress_Stage'] || r['PROGRESS_STAGE'] || // khas Tahap 3
-      r['STAGE'] || r['Stage'] || r['Progress'] || 0
+    const bbws  = norm(
+      r['BWS'] || r['B/BWS'] || r['BBWS'] || r['B/BWS PELAKSANA'] ||
+      pickFieldLike(r, ['bws','balai'])
     );
-    const file  = norm(r['FILE_URL'] || r['Foto_URL'] || r['FOTO_URL'] || r['URL'] || '');
+    const di    = norm(
+      r['NAMA_DI'] || r['Nama DI'] || r['DI'] || r['Daerah Irigasi'] ||
+      pickFieldLike(r, ['nama di','daerah irigasi','di'])
+    );
+    if(!di) return;
+
+    const latRaw = r['LAT'] || r['Lat'] || r['Latitude'] || r['latitude'] || r['lat'] ||
+                   pickFieldLike(r,['lat']);
+    const lngRaw = r['LNG'] || r['Long'] || r['Longitude'] || r['longitude'] || r['lng'] ||
+                   pickFieldLike(r,['lng','lon','long']);
+    const lat   = parseFloat(latRaw);
+    const lng   = parseFloat(lngRaw);
+
+    const stageRaw =
+      r['Progress_Stage'] || r['PROGRESS_STAGE'] ||
+      r['STAGE'] || r['Stage'] || r['Progress'] ||
+      pickFieldLike(r, ['stage','progress','progres']);
+    const stage = Number(stageRaw || 0);
+
+    const file  = norm(
+      r['FILE_URL'] || r['Foto_URL'] || r['FOTO_URL'] || r['URL'] ||
+      pickFieldLike(r, ['foto','photo','image','img','url','link'])
+    );
 
     const key = `${canon(bbws)}|${canon(di)}`;
     if(!groups.has(key)) groups.set(key,{bbws, di, lat:NaN, lng:NaN, stageMax:0, photos:{}});
@@ -233,7 +269,9 @@ async function loadLog(){
 
     const m=L.marker([g.lat,g.lng],{
       icon:L.icon({
-        iconUrl:(g.stageMax>=100?'https://maps.google.com/mapfiles/ms/icons/red-dot.png':'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'),
+        iconUrl:(g.stageMax>=100
+          ? 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
+          : 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png'),
         iconSize:[25,41],iconAnchor:[12,41],
         shadowUrl:'https://unpkg.com/leaflet/dist/images/marker-shadow.png',shadowSize:[41,41]
       })
@@ -243,7 +281,7 @@ async function loadLog(){
     cluster.addLayer(m);
     markers.push(m);
 
-    // label mini: dibuat sekarang, tapi visibilitas diatur via refreshLabels()
+    // label mini
     const lbl = L.marker([g.lat, g.lng], {
       icon: L.divIcon({
         className: 'di-label',
@@ -356,6 +394,17 @@ function refreshLabels(){
 map.on('zoomend moveend', refreshLabels);
 cluster.on('animationend spiderfied unspiderfied', refreshLabels);
 
+/* ===== Search index ===== */
+const index=[]; // {name, marker}
+function rebuildIndex(){
+  index.length=0;
+  window.__allMarkers.forEach(m=>{
+    const html = m.getPopup()?.getContent() || '';
+    const mName = (html.match(/<b>(.*?)<\/b>/) || [,''])[1];
+    if (mName) index.push({name:mName, marker:m});
+  });
+}
+
 /* ===== Build ===== */
 async function build(){
   try{
@@ -400,13 +449,15 @@ async function build(){
     fillSelect($('#f-bbws'), uniqBB, '— Semua B/BWS (yang sudah upload) —');
     updateDiOptions();
 
-    // pastikan state label sesuai
+    // rebuild search index setelah marker terbuat
+    rebuildIndex();
     refreshLabels();
 
   }catch(e){
     console.error(e);
-    $('#stats').innerHTML = `<div style="color:#b91c1c">Gagal memuat data. Pastikan sheet baseline & log Tahap 3 sudah <b>public (Anyone with the link - Viewer)</b>.</div>
-                             <div style="font-size:12px;color:#6b7280">Detail: ${e.message||e}</div>`;
+    $('#stats').innerHTML =
+      `<div style="color:#b91c1c">Gagal memuat data. Pastikan sheet baseline & log Tahap 3 sudah <b>public (Anyone with the link - Viewer)</b>.</div>
+       <div style="font-size:12px;color:#6b7280">Detail: ${e.message||e}</div>`;
   }
 }
 build();
@@ -433,24 +484,20 @@ $('#f-bbws').addEventListener('change', ()=>{ updateDiOptions(); applyFilters();
 $('#f-di').addEventListener('change', applyFilters);
 
 // Search suggestions (hanya DI yang sudah upload—berbasis marker)
-const index=[]; // {name, marker}
-function rebuildIndex(){
-  index.length=0;
-  window.__allMarkers.forEach(m=>{
-    const html = m.getPopup()?.getContent() || '';
-    const mName = (html.match(/<b>(.*?)<\/b>/) || [,''])[1];
-    if (mName) index.push({name:mName, marker:m});
-  });
-}
-setTimeout(rebuildIndex, 1500);
-
 function showSuggestions(q){
   const box=$('#suggestions'); box.innerHTML='';
   if(!q){ box.style.display='none'; return; }
-  const hits=index.filter(it=>it.name && it.name.toLowerCase().includes(q.toLowerCase())).slice(0,100);
+  const hits=index
+    .filter(it=>it.name && it.name.toLowerCase().includes(q.toLowerCase()))
+    .slice(0,100);
   hits.forEach(it=>{
     const d=document.createElement('div'); d.textContent=it.name;
-    d.onclick=()=>{ $('#search').value=it.name; box.style.display='none'; map.setView(it.marker.getLatLng(),14); it.marker.openPopup(); };
+    d.onclick=()=>{
+      $('#search').value=it.name;
+      box.style.display='none';
+      map.setView(it.marker.getLatLng(),14);
+      it.marker.openPopup();
+    };
     box.appendChild(d);
   });
   box.style.display = hits.length ? 'block':'none';
@@ -459,8 +506,13 @@ $('#search').addEventListener('input', e=> showSuggestions(e.currentTarget.value
 $('#search').addEventListener('keydown', e=>{
   if(e.key==='Enter'){
     const q=e.currentTarget.value.trim().toLowerCase();
-    const hit=index.find(it=>it.name && it.name.toLowerCase()===q) || index.find(it=>it.name && it.name.toLowerCase().includes(q));
-    if(hit){ map.setView(hit.marker.getLatLng(),14); hit.marker.openPopup(); $('#suggestions').style.display='none'; }
+    const hit=index.find(it=>it.name && it.name.toLowerCase()===q) ||
+               index.find(it=>it.name && it.name.toLowerCase().includes(q));
+    if(hit){
+      map.setView(hit.marker.getLatLng(),14);
+      hit.marker.openPopup();
+      $('#suggestions').style.display='none';
+    }
   }
 });
 </script>
