@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="id">
 <head>
@@ -130,17 +129,6 @@
           <div class="hint muted">Pilih B/BWS, Provinsi, Kab/Kota, dan DI untuk melihat detail.</div>
         </div>
       </div>
-
-     <!--  <div class="row">
-        <div>
-          <label>Kecamatan</label>
-          <input id="kecamatan" name="kecamatan" placeholder="Isi manual (lihat Informasi Paket)" required/>
-        </div>
-        <div>
-          <label>Desa/Kelurahan</label>
-          <input id="desa" name="desa" placeholder="Isi manual (lihat Informasi Paket)" required/>
-        </div>
-      </div> -->
 
       <div>
         <label>Peta Lokasi</label>
@@ -693,10 +681,6 @@ di.addEventListener('change', async function(){
   var kecs  = entry && entry.kecamatan ? Array.from(entry.kecamatan) : [];
   var desas = entry && entry.desa ? Array.from(entry.desa) : [];
 
-  // TIDAK lagi auto-isi value, hanya kasih hint di placeholder
-  // if (kecEl)  kecEl.placeholder  = kecs.length  ? 'Opsi: '+kecs.join(', ')  : 'Isi manual (lihat Informasi Paket)';
-  // if (desaEl) desaEl.placeholder = desas.length ? 'Opsi: '+desas.join(', ') : 'Isi manual (lihat Informasi Paket)';
-
   setInfoPanelFromEntry(entry || null);
 
   var hist = await fetchHistory(b,p,k,d);
@@ -828,6 +812,10 @@ form.addEventListener('submit', async function(e){
     fd.set('foto_b64', b64);
     fd.set('foto_name', photo.name);
     fd.set('foto_type', photo.type);
+
+    // penting: isi kolom Foto_Id & Foto_URL di sheet log_tahap3
+    fd.set('Foto_Id', photo.name);
+    fd.set('Foto_URL', b64);
   }
 
   disableForm(true);
