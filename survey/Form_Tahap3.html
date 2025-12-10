@@ -694,8 +694,8 @@ di.addEventListener('change', async function(){
   var desas = entry && entry.desa ? Array.from(entry.desa) : [];
 
   // TIDAK lagi auto-isi value, hanya kasih hint di placeholder
- // kecEl.placeholder  = kecs.length  ? 'Opsi: '+kecs.join(', ')  : 'Isi manual (lihat Informasi Paket)';
-  // desaEl.placeholder = desas.length ? 'Opsi: '+desas.join(', ') : 'Isi manual (lihat Informasi Paket)';
+  // if (kecEl)  kecEl.placeholder  = kecs.length  ? 'Opsi: '+kecs.join(', ')  : 'Isi manual (lihat Informasi Paket)';
+  // if (desaEl) desaEl.placeholder = desas.length ? 'Opsi: '+desas.join(', ') : 'Isi manual (lihat Informasi Paket)';
 
   setInfoPanelFromEntry(entry || null);
 
@@ -766,15 +766,22 @@ async function compressImage(file,opts){
 function missingList(){
   var m = [];
   if(!balai.value) m.push('B/BWS');
-  if(!prov.value) m.push('Provinsi');
-  if(!kab.value)  m.push('Kab/Kota');
-  if(!di.value)   m.push('DI');
-  if(!document.getElementById('kecamatan').value) m.push('Kecamatan');
-  if(!document.getElementById('desa').value)      m.push('Desa/Kelurahan');
-  if(!lat.value || !lng.value)                    m.push('Koordinat');
-  if(!document.getElementById('nama').value)      m.push('Nama');
-  if(!document.getElementById('telepon').value)   m.push('Nomor WA/HP');
-  if(!currentStage)                               m.push('Stage Progres');
+  if(!prov.value)  m.push('Provinsi');
+  if(!kab.value)   m.push('Kab/Kota');
+  if(!di.value)    m.push('DI');
+
+  // koordinat wajib
+  if(!lat.value || !lng.value) m.push('Koordinat');
+
+  // nama & telepon
+  var namaEl = document.getElementById('nama');
+  var telEl  = document.getElementById('telepon');
+  if(namaEl && !namaEl.value.trim()) m.push('Nama');
+  if(telEl && !telEl.value.trim())   m.push('Nomor WA/HP');
+
+  // stage progres
+  if(!currentStage) m.push('Stage Progres');
+
   return m;
 }
 function updateSubmitState(){
