@@ -76,7 +76,7 @@
 <header>
   <div class="hdr-left">
     <strong>Form Tahap 3</strong>
-    <span class="hint">INPRES 2/2025 • Pelaksanaan Tahap 3</span>
+    <span class="hint"> INPRES 2/2025 • Pelaksanaan Tahap 3</span>
   </div>
   <a class="btn-home" href="https://irwan-dot-cyber.github.io/my-maps/landingpage/beranda.html">Beranda</a>
 </header>
@@ -130,6 +130,18 @@
           <div class="hint muted">Pilih B/BWS, Provinsi, Kab/Kota, dan DI untuk melihat detail.</div>
         </div>
       </div>
+
+      <!-- Kec / Desa disembunyikan dulu (tidak wajib)
+      <div class="row">
+        <div>
+          <label>Kecamatan</label>
+          <input id="kecamatan" name="kecamatan" placeholder="Isi manual (lihat Informasi Paket)" required/>
+        </div>
+        <div>
+          <label>Desa/Kelurahan</label>
+          <input id="desa" name="desa" placeholder="Isi manual (lihat Informasi Paket)" required/>
+        </div>
+      </div> -->
 
       <div>
         <label>Peta Lokasi</label>
@@ -241,7 +253,7 @@ function fillSelect(el, items, ph){
   el.disabled=!(items&&items.length);
 }
 function titleCase(s){
-  return String(s||'').split(/(\s+|[-/])/).map(function(tok){
+  return String(s||'').split(/(\s+|[-/])/).map(function(tok(){
     if(/^\s+$/.test(tok)||tok==='-'||tok==='/') return tok;
     var up = tok.toUpperCase();
     if (up==='BBWS'||up==='BWS') return up;
@@ -250,14 +262,27 @@ function titleCase(s){
   }).join('');
 }
 
-// cari field berdasarkan kata kunci di nama kolom (lebih fleksibel)
+/* ==== pickFieldLike versi baru (spasi & underscore dianggap sama) ==== */
 function pickFieldLike(row, substrings){
   substrings = (substrings || []).map(function(s){
-    return String(s).toLowerCase();
+    return String(s)
+      .toLowerCase()
+      .replace(/[_\s]+/g,' ')    // "_" dan spasi jadi satu
+      .replace(/[().%]/g,' ')    // buang tanda kurung & persen
+      .replace(/\s+/g,' ')
+      .trim();
   });
+
   for (var key in row){
     if (!row.hasOwnProperty(key)) continue;
-    var norm = String(key).toLowerCase().replace(/\s+/g,' ').trim();
+
+    var norm = String(key)
+      .toLowerCase()
+      .replace(/[_\s]+/g,' ')
+      .replace(/[().%]/g,' ')
+      .replace(/\s+/g,' ')
+      .trim();
+
     for (var i=0;i<substrings.length;i++){
       if (norm.indexOf(substrings[i]) !== -1){
         return row[key];
@@ -488,7 +513,7 @@ async function loadData(){
       var KEC  = row['Kec']  || row['KECAMATAN'] || row['Kecamatan'] || '';
       var DESA = row['Desa'] || row['DESA']      || '';
 
-      // meta utama
+      // meta utama (ambil fleksibel, bisa nama kolom asli atau sudah di-normalize)
       var MENU    = pickFieldLike(row, ['menu kegiatan','menu keg']);
       var JENUS   = pickFieldLike(row, ['jenis usulan kegiatan','jenis usulan']);
       var URUT    = pickFieldLike(row, ['urutan prioritas','prioritas']);
@@ -506,7 +531,7 @@ async function loadData(){
       var OUTCOME =
         row['Outcome (Ha)']         ||
         row['Outcome']              ||
-        pickFieldLike(row, ['outcome']);
+        pickFieldLike(row, ['outcome','outcome ha']);
 
       var MASA =
         row['Masa Pelaksanaan']     ||
@@ -531,14 +556,21 @@ async function loadData(){
           entry.desa.add(titleCase(desa));
         });
 
+      // jangan timpa nilai yang sudah terisi dengan kosong
+      function take(oldVal, newVal){
+        var s = String(newVal || '').trim();
+        return s ? newVal : oldVal;
+      }
+
+      var old = entry.meta || {};
       entry.meta = {
-        menuKegiatan:    MENU,
-        jenisUsulan:     JENUS,
-        urutanPrioritas: URUT,
-        ipSemula:        IPSEM,
-        ipMenjadi:       IPMEN,
-        outcome:         OUTCOME,
-        masa:            MASA
+        menuKegiatan:    take(old.menuKegiatan,    MENU),
+        jenisUsulan:     take(old.jenisUsulan,     JENUS),
+        urutanPrioritas: take(old.urutanPrioritas, URUT),
+        ipSemula:        take(old.ipSemula,        IPSEM),
+        ipMenjadi:       take(old.ipMenjadi,       IPMEN),
+        outcome:         take(old.outcome,         OUTCOME),
+        masa:            take(old.masa,            MASA)
       };
     });
 
@@ -690,10 +722,18 @@ async function fetchHistory(bws, p, k, d){
   }
 }
 
-/* === DI dipilih: info, history, koordinat === */
+/* === DI dipilih: info, history, koordinat (tanpa auto-isi kec/desa) === */
 di.addEventListener('change', async function(){
   var b=balai.value, p=prov.value, k=kab.value, d=di.value;
   var entry = (((INDEX[b]||{})[p]||{})[k]||{})[d];
+
+  var kecEl = document.getElementById('kecamatan');
+  var desaEl = document.getElementById('desa');
+
+  var kecs  = entry && entry.kecamatan ? Array.from(entry.kecamatan) : [];
+  var desas = entry && entry.desa ? Array.from(entry.desa) : [];
+
+  // placeholder kec/desa sudah dimatikan; field juga di-comment
 
   setInfoPanelFromEntry(entry || null);
 
@@ -743,7 +783,8 @@ async function compressImage(file,opts){
     var bitmap = await createImageBitmap(file,{imageOrientation:'from-image'});
     var W=bitmap.width,H=bitmap.height;
     var s=Math.min(1,maxDim/Math.max(W,H));
-    var w=Math.round(W*s), h=Math.round(H*s);
+    var w=Math.round(W*s), h=Math.round(H+s*0);
+    h=Math.round(H*s);
     if(s===1 && file.type==='image/jpeg' && file.size<700*1024) return file;
     var c=document.createElement('canvas');
     c.width=w; c.height=h;
@@ -767,6 +808,12 @@ function missingList(){
   if(!prov.value) m.push('Provinsi');
   if(!kab.value)  m.push('Kab/Kota');
   if(!di.value)   m.push('DI');
+
+  var kecEl = document.getElementById('kecamatan');
+  if(kecEl && !kecEl.value) m.push('Kecamatan');
+  var desaEl = document.getElementById('desa');
+  if(desaEl && !desaEl.value) m.push('Desa/Kelurahan');
+
   if(!lat.value || !lng.value)                    m.push('Koordinat');
   if(!document.getElementById('nama').value)      m.push('Nama');
   if(!document.getElementById('telepon').value)   m.push('Nomor WA/HP');
