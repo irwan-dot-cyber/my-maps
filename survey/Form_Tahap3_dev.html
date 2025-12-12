@@ -500,30 +500,46 @@ async function loadData(){
       var KEC  = row['Kec']  || row['KECAMATAN'] || row['Kecamatan'] || '';
       var DESA = row['Desa'] || row['DESA']      || '';
 
-      // meta utama
-      var MENU    = pickFieldLike(row, ['menu kegiatan','menu keg']);
-      var JENUS   = pickFieldLike(row, ['jenis usulan kegiatan','jenis usulan']);
-      var URUT    = pickFieldLike(row, ['urutan prioritas','prioritas']);
+            // meta utama – cari dg nama langsung + keyword fleksibel
+      var MENU =
+        row['Menu Kegiatan']        ||
+        row['MENU KEGIATAN']        ||
+        pickFieldLike(row, ['menu kegiatan','menu keg','menu']);
+
+      var JENUS =
+        row['Jenis Usulan Kegiatan'] ||
+        row['JENIS USULAN KEGIATAN'] ||
+        row['Jenis Usulan']          ||
+        pickFieldLike(row, ['jenis usulan kegiatan','jenis usulan','usulan']);
+
+      var URUT =
+        row['Urutan Prioritas']     ||
+        row['URUTAN PRIORITAS']     ||
+        pickFieldLike(row, ['urutan prioritas','prioritas']);
 
       var IPSEM =
         row['IP Padi Semula (%)']   ||
         row['IP Padi Semula']       ||
-        pickFieldLike(row, ['ip padi semula','ip semula']);
+        row['IP PADI SEMULA (%)']   ||
+        pickFieldLike(row, ['ip padi semula','ip semula','ip eksisting']);
 
       var IPMEN =
         row['IP Padi Menjadi (%)']  ||
         row['IP Padi Menjadi']      ||
-        pickFieldLike(row, ['ip padi menjadi','ip menjadi']);
+        row['IP PADI MENJADI (%)']  ||
+        pickFieldLike(row, ['ip padi menjadi','ip menjadi','ip usulan']);
 
       var OUTCOME =
         row['Outcome (Ha)']         ||
         row['Outcome']              ||
-        pickFieldLike(row, ['outcome']);
+        row['OUTCOME (HA)']         ||
+        pickFieldLike(row, ['outcome','luas outcome']);
 
       var MASA =
         row['Masa Pelaksanaan']     ||
         row['MASA PELAKSANAAN']     ||
-        pickFieldLike(row, ['masa pelaksanaan','masa pelaksana']);
+        pickFieldLike(row, ['masa pelaksanaan','masa pelaksana','tahun pelaksanaan']);
+
 
       if(!(BWS && PROV && KAB && DI)) return;
 
