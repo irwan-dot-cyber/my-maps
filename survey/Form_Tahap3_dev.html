@@ -253,13 +253,16 @@ function fillSelect(el, items, ph){
   el.disabled=!(items&&items.length);
 }
 function titleCase(s){
-  return String(s||'').split(/(\s+|[-/])/).map(function(tok(){
-    if(/^\s+$/.test(tok)||tok==='-'||tok==='/') return tok;
-    var up = tok.toUpperCase();
-    if (up==='BBWS'||up==='BWS') return up;
-    if (/^(D\.?I\.?|DI)$/.test(up)) return 'D.I.';
-    return tok.charAt(0).toUpperCase()+tok.slice(1).toLowerCase();
-  }).join('');
+  return String(s || '')
+    .split(/(\s+|[-/])/)
+    .map(function (tok) {          // ← ini yg benar
+      if (/^\s+$/.test(tok) || tok === '-' || tok === '/') return tok;
+      var up = tok.toUpperCase();
+      if (up === 'BBWS' || up === 'BWS') return up;
+      if (/^(D\.?I\.?|DI)$/.test(up)) return 'D.I.';
+      return tok.charAt(0).toUpperCase() + tok.slice(1).toLowerCase();
+    })
+    .join('');
 }
 
 /* ==== pickFieldLike versi baru (spasi & underscore dianggap sama) ==== */
