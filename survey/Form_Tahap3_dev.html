@@ -76,7 +76,7 @@
 <header>
   <div class="hdr-left">
     <strong>Form Tahap 3</strong>
-    <span class="hint"> INPRES 2/2025 • Pelaksanaan Tahap 3</span>
+    <span class="hint">INPRES 2/2025 • Pelaksanaan Tahap 3</span>
   </div>
   <a class="btn-home" href="https://irwan-dot-cyber.github.io/my-maps/landingpage/beranda.html">Beranda</a>
 </header>
@@ -130,18 +130,6 @@
           <div class="hint muted">Pilih B/BWS, Provinsi, Kab/Kota, dan DI untuk melihat detail.</div>
         </div>
       </div>
-
-      <!-- Kec / Desa disembunyikan dulu (tidak wajib)
-      <div class="row">
-        <div>
-          <label>Kecamatan</label>
-          <input id="kecamatan" name="kecamatan" placeholder="Isi manual (lihat Informasi Paket)" required/>
-        </div>
-        <div>
-          <label>Desa/Kelurahan</label>
-          <input id="desa" name="desa" placeholder="Isi manual (lihat Informasi Paket)" required/>
-        </div>
-      </div> -->
 
       <div>
         <label>Peta Lokasi</label>
@@ -500,46 +488,30 @@ async function loadData(){
       var KEC  = row['Kec']  || row['KECAMATAN'] || row['Kecamatan'] || '';
       var DESA = row['Desa'] || row['DESA']      || '';
 
-            // meta utama – cari dg nama langsung + keyword fleksibel
-      var MENU =
-        row['Menu Kegiatan']        ||
-        row['MENU KEGIATAN']        ||
-        pickFieldLike(row, ['menu kegiatan','menu keg','menu']);
-
-      var JENUS =
-        row['Jenis Usulan Kegiatan'] ||
-        row['JENIS USULAN KEGIATAN'] ||
-        row['Jenis Usulan']          ||
-        pickFieldLike(row, ['jenis usulan kegiatan','jenis usulan','usulan']);
-
-      var URUT =
-        row['Urutan Prioritas']     ||
-        row['URUTAN PRIORITAS']     ||
-        pickFieldLike(row, ['urutan prioritas','prioritas']);
+      // meta utama
+      var MENU    = pickFieldLike(row, ['menu kegiatan','menu keg']);
+      var JENUS   = pickFieldLike(row, ['jenis usulan kegiatan','jenis usulan']);
+      var URUT    = pickFieldLike(row, ['urutan prioritas','prioritas']);
 
       var IPSEM =
         row['IP Padi Semula (%)']   ||
         row['IP Padi Semula']       ||
-        row['IP PADI SEMULA (%)']   ||
-        pickFieldLike(row, ['ip padi semula','ip semula','ip eksisting']);
+        pickFieldLike(row, ['ip padi semula','ip semula']);
 
       var IPMEN =
         row['IP Padi Menjadi (%)']  ||
         row['IP Padi Menjadi']      ||
-        row['IP PADI MENJADI (%)']  ||
-        pickFieldLike(row, ['ip padi menjadi','ip menjadi','ip usulan']);
+        pickFieldLike(row, ['ip padi menjadi','ip menjadi']);
 
       var OUTCOME =
         row['Outcome (Ha)']         ||
         row['Outcome']              ||
-        row['OUTCOME (HA)']         ||
-        pickFieldLike(row, ['outcome','luas outcome']);
+        pickFieldLike(row, ['outcome']);
 
       var MASA =
         row['Masa Pelaksanaan']     ||
         row['MASA PELAKSANAAN']     ||
-        pickFieldLike(row, ['masa pelaksanaan','masa pelaksana','tahun pelaksanaan']);
-
+        pickFieldLike(row, ['masa pelaksanaan','masa pelaksana']);
 
       if(!(BWS && PROV && KAB && DI)) return;
 
@@ -718,18 +690,10 @@ async function fetchHistory(bws, p, k, d){
   }
 }
 
-/* === DI dipilih: info, history, koordinat (tanpa auto-isi kec/desa) === */
+/* === DI dipilih: info, history, koordinat === */
 di.addEventListener('change', async function(){
   var b=balai.value, p=prov.value, k=kab.value, d=di.value;
   var entry = (((INDEX[b]||{})[p]||{})[k]||{})[d];
-
-  var kecEl = document.getElementById('kecamatan');
-  var desaEl = document.getElementById('desa');
-
-  var kecs  = entry && entry.kecamatan ? Array.from(entry.kecamatan) : [];
-  var desas = entry && entry.desa ? Array.from(entry.desa) : [];
-
-  // placeholder kec/desa sudah dimatikan; field juga di-comment
 
   setInfoPanelFromEntry(entry || null);
 
@@ -803,12 +767,6 @@ function missingList(){
   if(!prov.value) m.push('Provinsi');
   if(!kab.value)  m.push('Kab/Kota');
   if(!di.value)   m.push('DI');
-
-  var kecEl = document.getElementById('kecamatan');
-  if(kecEl && !kecEl.value) m.push('Kecamatan');
-  var desaEl = document.getElementById('desa');
-  if(desaEl && !desaEl.value) m.push('Desa/Kelurahan');
-
   if(!lat.value || !lng.value)                    m.push('Koordinat');
   if(!document.getElementById('nama').value)      m.push('Nama');
   if(!document.getElementById('telepon').value)   m.push('Nomor WA/HP');
