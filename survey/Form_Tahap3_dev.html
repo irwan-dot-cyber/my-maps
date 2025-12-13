@@ -364,9 +364,9 @@
 </div>
 
 <script>
-/* ===== CONFIG endpoint (Cloudflare Worker) ===== */
-var DATA_URL = 'https://gas-proxy3.tuic1677.workers.dev';
-var ENDPOINT = DATA_URL;
+/* ===== CONFIG endpoint (Cloudflare Worker atau langsung Web App) ===== */
+var DATA_URL = 'https://gas-proxy3.tuic1677.workers.dev'; 
+// Kalau mau langsung ke Web App Apps Script, ganti ke URL /exec-nya
 
 /* ===== Utils ===== */
 function toast(m){
@@ -397,7 +397,7 @@ function titleCase(s){
     if (up==='BBWS'||up==='BWS') return up;
     if (/^(D\.?I\.?|DI)$/.test(up)) return 'D.I.';
     return tok.charAt(0).toUpperCase()+tok.slice(1).toLowerCase();
-  }).join('');
+  }).join(' ');
 }
 
 // cari field berdasarkan kata kunci di nama kolom
@@ -598,10 +598,23 @@ async function loadData(){
     }
 
     var rows;
+
+    // 1) Kalau API balikin array langsung: [ {...}, {...} ]
     if (Array.isArray(parsed)) {
       rows = parsed;
+
+    // 2) Kalau API balikin { items: [ ... ] }
     } else if (parsed && Array.isArray(parsed.items)) {
       rows = parsed.items;
+
+    // 3) Kalau API balikin { rows: [ ... ] }
+    } else if (parsed && Array.isArray(parsed.rows)) {
+      rows = parsed.rows;
+
+    // 4) Kalau API balikin { data: [ ... ] }
+    } else if (parsed && Array.isArray(parsed.data)) {
+      rows = parsed.data;
+
     } else {
       console.error('Baseline tidak dalam format yang diharapkan:', parsed);
       toast('⚠️ Baseline kosong / format tidak dikenali.');
@@ -962,7 +975,7 @@ form.addEventListener('submit', async function(e){
   disableForm(true);
   setUploadingUI({show:true, percent:6});
   var xhr = new XMLHttpRequest();
-  xhr.open('POST', ENDPOINT, true);
+  xhr.open('POST', DATA_URL, true);
   xhr.upload.onprogress = function(ev){
     if (ev.lengthComputable)
       setUploadingUI({show:true, percent:(ev.loaded/ev.total)*100});
