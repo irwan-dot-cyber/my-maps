@@ -961,7 +961,7 @@ document.getElementById('surveyForm').addEventListener('change', updateSubmitSta
 btnPick.addEventListener('click', function(){ setTimeout(updateSubmitState, 0); });
 btnPan.addEventListener('click',  function(){ setTimeout(updateSubmitState, 0); });
 
-/* ===== Submit ===== */
+/* ===== Submit (kirim JSON ke GAS) ===== */
 form.addEventListener('submit', async function(e){
   e.preventDefault();
 
@@ -972,44 +972,59 @@ form.addEventListener('submit', async function(e){
     return;
   }
 
-  var b=balai.value, p=prov.value, k=kab.value, d=di.value;
+  var b = balai.value,
+      p = prov.value,
+      k = kab.value,
+      d = di.value;
 
-  var b64='', photo=null;
+  // siapkan foto (kompres + base64)
+  var b64 = '', photo = null;
   if (selectedFile) {
     photo = await compressImage(selectedFile,{maxDim:2000,quality:0.82});
-    var dt = new DataTransfer();
-    dt.items.add(photo);
-    fileInput.files = dt.files;
+    var kb = (photo.size/1024).toFixed(1);
+    photoMeta.textContent = 'Akan dikirim: ' + photo.name + ' • ' + kb + ' KB';
+
     b64 = await new Promise(function(res, rej){
       var r = new FileReader();
-      r.onload=function(){res(String(r.result));};
-      r.onerror=rej;
+      r.onload  = function(){ res(String(r.result)); };
+      r.onerror = rej;
       r.readAsDataURL(photo);
     });
-    var kb = (photo.size/1024).toFixed(1);
-    photoMeta.textContent = 'Akan dikirim: '+photo.name+' • '+kb+' KB';
   }
 
-  var fd = new FormData(form);
-  fd.set('progress_stage', String(currentStage));
-  if (b64) {
-    fd.set('foto_b64', b64);
-    fd.set('foto_name', photo.name);
-    fd.set('foto_type', photo.type);
-  }
+  // payload JSON yang dikirim ke GAS
+  var payload = {
+    bws:           b,
+    provinsi:      p,
+    kabupaten:     k,
+    di:            d,
+    lat:           parseFloat(lat.value) || null,
+    lng:           parseFloat(lng.value) || null,
+    progress_stage: currentStage,
+    nama:          document.getElementById('nama').value || '',
+    telepon:       document.getElementById('telepon').value || '',
+    foto_b64:      b64,
+    foto_name:     photo ? photo.name : '',
+    foto_type:     photo ? photo.type : ''
+  };
 
   disableForm(true);
-  setUploadingUI({show:true, percent:6});
+  setUploadingUI({show:true, percent:5});
+
   var xhr = new XMLHttpRequest();
   xhr.open('POST', ENDPOINT, true);
+  xhr.setRequestHeader('Content-Type','application/json');
+
   xhr.upload.onprogress = function(ev){
-    if (ev.lengthComputable)
+    if (ev.lengthComputable) {
       setUploadingUI({show:true, percent:(ev.loaded/ev.total)*100});
+    }
   };
   xhr.onloadstart = function(){ setUploadingUI({show:true, percent:5}); };
   xhr.onreadystatechange = function(){
-    if (xhr.readyState === XMLHttpRequest.HEADERS_RECEIVED)
+    if (xhr.readyState === XMLHttpRequest.HEADERS_RECEIVED) {
       setUploadingUI({show:true, percent:95});
+    }
   };
   xhr.onerror = function(){
     setUploadingUI({show:false});
@@ -1017,19 +1032,23 @@ form.addEventListener('submit', async function(e){
     toast('❌ Gagal kirim (jaringan/proxy).');
   };
   xhr.onload = async function(){
-    var data={};
-    try{ data = JSON.parse(xhr.responseText||'{}'); }catch(e){}
-    if (xhr.status>=200 && xhr.status<300 && data && data.ok) {
+    var data = {};
+    try { data = JSON.parse(xhr.responseText || '{}'); } catch(e){}
+
+    if (xhr.status >= 200 && xhr.status < 300 && data && data.ok) {
       setUploadingUI({show:true, percent:100});
       toast('✅ Terkirim!');
+
+      // refresh history & badge
       var hist = await fetchHistory(b, p, k, d);
-      lastStageEl.textContent = (hist.maxStage||0) + '%';
-      renderHistoryPhotos(hist.photos||{});
-      renderStageButtons(hist.maxStage||0);
-      if (hist.coords){
+      lastStageEl.textContent = (hist.maxStage || 0) + '%';
+      renderHistoryPhotos(hist.photos || {});
+      renderStageButtons(hist.maxStage || 0);
+      if (hist.coords) {
         setCoordLock(true, hist.coords.lat, hist.coords.lng);
         setCoordBadge('locked','Koordinat: terkunci (pakai entri sebelumnya)');
       }
+
       setTimeout(function(){ setUploadingUI({show:false}); }, 600);
     } else {
       setUploadingUI({show:false});
@@ -1039,8 +1058,10 @@ form.addEventListener('submit', async function(e){
     disableForm(false);
     updateSubmitState();
   };
-  xhr.send(fd);
+
+  xhr.send(JSON.stringify(payload));
 });
+
 
 /* ===== Reset ===== */
 document.getElementById('btnReset').addEventListener('click', function(){
