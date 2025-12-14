@@ -598,24 +598,40 @@ async function loadData(){
     try{
       parsed = JSON.parse(cleaned);
     }catch(e){
-      console.error('Gagal parse baseline:', raw);
+      console.error('Gagal parse baseline (bukan JSON):', raw);
       toast('⚠️ Gagal membaca baseline (JSON error).');
       return;
     }
 
-    var rows;
+    var rows = null;
+
+    // 1) Sudah berupa array
     if (Array.isArray(parsed)) {
       rows = parsed;
-    } else if (parsed && Array.isArray(parsed.items)) {
+    }
+    // 2) Bentuk { items: [...] }
+    else if (parsed && Array.isArray(parsed.items)) {
       rows = parsed.items;
-    } else {
-      console.error('Baseline tidak dalam format yang diharapkan:', parsed);
-      toast('⚠️ Baseline kosong / format tidak dikenali.');
-      return;
+    }
+    // 3) Bentuk { data: [...] }
+    else if (parsed && Array.isArray(parsed.data)) {
+      rows = parsed.data;
+    }
+    // 4) Bentuk { rows: [...] }
+    else if (parsed && Array.isArray(parsed.rows)) {
+      rows = parsed.rows;
+    }
+    // 5) Bentuk objek “dictionary”: { key1:{...}, key2:{...}, ... }
+    else if (parsed && typeof parsed === 'object') {
+      var vals = Object.values(parsed);
+      if (vals.length && vals.every(function(v){ return typeof v === 'object'; })) {
+        rows = vals;
+      }
     }
 
-    if (!rows.length){
-      toast('⚠️ Baseline kosong (tidak ada DI).');
+    if (!rows || !rows.length){
+      console.error('Baseline tidak dalam format yang diharapkan:', parsed);
+      toast('⚠️ Baseline kosong / format tidak dikenali.');
       return;
     }
 
@@ -648,7 +664,6 @@ async function loadData(){
       var KEC  = row['Kec']  || row['KECAMATAN'] || row['Kecamatan'] || '';
       var DESA = row['Desa'] || row['DESA']      || '';
 
-      // meta utama
       var MENU  = row['Menu Kegiatan'] || pickFieldLike(row, ['menu kegiatan','menu keg']);
       var JENUS = row['Jenis Usulan Kegiatan'] || pickFieldLike(row, ['jenis usulan kegiatan','jenis usulan']);
       var URUT  = row['Urutan Prioritas'] || pickFieldLike(row, ['urutan prioritas','prioritas']);
@@ -694,6 +709,7 @@ async function loadData(){
     toast('⚠️ Gagal memuat baseline (network/worker).');
   }
 }
+
 
 /* ===== Badge & kunci koordinat ===== */
 function setCoordBadge(type, text){
