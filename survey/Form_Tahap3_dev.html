@@ -1,179 +1,474 @@
 <!doctype html>
 <html lang="id">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Form Tahap 3 – INPRES 2/2025</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Form Tahap 3 (POST Foto Stabil)</title>
 
-<!-- Leaflet -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<style>
-:root{
-  --bg:#0b1224;--card:#0f172a;--mut:#9aa3b2;
-  --accent:#22c55e;--warn:#f59e0b
-}
-*{box-sizing:border-box}
-body{margin:0;font-family:system-ui;background:var(--bg);color:#e5e7eb}
-header{padding:14px;border-bottom:1px solid #1f2937;background:#0c1326;
-display:flex;justify-content:space-between;align-items:center}
-main{max-width:900px;margin:auto;padding:14px}
-.card{background:var(--card);border:1px solid #1f2937;border-radius:14px}
-.card h2{margin:0;padding:12px;border-bottom:1px solid #1f2937;font-size:15px}
-form{padding:14px;display:grid;gap:12px}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-label{font-size:12px;color:var(--mut)}
-input,select{width:100%;padding:10px;border-radius:10px;
-border:1px solid #334155;background:#0b1224;color:#e5e7eb}
-button{padding:10px 14px;border-radius:10px;border:0;cursor:pointer}
-.primary{background:var(--accent);color:#022c13;font-weight:700}
-.ghost{background:#0b1224;color:#e5e7eb;border:1px solid #334155}
-.badge{display:inline-flex;gap:6px;align-items:center;
-padding:4px 8px;border-radius:999px;border:1px solid #334155;font-size:12px}
-.dot{width:8px;height:8px;border-radius:50%}
-.green{background:#22c55e}.gray{background:#94a3b8}.orange{background:#f59e0b}
-.actions{display:flex;gap:8px;flex-wrap:wrap}
-#map{height:50vh;border-radius:12px}
-pre{background:#020617;padding:10px;border-radius:10px;overflow:auto;font-size:12px}
-details.debug{border:1px dashed #334155;padding:10px;border-radius:10px}
-</style>
+  <style>
+    :root{--bg:#0b1224;--card:#0f172a;--mut:#9aa3b2;--accent:#22c55e}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui;background:var(--bg);color:#e5e7eb}
+    header{padding:14px 18px;border-bottom:1px solid #1f2937;background:#0c1326;display:flex;justify-content:space-between;align-items:center}
+    .btn-home{padding:8px 12px;border-radius:10px;background:#0b1224;color:#e5e7eb;border:1px solid #334155;text-decoration:none;font-weight:700;font-size:13px}
+    main{max-width:1100px;margin:0 auto;padding:14px}
+    .card{background:var(--card);border:1px solid #1f2937;border-radius:14px;overflow:hidden}
+    .card h2{margin:0;padding:12px 14px;border-bottom:1px solid #1f2937;font-size:16px}
+    form{padding:12px 14px;display:grid;gap:12px}
+    label{font-size:12px;color:var(--mut)}
+    select,input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #334155;background:#0b1224;color:#e5e7eb}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .actions{display:flex;flex-wrap:wrap;gap:8px}
+    button{cursor:pointer;border:0;padding:10px 14px;border-radius:10px}
+    .primary{background:var(--accent);color:#022c16;font-weight:800}
+    .ghost{background:#0b1224;color:#e5e7eb;border:1px solid #334155}
+    #map{height:56vh}
+    .toast{margin:10px 14px;padding:10px 12px;border-radius:10px;background:#052e1a;border:1px solid #14532d;color:#bbf7d0;display:none}
+    .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border:1px solid #334155;border-radius:999px;background:#0b1224;font-size:12px}
+    .dot{width:8px;height:8px;border-radius:50%}
+    .dot.green{background:#22c55e}.dot.orange{background:#f59e0b}.dot.gray{background:#94a3b8}
+    .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+    .gallery a{display:block;border:1px solid #1f2937;border-radius:10px;overflow:hidden;background:#0b1224}
+    .gallery img{display:block;width:100%;height:140px;object-fit:cover}
+    .muted{opacity:.7}
+    @media (max-width:820px){.row{grid-template-columns:1fr}}
+  </style>
 </head>
-
 <body>
 <header>
-  <b>Form Tahap 3</b>
-  <a href="https://irwan-dot-cyber.github.io/my-maps/landingpage/beranda.html"
-     style="color:#e5e7eb;text-decoration:none">Beranda</a>
+  <div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap">
+    <strong>Form Tahap 3</strong>
+    <span style="font-size:12px;color:#9aa3b2">INPRES 2/2025 • Pelaksanaan Tahap 3</span>
+  </div>
+  <a class="btn-home" href="https://irwan-dot-cyber.github.io/my-maps/landingpage/beranda.html">Beranda</a>
 </header>
 
 <main>
-<div class="card">
-<h2>Data Survey</h2>
+  <div class="card">
+    <h2>Data Survey</h2>
+    <div id="toast" class="toast"></div>
 
-<form id="surveyForm">
+    <form id="surveyForm">
+      <div class="row">
+        <div><label>B/BWS</label><select id="balai" name="balai" required></select></div>
+        <div><label>Provinsi</label><select id="prov" name="provinsi" required disabled></select></div>
+      </div>
 
-<div class="row">
-  <div><label>B/BWS</label><select id="balai"></select></div>
-  <div><label>Provinsi</label><select id="prov" disabled></select></div>
-</div>
+      <div class="row">
+        <div><label>Kab/Kota</label><select id="kab" name="kabupaten" required disabled></select></div>
+        <div><label>DI</label><select id="di" name="di" required disabled></select></div>
+      </div>
 
-<div class="row">
-  <div><label>Kab/Kota</label><select id="kab" disabled></select></div>
-  <div><label>DI</label><select id="di" disabled></select></div>
-</div>
+      <div class="row">
+        <div><label>Kecamatan</label><input id="kecamatan" name="kecamatan" placeholder="isi" required/></div>
+        <div><label>Desa</label><input id="desa" name="desa" placeholder="isi" required/></div>
+      </div>
 
-<div class="actions">
-  <span class="badge"><span class="dot gray"></span>
-    <span id="baselineStatus">Baseline: belum dicek</span>
-  </span>
-</div>
+      <div class="actions" style="gap:10px;margin-top:-4px">
+        <span class="badge"><span class="dot gray"></span><span id="baselineText">Baseline: memuat…</span></span>
+        <span class="badge"><span class="dot green"></span>Progres terakhir: <b id="lastStage">0%</b></span>
+        <span class="badge" id="coordBadge"><span class="dot gray"></span><span id="coordBadgeText">Koordinat: -</span></span>
+      </div>
 
-<label>Peta Lokasi</label>
-<div id="map"></div>
-<div class="actions">
-  <button type="button" id="btnPick" class="primary">Ambil titik tengah</button>
-  <span id="coordText" class="badge"><span class="dot gray"></span>Lat:- Lng:-</span>
-</div>
+      <div>
+        <label>Peta Lokasi</label>
+        <div id="map"></div>
+        <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button id="btnLocate" type="button" class="ghost">📍 Lokasi saya</button>
+          <button id="btnPick" type="button" class="primary">✅ Ambil titik tengah</button>
+          <button type="button" id="btnPan" class="ghost">🧭 Pan ke koordinat</button>
+          <span class="badge" id="coords">Lat: -, Lng: -</span>
+        </div>
+      </div>
 
-<div class="row">
-  <div><label>Latitude</label><input id="lat"/></div>
-  <div><label>Longitude</label><input id="lng"/></div>
-</div>
+      <div class="row">
+        <div><label>Latitude</label><input type="number" step="0.000001" id="lat" name="lat" required/></div>
+        <div><label>Longitude</label><input type="number" step="0.000001" id="lng" name="lng" required/></div>
+      </div>
 
-<div class="row">
-  <div><label>Nama</label><input id="nama"/></div>
-  <div><label>WA/HP</label><input id="telepon"/></div>
-</div>
+      <div id="historyBlock" class="card" style="border-radius:12px;margin-top:6px">
+        <h2 style="font-size:14px">Riwayat Foto Progres</h2>
+        <div id="historyGals" style="padding:12px 14px">
+          <div class="muted" style="font-size:12px">Belum ada foto progres.</div>
+        </div>
+      </div>
 
-<div class="actions">
-  <button type="submit" class="primary">Kirim</button>
-  <button type="reset" class="ghost">Reset</button>
-</div>
+      <div class="card" style="border-radius:12px">
+        <h2 style="font-size:14px">Upload Foto Progres</h2>
+        <div style="padding:12px 14px; display:grid; gap:10px">
+          <div class="actions" id="stageBtns"></div>
+          <div class="actions" style="gap:8px;margin-bottom:6px">
+            <button type="button" id="btnCamera" class="ghost">📷 Kamera</button>
+            <button type="button" id="btnGallery" class="ghost">🖼️ Galeri</button>
+            <span id="photoMeta" style="font-size:12px;color:#9aa3b2"></span>
+          </div>
+          <input type="file" accept="image/*" id="fileInput" name="foto" style="display:none">
+          <div style="font-size:12px;color:#9aa3b2">Foto dikompresi otomatis lalu dikirim sebagai <b>foto_b64</b> (anti error GAS).</div>
+        </div>
+      </div>
 
-<details class="debug">
-<summary>Debug</summary>
-<div class="actions" style="margin-top:6px">
-  <button type="button" id="btnTestBaseline" class="ghost">Test Baseline</button>
-</div>
-<pre id="debugOut">---</pre>
-</details>
+      <div class="row">
+        <div><label>Nama</label><input id="nama" name="nama" required/></div>
+        <div><label>WA/HP</label><input id="telepon" name="telepon" pattern="[0-9+]{8,15}" required/></div>
+      </div>
 
-</form>
-</div>
+      <div class="actions">
+        <button type="submit" class="primary" id="btnSubmit" disabled>Kirim</button>
+        <button type="reset" class="ghost" id="btnReset">Reset</button>
+      </div>
+    </form>
+  </div>
 </main>
 
 <script>
-/* ================= CONFIG ================= */
-const BASELINE_URL =
-'https://gas-proxy3.tuic1677.workers.dev/';
+/* ===== CONFIG: satu pintu lewat Worker ===== */
+const WORKER_URL = 'https://gas-proxy3.tuic1677.workers.dev/'; // contoh: https://gas-proxy3.tuic1677.workers.dev
+const DATA_URL = WORKER_URL;
+const ENDPOINT = WORKER_URL;
 
-/* ================= MAP ================= */
-const map=L.map('map').setView([-2.5,118],5);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
-.addTo(map);
-
-const marker=L.marker(map.getCenter()).addTo(map);
-map.on('move',()=>{
-  const c=map.getCenter();
-  marker.setLatLng(c);
-  document.getElementById('coordText').innerHTML=
-    '<span class="dot green"></span>Lat:'+c.lat.toFixed(6)+' Lng:'+c.lng.toFixed(6);
-});
-
-/* ================= BASELINE ================= */
-async function loadBaseline(){
-  const out=document.getElementById('debugOut');
-  out.textContent='Loading baseline...';
-  try{
-    const r=await fetch(BASELINE_URL,{cache:'no-store'});
-    const j=await r.json();
-
-    if(!j || !Array.isArray(j.data)){
-      throw 'Format salah';
-    }
-
-    document.getElementById('baselineStatus').textContent=
-      'Baseline OK ('+j.data.length+' baris)';
-
-    document.getElementById('baselineStatus').previousElementSibling
-      .className='dot green';
-
-    out.textContent=JSON.stringify(j.data[0],null,2);
-
-    // isi dropdown aman
-    const balai=[...new Set(j.data.map(x=>x['B/BWS']).filter(Boolean))];
-    fill('balai',balai);
-
-  }catch(e){
-    document.getElementById('baselineStatus').textContent='Baseline ERROR';
-    out.textContent=String(e);
-  }
+/* ===== Toast ===== */
+function toast(m){
+  const t=document.getElementById('toast');
+  t.textContent=m;
+  t.style.display='block';
+  clearTimeout(window.__t);
+  window.__t=setTimeout(()=>t.style.display='none',4200);
+}
+function fillSelect(el, items, ph='-- pilih --'){
+  el.innerHTML='';
+  const o=document.createElement('option'); o.value=''; o.textContent=ph; el.appendChild(o);
+  (items||[]).forEach(v=>{const x=document.createElement('option'); x.value=x.textContent=v; el.appendChild(x);});
+  el.disabled = !(items && items.length);
+}
+function titleCase(s){
+  return String(s||'').split(/(\s+|[-/])/).map(tok=>{
+    if(/^\s+$/.test(tok)||tok==='-'||tok==='/') return tok;
+    const up = tok.toUpperCase();
+    if (up==='BBWS'||up==='BWS') return up;
+    if (/^(D\.?I\.?|DI)$/.test(up)) return 'D.I.';
+    return tok.charAt(0).toUpperCase()+tok.slice(1).toLowerCase();
+  }).join('');
 }
 
-function fill(id,list){
-  const s=document.getElementById(id);
-  s.innerHTML='<option value="">-- pilih --</option>';
-  list.forEach(v=>{
-    const o=document.createElement('option');
-    o.value=o.textContent=v;
-    s.appendChild(o);
-  });
-  s.disabled=false;
+/* ===== Map ===== */
+const baseOSM=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20});
+const map=L.map('map',{layers:[baseOSM]}).setView([-2.5,118],5);
+const coordsTxt=document.getElementById('coords');
+function upd(){ const c=map.getCenter(); coordsTxt.textContent=`Lat: ${c.lat.toFixed(6)}, Lng: ${c.lng.toFixed(6)}`; }
+map.on('move',upd); map.whenReady(upd);
+
+let pickedMarker=null;
+function showPicked(la,lo,zoom=null){
+  if(!isFinite(la)||!isFinite(lo)) return;
+  const ll=L.latLng(la,lo);
+  if(!pickedMarker) pickedMarker=L.marker(ll).addTo(map);
+  else pickedMarker.setLatLng(ll);
+  if(zoom!=null) map.setView(ll,zoom);
 }
 
-/* ================= EVENT ================= */
+const lat=document.getElementById('lat');
+const lng=document.getElementById('lng');
 document.getElementById('btnPick').onclick=()=>{
   const c=map.getCenter();
   lat.value=c.lat.toFixed(6);
   lng.value=c.lng.toFixed(6);
+  showPicked(c.lat,c.lng,null);
+  updateSubmitState();
 };
+document.getElementById('btnPan').onclick=()=>{
+  const la=parseFloat(lat.value), lo=parseFloat(lng.value);
+  if(isFinite(la)&&isFinite(lo)) showPicked(la,lo,Math.max(map.getZoom(),16));
+};
+document.getElementById('btnLocate').onclick=()=>{
+  map.locate({setView:true,maxZoom:17,enableHighAccuracy:true});
+};
+map.on('locationfound',e=>{
+  lat.value=e.latitude.toFixed(6);
+  lng.value=e.longitude.toFixed(6);
+  showPicked(e.latitude,e.longitude,17);
+  updateSubmitState();
+});
+map.on('locationerror',()=>toast('Izin lokasi ditolak. Geser peta manual.'));
 
-document.getElementById('btnTestBaseline').onclick=loadBaseline;
+lat.addEventListener('change',()=>{ const la=parseFloat(lat.value),lo=parseFloat(lng.value); if(isFinite(la)&&isFinite(lo)) showPicked(la,lo,null); });
+lng.addEventListener('change',()=>{ const la=parseFloat(lat.value),lo=parseFloat(lng.value); if(isFinite(la)&&isFinite(lo)) showPicked(la,lo,null); });
 
-/* auto load */
+/* ===== Baseline + Cascade ===== */
+let INDEX={};
+const balai=document.getElementById('balai');
+const prov=document.getElementById('prov');
+const kab=document.getElementById('kab');
+const di=document.getElementById('di');
+
+async function loadBaseline(){
+  const badge=document.getElementById('baselineText');
+  try{
+    const url = DATA_URL + '?fn=baseline&t=' + Date.now();
+    const r = await fetch(url,{cache:'no-store'});
+    const j = await r.json();
+
+    if(!j || !j.ok) throw (j && j.error ? j.error : 'baseline gagal');
+    const rows = j.items || [];
+    badge.textContent = 'Baseline: OK ('+rows.length+' baris)';
+
+    INDEX={};
+    rows.forEach(row=>{
+      const BWS  = titleCase(row['B/BWS'] || row['B/BWS PELAKSANA'] || row['BWS'] || row['Balai']);
+      const PROV = titleCase(row['Provinsi'] || row['PROVINSI']);
+      const KAB  = titleCase(row['Kab/Kota'] || row['Kabupaten'] || row['KABUPATEN']);
+      const DI   = titleCase(row['Nama DI'] || row['NAMA DI/DIR'] || row['DI'] || row['Paket']);
+      if(!(BWS&&PROV&&KAB&&DI)) return;
+      INDEX[BWS] ??= {};
+      INDEX[BWS][PROV] ??= {};
+      INDEX[BWS][PROV][KAB] ??= {};
+      INDEX[BWS][PROV][KAB][DI] = true;
+    });
+
+    fillSelect(balai, Object.keys(INDEX).sort(), '-- pilih B/BWS --');
+  }catch(e){
+    console.error(e);
+    badge.textContent='Baseline: ERROR';
+    toast('⚠️ Baseline error. Cek worker/GAS.');
+  }
+}
+
+balai.addEventListener('change',()=>{
+  const b=balai.value;
+  if(!b){ fillSelect(prov,[], '-- pilih Provinsi --'); prov.disabled=true; return; }
+  fillSelect(prov, Object.keys(INDEX[b]||{}).sort(), '-- pilih Provinsi --'); prov.disabled=false;
+  fillSelect(kab,[], '-- pilih Kab/Kota --'); kab.disabled=true;
+  fillSelect(di,[], '-- pilih DI --'); di.disabled=true;
+});
+prov.addEventListener('change',()=>{
+  const b=balai.value,p=prov.value;
+  if(!p){ fillSelect(kab,[], '-- pilih Kab/Kota --'); kab.disabled=true; return; }
+  fillSelect(kab, Object.keys((INDEX[b]||{})[p]||{}).sort(), '-- pilih Kab/Kota --'); kab.disabled=false;
+  fillSelect(di,[], '-- pilih DI --'); di.disabled=true;
+});
+kab.addEventListener('change',()=>{
+  const b=balai.value,p=prov.value,k=kab.value;
+  if(!k){ fillSelect(di,[], '-- pilih DI --'); di.disabled=true; return; }
+  fillSelect(di, Object.keys((((INDEX[b]||{})[p]||{})[k]||{})).sort(), '-- pilih DI --'); di.disabled=false;
+});
+
+/* ===== History + Stage ===== */
+let currentStage=null;
+const lastStageEl=document.getElementById('lastStage');
+const historyGals=document.getElementById('historyGals');
+const coordBadgeText=document.getElementById('coordBadgeText');
+
+function renderStageButtons(maxStage){
+  const wrap=document.getElementById('stageBtns');
+  wrap.innerHTML='';
+  const stages=[25,50,75,100];
+  const nextStage = (maxStage>=100) ? null : (maxStage===0 ? 25 : (maxStage+25));
+  stages.forEach(st=>{
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.textContent='Progres '+st+'%';
+    const enabled=(st===nextStage);
+    btn.className= enabled ? 'primary' : 'ghost';
+    btn.disabled=!enabled;
+    btn.onclick=()=>{ currentStage=st; toast('Stage dipilih: '+st+'%'); updateSubmitState(); };
+    wrap.appendChild(btn);
+  });
+  currentStage = nextStage;
+  updateSubmitState();
+}
+
+function renderHistoryPhotos(photos){
+  const order=[25,50,75,100];
+  let html='', has=false;
+  order.forEach(st=>{
+    const p=photos[String(st)];
+    if(p && p.url){
+      has=true;
+      html+=`
+      <div style="margin-bottom:10px">
+        <div style="font-size:12px;color:#9aa3b2">Foto Progres ${st}%</div>
+        <div class="gallery">
+          <a href="${p.url}" target="_blank">
+            <img loading="lazy" src="${p.url}" alt="Progres ${st}%"/>
+          </a>
+        </div>
+      </div>`;
+    }
+  });
+  historyGals.innerHTML = has ? html : `<div class="muted" style="font-size:12px">Belum ada foto progres.</div>`;
+}
+
+async function fetchHistory(bws,p,k,d){
+  const qs = new URLSearchParams({fn:'history', bws, prov:p, kab:k, di:d, t:String(Date.now())});
+  const r = await fetch(DATA_URL + '?' + qs.toString(), {cache:'no-store'});
+  try{
+    const j = await r.json();
+    return (j && j.ok) ? j : {ok:false,maxStage:0,coords:null,photos:{}};
+  }catch{
+    return {ok:false,maxStage:0,coords:null,photos:{}};
+  }
+}
+
+function setCoordLock(locked, la, lo){
+  if(locked){
+    lat.disabled=true; lng.disabled=true;
+    document.getElementById('btnPick').disabled=true;
+    document.getElementById('btnLocate').disabled=true;
+    document.getElementById('btnPan').disabled=true;
+    coordBadgeText.textContent='Koordinat: terkunci (pakai entri sebelumnya)';
+    if(isFinite(la)&&isFinite(lo)){
+      lat.value=Number(la).toFixed(6);
+      lng.value=Number(lo).toFixed(6);
+      showPicked(Number(la),Number(lo),17);
+    }
+  }else{
+    lat.disabled=false; lng.disabled=false;
+    document.getElementById('btnPick').disabled=false;
+    document.getElementById('btnLocate').disabled=false;
+    document.getElementById('btnPan').disabled=false;
+    coordBadgeText.textContent='Koordinat: belum ada, silakan pilih titik';
+  }
+}
+
+di.addEventListener('change', async ()=>{
+  const b=balai.value,p=prov.value,k=kab.value,d=di.value;
+  if(!(b&&p&&k&&d)) return;
+
+  const hist = await fetchHistory(b,p,k,d);
+  lastStageEl.textContent = (hist.maxStage||0) + '%';
+  renderHistoryPhotos(hist.photos||{});
+  renderStageButtons(hist.maxStage||0);
+
+  const hasCoord = hist.coords && isFinite(hist.coords.lat) && isFinite(hist.coords.lng);
+  if(hasCoord){
+    setCoordLock(true, hist.coords.lat, hist.coords.lng);
+  }else{
+    setCoordLock(false);
+  }
+});
+
+/* ===== Foto + Base64 ===== */
+let selectedFile=null;
+const fileInput=document.getElementById('fileInput');
+const photoMeta=document.getElementById('photoMeta');
+
+document.getElementById('btnCamera').onclick=()=>{ fileInput.setAttribute('capture','environment'); fileInput.click(); };
+document.getElementById('btnGallery').onclick=()=>{ fileInput.removeAttribute('capture'); fileInput.click(); };
+fileInput.addEventListener('change',()=>{
+  selectedFile = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+  photoMeta.textContent = selectedFile ? ('Dipilih: '+selectedFile.name+' • '+(selectedFile.size/1024).toFixed(1)+' KB') : '';
+  updateSubmitState();
+});
+
+async function compressImage(file,{maxDim=2000,quality=0.82,mime='image/jpeg'}={}){
+  try{
+    if(!(file && file.type && file.type.startsWith('image/'))) return file;
+    const bitmap = await createImageBitmap(file,{imageOrientation:'from-image'});
+    const W=bitmap.width,H=bitmap.height;
+    const s=Math.min(1, maxDim/Math.max(W,H));
+    const w=Math.round(W*s), h=Math.round(H*s);
+    if(s===1 && file.type==='image/jpeg' && file.size<700*1024) return file;
+
+    const c=document.createElement('canvas'); c.width=w; c.height=h;
+    const ctx=c.getContext('2d'); ctx.drawImage(bitmap,0,0,w,h);
+
+    const blob = await new Promise(res=>c.toBlob(res,mime,quality));
+    if(!blob || blob.size>=file.size) return file;
+
+    const baseName = (file.name||'foto').replace(/\.(jpe?g|png|webp|heic|heif)$/i,'') || 'foto';
+    return new File([blob], baseName+'.jpg', {type:mime});
+  }catch(e){
+    console.warn('compress fail',e);
+    return file;
+  }
+}
+
+/* ===== Validasi Submit ===== */
+function missingList(){
+  const m=[];
+  if(!balai.value) m.push('B/BWS');
+  if(!prov.value) m.push('Provinsi');
+  if(!kab.value) m.push('Kab/Kota');
+  if(!di.value) m.push('DI');
+  if(!document.getElementById('kecamatan').value) m.push('Kecamatan');
+  if(!document.getElementById('desa').value) m.push('Desa');
+  if(!lat.value || !lng.value) m.push('Koordinat');
+  if(!document.getElementById('nama').value) m.push('Nama');
+  if(!document.getElementById('telepon').value) m.push('Telepon');
+  if(!currentStage) m.push('Stage Progres');
+  // kalau foto wajib, uncomment:
+  // if(!selectedFile) m.push('Foto');
+  return m;
+}
+function updateSubmitState(){
+  document.getElementById('btnSubmit').disabled = (missingList().length>0);
+}
+document.getElementById('surveyForm').addEventListener('input', updateSubmitState);
+document.getElementById('surveyForm').addEventListener('change', updateSubmitState);
+
+/* ===== Submit POST (via worker) ===== */
+document.getElementById('surveyForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+
+  const miss=missingList();
+  if(miss.length){ toast('⚠️ Harus diisi: '+miss.join(', ')); return; }
+
+  let photo=null, b64='';
+  if(selectedFile){
+    photo = await compressImage(selectedFile,{maxDim:2000,quality:0.82});
+    b64 = await new Promise((res,rej)=>{
+      const r=new FileReader();
+      r.onload=()=>res(String(r.result));
+      r.onerror=rej;
+      r.readAsDataURL(photo);
+    });
+  }
+
+  const fd = new FormData(document.getElementById('surveyForm'));
+  fd.set('progress_stage', String(currentStage));
+  if(b64){
+    fd.set('foto_b64', b64);
+    fd.set('foto_name', photo.name);
+    fd.set('foto_type', photo.type);
+  }
+
+  try{
+    const r = await fetch(ENDPOINT, { method:'POST', body: fd });
+    const j = await r.json();
+    if(j && j.ok){
+      toast('✅ Terkirim!');
+      // refresh history + lock
+      const hist = await fetchHistory(balai.value, prov.value, kab.value, di.value);
+      lastStageEl.textContent=(hist.maxStage||0)+'%';
+      renderHistoryPhotos(hist.photos||{});
+      renderStageButtons(hist.maxStage||0);
+      if(hist.coords) setCoordLock(true, hist.coords.lat, hist.coords.lng);
+    }else{
+      toast('❌ Gagal: '+(j && j.error ? j.error : 'unknown'));
+    }
+  }catch(err){
+    console.error(err);
+    toast('❌ Error jaringan/proxy');
+  }
+});
+
+/* ===== Reset ===== */
+document.getElementById('btnReset').addEventListener('click',()=>{
+  selectedFile=null;
+  photoMeta.textContent='';
+  lastStageEl.textContent='0%';
+  historyGals.innerHTML='<div class="muted" style="font-size:12px">Belum ada foto progres.</div>';
+  setCoordLock(false);
+  renderStageButtons(0);
+  updateSubmitState();
+});
+
+/* start */
 loadBaseline();
+renderStageButtons(0);
+updateSubmitState();
 </script>
-
 </body>
 </html>
