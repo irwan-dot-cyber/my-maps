@@ -259,6 +259,10 @@
         </div>
       </div>
 
+      <!-- hidden supaya ikut ke log -->
+      <input type="hidden" id="kecamatan" name="kecamatan">
+      <input type="hidden" id="desa" name="desa">
+
       <div class="actions" id="statusBar" style="gap:10px;margin-top:-4px">
         <span class="badge">
           <span class="dot green"></span>Progres terakhir:
@@ -364,9 +368,9 @@
 </div>
 
 <script>
-/* ===== CONFIG endpoint (Cloudflare Worker atau langsung Web App) ===== */
-var DATA_URL = 'https://gas-proxy3.tuic1677.workers.dev/'; 
-// Kalau mau langsung ke Web App Apps Script, ganti ke URL /exec-nya
+/* ===== CONFIG endpoint (Cloudflare Worker) ===== */
+var DATA_URL = 'https://gas-proxy3.tuic1677.workers.dev';
+var ENDPOINT = DATA_URL;
 
 /* ===== Utils ===== */
 function toast(m){
@@ -496,6 +500,8 @@ var coordBadge=document.getElementById('coordBadge'),
 var btnPick   = document.getElementById('btnPick');
 var btnPan    = document.getElementById('btnPan');
 var btnLocate = document.getElementById('btnLocate');
+var kecInput  = document.getElementById('kecamatan');
+var desaInput = document.getElementById('desa');
 
 var infoBody = document.getElementById('infoBody');
 var btnInfoToggle = document.getElementById('btnInfoToggle');
@@ -598,23 +604,10 @@ async function loadData(){
     }
 
     var rows;
-
-    // 1) Kalau API balikin array langsung: [ {...}, {...} ]
     if (Array.isArray(parsed)) {
       rows = parsed;
-
-    // 2) Kalau API balikin { items: [ ... ] }
     } else if (parsed && Array.isArray(parsed.items)) {
       rows = parsed.items;
-
-    // 3) Kalau API balikin { rows: [ ... ] }
-    } else if (parsed && Array.isArray(parsed.rows)) {
-      rows = parsed.rows;
-
-    // 4) Kalau API balikin { data: [ ... ] }
-    } else if (parsed && Array.isArray(parsed.data)) {
-      rows = parsed.data;
-
     } else {
       console.error('Baseline tidak dalam format yang diharapkan:', parsed);
       toast('⚠️ Baseline kosong / format tidak dikenali.');
@@ -739,6 +732,7 @@ balai.addEventListener('change', function(){
     fillSelect(kab,[], '-- pilih Kab/Kota --'); kab.disabled=true;
     fillSelect(di,[], '-- pilih DI --'); di.disabled=true;
     setInfoPanelFromEntry(null);
+    kecInput.value=''; desaInput.value='';
     return;
   }
   fillSelect(prov, Object.keys(INDEX[b]||{}).sort(),'-- pilih Provinsi --');
@@ -746,6 +740,7 @@ balai.addEventListener('change', function(){
   fillSelect(kab,[], '-- pilih Kab/Kota --'); kab.disabled=true;
   fillSelect(di,[], '-- pilih DI --'); di.disabled=true;
   setInfoPanelFromEntry(null);
+  kecInput.value=''; desaInput.value='';
 });
 prov.addEventListener('change', function(){
   var b=balai.value, p=prov.value;
@@ -753,23 +748,62 @@ prov.addEventListener('change', function(){
     fillSelect(kab,[], '-- pilih Kab/Kota --'); kab.disabled=true;
     fillSelect(di,[], '-- pilih DI --'); di.disabled=true;
     setInfoPanelFromEntry(null);
+    kecInput.value=''; desaInput.value='';
     return;
   }
   fillSelect(kab, Object.keys((INDEX[b]||{})[p]||{}).sort(),'-- pilih Kab/Kota --');
   kab.disabled=false;
   fillSelect(di,[], '-- pilih DI --'); di.disabled=true;
   setInfoPanelFromEntry(null);
+  kecInput.value=''; desaInput.value='';
 });
 kab.addEventListener('change', function(){
   var b=balai.value, p=prov.value, k=kab.value;
   if(!k){
     fillSelect(di,[], '-- pilih DI --'); di.disabled=true;
     setInfoPanelFromEntry(null);
+    kecInput.value=''; desaInput.value='';
     return;
   }
   fillSelect(di, Object.keys((((INDEX[b]||{})[p]||{})[k]||{})).sort(),'-- pilih DI --');
   di.disabled=false;
   setInfoPanelFromEntry(null);
+  kecInput.value=''; desaInput.value='';
+});
+
+di.addEventListener('change', async function(){
+  var b=balai.value, p=prov.value, k=kab.value, d=di.value;
+  var entry = (((INDEX[b]||{})[p]||{})[k]||{})[d];
+
+  setInfoPanelFromEntry(entry || null);
+
+  // isi hidden kecamatan & desa
+  if(entry){
+    var kecs = entry.kecamatan ? Array.from(entry.kecamatan) : [];
+    var desas = entry.desa ? Array.from(entry.desa) : [];
+    kecInput.value = kecs[0] || '';
+    desaInput.value = desas[0] || '';
+  }else{
+    kecInput.value='';
+    desaInput.value='';
+  }
+
+  if(!(b && p && k && d)) return;
+
+  var hist = await fetchHistory(b,p,k,d);
+  lastStageEl.textContent = (hist.maxStage||0) + '%';
+  renderHistoryPhotos(hist.photos||{});
+  renderStageButtons(hist.maxStage||0);
+
+  var hasCoord = hist.coords && isFinite(hist.coords.lat) && isFinite(hist.coords.lng);
+  if (hasCoord){
+    setCoordLock(true, hist.coords.lat, hist.coords.lng);
+    setCoordBadge('locked','Koordinat: terkunci (pakai entri sebelumnya)');
+    map.setView([hist.coords.lat, hist.coords.lng], 17);
+  } else {
+    setCoordLock(false);
+    setCoordBadge('none','Koordinat: belum ada, silakan pilih titik');
+  }
 });
 
 /* ===== History / Stage ===== */
@@ -841,30 +875,6 @@ async function fetchHistory(bws, p, k, d){
     return {ok:false,maxStage:0,coords:null,photos:{}};
   }
 }
-
-di.addEventListener('change', async function(){
-  var b=balai.value, p=prov.value, k=kab.value, d=di.value;
-  var entry = (((INDEX[b]||{})[p]||{})[k]||{})[d];
-
-  setInfoPanelFromEntry(entry || null);
-
-  if(!(b && p && k && d)) return;
-
-  var hist = await fetchHistory(b,p,k,d);
-  lastStageEl.textContent = (hist.maxStage||0) + '%';
-  renderHistoryPhotos(hist.photos||{});
-  renderStageButtons(hist.maxStage||0);
-
-  var hasCoord = hist.coords && isFinite(hist.coords.lat) && isFinite(hist.coords.lng);
-  if (hasCoord){
-    setCoordLock(true, hist.coords.lat, hist.coords.lng);
-    setCoordBadge('locked','Koordinat: terkunci (pakai entri sebelumnya)');
-    map.setView([hist.coords.lat, hist.coords.lng], 17);
-  } else {
-    setCoordLock(false);
-    setCoordBadge('none','Koordinat: belum ada, silakan pilih titik');
-  }
-});
 
 /* ===== Foto + kompresi ===== */
 var selectedFile=null;
@@ -975,7 +985,7 @@ form.addEventListener('submit', async function(e){
   disableForm(true);
   setUploadingUI({show:true, percent:6});
   var xhr = new XMLHttpRequest();
-  xhr.open('POST', DATA_URL, true);
+  xhr.open('POST', ENDPOINT, true);
   xhr.upload.onprogress = function(ev){
     if (ev.lengthComputable)
       setUploadingUI({show:true, percent:(ev.loaded/ev.total)*100});
@@ -1031,8 +1041,9 @@ document.getElementById('btnReset').addEventListener('click', function(){
     pickedMarker=null;
   }
   currentStage=null;
-  renderHistoryPhotos({});
+  renderHistoryPhotos({});  
   setInfoPanelFromEntry(null);
+  kecInput.value=''; desaInput.value='';
   updateSubmitState();
 });
 
