@@ -1,9 +1,10 @@
 <!doctype html>
+
 <html lang="id">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Form Tahap 2 — INPRES 2/2025</title>
+  <title>Form Tahap 3 — INPRES 2/2025</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap">
@@ -11,711 +12,716 @@
 
   <style>
     :root{
-      --bg0:#050914;
-      --bg1:#070c1a;
-      --panel: rgba(9, 16, 36, .78);
-      --panel2: rgba(10, 18, 42, .62);
-      --border: rgba(255,255,255,.10);
-      --border2: rgba(255,255,255,.14);
+      --bg:#0b1224;
+      --panel:#0f172a;
+      --border:rgba(255,255,255,.10);
+      --border2:rgba(255,255,255,.14);
       --text:#e5e7eb;
-      --muted:#a8b1c7;
+      --muted:#9aa3b2;
       --muted2:#7f8aa5;
-      --accent:#3b82f6;
-      --accent2:#60a5fa;
       --good:#22c55e;
       --warn:#f59e0b;
       --bad:#fb7185;
+      --accent:#3b82f6;
       --shadow: 0 18px 55px rgba(0,0,0,.45);
-      --r: 18px;
-      --r2: 14px;
-      --hdrH: 68px;
+      --r:18px;
+      --r2:14px;
+      --hdrH:68px;
     }
 
     *{box-sizing:border-box}
     body{
       margin:0;
-      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;
       color:var(--text);
       background:
         radial-gradient(900px 500px at 20% -10%, rgba(59,130,246,.22), transparent 60%),
         radial-gradient(700px 420px at 90% 0%, rgba(34,197,94,.14), transparent 60%),
         radial-gradient(900px 520px at 40% 120%, rgba(245,158,11,.10), transparent 60%),
-        linear-gradient(180deg, var(--bg0), var(--bg1));
+        linear-gradient(180deg, #050914, #070c1a);
       min-height:100vh;
     }
 
-    .topbar{
-      position: sticky;
-      top:0;
-      z-index: 10;
-      height: var(--hdrH);
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding: 0 22px;
-      border-bottom: 1px solid rgba(255,255,255,.07);
+    header{
+      position:sticky; top:0; z-index:10;
+      height:var(--hdrH);
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding:0 22px;
+      border-bottom:1px solid rgba(255,255,255,.07);
       background: rgba(4, 8, 20, .72);
       backdrop-filter: blur(10px);
     }
-    .brand{
-      display:flex; align-items:baseline; gap:14px;
-      white-space:nowrap;
-    }
-    .brand .title{ font-weight: 800; letter-spacing:.2px; font-size: 22px; }
-    .brand .sub{ font-size: 13px; color: var(--muted); font-weight: 500; }
+    .brand{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+    .brand .title{font-weight:800;font-size:22px;letter-spacing:.2px}
+    .brand .sub{font-size:13px;color:var(--muted);font-weight:600}
 
     .btn{
-      appearance:none;
-      border: 1px solid rgba(255,255,255,.14);
-      color: var(--text);
-      background: rgba(255,255,255,.04);
-      padding: 10px 16px;
-      border-radius: 999px;
-      font-weight: 800;
-      cursor:pointer;
+      appearance:none; cursor:pointer;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.04);
+      color:var(--text);
+      padding:10px 16px;
+      border-radius:999px;
+      font-weight:800;
       transition:.15s ease;
     }
-    .btn:hover{ filter: brightness(1.08); border-color: rgba(255,255,255,.22); }
-    .btn:active{ transform: translateY(1px); }
+    .btn:hover{filter:brightness(1.08);border-color:rgba(255,255,255,.22)}
+    .btn:active{transform:translateY(1px)}
 
-    .wrap{ max-width: 1180px; margin: 0 auto; padding: 22px; }
+    main{max-width:1180px;margin:0 auto;padding:22px}
     .card{
-      margin-top: 18px;
-      border: 1px solid var(--border);
-      border-radius: 22px;
+      margin-top:18px;
+      border:1px solid var(--border);
+      border-radius:22px;
       background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
       box-shadow: var(--shadow);
       overflow:hidden;
     }
     .card-inner{
-      background: var(--panel);
+      background: rgba(9, 16, 36, .78);
       border-radius: 22px;
       border: 1px solid rgba(255,255,255,.08);
       margin: 14px;
       padding: 18px;
     }
-    .card-title{ font-size: 20px; font-weight: 800; margin: 2px 0 16px; }
+    .card-title{font-size:20px;font-weight:800;margin:2px 0 16px}
 
-    .grid{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 18px;
-    }
-    @media (max-width: 900px){
-      .grid{ grid-template-columns: 1fr; }
-      .brand{ flex-wrap:wrap; }
-      .brand .title{ font-size: 20px; }
-    }
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+    @media(max-width:900px){.grid{grid-template-columns:1fr}.brand .title{font-size:20px}}
 
-    label{ display:block; font-size: 13px; color: var(--muted); margin: 2px 0 8px; }
-
-    .field{ position:relative; }
-    select, input{
+    label{display:block;font-size:13px;color:var(--muted);margin:2px 0 8px}
+    .field{position:relative}
+    select,input{
       width:100%;
-      padding: 14px 14px;
-      border-radius: var(--r2);
-      border: 1px solid rgba(255,255,255,.14);
-      outline: none;
+      padding:14px 14px;
+      border-radius:var(--r2);
+      border:1px solid rgba(255,255,255,.14);
+      outline:none;
       background: rgba(3, 8, 22, .55);
-      color: var(--text);
+      color:var(--text);
       box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
     }
-    select:disabled, input:disabled{ opacity:.55; cursor:not-allowed; }
-    input::placeholder{ color: rgba(168,177,199,.55); }
+    select:disabled,input:disabled{opacity:.55;cursor:not-allowed}
+    input::placeholder{color:rgba(168,177,199,.55)}
 
-    .chips{
-      display:flex; gap: 12px; align-items:center;
-      margin: 6px 0 2px; flex-wrap: wrap;
-    }
+    .chips{display:flex;gap:12px;align-items:center;margin:10px 0 2px;flex-wrap:wrap}
     .chip{
-      display:inline-flex; align-items:center; gap:10px;
-      padding: 10px 14px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.03);
-      color: var(--text);
-      font-weight: 800;
-      font-size: 13px;
+      display:inline-flex;align-items:center;gap:10px;
+      padding:10px 14px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.03);
+      font-weight:800;font-size:13px;
     }
-    .chip small{ color: var(--muted2); font-weight: 800; font-size: 13px; }
-    .dot{ width:10px; height:10px; border-radius:50%; background: var(--warn); box-shadow: 0 0 0 4px rgba(245,158,11,.12); }
-    .dot.good{ background: var(--good); box-shadow: 0 0 0 4px rgba(34,197,94,.14); }
-    .dot.bad{ background: var(--bad); box-shadow: 0 0 0 4px rgba(251,113,133,.14); }
+    .chip small{color:var(--muted2);font-weight:800}
+    .dot{width:10px;height:10px;border-radius:50%;background:var(--warn);box-shadow:0 0 0 4px rgba(245,158,11,.12)}
+    .dot.good{background:var(--good);box-shadow:0 0 0 4px rgba(34,197,94,.14)}
+    .dot.bad{background:var(--bad);box-shadow:0 0 0 4px rgba(251,113,133,.14)}
 
-    .statusline{
-      margin-top: 12px;
-      display:flex; gap:10px; align-items:center;
-      color: var(--muted2); font-size: 12px;
-    }
+    .statusline{margin-top:12px;display:flex;gap:10px;align-items:center;color:var(--muted2);font-size:12px}
     .spinner{
-      width:14px; height:14px; border-radius:50%;
+      width:14px;height:14px;border-radius:50%;
       border:2px solid rgba(255,255,255,.25);
-      border-top-color: var(--accent2);
-      animation: spin 1s linear infinite;
+      border-top-color:#60a5fa;
+      animation:spin 1s linear infinite;
     }
-    @keyframes spin{ to{ transform: rotate(360deg); } }
+    @keyframes spin{to{transform:rotate(360deg)}}
 
     .err{
-      margin-top: 12px;
-      padding: 12px 14px;
-      border-radius: 14px;
-      border: 1px solid rgba(248,113,113,.45);
+      margin-top:12px;
+      padding:12px 14px;
+      border-radius:14px;
+      border:1px solid rgba(248,113,113,.45);
       background: rgba(248,113,113,.08);
-      color: #fecaca;
+      color:#fecaca;
       display:none;
-      font-size: 13px;
-      white-space: pre-wrap;
+      font-size:13px;
+      white-space:pre-wrap;
     }
 
-    .hint{ margin-top: 10px; color: var(--muted2); font-size: 12px; line-height: 1.45; }
+    .hint{margin-top:10px;color:var(--muted2);font-size:12px;line-height:1.45}
 
-    /* Map section */
+    /* Map */
     .mapWrap{
-      margin-top: 16px;
-      border: 1px solid rgba(255,255,255,.10);
-      border-radius: 18px;
-      background: rgba(255,255,255,.03);
+      margin-top:16px;
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:18px;
+      background:rgba(255,255,255,.03);
       overflow:hidden;
     }
     .mapHdr{
-      display:flex; align-items:center; justify-content:space-between; gap:10px;
-      padding: 12px 12px;
-      border-bottom: 1px solid rgba(255,255,255,.08);
-      background: rgba(255,255,255,.02);
-      flex-wrap: wrap;
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      padding:12px;border-bottom:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.02);
+      flex-wrap:wrap;
     }
-    .mapHdr .left{
-      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
-      font-weight:800;
-    }
-    .mapHdr .right{
-      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
-    }
+    .mapHdr .left{font-weight:900}
+    .mapHdr .right{display:flex;gap:10px;flex-wrap:wrap}
     .btn2{
-      appearance:none;
-      border: 1px solid rgba(96,165,250,.35);
-      color: var(--text);
+      appearance:none; cursor:pointer;
+      border:1px solid rgba(96,165,250,.35);
+      color:var(--text);
       background: linear-gradient(180deg, rgba(96,165,250,.22), rgba(96,165,250,.08));
-      padding: 10px 14px;
-      border-radius: 999px;
-      font-weight: 900;
-      cursor:pointer;
+      padding:10px 14px;
+      border-radius:999px;
+      font-weight:900;
       transition:.15s ease;
     }
-    .btn2:hover{ filter: brightness(1.06); }
-    .btn2.ghost{
-      border-color: rgba(255,255,255,.14);
-      background: rgba(255,255,255,.04);
-      font-weight: 800;
-    }
-    .btn2:disabled{ opacity:.6; cursor:not-allowed; }
+    .btn2:hover{filter:brightness(1.06)}
+    .btn2.ghost{border-color:rgba(255,255,255,.14);background:rgba(255,255,255,.04);font-weight:800}
+    .btn2:disabled{opacity:.6;cursor:not-allowed}
 
-    #map{
-      height: 360px;
-      width: 100%;
-    }
+    #map{height:360px;width:100%}
     .coordRow{
-      display:grid; grid-template-columns: 1fr 1fr; gap: 12px;
-      padding: 12px;
-      border-top: 1px solid rgba(255,255,255,.08);
-      background: rgba(0,0,0,.08);
+      display:grid;grid-template-columns:1fr 1fr;gap:12px;
+      padding:12px;border-top:1px solid rgba(255,255,255,.08);
+      background:rgba(0,0,0,.08);
     }
-    @media (max-width: 900px){
-      .coordRow{ grid-template-columns: 1fr; }
-    }
+    @media(max-width:900px){.coordRow{grid-template-columns:1fr}}
 
-    /* Leaflet tweaks (dark vibe) */
-    .leaflet-control-zoom a{
-      background: rgba(0,0,0,.45) !important;
-      color: var(--text) !important;
-      border-color: rgba(255,255,255,.14) !important;
+    /* Debug panel (buat nyari nama kolom kalau beda) */
+    .debug{
+      margin-top:12px;
+      padding:12px 14px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.03);
+      color: rgba(229,231,235,.92);
+      font-size:12px;
+      display:none;
+      white-space:pre-wrap;
     }
-    .leaflet-control-attribution{
-      background: rgba(0,0,0,.25) !important;
-      color: rgba(255,255,255,.75) !important;
-      border-radius: 10px;
-      padding: 2px 8px !important;
-      border: 1px solid rgba(255,255,255,.12);
-      margin: 8px !important;
-    }
+    .debug b{color:#fff}
   </style>
+
 </head>
 
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <div class="title">Form Tahap 2</div>
-      <div class="sub">INPRES 2/2025 · Pelaksanaan Tahap 2</div>
+<header>
+  <div class="brand">
+    <div class="title">Form Tahap 3</div>
+    <div class="sub">INPRES 2/2025 · Pelaksanaan Tahap 3</div>
+  </div>
+  <button class="btn" id="btnHome" type="button">Beranda</button>
+</header>
+
+<main>
+  <section class="card">
+    <div class="card-inner">
+      <div class="card-title">Data Survey</div>
+
+```
+  <div class="grid">
+    <div class="field">
+      <label for="bws">B/BWS</label>
+      <select id="bws" title="B/BWS">
+        <option value="">-- pilih B/BWS --</option>
+      </select>
     </div>
-    <button class="btn" id="btnHome">Beranda</button>
-  </header>
 
-  <main class="wrap">
-    <section class="card">
-      <div class="card-inner">
-        <div class="card-title">Data Survey</div>
+    <div class="field">
+      <label for="prov">Provinsi</label>
+      <select id="prov" title="Provinsi" disabled>
+        <option value="">-- pilih Provinsi --</option>
+      </select>
+    </div>
 
-        <div class="grid">
-          <div class="field">
-            <label for="bws">B/BWS</label>
-            <select id="bws">
-              <option value="">-- pilih B/BWS --</option>
-            </select>
-          </div>
+    <div class="field">
+      <label for="kab">Kabupaten/Kota</label>
+      <select id="kab" title="Kabupaten/Kota" disabled>
+        <option value="">-- pilih Kabupaten/Kota --</option>
+      </select>
+    </div>
 
-          <div class="field">
-            <label for="prov">Provinsi</label>
-            <select id="prov" disabled>
-              <option value="">-- pilih Provinsi --</option>
-            </select>
-          </div>
+    <div class="field">
+      <label for="di">Daerah Irigasi (DI)</label>
+      <select id="di" title="Daerah Irigasi" disabled>
+        <option value="">-- pilih Daerah Irigasi --</option>
+      </select>
+    </div>
+  </div>
 
-          <div class="field">
-            <label for="kab">Kabupaten/Kota</label>
-            <select id="kab" disabled>
-              <option value="">-- pilih Kabupaten/Kota --</option>
-            </select>
-          </div>
+  <div class="chips">
+    <div class="chip">
+      <span class="dot good" id="dotProg"></span>
+      Progres terakhir: <span id="progVal">0%</span>
+    </div>
+    <div class="chip">
+      <span class="dot" id="dotKoord"></span>
+      Koordinat: <small id="koordVal">-</small>
+    </div>
+  </div>
 
-          <div class="field">
-            <label for="di">Daerah Irigasi (DI)</label>
-            <select id="di" disabled>
-              <option value="">-- pilih Daerah Irigasi --</option>
-            </select>
-          </div>
-        </div>
+  <div class="grid" style="margin-top:14px">
+    <div class="field">
+      <label for="kec">Kecamatan</label>
+      <input id="kec" placeholder="(otomatis/isi manual)" title="Kecamatan"/>
+    </div>
+    <div class="field">
+      <label for="desa">Desa/Kelurahan</label>
+      <input id="desa" placeholder="(otomatis/isi manual)" title="Desa/Kelurahan"/>
+    </div>
+  </div>
 
-        <div class="chips" style="margin-top:14px">
-          <div class="chip">
-            <span class="dot good" id="dotProg"></span>
-            Progres terakhir: <span id="progVal">0%</span>
-          </div>
-          <div class="chip">
-            <span class="dot" id="dotKoord"></span>
-            Koordinat: <small id="koordVal">-</small>
-          </div>
-        </div>
-
-        <div class="grid" style="margin-top:14px">
-          <div class="field">
-            <label for="kec">Kecamatan</label>
-            <input id="kec" placeholder="(otomatis/isi manual)" />
-          </div>
-          <div class="field">
-            <label for="desa">Desa/Kelurahan</label>
-            <input id="desa" placeholder="(otomatis/isi manual)" />
-          </div>
-        </div>
-
-        <!-- MAP -->
-        <div class="mapWrap">
-          <div class="mapHdr">
-            <div class="left">🗺️ Peta lokasi</div>
-            <div class="right">
-              <button class="btn2" id="btnGPS">Ambil GPS</button>
-              <button class="btn2 ghost" id="btnMyLoc">Ke Titik</button>
-              <button class="btn2 ghost" id="btnClear">Hapus Titik</button>
-            </div>
-          </div>
-          <div id="map"></div>
-          <div class="coordRow">
-            <div class="field">
-              <label for="lat">Latitude</label>
-              <input id="lat" inputmode="decimal" placeholder="-6.2" />
-            </div>
-            <div class="field">
-              <label for="lng">Longitude</label>
-              <input id="lng" inputmode="decimal" placeholder="106.8" />
-            </div>
-          </div>
-        </div>
-
-        <div class="statusline" id="statusline">
-          <span class="spinner" id="spin"></span>
-          <span id="statusText">Mengambil data…</span>
-        </div>
-
-        <div class="err" id="errBox"></div>
-
-        <div class="hint">
-          GPS hanya jalan kalau dibuka via HTTPS (GitHub Pages aman). Kamu juga bisa klik peta untuk taruh titik, atau drag markernya.
-        </div>
+  <div class="mapWrap">
+    <div class="mapHdr">
+      <div class="left">🗺️ Peta lokasi</div>
+      <div class="right">
+        <button class="btn2" id="btnGPS" type="button">Ambil GPS</button>
+        <button class="btn2 ghost" id="btnMyLoc" type="button">Ke Titik</button>
+        <button class="btn2 ghost" id="btnClear" type="button">Hapus Titik</button>
       </div>
-    </section>
-  </main>
+    </div>
+    <div id="map"></div>
+    <div class="coordRow">
+      <div class="field">
+        <label for="lat">Latitude</label>
+        <input id="lat" inputmode="decimal" placeholder="-6.2" title="Latitude"/>
+      </div>
+      <div class="field">
+        <label for="lng">Longitude</label>
+        <input id="lng" inputmode="decimal" placeholder="106.8" title="Longitude"/>
+      </div>
+    </div>
+  </div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <div class="statusline" id="statusline">
+    <span class="spinner" id="spin"></span>
+    <span id="statusText">Mengambil data…</span>
+  </div>
+
+  <div class="err" id="errBox"></div>
+  <div class="debug" id="debugBox"></div>
+
+  <div class="hint">
+    Tips: kalau dropdown kosong, biasanya karena <b>nama kolom</b> di items Tahap 3 beda.
+    File ini auto-deteksi kolom, dan kalau masih gagal dia bakal nampilin “Detected keys” di debug.
+  </div>
+</div>
+```
+
+  </section>
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-  // === CONFIG ===
-  const DATA_URL = "https://gas-proxy3.tuic1677.workers.dev/";
-  const HOME_URL = "#"; // ganti misal: "index.html" atau "https://irwan-dot-cyber.github.io/my-maps/"
-  // ==============
+/* ================= CONFIG ================= */
+const DATA_URL = "https://gas-proxy3.tuic1677.workers.dev/";
+const HOME_URL = "https://irwan-dot-cyber.github.io/my-maps/landingpage/beranda.html";
+/* ========================================= */
 
-  const $ = (id) => document.getElementById(id);
+const $ = (id) => document.getElementById(id);
 
-  // Dropdowns
-  const bwsSel  = $("bws");
-  const provSel = $("prov");
-  const kabSel  = $("kab");
-  const diSel   = $("di");
+const bwsSel  = $("bws");
+const provSel = $("prov");
+const kabSel  = $("kab");
+const diSel   = $("di");
 
-  // Text inputs
-  const kecInp  = $("kec");
-  const desaInp = $("desa");
+const kecInp  = $("kec");
+const desaInp = $("desa");
 
-  // Status / UI
-  const statusLine = $("statusline");
-  const statusText = $("statusText");
-  const spin = $("spin");
-  const errBox = $("errBox");
+const statusLine = $("statusline");
+const statusText = $("statusText");
+const spin = $("spin");
+const errBox = $("errBox");
+const debugBox = $("debugBox");
 
-  const progVal = $("progVal");
-  const koordVal = $("koordVal");
-  const dotKoord = $("dotKoord");
+const progVal = $("progVal");
+const koordVal = $("koordVal");
+const dotKoord = $("dotKoord");
 
-  // Map / coord inputs
-  const latInp = $("lat");
-  const lngInp = $("lng");
-  const btnGPS = $("btnGPS");
-  const btnMyLoc = $("btnMyLoc");
-  const btnClear = $("btnClear");
+const latInp = $("lat");
+const lngInp = $("lng");
+const btnGPS = $("btnGPS");
+const btnMyLoc = $("btnMyLoc");
+const btnClear = $("btnClear");
 
-  let raw = [];
+let raw = [];
 
-  // Helper key
-  const get = (o, k, fb="") => (o && o[k] !== undefined && o[k] !== null) ? o[k] : fb;
-  const norm = (s) => String(s ?? "").trim();
-  const uniq = (arr) => Array.from(new Set(arr));
-  const byAlpha = (a,b) => norm(a).localeCompare(norm(b), "id");
+/* ---------- utils ---------- */
+const norm = (s) => String(s ?? "").trim();
+const uniq = (arr) => Array.from(new Set(arr));
+const byAlpha = (a,b) => norm(a).localeCompare(norm(b), "id");
 
-  function setStatus(msg, loading=true){
-    statusText.textContent = msg;
-    spin.style.display = loading ? "inline-block" : "none";
-    statusLine.style.opacity = msg ? 1 : 0;
-  }
-  function showError(msg){
-    errBox.style.display = "block";
-    errBox.textContent = msg;
-  }
-  function hideError(){
-    errBox.style.display = "none";
-    errBox.textContent = "";
-  }
+function setStatus(msg, loading=true){
+  statusText.textContent = msg;
+  spin.style.display = loading ? "inline-block" : "none";
+  statusLine.style.opacity = msg ? 1 : 0;
+}
+function showError(msg){
+  errBox.style.display = "block";
+  errBox.textContent = msg;
+}
+function hideError(){
+  errBox.style.display = "none";
+  errBox.textContent = "";
+}
+function showDebug(msg){
+  debugBox.style.display = "block";
+  debugBox.textContent = msg;
+}
+function hideDebug(){
+  debugBox.style.display = "none";
+  debugBox.textContent = "";
+}
 
-  function resetSelect(sel, placeholder){
-    sel.innerHTML = `<option value="">${placeholder}</option>`;
-    sel.value = "";
-  }
-  function fillSelect(sel, values, placeholder){
-    resetSelect(sel, placeholder);
-    values.forEach(v => {
-      const opt = document.createElement("option");
-      opt.value = v;
-      opt.textContent = v;
-      sel.appendChild(opt);
-    });
-  }
-
-  function setProgressFromSelection(){
-    let p = 0;
-    if (bwsSel.value) p += 25;
-    if (provSel.value) p += 25;
-    if (kabSel.value) p += 25;
-    if (diSel.value)  p += 25;
-    progVal.textContent = p + "%";
-  }
-
-  // ========= MAP =========
-  const defaultCenter = [-2.5, 118.0]; // Indonesia-ish
-  const map = L.map("map", { zoomControl: true }).setView(defaultCenter, 5);
-
-  // Basemap: OSM
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution: "&copy; OpenStreetMap"
-  }).addTo(map);
-
-  let marker = null;
-  let lastFix = null; // {lat,lng,acc,ts}
-
-  function isValidLatLng(lat, lng){
-    return Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
-  }
-
-  function setKoordinatChip(lat, lng, acc=null){
-    if (!isValidLatLng(lat,lng)){
-      koordVal.textContent = "-";
-      dotKoord.className = "dot";
-      return;
-    }
-    const a = (acc && Number.isFinite(acc)) ? ` (±${Math.round(acc)} m)` : "";
-    koordVal.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}${a}`;
-    dotKoord.className = "dot good";
-  }
-
-  function placeMarker(lat, lng, opts={fly:true, openPopup:false, accuracy:null}){
-    if (!isValidLatLng(lat,lng)) return;
-
-    latInp.value = lat.toFixed(6);
-    lngInp.value = lng.toFixed(6);
-    setKoordinatChip(lat, lng, opts.accuracy ?? null);
-
-    const ll = [lat, lng];
-    if (!marker){
-      marker = L.marker(ll, { draggable:true }).addTo(map);
-      marker.on("dragend", () => {
-        const p = marker.getLatLng();
-        placeMarker(p.lat, p.lng, {fly:false, accuracy:null});
-      });
-    } else {
-      marker.setLatLng(ll);
-    }
-
-    if (opts.fly){
-      map.flyTo(ll, Math.max(map.getZoom(), 16), { duration: 0.8 });
-    }
-
-    if (opts.openPopup){
-      const txt = opts.accuracy
-        ? `Titik GPS: ${lat.toFixed(6)}, ${lng.toFixed(6)}<br>Akurasinya ±${Math.round(opts.accuracy)} m`
-        : `Titik: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-      marker.bindPopup(txt).openPopup();
-    }
-  }
-
-  function clearMarker(){
-    if (marker){
-      map.removeLayer(marker);
-      marker = null;
-    }
-    latInp.value = "";
-    lngInp.value = "";
-    setKoordinatChip(NaN, NaN);
-  }
-
-  map.on("click", (e) => {
-    placeMarker(e.latlng.lat, e.latlng.lng, {fly:false, accuracy:null});
+function resetSelect(sel, placeholder){
+  sel.innerHTML = `<option value="">${placeholder}</option>`;
+  sel.value = "";
+}
+function fillSelect(sel, values, placeholder){
+  resetSelect(sel, placeholder);
+  values.forEach(v => {
+    const opt = document.createElement("option");
+    opt.value = v;
+    opt.textContent = v;
+    sel.appendChild(opt);
   });
+}
+function setProgressFromSelection(){
+  let p = 0;
+  if (bwsSel.value) p += 25;
+  if (provSel.value) p += 25;
+  if (kabSel.value) p += 25;
+  if (diSel.value)  p += 25;
+  progVal.textContent = p + "%";
+}
 
-  // manual input lat/lng
-  function parseCoordInput(v){
-    const s = String(v ?? "").trim().replace(",", ".");
-    const n = Number(s);
-    return Number.isFinite(n) ? n : NaN;
-  }
-  function onCoordInputs(){
-    const lat = parseCoordInput(latInp.value);
-    const lng = parseCoordInput(lngInp.value);
-    if (isValidLatLng(lat,lng)){
-      placeMarker(lat, lng, {fly:true, accuracy:null});
-    } else {
-      // jangan spam, tapi chip jadi "-" kalau kosong dua-duanya
-      if (!latInp.value && !lngInp.value) setKoordinatChip(NaN, NaN);
-    }
-  }
-  latInp.addEventListener("change", onCoordInputs);
-  lngInp.addEventListener("change", onCoordInputs);
+/* ---------- map ---------- */
+const defaultCenter = [-2.5, 118.0];
+const map = L.map("map", { zoomControl:true }).setView(defaultCenter, 5);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  maxZoom: 19, attribution: "&copy; OpenStreetMap"
+}).addTo(map);
 
-  btnMyLoc.addEventListener("click", () => {
-    if (marker){
+let marker = null;
+let lastFix = null;
+
+function isValidLatLng(lat, lng){
+  return Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+}
+function setKoordinatChip(lat, lng, acc=null){
+  if (!isValidLatLng(lat,lng)){
+    koordVal.textContent = "-";
+    dotKoord.className = "dot";
+    return;
+  }
+  const a = (acc && Number.isFinite(acc)) ? ` (±${Math.round(acc)} m)` : "";
+  koordVal.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}${a}`;
+  dotKoord.className = "dot good";
+}
+function placeMarker(lat, lng, opts={fly:true, openPopup:false, accuracy:null}){
+  if (!isValidLatLng(lat,lng)) return;
+
+  latInp.value = lat.toFixed(6);
+  lngInp.value = lng.toFixed(6);
+  setKoordinatChip(lat, lng, opts.accuracy ?? null);
+
+  const ll = [lat, lng];
+  if (!marker){
+    marker = L.marker(ll, { draggable:true }).addTo(map);
+    marker.on("dragend", () => {
       const p = marker.getLatLng();
-      map.flyTo([p.lat,p.lng], Math.max(map.getZoom(), 16), { duration: 0.8 });
-    } else if (lastFix){
-      map.flyTo([lastFix.lat,lastFix.lng], 16, { duration: 0.8 });
+      placeMarker(p.lat, p.lng, {fly:false, accuracy:null});
+    });
+  } else {
+    marker.setLatLng(ll);
+  }
+
+  if (opts.fly) map.flyTo(ll, Math.max(map.getZoom(), 16), { duration: 0.8 });
+
+  if (opts.openPopup){
+    const txt = opts.accuracy
+      ? `Titik GPS: ${lat.toFixed(6)}, ${lng.toFixed(6)}<br>Akurasinya ±${Math.round(opts.accuracy)} m`
+      : `Titik: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+    marker.bindPopup(txt).openPopup();
+  }
+}
+function clearMarker(){
+  if (marker){ map.removeLayer(marker); marker = null; }
+  latInp.value = ""; lngInp.value = "";
+  setKoordinatChip(NaN, NaN);
+}
+map.on("click", (e) => placeMarker(e.latlng.lat, e.latlng.lng, {fly:false}));
+
+function parseCoordInput(v){
+  const s = String(v ?? "").trim().replace(",", ".");
+  const n = Number(s);
+  return Number.isFinite(n) ? n : NaN;
+}
+function onCoordInputs(){
+  const la = parseCoordInput(latInp.value);
+  const lo = parseCoordInput(lngInp.value);
+  if (isValidLatLng(la,lo)) placeMarker(la, lo, {fly:true});
+  else if (!latInp.value && !lngInp.value) setKoordinatChip(NaN, NaN);
+}
+latInp.addEventListener("change", onCoordInputs);
+lngInp.addEventListener("change", onCoordInputs);
+
+btnMyLoc.addEventListener("click", () => {
+  if (marker){
+    const p = marker.getLatLng();
+    map.flyTo([p.lat,p.lng], Math.max(map.getZoom(), 16), { duration: 0.8 });
+  } else if (lastFix){
+    map.flyTo([lastFix.lat,lastFix.lng], 16, { duration: 0.8 });
+  }
+});
+btnClear.addEventListener("click", clearMarker);
+
+function getGPS(){
+  hideError();
+  if (!("geolocation" in navigator)){
+    showError("Perangkat ini tidak mendukung Geolocation.");
+    return;
+  }
+  btnGPS.disabled = true;
+  btnGPS.textContent = "Mengambil…";
+  setStatus("Mengambil GPS… (izin lokasi diperlukan)", true);
+
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const { latitude, longitude, accuracy } = pos.coords || {};
+      lastFix = { lat: latitude, lng: longitude, acc: accuracy, ts: Date.now() };
+      placeMarker(latitude, longitude, {fly:true, openPopup:true, accuracy});
+      setStatus("GPS didapat ✅ (kamu bisa drag marker kalau perlu)", false);
+      btnGPS.disabled = false;
+      btnGPS.textContent = "Ambil GPS";
+    },
+    (err) => {
+      const code = err?.code;
+      const msg =
+        code === 1 ? "Izin lokasi ditolak. Buka site settings → Location → Allow, lalu coba lagi."
+      : code === 2 ? "Lokasi tidak tersedia. Coba nyalain GPS / jaringan."
+      : code === 3 ? "Timeout ambil lokasi. Coba lagi atau klik peta untuk set manual."
+      : "Gagal ambil lokasi: " + (err?.message || "Unknown error");
+
+      showError(msg);
+      setStatus("GPS gagal ❌ (klik peta untuk set manual)", false);
+      dotKoord.className = "dot bad";
+      btnGPS.disabled = false;
+      btnGPS.textContent = "Ambil GPS";
+    },
+    { enableHighAccuracy:true, timeout:12000, maximumAge:0 }
+  );
+}
+btnGPS.addEventListener("click", getGPS);
+
+/* ---------- AUTO DETECT KEYS (INI YANG NGESELAMETIN DROPDOWN) ---------- */
+function detectKey(items, patterns){
+  if (!items || !items.length) return null;
+  const keys = Object.keys(items[0] || {});
+  const normKey = (k) => k.toLowerCase().replace(/\s+/g,' ').trim();
+
+  // score key by regex hit count + exact-ish bonuses
+  let best = {k:null, score:-1};
+
+  for (const k of keys){
+    const nk = normKey(k);
+    let score = 0;
+
+    for (const re of patterns){
+      if (re.test(nk)) score += 10;
     }
-  });
 
-  btnClear.addEventListener("click", clearMarker);
+    // bonus kalau key pendek dan "pas"
+    if (/(^| )bws( |$)/.test(nk)) score += 8;
+    if (/(^| )prov(insi)?( |$)/.test(nk)) score += 6;
+    if (/(kab|kota)/.test(nk)) score += 6;
+    if (/(^| )di( |$)/.test(nk)) score += 6;
 
-  async function getGPS(){
-    hideError();
-
-    if (!("geolocation" in navigator)){
-      showError("Perangkat ini tidak mendukung Geolocation.");
-      return;
-    }
-
-    btnGPS.disabled = true;
-    btnGPS.textContent = "Mengambil…";
-    setStatus("Mengambil GPS… (izin lokasi diperlukan)", true);
-
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude, accuracy } = pos.coords || {};
-        lastFix = { lat: latitude, lng: longitude, acc: accuracy, ts: Date.now() };
-
-        placeMarker(latitude, longitude, {fly:true, openPopup:true, accuracy});
-        setStatus("GPS didapat ✅ (kamu bisa drag marker kalau perlu)", false);
-
-        btnGPS.disabled = false;
-        btnGPS.textContent = "Ambil GPS";
-      },
-      (err) => {
-        const code = err?.code;
-        const msg =
-          code === 1 ? "Izin lokasi ditolak. Buka site settings → Location → Allow, lalu coba lagi."
-        : code === 2 ? "Lokasi tidak tersedia. Coba nyalain GPS / jaringan (atau pindah ke tempat terbuka)."
-        : code === 3 ? "Timeout ambil lokasi. Coba lagi atau pakai set titik manual (klik peta)."
-        : "Gagal ambil lokasi: " + (err?.message || "Unknown error");
-
-        showError(msg);
-        setStatus("GPS gagal ❌ (klik peta untuk set manual)", false);
-        dotKoord.className = "dot bad";
-
-        btnGPS.disabled = false;
-        btnGPS.textContent = "Ambil GPS";
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 12000,
-        maximumAge: 0
+    // bonus kalau ada nilai non-kosong di data (cek cepat 60 baris)
+    if (score > 0){
+      let hasVal = 0;
+      const n = Math.min(60, items.length);
+      for (let i=0;i<n;i++){
+        const v = items[i]?.[k];
+        if (v !== undefined && v !== null && String(v).trim() !== "") { hasVal++; if (hasVal >= 2) break; }
       }
-    );
+      score += Math.min(8, hasVal * 4);
+    }
+
+    if (score > best.score) best = {k, score};
   }
+  return best.k;
+}
 
-  btnGPS.addEventListener("click", getGPS);
+let KEY = { bws:null, prov:null, kab:null, di:null, kec:null, desa:null, lat:null, lng:null };
 
-  // ========= DATA DROPDOWNS =========
-  function populateBWS(){
-    const list = uniq(raw.map(x => norm(get(x,"B/BWS",""))).filter(Boolean)).sort(byAlpha);
-    fillSelect(bwsSel, list, "-- pilih B/BWS --");
+function detectAllKeys(items){
+  // patterns: dibuat agak “liar” biar tahan banting header beda-beda
+  KEY.bws  = detectKey(items, [/b\/?bws/, /\bbws\b/, /balai/]);
+  KEY.prov = detectKey(items, [/\bprov\b/, /provinsi/]);
+  KEY.kab  = detectKey(items, [/kab/, /kabupaten/, /kota/, /kab\/kota/]);
+  KEY.di   = detectKey(items, [/\bnama di\b/, /daerah irigasi/, /\bdi\b/, /dir/]);
+
+  KEY.kec  = detectKey(items, [/kec/, /kecamatan/]);
+  KEY.desa = detectKey(items, [/desa/, /kelurahan/, /desa\/kel/]);
+
+  KEY.lat  = detectKey(items, [/\blat\b/, /latitude/]);
+  KEY.lng  = detectKey(items, [/\blng\b/, /\blon\b/, /longitude/]);
+}
+
+function val(row, key){
+  if (!key) return "";
+  const v = row?.[key];
+  return (v === undefined || v === null) ? "" : String(v).trim();
+}
+
+/* ---------- dropdown logic ---------- */
+function populateBWS(){
+  const list = uniq(raw.map(r => val(r, KEY.bws)).filter(Boolean)).sort(byAlpha);
+  fillSelect(bwsSel, list, "-- pilih B/BWS --");
+}
+
+function onBwsChange(){
+  setProgressFromSelection();
+  resetSelect(provSel, "-- pilih Provinsi --");
+  resetSelect(kabSel, "-- pilih Kabupaten/Kota --");
+  resetSelect(diSel, "-- pilih Daerah Irigasi --");
+  provSel.disabled = true; kabSel.disabled = true; diSel.disabled = true;
+
+  const bws = bwsSel.value;
+  if (!bws) return;
+
+  const rows = raw.filter(r => val(r, KEY.bws) === bws);
+  const provs = uniq(rows.map(r => val(r, KEY.prov)).filter(Boolean)).sort(byAlpha);
+  fillSelect(provSel, provs, "-- pilih Provinsi --");
+  provSel.disabled = false;
+}
+
+function onProvChange(){
+  setProgressFromSelection();
+  resetSelect(kabSel, "-- pilih Kabupaten/Kota --");
+  resetSelect(diSel, "-- pilih Daerah Irigasi --");
+  kabSel.disabled = true; diSel.disabled = true;
+
+  const bws = bwsSel.value, prov = provSel.value;
+  if (!bws || !prov) return;
+
+  const rows = raw.filter(r => val(r, KEY.bws)===bws && val(r, KEY.prov)===prov);
+  const kabs = uniq(rows.map(r => val(r, KEY.kab)).filter(Boolean)).sort(byAlpha);
+  fillSelect(kabSel, kabs, "-- pilih Kabupaten/Kota --");
+  kabSel.disabled = false;
+}
+
+function onKabChange(){
+  setProgressFromSelection();
+  resetSelect(diSel, "-- pilih Daerah Irigasi --");
+  diSel.disabled = true;
+
+  const bws = bwsSel.value, prov = provSel.value, kab = kabSel.value;
+  if (!bws || !prov || !kab) return;
+
+  const rows = raw.filter(r => val(r, KEY.bws)===bws && val(r, KEY.prov)===prov && val(r, KEY.kab)===kab);
+  const dis = uniq(rows.map(r => val(r, KEY.di)).filter(Boolean)).sort(byAlpha);
+  fillSelect(diSel, dis, "-- pilih Daerah Irigasi --");
+  diSel.disabled = false;
+}
+
+function onDiChange(){
+  setProgressFromSelection();
+
+  const bws = bwsSel.value, prov = provSel.value, kab = kabSel.value, di = diSel.value;
+  if (!bws || !prov || !kab || !di) return;
+
+  const row = raw.find(r => val(r, KEY.bws)===bws && val(r, KEY.prov)===prov && val(r, KEY.kab)===kab && val(r, KEY.di)===di);
+  if (!row) return;
+
+  const kec  = val(row, KEY.kec);
+  const desa = val(row, KEY.desa);
+  if (kec)  kecInp.value  = kec;
+  if (desa) desaInp.value = desa;
+
+  const la = Number(val(row, KEY.lat).replace(",", "."));
+  const lo = Number(val(row, KEY.lng).replace(",", "."));
+  if (Number.isFinite(la) && Number.isFinite(lo) && Math.abs(la)<=90 && Math.abs(lo)<=180){
+    placeMarker(la, lo, {fly:true});
+    setStatus("Koordinat dari data ditampilkan ✅ (bisa digeser kalau perlu).", false);
+  } else {
+    setStatus("DI dipilih ✅ (ambil GPS / klik peta untuk set titik).", false);
   }
+}
 
-  function onBwsChange(){
-    setProgressFromSelection();
+/* ---------- load ---------- */
+async function load(){
+  hideError();
+  hideDebug();
+  setStatus("Mengambil data…", true);
+
+  try{
+    const res = await fetch(DATA_URL + "?t=" + Date.now(), { cache:"no-store" });
+    if(!res.ok) throw new Error("HTTP " + res.status);
+
+    const json = await res.json();
+    if(!json || json.ok !== true || !Array.isArray(json.items)){
+      throw new Error("Format JSON tidak sesuai. Butuh { ok:true, items:[...] }");
+    }
+
+    raw = json.items || [];
+    if (!raw.length) throw new Error("items kosong.");
+
+    detectAllKeys(raw);
+
+    // Debug buat kamu lihat kolom apa yang kebaca
+    const keys = Object.keys(raw[0] || {});
+    const sample = raw.find(r => val(r, KEY.bws)) || raw[0];
+    const dbg =
+      `Detected keys:\n`+
+      `  BWS  : ${KEY.bws}\n`+
+      `  PROV : ${KEY.prov}\n`+
+      `  KAB  : ${KEY.kab}\n`+
+      `  DI   : ${KEY.di}\n`+
+      `  KEC  : ${KEY.kec}\n`+
+      `  DESA : ${KEY.desa}\n`+
+      `  LAT  : ${KEY.lat}\n`+
+      `  LNG  : ${KEY.lng}\n\n`+
+      `First item keys (${keys.length}):\n- ` + keys.join("\n- ") + "\n\n" +
+      `Sample values:\n` +
+      `  BWS  : ${val(sample, KEY.bws)}\n`+
+      `  PROV : ${val(sample, KEY.prov)}\n`+
+      `  KAB  : ${val(sample, KEY.kab)}\n`+
+      `  DI   : ${val(sample, KEY.di)}\n`;
+    showDebug(dbg);
+
+    populateBWS();
+
     resetSelect(provSel, "-- pilih Provinsi --");
     resetSelect(kabSel, "-- pilih Kabupaten/Kota --");
     resetSelect(diSel, "-- pilih Daerah Irigasi --");
     provSel.disabled = true; kabSel.disabled = true; diSel.disabled = true;
 
-    const bws = bwsSel.value;
-    if (!bws) return;
-
-    const rows = raw.filter(x => norm(get(x,"B/BWS","")) === bws);
-    const provs = uniq(rows.map(x => norm(get(x,"Provinsi",""))).filter(Boolean)).sort(byAlpha);
-    fillSelect(provSel, provs, "-- pilih Provinsi --");
-    provSel.disabled = false;
-  }
-
-  function onProvChange(){
     setProgressFromSelection();
-    resetSelect(kabSel, "-- pilih Kabupaten/Kota --");
-    resetSelect(diSel, "-- pilih Daerah Irigasi --");
-    kabSel.disabled = true; diSel.disabled = true;
+    setKoordinatChip(NaN, NaN);
+    setStatus("Data siap ✅ Pilih B/BWS untuk mulai.", false);
 
-    const bws = bwsSel.value;
-    const prov = provSel.value;
-    if (!bws || !prov) return;
-
-    const rows = raw.filter(x =>
-      norm(get(x,"B/BWS","")) === bws &&
-      norm(get(x,"Provinsi","")) === prov
-    );
-
-    const kabs = uniq(rows.map(x => norm(get(x,"Kab/Kota",""))).filter(Boolean)).sort(byAlpha);
-    fillSelect(kabSel, kabs, "-- pilih Kabupaten/Kota --");
-    kabSel.disabled = false;
-  }
-
-  function onKabChange(){
-    setProgressFromSelection();
-    resetSelect(diSel, "-- pilih Daerah Irigasi --");
-    diSel.disabled = true;
-
-    const bws = bwsSel.value;
-    const prov = provSel.value;
-    const kab = kabSel.value;
-    if (!bws || !prov || !kab) return;
-
-    const rows = raw.filter(x =>
-      norm(get(x,"B/BWS","")) === bws &&
-      norm(get(x,"Provinsi","")) === prov &&
-      norm(get(x,"Kab/Kota","")) === kab
-    );
-
-    const dis = uniq(rows.map(x => norm(get(x,"Nama DI",""))).filter(Boolean)).sort(byAlpha);
-    fillSelect(diSel, dis, "-- pilih Daerah Irigasi --");
-    diSel.disabled = false;
-  }
-
-  function onDiChange(){
-    setProgressFromSelection();
-
-    const bws  = bwsSel.value;
-    const prov = provSel.value;
-    const kab  = kabSel.value;
-    const di   = diSel.value;
-    if (!bws || !prov || !kab || !di) return;
-
-    const row = raw.find(x =>
-      norm(get(x,"B/BWS","")) === bws &&
-      norm(get(x,"Provinsi","")) === prov &&
-      norm(get(x,"Kab/Kota","")) === kab &&
-      norm(get(x,"Nama DI","")) === di
-    );
-
-    // auto fill kec/desa if present
-    const kec = norm(get(row, "Kec", "")) || norm(get(row, "Kecamatan", ""));
-    const desa = norm(get(row, "Desa", "")) || norm(get(row, "Desa/Kelurahan", "")) || norm(get(row, "Kel", ""));
-    if (kec)  kecInp.value  = kec;
-    if (desa) desaInp.value = desa;
-
-    // kalau dataset punya koordinat, auto place marker
-    const lat = Number(String(get(row,"Latitude","")).replace(",", "."));
-    const lng = Number(String(get(row,"Longitude","")).replace(",", "."));
-    if (Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat)<=90 && Math.abs(lng)<=180){
-      placeMarker(lat, lng, {fly:true, accuracy:null});
-      setStatus("Koordinat dari data DI ditampilkan (bisa digeser kalau perlu).", false);
+    // kalau BWS masih kosong, berarti KEY.bws salah atau datanya memang kosong
+    if (bwsSel.options.length <= 1){
+      showError(
+        "Dropdown B/BWS masih kosong.\n" +
+        "Cek Debug: Detected keys.\n\n" +
+        "Kalau KEY.bws tidak tepat, kirimkan teks 'Detected keys' itu ke gue, biar gue kunci manual."
+      );
+      setStatus("Perlu mapping kolom (lihat debug).", false);
     }
+
+  }catch(err){
+    console.error(err);
+    setStatus("Gagal mengambil data", false);
+    showError(String(err.message || err));
   }
+}
 
-  async function load(){
-    hideError();
-    setStatus("Mengambil data…", true);
+/* ---------- events ---------- */
+$("btnHome").addEventListener("click", () => window.location.href = HOME_URL);
 
-    try{
-      const res = await fetch(DATA_URL, { cache: "no-store" });
-      if(!res.ok) throw new Error("HTTP " + res.status);
+bwsSel.addEventListener("change", onBwsChange);
+provSel.addEventListener("change", onProvChange);
+kabSel.addEventListener("change", onKabChange);
+diSel.addEventListener("change", onDiChange);
 
-      const json = await res.json();
-      if(!json || json.ok !== true || !Array.isArray(json.items)){
-        throw new Error("Format JSON tidak sesuai. Butuh { ok:true, items:[...] }");
-      }
-
-      raw = json.items || [];
-      populateBWS();
-
-      // reset state
-      resetSelect(provSel, "-- pilih Provinsi --");
-      resetSelect(kabSel, "-- pilih Kabupaten/Kota --");
-      resetSelect(diSel, "-- pilih Daerah Irigasi --");
-      provSel.disabled = true; kabSel.disabled = true; diSel.disabled = true;
-
-      setProgressFromSelection();
-      setKoordinatChip(NaN, NaN);
-      setStatus("Data siap ✅  Pilih B/BWS untuk mulai.", false);
-
-    }catch(err){
-      console.error(err);
-      setStatus("Gagal mengambil data", false);
-      showError(String(err.message || err));
-    }
-  }
-
-  // events
-  $("btnHome").addEventListener("click", () => {
-    if (HOME_URL === "#") return;
-    window.location.href = HOME_URL;
-  });
-
-  bwsSel.addEventListener("change", onBwsChange);
-  provSel.addEventListener("change", onProvChange);
-  kabSel.addEventListener("change", onKabChange);
-  diSel.addEventListener("change", onDiChange);
-
-  // boot
-  load();
+/* boot */
+load();
 </script>
+
 </body>
 </html>
