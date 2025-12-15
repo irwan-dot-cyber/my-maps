@@ -683,4 +683,96 @@ function onDiChange(){
   if (kec)  kecInp.value  = kec;
   if (desa) desaInp.value = desa;
 
-  const la = Number(val(row, KEY.lat).replace(",",
+  const la = Number(val(row, KEY.lat).replace(",", "."));
+  const lo = Number(val(row, KEY.lng).replace(",", "."));
+  if (isValidLatLng(la,lo)){
+    latInp.value = la.toFixed(6);
+    lngInp.value = lo.toFixed(6);
+    setKoordinatChip(la,lo);
+    showPicked(la,lo,{zoom:17});
+    setStatus("Koordinat dari data ditampilkan ✅", false);
+  } else {
+    setStatus("DI dipilih ✅ (ambil GPS / geser peta lalu pilih lokasi).", false);
+  }
+}
+
+/* ---------- load ---------- */
+async function load(){
+  hideError();
+  hideDebug();
+  setStatus("Mengambil data…", true);
+
+  try{
+    const res = await fetch(DATA_URL + "?t=" + Date.now(), { cache:"no-store" });
+    if(!res.ok) throw new Error("HTTP " + res.status);
+
+    const json = await res.json();
+    if(!json || json.ok !== true || !Array.isArray(json.items)){
+      throw new Error("Format JSON tidak sesuai. Butuh { ok:true, items:[...] }");
+    }
+
+    raw = json.items || [];
+    if (!raw.length) throw new Error("items kosong.");
+
+    detectAllKeys(raw);
+
+    // Debug helper (kalau perlu)
+    const keys = Object.keys(raw[0] || {});
+    const sample = raw.find(r => val(r, KEY.bws)) || raw[0];
+    const dbg =
+      `Detected keys:\n`+
+      `  BWS  : ${KEY.bws}\n`+
+      `  PROV : ${KEY.prov}\n`+
+      `  KAB  : ${KEY.kab}\n`+
+      `  DI   : ${KEY.di}\n`+
+      `  KEC  : ${KEY.kec}\n`+
+      `  DESA : ${KEY.desa}\n`+
+      `  LAT  : ${KEY.lat}\n`+
+      `  LNG  : ${KEY.lng}\n\n`+
+      `First item keys (${keys.length}):\n- ` + keys.join("\n- ") + "\n\n" +
+      `Sample values:\n` +
+      `  BWS  : ${val(sample, KEY.bws)}\n`+
+      `  PROV : ${val(sample, KEY.prov)}\n`+
+      `  KAB  : ${val(sample, KEY.kab)}\n`+
+      `  DI   : ${val(sample, KEY.di)}\n`;
+    // showDebug(dbg); // kalau mau lihat, buka ini
+    // biar tetap ada opsi, tampilkan kalau dropdown kosong saja
+
+    populateBWS();
+
+    resetSelect(provSel, "-- pilih Provinsi --");
+    resetSelect(kabSel, "-- pilih Kabupaten/Kota --");
+    resetSelect(diSel, "-- pilih Daerah Irigasi --");
+    provSel.disabled = true; kabSel.disabled = true; diSel.disabled = true;
+
+    setProgressFromSelection();
+    setKoordinatChip(NaN, NaN);
+    setStatus("Data siap ✅ Pilih B/BWS untuk mulai.", false);
+
+    if (bwsSel.options.length <= 1){
+      showDebug(dbg);
+      showError("Dropdown B/BWS kosong. Lihat Debug (mapping kolom).");
+      setStatus("Perlu mapping kolom (lihat debug).", false);
+    }
+
+  }catch(err){
+    console.error(err);
+    setStatus("Gagal mengambil data", false);
+    showError(String(err.message || err));
+  }
+}
+
+/* ---------- events ---------- */
+$("btnHome").addEventListener("click", () => window.location.href = HOME_URL);
+
+bwsSel.addEventListener("change", onBwsChange);
+provSel.addEventListener("change", onProvChange);
+kabSel.addEventListener("change", onKabChange);
+diSel.addEventListener("change", onDiChange);
+
+/* boot */
+load();
+</script>
+
+</body>
+</html>
