@@ -4,14 +4,14 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Monitoring Tahap 3 — Log Progres (log_progres3)</title>
+  <title>Monitoring Tahap 3 — log_progres3 (Peta)</title>
 
   <!-- Leaflet -->
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- MarkerCluster (biar titik banyak tetap enteng) -->
+  <!-- MarkerCluster -->
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
@@ -21,8 +21,7 @@
     :root{
       --bg:#0b1222; --panel:rgba(15,23,42,.92); --text:#e5e7eb; --muted:#a7b0c0;
       --line:rgba(255,255,255,.12); --accent:#1d5fd1; --yellow:#ffb300;
-      --good:#27b06e; --bad:#ff5c7a;
-      --hdrH:64px;
+      --good:#27b06e; --bad:#ff5c7a; --hdrH:64px;
     }
     *{box-sizing:border-box}
     body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial;color:var(--text);background:var(--bg)}
@@ -32,13 +31,13 @@
       background:linear-gradient(90deg, rgba(13,71,161,.95), rgba(10,58,133,.92));
       border-bottom:1px solid rgba(255,255,255,.12); z-index:1000;
     }
-    header .title{font-weight:800; letter-spacing:.2px}
+    header .title{font-weight:900; letter-spacing:.2px}
     header .badge{
       margin-left:auto; font-size:12px; color:#111827; background:var(--yellow);
-      padding:6px 10px; border-radius:999px; font-weight:800;
+      padding:6px 10px; border-radius:999px; font-weight:900;
     }
 
-    .wrap{padding-top:var(--hdrH); display:grid; grid-template-columns: 380px 1fr; height:calc(100vh - var(--hdrH));}
+    .wrap{padding-top:var(--hdrH); display:grid; grid-template-columns: 390px 1fr; height:calc(100vh - var(--hdrH));}
     aside{
       border-right:1px solid var(--line);
       background:rgba(11,18,34,.65);
@@ -57,11 +56,11 @@
     .muted{color:var(--muted); font-size:12px}
     .btn{
       cursor:pointer; border:1px solid var(--line); background:rgba(255,255,255,.06);
-      color:var(--text); padding:10px 12px; border-radius:12px; font-weight:700;
+      color:var(--text); padding:10px 12px; border-radius:12px; font-weight:800;
     }
     .btn:hover{border-color:rgba(255,255,255,.25)}
     .btn.primary{background:rgba(29,95,209,.22); border-color:rgba(29,95,209,.55)}
-    input, select{
+    input{
       width:100%; padding:10px 12px; border-radius:12px; border:1px solid var(--line);
       background:rgba(255,255,255,.06); color:var(--text); outline:none;
     }
@@ -71,7 +70,7 @@
       display:inline-flex; align-items:center; gap:8px;
       padding:8px 10px; border-radius:999px;
       border:1px solid var(--line); background:rgba(255,255,255,.06);
-      font-size:12px; font-weight:800;
+      font-size:12px; font-weight:900;
     }
     .dot{width:10px; height:10px; border-radius:999px; background:var(--good)}
     .dot.bad{background:var(--bad)}
@@ -82,7 +81,7 @@
       cursor:pointer;
     }
     .item:hover{border-color:rgba(255,255,255,.28)}
-    .item .h{font-weight:800; font-size:13px}
+    .item .h{font-weight:900; font-size:13px}
     .item .s{font-size:12px; color:var(--muted); margin-top:4px; line-height:1.25}
     .item .k{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px}
     .tag{
@@ -92,7 +91,7 @@
     #map{height:100%; width:100%}
     .toast{
       position:fixed; left:16px; bottom:16px; z-index:2000;
-      max-width:min(560px, calc(100vw - 32px));
+      max-width:min(640px, calc(100vw - 32px));
       background:rgba(15,23,42,.92);
       border:1px solid var(--line);
       border-radius:14px;
@@ -101,7 +100,6 @@
       display:none;
     }
     .toast.show{display:block}
-    .toast b{color:#fff}
     .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace}
     @media (max-width: 980px){
       .wrap{grid-template-columns:1fr; grid-template-rows: 380px 1fr}
@@ -110,6 +108,7 @@
   </style>
 
 </head>
+
 <body>
 <header>
   <div class="title">Monitoring Tahap 3 • <span class="muted">Sheet:</span> log_progres3</div>
@@ -122,7 +121,7 @@
       <div class="row" style="justify-content:space-between">
         <div>
           <div style="font-weight:900">Sumber Data</div>
-          <div class="muted">Google Sheets (GViz) → Peta</div>
+          <div class="muted">GViz / JSON Proxy → Peta</div>
         </div>
         <button class="btn primary" id="btnReload">Reload</button>
       </div>
@@ -131,18 +130,26 @@
   <div style="height:10px"></div>
 
   <div class="muted" style="margin-bottom:6px">Cari</div>
-  <input id="q" placeholder="ketik nama / desa / keterangan..." />
+  <input id="q" placeholder="ketik kata kunci (nama / desa / status / dll)..." />
 
   <div style="height:10px"></div>
 
   <div class="stat">
-    <div class="pill"><span class="dot" id="dotOk"></span> Titik tampil: <span id="nShown">0</span></div>
+    <div class="pill"><span class="dot"></span> Titik tampil: <span id="nShown">0</span></div>
     <div class="pill"><span class="dot bad"></span> Koordinat invalid: <span id="nBad">0</span></div>
   </div>
 
   <div style="height:10px"></div>
+
   <div class="muted">
-    Tips: kalau CORS nabrak, aktifin PROXY di konfigurasi (lihat bagian CONFIG).
+    Mode data: <span class="mono" id="mode">-</span><br/>
+    Kolom koordinat: <span class="mono" id="coordKeys">-</span>
+  </div>
+
+  <div style="height:10px"></div>
+
+  <div class="muted">
+    Kalau CORS/login, pakai PROXY atau set DATA_URL ke endpoint JSON kamu.
   </div>
 </div>
 
@@ -163,51 +170,71 @@
 
 <script>
 /** =========================
- *  CONFIG (EDIT INI AJA BRO)
+ *  CONFIG (EDIT INI SAJA)
  *  ========================= */
+
+// Google Sheet
 const SHEET_ID   = "1YkNmEcQw1_1_xL0BTxYXl1f4Tkk2-22tXuQB-IoEeuY";
 const SHEET_NAME = "log_progres3";
 
 /**
- * Kalau fetch langsung ke docs.google.com kena CORS,
- * isi PROXY dengan endpoint yang lo punya (Cloudflare Worker / Apps Script proxy).
+ * PILIH SALAH SATU SUMBER:
+ * A) DATA_URL (langsung endpoint JSON yang return {ok:true, items:[...]})
+ *    Isi kalau kamu sudah punya endpoint seperti itu (dari GAS/Worker).
  *
- * Contoh:
- * const PROXY = "https://gas-proxy3.tuic1677.workers.dev/?url=";
- *
- * Format yang dipakai: PROXY + encodeURIComponent(gvizUrl)
+ * B) Kalau DATA_URL kosong, script akan pakai GViz (docs.google.com/.../gviz/tq)
+ *    Kalau GViz kena CORS, isi PROXY untuk forward request.
  */
-const PROXY = "https://gas-proxy3.tuic1677.workers.dev/?url="; // <- isi kalau perlu, kalau gak: biarin "".
+const DATA_URL = "https://script.google.com/macros/s/AKfycbwixAzu4MFs8Ms-K1sWMqCYmesje762mPYRW9uxkBCxbiTswKiaykXzD-D76naKlPWa/exec?sheet=log_progres3"; // contoh: "https://script.google.com/macros/s/XXXXX/exec?sheet=log_progres3"
+const PROXY    = ""; // contoh: "https://gas-proxy3.tuic1677.workers.dev/?url="
 
-/** Pusat peta awal (Indonesia) */
+// Pusat peta awal
 const MAP_INIT = { center: [-2.5, 118.0], zoom: 5 };
 
 /** =========================
  *  UTIL
  *  ========================= */
 const $ = (s)=>document.querySelector(s);
+
+function setBadge(text, kind="info"){
+  $("#badgeStatus").textContent = text;
+  if (kind==="error"){
+    $("#badgeStatus").style.background = "var(--bad)";
+    $("#badgeStatus").style.color = "#fff";
+  } else if (kind==="ok"){
+    $("#badgeStatus").style.background = "var(--good)";
+    $("#badgeStatus").style.color = "#fff";
+  } else {
+    $("#badgeStatus").style.background = "var(--yellow)";
+    $("#badgeStatus").style.color = "#111827";
+  }
+}
 function toast(msg, kind="info"){
   const t = $("#toast");
   t.innerHTML = msg;
   t.classList.add("show");
-  $("#badgeStatus").textContent = kind.toUpperCase();
-  $("#badgeStatus").style.background = kind==="error" ? "var(--bad)" : "var(--yellow)";
-  $("#badgeStatus").style.color = kind==="error" ? "#fff" : "#111827";
+  setBadge(kind.toUpperCase(), kind==="error" ? "error" : "info");
   setTimeout(()=>t.classList.remove("show"), 5200);
 }
+
 function norm(s){ return (s??"").toString().trim(); }
 function normKey(s){
   return norm(s).toLowerCase()
     .replace(/\s+/g,"_")
     .replace(/[^\w]/g,"");
 }
-function isNum(x){ return typeof x==="number" && isFinite(x); }
+function parseCoord(v){
+  if (v===null || v===undefined) return NaN;
+  if (typeof v === "number") return v;
+  const s = norm(v).replace(",", ".");
+  const n = parseFloat(s);
+  return n;
+}
 
 function pickLatKey(keys){
   const candidates = ["lat","latitude","lintang","y","koord_y","koordinat_y"];
   const k = keys.find(k => candidates.includes(k));
   if (k) return k;
-  // fallback fuzzy
   return keys.find(k => k.includes("lat") || k.includes("lintang"));
 }
 function pickLngKey(keys){
@@ -219,12 +246,11 @@ function pickLngKey(keys){
 
 function bestTitle(obj){
   const keys = Object.keys(obj);
-  const prefs = ["nama","name","judul","lokasi","desa","kecamatan","kabupaten","di","daerah_irigasi","bws","balai"];
+  const prefs = ["nama","name","judul","lokasi","nama_di","namadi","daerah_irigasi","di","nama_daerah_irigasi","kabupaten","kecamatan","desa"];
   for (const p of prefs){
     const k = keys.find(k=>k===p);
     if (k && norm(obj[k])) return norm(obj[k]);
   }
-  // fallback: first non-empty string field
   for (const k of keys){
     const v = obj[k];
     if (typeof v==="string" && norm(v)) return norm(v);
@@ -233,7 +259,7 @@ function bestTitle(obj){
 }
 function bestSubtitle(obj){
   const keys = Object.keys(obj);
-  const prefs = ["keterangan","ket","catatan","progress","uraian","status","tanggal","waktu","timestamp"];
+  const prefs = ["keterangan","ket","catatan","progress","status","uraian","tanggal_usulan","tanggal","timestamp","waktu","pengusul"];
   for (const p of prefs){
     const k = keys.find(k=>k===p);
     if (k && norm(obj[k])) return norm(obj[k]);
@@ -241,32 +267,28 @@ function bestSubtitle(obj){
   return "";
 }
 
+function escapeHtml(s){
+  return norm(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
 function maybeLinkify(v){
   const s = norm(v);
   if (!s) return "";
-  // url
   if (/^https?:\/\/\S+/i.test(s)) {
-    return `<a href="${s}" target="_blank" rel="noopener">Buka Link</a>`;
+    return `<a href="${escapeHtml(s)}" target="_blank" rel="noopener">Buka Link</a>`;
   }
-  // drive file id patterns not handled; keep plain
-  return s.replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  return escapeHtml(s);
 }
 
 /** =========================
  *  MAP INIT
  *  ========================= */
-const map = L.map("map", { zoomControl:true }).setView(MAP_INIT.center, MAP_INIT.zoom);
-
+const map = L.map("map").setView(MAP_INIT.center, MAP_INIT.zoom);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 20,
   attribution: "&copy; OpenStreetMap"
 }).addTo(map);
 
-const cluster = L.markerClusterGroup({
-  chunkedLoading:true,
-  chunkInterval: 150,
-  chunkDelay: 20
-});
+const cluster = L.markerClusterGroup({ chunkedLoading:true, chunkInterval:150, chunkDelay:20 });
 map.addLayer(cluster);
 
 let allRows = [];
@@ -275,78 +297,118 @@ let latKey = null;
 let lngKey = null;
 
 /** =========================
- *  GViz FETCH + PARSE
+ *  DATA FETCH + PARSE
  *  ========================= */
-/** =========================
-
-* GViz FETCH + PARSE (FIXED)
-* ========================= */
-
 function gvizUrl(){
-const base = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq`;
-const params = new URLSearchParams({
-tqx: "out:json",
-sheet: SHEET_NAME,
-t: Date.now().toString()
-});
-return `${base}?${params.toString()}`;
+  const base = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq`;
+  const params = new URLSearchParams({
+    tqx: "out:json",
+    sheet: SHEET_NAME,
+    t: Date.now().toString()
+  });
+  return `${base}?${params.toString()}`;
 }
 
 function parseGVizText(rawText){
-const s = (rawText || "").trim();
-
-// format GViz: google.visualization.Query.setResponse({...});
-const m = s.match(/setResponse(([\s\S]+))\s*;?\s*$/);
-if (!m) {
-throw new Error("Respon bukan format GViz. Potongan awal: " + s.slice(0, 160));
+  const s = (rawText || "").trim();
+  const m = s.match(/setResponse\(([\s\S]+)\)\s*;?\s*$/);
+  if (!m) {
+    throw new Error("Respon bukan format GViz. Potongan awal: " + s.slice(0, 160));
+  }
+  let data;
+  try { data = JSON.parse(m[1]); }
+  catch(e){ throw new Error("GViz ketemu tapi JSON gagal diparse. Potongan: " + m[1].slice(0, 160)); }
+  if (!data || !data.table) throw new Error("GViz ter-parse tapi tidak ada data.table. Cek izin sheet / sheet name.");
+  return data.table;
 }
 
-let data;
-try {
-data = JSON.parse(m[1]);
-} catch(e){
-throw new Error("GViz ketemu tapi JSON gagal diparse. Potongan: " + m[1].slice(0, 160));
+function itemsToTable(items){
+  const keys = Array.from(new Set(items.flatMap(o => Object.keys(o || {}))));
+  return {
+    cols: keys.map(k => ({ label: k, id: k })),
+    rows: items.map(o => ({
+      c: keys.map(k => {
+        const v = (o && Object.prototype.hasOwnProperty.call(o, k)) ? o[k] : null;
+        return (v === null || v === undefined) ? null : ({ v });
+      })
+    }))
+  };
 }
 
-if (!data || !data.table) {
-throw new Error("GViz ter-parse tapi tidak ada data.table. Cek izin sheet / sheet name.");
+async function fetchTable(){
+  // Prioritas 1: endpoint JSON langsung (kalau diisi)
+  if (DATA_URL){
+    $("#mode").textContent = "DATA_URL (JSON)";
+    const res = await fetch(DATA_URL + (DATA_URL.includes("?") ? "&" : "?") + "t=" + Date.now(), { cache:"no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+    const j = await res.json();
+
+    // support {ok:true, items:[...]} atau array langsung
+    if (Array.isArray(j)) return itemsToTable(j);
+    if (j && j.ok === true && Array.isArray(j.items)) return itemsToTable(j.items);
+    if (j && j.table) return j.table;
+
+    throw new Error("DATA_URL JSON tidak sesuai. Harus array / {ok:true,items:[...]} / {table:...}");
+  }
+
+  // Prioritas 2: GViz (dengan optional proxy)
+  const url = gvizUrl();
+  const finalUrl = PROXY ? (PROXY + encodeURIComponent(url)) : url;
+
+  $("#mode").textContent = PROXY ? "GViz via PROXY" : "GViz direct";
+
+  const res = await fetch(finalUrl, { cache:"no-store" });
+  const txt = await res.text();
+
+  // kalau HTML login/error page
+  const head = (txt || "").slice(0, 300).toLowerCase();
+  if (head.includes("<html") || head.includes("<!doctype html")) {
+    throw new Error("Yang kebaca HTML (login/redirect/error). Sheet belum publik atau proxy nge-redirect.");
+  }
+
+  // coba parse JSON langsung (kalau proxy bungkus)
+  let maybe = null;
+  try { maybe = JSON.parse(txt); } catch(e) {}
+
+  if (maybe && maybe.table) return maybe.table;
+  if (maybe && maybe.data && maybe.data.table) return maybe.data.table;
+
+  // format {ok:true, items:[...]} dari proxy
+  if (maybe && maybe.ok === true && Array.isArray(maybe.items)) {
+    $("#mode").textContent += " (ok/items)";
+    return itemsToTable(maybe.items);
+  }
+
+  // wrapper string contents/body/data
+  if (maybe && (typeof maybe.contents === "string" || typeof maybe.body === "string" || typeof maybe.data === "string")) {
+    const inner = (maybe.contents || maybe.body || maybe.data || "").toString();
+    return parseGVizText(inner);
+  }
+
+  // default GViz text
+  return parseGVizText(txt);
 }
-return data.table;
+
+/** =========================
+ *  TABLE → OBJECTS
+ *  ========================= */
+function tableToObjects(table){
+  const cols = (table.cols||[]).map(c => normKey(c.label || c.id || ""));
+  const rows = table.rows || [];
+  const out = [];
+  for (const r of rows){
+    const o = {};
+    (r.c||[]).forEach((cell, i)=>{
+      const key = cols[i] || `col_${i+1}`;
+      let v = cell ? (cell.f ?? cell.v) : null;
+      if (typeof v === "string") v = v.trim();
+      o[key] = v;
+    });
+    const hasAny = Object.values(o).some(v => v !== null && v !== "");
+    if (hasAny) out.push(o);
+  }
+  return out;
 }
-
-async function fetchGViz(){
-const url = gvizUrl();
-const finalUrl = PROXY ? (PROXY + encodeURIComponent(url)) : url;
-
-const res = await fetch(finalUrl, { cache:"no-store" });
-const txt = await res.text();
-
-// 1) Kalau yang balik HTML (login / error page), kasih error jelas
-const head = (txt || "").slice(0, 300).toLowerCase();
-if (head.includes("<html") || head.includes("<!doctype html")) {
-throw new Error(
-"Yang kebaca HTML (login/redirect/error page), bukan GViz. " +
-"Biasanya karena sheet belum publik atau proxy nge-redirect."
-);
-}
-
-// 2) Coba parse sebagai JSON langsung (beberapa proxy ngembaliin JSON wrapper)
-let maybe = null;
-try { maybe = JSON.parse(txt); } catch(e) {}
-
-if (maybe && maybe.table) return maybe.table;
-if (maybe && maybe.data && maybe.data.table) return maybe.data.table;
-
-if (maybe && (typeof maybe.contents === "string" || typeof maybe.body === "string" || typeof maybe.data === "string")) {
-const inner = (maybe.contents || maybe.body || maybe.data || "").toString();
-return parseGVizText(inner);
-}
-
-// 3) Default: GViz text normal
-return parseGVizText(txt);
-}
-
-
 
 /** =========================
  *  RENDER
@@ -355,29 +417,47 @@ function clearMap(){
   cluster.clearLayers();
   markers = [];
 }
-function buildPopup(obj){
-  const title = bestTitle(obj);
-  const sub = bestSubtitle(obj);
-  const keys = Object.keys(obj);
 
-  // tampilkan field penting dulu (kalau ada)
-  const priority = ["timestamp","waktu","tanggal","status","progress","keterangan","desa","kecamatan","kabupaten","provinsi","bws","di","daerah_irigasi","foto","photo","image","url","link"];
-  const shown = new Set();
+function buildPopup(obj){
+  const title = escapeHtml(bestTitle(obj));
+  const sub = escapeHtml(bestSubtitle(obj));
+
+  const keys = Object.keys(obj).filter(k => k !== "__id" && k !== latKey && k !== lngKey);
+
+  // prioritas field penting (kalau ada)
+  const priority = [
+    "no","no.","nomor","tanggal_usulan","tanggal","timestamp","waktu",
+    "pengusul","nama_di","nama_di_","namadi","nama_di__","nama_di",
+    "jenis_di","status","progress","keterangan","ket","catatan",
+    "desa","kecamatan","kabupaten","provinsi","bws",
+    "foto","photo","image","url","link"
+  ].map(normKey);
+
+  const ordered = [];
+  const used = new Set();
+
+  for (const p of priority){
+    const k = keys.find(x => x === p);
+    if (k && !used.has(k)) { ordered.push(k); used.add(k); }
+  }
+  for (const k of keys){
+    if (!used.has(k)) { ordered.push(k); used.add(k); }
+  }
 
   function row(k){
     const v = obj[k];
     if (v===null || v===undefined || v==="") return "";
-    shown.add(k);
-    // gambar jika kelihatan seperti url image
     const s = norm(v);
     const isImg = /^https?:\/\/\S+\.(png|jpg|jpeg|webp|gif)(\?\S*)?$/i.test(s);
     const val = isImg
-      ? `<div style="margin-top:6px"><img src="${s}" alt="foto" style="width:100%;max-width:360px;border-radius:12px;border:1px solid rgba(255,255,255,.12)"></div>`
+      ? `<div style="margin-top:6px"><img src="${escapeHtml(s)}" alt="foto" style="width:100%;max-width:360px;border-radius:12px;border:1px solid rgba(255,255,255,.12)"></div>`
       : `<span>${maybeLinkify(v)}</span>`;
-    return `<div style="padding:6px 0;border-top:1px solid rgba(255,255,255,.10)">
-      <div style="font-size:11px;color:#a7b0c0;font-weight:800">${k.toUpperCase()}</div>
-      <div style="font-size:12px;line-height:1.25">${val}</div>
-    </div>`;
+
+    return `
+      <div style="padding:6px 0;border-top:1px solid rgba(255,255,255,.10)">
+        <div style="font-size:11px;color:#a7b0c0;font-weight:900">${escapeHtml(k.toUpperCase())}</div>
+        <div style="font-size:12px;line-height:1.25">${val}</div>
+      </div>`;
   }
 
   let html = `
@@ -385,17 +465,9 @@ function buildPopup(obj){
       <div style="font-weight:900;font-size:14px">${title}</div>
       ${sub ? `<div style="font-size:12px;color:#a7b0c0;margin-top:4px">${sub}</div>` : ""}
   `;
-
-  for (const p of priority){
-    if (obj[p]!==undefined) html += row(p);
-  }
-  // sisanya
-  for (const k of keys){
-    if (shown.has(k)) continue;
-    if (k===latKey || k===lngKey) continue;
+  for (const k of ordered){
     html += row(k);
   }
-
   html += `</div>`;
   return html;
 }
@@ -417,8 +489,8 @@ function renderList(rows){
     const div = document.createElement("div");
     div.className = "item";
     div.innerHTML = `
-      <div class="h">${title}</div>
-      <div class="s">${sub || "—"}</div>
+      <div class="h">${escapeHtml(title)}</div>
+      <div class="s">${escapeHtml(sub || "—")}</div>
       <div class="k">
         <span class="tag">Lat: ${isFinite(lat) ? lat.toFixed(6) : "-"}</span>
         <span class="tag">Lng: ${isFinite(lng) ? lng.toFixed(6) : "-"}</span>
@@ -436,15 +508,16 @@ function renderList(rows){
 
 function renderMap(rows){
   clearMap();
-
   let bad = 0, ok = 0;
 
   for (const r of rows){
     const lat = parseCoord(r[latKey]);
     const lng = parseCoord(r[lngKey]);
+
     if (!isFinite(lat) || !isFinite(lng) || Math.abs(lat)>90 || Math.abs(lng)>180){
       bad++; continue;
     }
+
     ok++;
     const m = L.marker([lat,lng]);
     m.__id = r.__id;
@@ -462,9 +535,6 @@ function renderMap(rows){
   }
 }
 
-/** =========================
- *  FILTER
- *  ========================= */
 function applyFilter(){
   const q = norm($("#q").value).toLowerCase();
   if (!q){
@@ -484,50 +554,46 @@ function applyFilter(){
  *  LOAD
  *  ========================= */
 async function load(){
-  $("#badgeStatus").textContent = "LOADING";
-  $("#badgeStatus").style.background = "var(--yellow)";
-  $("#badgeStatus").style.color = "#111827";
-  toast(`Ambil data sheet <b>${SHEET_NAME}</b>...`, "info");
+  setBadge("LOADING");
+  toast(`Ambil data <b>${escapeHtml(SHEET_NAME)}</b>...`, "info");
 
   try{
-    const table = await fetchGViz();
+    const table = await fetchTable();
     const objs = tableToObjects(table);
 
-    // add id
     allRows = objs.map((o, idx)=>({ __id: idx+1, ...o }));
 
-    // detect lat/lng
     const keys = Object.keys(allRows[0] || {}).filter(k=>k!=="__id");
     latKey = pickLatKey(keys);
     lngKey = pickLngKey(keys);
 
+    $("#coordKeys").textContent = (latKey && lngKey) ? `${latKey}, ${lngKey}` : "-";
+
     if (!latKey || !lngKey){
       toast(
         `Gak nemu kolom koordinat 😵‍💫<br>
-         Header yang kebaca: <span class="mono">${keys.join(", ") || "(kosong)"}</span><br>
+         Header kebaca: <span class="mono">${escapeHtml(keys.join(", ") || "(kosong)")}</span><br>
          Pastikan ada kolom lat/lng (misal: <b>lat</b> & <b>lng</b> / <b>latitude</b> & <b>longitude</b>).`,
         "error"
       );
-      $("#badgeStatus").textContent = "ERROR";
+      setBadge("ERROR", "error");
       return;
     }
 
-    toast(`OK. Deteksi kolom: <b>${latKey}</b> & <b>${lngKey}</b>. Total baris: <b>${allRows.length}</b>`, "info");
-
+    toast(`OK. Total baris: <b>${allRows.length}</b> • Kolom: <b>${latKey}</b>/<b>${lngKey}</b>`, "ok");
     renderMap(allRows);
     renderList(allRows);
 
-    $("#badgeStatus").textContent = "OK";
-    $("#badgeStatus").style.background = "var(--good)";
-    $("#badgeStatus").style.color = "#fff";
+    setBadge("OK", "ok");
 
   }catch(err){
     console.error(err);
     toast(
-      `<b>Gagal load</b> ⚠️<br>${(err && err.message) ? err.message : err}<br><br>
-       Kalau ini CORS/redirect login, aktifkan <b>PROXY</b> di CONFIG.`,
+      `<b>Gagal load</b> ⚠️<br>${escapeHtml((err && err.message) ? err.message : String(err))}<br><br>
+       <span class="muted">Kalau mode GViz ke-login, set sheet jadi publik atau pakai DATA_URL / PROXY yang benar.</span>`,
       "error"
     );
+    setBadge("ERROR", "error");
   }
 }
 
