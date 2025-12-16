@@ -127,7 +127,7 @@
     <select id="f-di" style="min-width:220px" disabled><option value="">— Pilih B/BWS dulu —</option></select>
   </div>
   <div class="search-box">
-    <input id="search" type="text" placeholder="Cari lokasi (kabupaten / desa)…" />
+    <input id="search" type="text" placeholder="Cari lokasi (Nama DI / kabupaten / desa)…" />
     <div id="suggestions"></div>
   </div>
 </div>
@@ -140,21 +140,26 @@
 <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
 
 <script>
-/* ===== CONFIG (TAHAP 3, PAKAI CSV) ===== */
-// File: In_Tahap3_cleaned
-const SHEET_ID      = "1YkNmEcQw1_1_xL0BTxYX1f4Tkk2-22tXuQB-IoEeuY";
+/* =========================
+   1. KONFIGURASI GOOGLE SHEET
+   ========================= */
+// Ganti dengan ID file In_Tahap3_cleaned (teks di antara /d/ dan /edit)
+const SHEET_ID      = "GANTI_DENGAN_SHEET_ID_IN_TAHAP3_CLEANED";
 
-// TODO: ganti dengan gid sheet "baseline" (lihat di URL: ...edit#gid=XXXXXXXXX)
-const GID_BASELINE  = "PUT_BASELINE_GID_HERE";
+// Ganti dengan gid tab "baseline" (lihat di URL: ...edit#gid=XXXXXXXXX)
+const GID_BASELINE  = "GANTI_DENGAN_GID_BASELINE";
 
-// TODO: ganti jika gid sheet "log_tahap3" berbeda
-const GID_LOG       = "732855223";
+// Ganti dengan gid tab "log_tahap3"
+const GID_LOG       = "GANTI_DENGAN_GID_LOG_TAHAP3";
 
 const URL_BASELINE  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID_BASELINE}`;
 const URL_LOG       = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID_LOG}`;
+
 const ZOOM_LABEL    = 14; // label tampil mulai zoom 14
 
-/* ===== Helpers ===== */
+/* =========================
+   2. HELPERS
+   ========================= */
 const norm  = s => (s==null?'':String(s)).trim();
 const canon = s => norm(s).toLowerCase();
 const $     = sel => document.querySelector(sel);
@@ -190,18 +195,18 @@ function uniqueList(arr){
   return Array.from(new Set(arr.filter(Boolean)));
 }
 
-/* ===== Map + Basemap Control ===== */
+/* =========================
+   3. PETA & LAYER
+   ========================= */
 const osm  = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19, attribution:'© OpenStreetMap'});
 const img  = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19, attribution:'Tiles © Esri/Maxar'});
 const map  = L.map('map', {layers:[osm]}).setView([-2.5,117],5);
 L.control.layers({"OSM":osm, "Esri Imagery":img}, {}, {position:'topright'}).addTo(map);
 
-// cluster & label layers
 let cluster = L.markerClusterGroup({ disableClusteringAtZoom: 15 });
 map.addLayer(cluster);
 const labelsGroup = L.layerGroup().addTo(map);
 
-// simpan marker untuk filter/search
 let allMarkers = [];
 const origAdd = cluster.addLayer.bind(cluster);
 cluster.addLayer = function(layer){
@@ -209,13 +214,17 @@ cluster.addLayer = function(layer){
   return origAdd(layer);
 };
 
-/* ===== GLOBAL STATE ===== */
-let baselineData = [];          // baseline sheet
-let logData      = [];          // log_tahap3
-const balaiToLokasiUploaded = new Map(); // dari LOG
-let index = [];                 // untuk search suggestions
+/* =========================
+   4. GLOBAL STATE
+   ========================= */
+let baselineData = [];
+let logData      = [];
+const balaiToLokasiUploaded = new Map();
+let index = [];
 
-/* ===== Label visibility controller ===== */
+/* =========================
+   5. LABEL VISIBILITY
+   ========================= */
 function refreshLabels(){
   const show = map.getZoom() >= ZOOM_LABEL;
   allMarkers.forEach(m=>{
@@ -229,18 +238,22 @@ function refreshLabels(){
 map.on('zoomend moveend', refreshLabels);
 cluster.on('animationend spiderfied unspiderfied', refreshLabels);
 
-/* ===== Key normalisasi untuk join baseline vs log ===== */
+/* =========================
+   6. KEY JOIN BASELINE vs LOG
+   ========================= */
 function makeKey(rec){
   if(rec.key) return 'key:' + canon(rec.key);
   return 'loc:' + [
     canon(rec.balai || rec.bbws || ''),
     canon(rec.prov || ''),
     canon(rec.kab || ''),
-    canon(rec.desa || rec.lokasi || '')
+    canon(rec.desa || rec.lokasi || rec.namaDi || '')
   ].join('|');
 }
 
-/* ===== Load baseline (sheet: baseline) ===== */
+/* =========================
+   7. LOAD BASELINE
+   ========================= */
 async function loadBaseline(){
   const res = await fetch(URL_BASELINE + '&t=' + Date.now(), {cache:'no-store'});
   if(!res.ok) throw new Error('HTTP '+res.status+' saat akses baseline');
@@ -253,14 +266,23 @@ async function loadBaseline(){
       balai: norm(r['balai'] || r['Balai'] || r['BWS'] || r['B/BWS'] || r['BBWS'] || ''),
       prov:  norm(r['provinsi'] || r['Provinsi'] || ''),
       kab:   norm(r['kabupate di'] || r['kabupaten di'] || r['kabupaten'] || r['KABUPATEN'] || ''),
-      desa:  norm(r['kecamata desa'] || r['desa'] || r['DESA'] || '')
+      desa:  norm(r['kecamata desa'] || r['desa'] || r['DESA'] || ''),
+      namaDi: norm(
+        r['Nama DI']  ||
+        r['nama_di']  ||
+        r['Nama_DI']  ||
+        r['DI']       ||
+        ''
+      )
     };
-  }).filter(r => r.key || r.desa || r.kab);
+  }).filter(r => r.key || r.desa || r.kab || r.namaDi);
 
   return out;
 }
 
-/* ===== Load log_tahap3 & render map ===== */
+/* =========================
+   8. LOAD LOG_TAHAP3 + MARKER
+   ========================= */
 async function loadLogTahap3(){
   const res = await fetch(URL_LOG + '&t=' + Date.now(), {cache:'no-store'});
   if(!res.ok) throw new Error('HTTP '+res.status+' saat akses log_tahap3');
@@ -285,11 +307,18 @@ async function loadLogTahap3(){
       desa:      norm(r['kecamata desa'] || r['desa']),
       lat:       parseFloat(r['lat']),
       lng:       parseFloat(r['lng']),
-      // petugas & telp sengaja tidak dipakai di popup (sesuai permintaan)
+      // petugas & telp tidak dipakai di popup
       nama:      norm(r['nama']),
       telp:      norm(r['telepon']),
       progress:  Number(r['progress_'] || r['progress'] || 0),
-      foto:      norm(r['foto_url'])
+      foto:      norm(r['foto_url']),
+      namaDi:    norm(
+        r['Nama DI']  ||
+        r['nama_di']  ||
+        r['Nama_DI']  ||
+        r['DI']       ||
+        ''
+      )
     };
 
     if (!Number.isFinite(rec.lat) || !Number.isFinite(rec.lng)) return;
@@ -297,7 +326,6 @@ async function loadLogTahap3(){
     const lokasi = `${rec.kab || '-'} / ${rec.desa || '-'}`;
     rec.lokasi = lokasi;
 
-    // mapping balai -> lokasi (untuk filter DI, tapi di tahap 3 = lokasi)
     const keyBalai = rec.balai || '-';
     if(!balaiToLokasiUploaded.has(keyBalai)) balaiToLokasiUploaded.set(keyBalai, new Set());
     balaiToLokasiUploaded.get(keyBalai).add(lokasi);
@@ -317,8 +345,10 @@ async function loadLogTahap3(){
       return `<span class="btn-photo disabled">Foto ${s}%</span>`;
     }).join('');
 
+    const title = rec.namaDi || rec.lokasi;
+
     const popup = `
-      <b>${lokasi}</b>
+      <b>${title}</b>
       <div style="font-size:12px;color:#555;margin:4px 0">
         Balai: ${rec.balai || '-'}<br/>
         Provinsi: ${rec.prov || '-'}<br/>
@@ -341,14 +371,14 @@ async function loadLogTahap3(){
       })
     }).bindPopup(popup);
 
-    m.__meta = {bbws:rec.balai, di:rec.lokasi, stage:prog};
+    m.__meta = {bbws:rec.balai, di:title, stage:prog};
     cluster.addLayer(m);
     markers.push(m);
 
     const lbl = L.marker([rec.lat, rec.lng], {
       icon: L.divIcon({
         className: 'di-label',
-        html: `${rec.desa || rec.kab || 'Lokasi'} ${prog}%`,
+        html: `${title} ${prog}%`,
         iconSize: null
       }),
       interactive:false,
@@ -366,7 +396,9 @@ async function loadLogTahap3(){
   return result;
 }
 
-/* ===== Stats UI (pakai baseline + log) ===== */
+/* =========================
+   9. STATS UI (BASELINE + LOG)
+   ========================= */
 function buildStatsUI({totalBaseline,totalFilled,percent,byBalai,missing}){
   const head = `
     <div class="stats-head">
@@ -430,13 +462,14 @@ function buildStatsUI({totalBaseline,totalFilled,percent,byBalai,missing}){
   };
 
   $('#btnExportCSV').onclick = ()=>{
-    const header = ["timestamp","key","balai","provinsi","kabupaten_desa","lat","lng","progress","foto_url"];
+    const header = ["timestamp","key","balai","provinsi","nama_di","kabupaten_desa","lat","lng","progress","foto_url"];
     const lines = [header.join(",")].concat(
       logData.map(r=>[
         r.timestamp,
         r.key,
         r.balai,
         r.prov,
+        r.namaDi,
         `${r.kab} / ${r.desa}`,
         r.lat,
         r.lng,
@@ -451,11 +484,12 @@ function buildStatsUI({totalBaseline,totalFilled,percent,byBalai,missing}){
   };
 
   $('#btnExportMissing').onclick = ()=>{
-    const header = ["Balai","Provinsi","Kabupaten","Desa"];
+    const header = ["Balai","Provinsi","Nama DI","Kabupaten","Desa"];
     const lines = [header.join(",")].concat(
       missing.map(m=>[
         m.balai,
         m.prov,
+        m.namaDi,
         m.kab,
         m.desa
       ].map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(","))
@@ -467,7 +501,9 @@ function buildStatsUI({totalBaseline,totalFilled,percent,byBalai,missing}){
   };
 }
 
-/* ===== Cascading (Balai -> Lokasi dari LOG) ===== */
+/* =========================
+   10. CASCADING FILTER
+   ========================= */
 function updateDiOptions(){
   const bb = $('#f-bbws').value;
   const diSel = $('#f-di');
@@ -482,7 +518,6 @@ function updateDiOptions(){
   diSel.value = '';
 }
 
-/* ===== Filter markers ===== */
 function applyFilters(){
   const fB = canon($('#f-bbws').value);
   const fD = canon($('#f-di').value);
@@ -503,7 +538,9 @@ function applyFilters(){
 $('#f-bbws').addEventListener('change', ()=>{ updateDiOptions(); applyFilters(); });
 $('#f-di').addEventListener('change', applyFilters);
 
-/* ===== Search suggestions ===== */
+/* =========================
+   11. SEARCH SUGGESTIONS
+   ========================= */
 function rebuildIndex(){
   index.length = 0;
   allMarkers.forEach(m=>{
@@ -545,7 +582,9 @@ $('#search').addEventListener('keydown', e=>{
   }
 });
 
-/* ===== Build (init) ===== */
+/* =========================
+   12. BUILD (INIT)
+   ========================= */
 async function build(){
   try{
     $('#stats').textContent='Memuat statistik…';
@@ -554,12 +593,10 @@ async function build(){
     baselineData = baseline;
     logData      = logs;
 
-    // set B/BWS dropdown dari LOG (yang sudah upload)
     const uniqBalai = uniqueList(logs.map(r=>r.balai || '-'));
     fillSelect($('#f-bbws'), uniqBalai, '— Semua B/BWS (yang sudah upload) —');
     updateDiOptions();
 
-    // hitung statistik coverage berbasis key/loc
     const baseKeys = new Set(baseline.map(makeKey));
     const logKeys  = new Set(logs.map(makeKey));
     const totalBaseline = baseKeys.size;
@@ -591,8 +628,9 @@ async function build(){
     $('#stats').innerHTML =
       `<div style="color:#b91c1c">Gagal memuat data Tahap 3.</div>
        <div style="font-size:12px;color:#6b7280">
-         Pastikan sheet <b>baseline</b> dan <b>log_tahap3</b> publik (Anyone with the link - Viewer),
-         dan <code>GID_BASELINE</code> / <code>GID_LOG</code> sudah benar.<br/>
+         Pastikan sheet <b>baseline</b> dan <b>log_tahap3</b> berada dalam file yang sama,
+         sudah publik (Anyone with the link - Viewer),
+         dan <code>SHEET_ID</code> / <code>GID_BASELINE</code> / <code>GID_LOG</code> sudah benar.<br/>
          Detail: ${e.message||e}
        </div>`;
   }
