@@ -1,521 +1,838 @@
-<!doctype html>
-
+<!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Monitoring Tahap 3 — log_progres3 (Peta)</title>
+  <meta charset="UTF-8" />
+  <title>Monitoring Tahap 3 — Log Survey</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-  <!-- Leaflet -->
+  <link rel="icon" href="../../assets/LogoPUPR.png" />
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-  <!-- MarkerCluster -->
-
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
-  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
 
   <style>
     :root{
-      --bg:#0b1222; --panel:rgba(15,23,42,.92); --text:#e5e7eb; --muted:#a7b0c0;
-      --line:rgba(255,255,255,.12); --yellow:#ffb300; --good:#27b06e; --bad:#ff5c7a;
+      --bg:#0b1222;
+      --panel:#0f172a;
+      --panelSoft:rgba(15,23,42,.96);
+      --border:rgba(148,163,184,.35);
+      --text:#e5e7eb;
+      --muted:#9ca3af;
+      --accent:#1d4ed8;
+      --accentSoft:#1d5fd1;
+      --accentDim:#0b275f;
+      --yellow:#facc15;
+      --danger:#ef4444;
+      --success:#22c55e;
+      --radius:18px;
+      --shadow:0 18px 40px rgba(0,0,0,.6);
       --hdrH:64px;
     }
-    *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial;color:var(--text);background:var(--bg)}
-    header{
-      position:fixed; inset:0 0 auto 0; height:var(--hdrH);
-      display:flex; align-items:center; gap:12px; padding:0 16px;
-      background:linear-gradient(90deg, rgba(13,71,161,.95), rgba(10,58,133,.92));
-      border-bottom:1px solid rgba(255,255,255,.12); z-index:1000;
-    }
-    header .title{font-weight:900; letter-spacing:.2px}
-    header .badge{
-      margin-left:auto; font-size:12px; color:#111827; background:var(--yellow);
-      padding:6px 10px; border-radius:999px; font-weight:900;
+
+    *{box-sizing:border-box;}
+
+    html,body{
+      margin:0;
+      padding:0;
+      height:100%;
+      background:radial-gradient(circle at top,#111827 0,#020617 45%,#020617 100%);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      color:var(--text);
     }
 
-    .wrap{padding-top:var(--hdrH); display:grid; grid-template-columns: 390px 1fr; height:calc(100vh - var(--hdrH));}
-    aside{
-      border-right:1px solid var(--line);
-      background:rgba(11,18,34,.65);
-      padding:14px;
+    body{
+      display:flex;
+      flex-direction:column;
+    }
+
+    /* HEADER */
+    header{
+      height:var(--hdrH);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 18px 0 16px;
+      border-bottom:1px solid rgba(148,163,184,.3);
+      background:linear-gradient(90deg,#020617 0,#020617 40%,#0b1120 100%);
+      position:relative;
+      z-index:10;
+    }
+    header-left{
+      display:flex;
+      align-items:center;
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .brand-logo{
+      width:38px;
+      height:38px;
+      border-radius:9px;
+      background:#020617;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border:1px solid rgba(148,163,184,.5);
+      box-shadow:0 10px 24px rgba(0,0,0,.7);
+      overflow:hidden;
+    }
+    .brand-logo img{
+      width:90%;
+      height:90%;
+      object-fit:contain;
+    }
+    .brand-text{
+      line-height:1.1;
+    }
+    .brand-text .top{
+      font-size:11px;
+      color:var(--muted);
+      letter-spacing:.06em;
+      text-transform:uppercase;
+    }
+    .brand-text .mid{
+      font-size:13px;
+      font-weight:600;
+    }
+    .brand-text .bot{
+      font-size:11px;
+      color:var(--muted);
+    }
+
+    .tag-tahap{
+      margin-left:18px;
+      font-size:11px;
+      padding:3px 9px;
+      border-radius:999px;
+      border:1px solid rgba(59,130,246,.6);
+      color:#bfdbfe;
+      background:radial-gradient(circle at top,#1d4ed8 0,rgba(15,23,42,.9) 55%);
+    }
+
+    .header-right{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      font-size:11px;
+      color:var(--muted);
+    }
+    .pill{
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.4);
+      padding:4px 9px;
+      display:flex;
+      align-items:center;
+      gap:6px;
+      background:rgba(15,23,42,.85);
+    }
+    .pill-dot{
+      width:7px;height:7px;border-radius:999px;
+      background:radial-gradient(circle,#4ade80 0,#22c55e 50%,#166534 100%);
+      box-shadow:0 0 12px rgba(34,197,94,.8);
+    }
+
+    /* LAYOUT MAIN */
+    .main{
+      flex:1;
+      display:flex;
+      gap:10px;
+      padding:10px;
+      min-height:0;
+    }
+
+    .sidebar{
+      width:380px;
+      max-width:420px;
+      min-width:260px;
+      background:var(--panelSoft);
+      border-radius:var(--radius);
+      border:1px solid var(--border);
+      box-shadow:var(--shadow);
+      padding:12px 12px 10px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    .map-wrapper{
+      flex:1;
+      min-width:0;
+      background:var(--panelSoft);
+      border-radius:var(--radius);
+      border:1px solid var(--border);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      position:relative;
+      display:flex;
+      flex-direction:column;
+    }
+
+    #map{
+      flex:1;
+      width:100%;
+    }
+
+    /* KARTU STATS */
+    .stats{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:6px;
+      font-size:11px;
+    }
+    .stat-card{
+      background:radial-gradient(circle at top,#020617 0,#020617 30%,#020617 100%);
+      border-radius:12px;
+      border:1px solid rgba(148,163,184,.45);
+      padding:7px 8px 6px;
+      position:relative;
+      overflow:hidden;
+    }
+    .stat-label{
+      color:var(--muted);
+      font-size:10px;
+    }
+    .stat-value{
+      font-size:16px;
+      font-weight:600;
+      margin-top:2px;
+    }
+    .stat-chip{
+      position:absolute;
+      right:6px;
+      top:6px;
+      font-size:9px;
+      padding:2px 5px;
+      border-radius:999px;
+      background:rgba(30,64,175,.4);
+      border:1px solid rgba(129,140,248,.6);
+      color:rgba(191,219,254,.9);
+    }
+
+    /* FILTERS */
+    .panel-title{
+      font-size:11px;
+      text-transform:uppercase;
+      letter-spacing:.12em;
+      color:var(--muted);
+      margin-top:4px;
+      margin-bottom:2px;
+    }
+    .filters{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:6px;
+      font-size:11px;
+    }
+    .filter-row{
+      display:flex;
+      gap:6px;
+    }
+    .filter-row > *{
+      flex:1;
+    }
+    label small{
+      display:block;
+      margin-bottom:2px;
+      color:var(--muted);
+      font-size:10px;
+    }
+    select,input[type="text"],input[type="number"]{
+      width:100%;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.6);
+      background:#020617;
+      color:var(--text);
+      padding:5px 9px;
+      font-size:11px;
+      outline:none;
+    }
+    select:focus,input:focus{
+      border-color:rgba(59,130,246,.9);
+      box-shadow:0 0 0 1px rgba(37,99,235,.6);
+    }
+    .filter-inline{
+      display:flex;
+      align-items:center;
+      gap:6px;
+      font-size:10px;
+      color:var(--muted);
+    }
+
+    /* TABLE */
+    .table-wrap{
+      margin-top:4px;
+      border-radius:12px;
+      border:1px solid rgba(148,163,184,.45);
+      background:radial-gradient(circle at top,#020617 0,#020617 40%,#020617 100%);
+      flex:1;
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+    }
+    .table-header{
+      padding:6px 8px 4px;
+      border-bottom:1px solid rgba(55,65,81,.9);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      font-size:11px;
+      color:var(--muted);
+    }
+    .table-header strong{
+      color:var(--text);
+      font-size:11px;
+    }
+    .table-body{
+      flex:1;
       overflow:auto;
     }
-    .card{
-      background:var(--panel);
-      border:1px solid var(--line);
-      border-radius:16px;
-      padding:12px;
-      box-shadow:0 14px 30px rgba(0,0,0,.25);
-      margin-bottom:12px;
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:11px;
     }
-    .row{display:flex; gap:10px; align-items:center}
-    .muted{color:var(--muted); font-size:12px}
-    .btn{
-      cursor:pointer; border:1px solid var(--line); background:rgba(255,255,255,.06);
-      color:var(--text); padding:10px 12px; border-radius:12px; font-weight:900;
+    thead{
+      position:sticky;
+      top:0;
+      background:#020617;
+      z-index:2;
     }
-    .btn:hover{border-color:rgba(255,255,255,.25)}
-    .btn.primary{background:rgba(29,95,209,.22); border-color:rgba(29,95,209,.55)}
-    input{
-      width:100%; padding:10px 12px; border-radius:12px; border:1px solid var(--line);
-      background:rgba(255,255,255,.06); color:var(--text); outline:none;
+    th,td{
+      padding:4px 6px;
+      white-space:nowrap;
     }
-    input::placeholder{color:rgba(167,176,192,.8)}
-    .stat{display:grid; grid-template-columns:1fr 1fr; gap:10px}
-    .pill{
-      display:inline-flex; align-items:center; gap:8px;
-      padding:8px 10px; border-radius:999px;
-      border:1px solid var(--line); background:rgba(255,255,255,.06);
-      font-size:12px; font-weight:900;
+    th{
+      text-align:left;
+      border-bottom:1px solid rgba(55,65,81,.9);
+      color:var(--muted);
+      font-size:10px;
     }
-    .dot{width:10px; height:10px; border-radius:999px; background:var(--good)}
-    .dot.bad{background:var(--bad)}
-    #list{display:flex; flex-direction:column; gap:10px}
-    .item{
-      border:1px solid var(--line); background:rgba(255,255,255,.04);
-      border-radius:14px; padding:10px;
+    tbody tr{
       cursor:pointer;
     }
-    .item:hover{border-color:rgba(255,255,255,.28)}
-    .item .h{font-weight:900; font-size:13px}
-    .item .s{font-size:12px; color:var(--muted); margin-top:4px; line-height:1.25}
-    .item .k{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px}
-    .tag{
-      font-size:11px; padding:5px 8px; border-radius:999px;
-      border:1px solid var(--line); background:rgba(255,255,255,.05); color:var(--text);
+    tbody tr:nth-child(odd){
+      background:rgba(15,23,42,.85);
     }
-    #map{height:100%; width:100%}
-    .toast{
-      position:fixed; left:16px; bottom:16px; z-index:2000;
-      max-width:min(720px, calc(100vw - 32px));
-      background:rgba(15,23,42,.92);
-      border:1px solid var(--line);
-      border-radius:14px;
-      padding:12px 14px;
-      box-shadow:0 18px 40px rgba(0,0,0,.35);
-      display:none;
+    tbody tr:nth-child(even){
+      background:rgba(15,23,42,.75);
     }
-    .toast.show{display:block}
-    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace}
-    @media (max-width: 980px){
-      .wrap{grid-template-columns:1fr; grid-template-rows: 380px 1fr}
-      aside{border-right:none; border-bottom:1px solid var(--line)}
+    tbody tr:hover{
+      background:rgba(37,99,235,.25);
+    }
+    tbody tr.selected{
+      background:rgba(59,130,246,.35);
+    }
+    .badge-progress{
+      border-radius:999px;
+      padding:1px 6px;
+      font-size:10px;
+      border:1px solid rgba(96,165,250,.9);
+      color:#bfdbfe;
+      background:rgba(37,99,235,.35);
+    }
+    .badge-foto{
+      border-radius:999px;
+      padding:1px 6px;
+      font-size:10px;
+      border:1px solid rgba(52,211,153,.9);
+      color:#a7f3d0;
+      background:rgba(4,120,87,.45);
+    }
+
+    /* MAP HEADER */
+    .map-header{
+      padding:6px 10px 5px;
+      border-bottom:1px solid rgba(55,65,81,.9);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      font-size:11px;
+      color:var(--muted);
+    }
+    .map-header-left strong{
+      color:var(--text);
+    }
+    .map-legend{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      font-size:10px;
+    }
+    .dot{
+      width:8px;height:8px;border-radius:999px;
+      background:radial-gradient(circle,#60a5fa 0,#2563eb 60%,#1d4ed8 100%);
+    }
+    .map-footer{
+      position:absolute;
+      left:10px;
+      bottom:8px;
+      font-size:10px;
+      color:var(--muted);
+      padding:2px 6px;
+      border-radius:999px;
+      background:rgba(15,23,42,.9);
+      border:1px solid rgba(75,85,99,.9);
+    }
+
+    @media (max-width:960px){
+      .main{
+        flex-direction:column;
+      }
+      .sidebar{
+        width:100%;
+        max-width:none;
+      }
     }
   </style>
-
 </head>
-
 <body>
+
 <header>
-  <div class="title">Monitoring Tahap 3 • <span class="muted">Sheet:</span> log_progres3</div>
-  <div class="badge" id="badgeStatus">READY</div>
+  <div class="brand">
+    <div class="brand-logo">
+      <img src="../../assets/LogoPUPR.png" alt="PUPR">
+    </div>
+    <div class="brand-text">
+      <div class="top">Direktorat Jenderal Sumber Daya Air</div>
+      <div class="mid">Direktorat Irigasi &amp; Rawa</div>
+      <div class="bot">Monitoring Pelaksanaan Inpres 2/2025</div>
+    </div>
+    <span class="tag-tahap">Tahap 3 · Log Survey Lapangan</span>
+  </div>
+
+  <div class="header-right">
+    <div class="pill">
+      <span class="pill-dot"></span>
+      <span>Realtime dari Google Sheet · <span id="last-updated">–</span></span>
+    </div>
+  </div>
 </header>
 
-<div class="wrap">
-  <aside>
-    <div class="card">
-      <div class="row" style="justify-content:space-between">
-        <div>
-          <div style="font-weight:900">Sumber Data</div>
-          <div class="muted">Kolom fixed sesuai sheet</div>
-        </div>
-        <button class="btn primary" id="btnReload">Reload</button>
+<div class="main">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-label">Total Titik</div>
+        <div class="stat-value" id="stat-total">0</div>
+        <div class="stat-chip">log_tahap3</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Balai Terlapor</div>
+        <div class="stat-value" id="stat-balai">0</div>
+        <div class="stat-chip">Balai</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Rata-rata Progress</div>
+        <div class="stat-value" id="stat-progress">0%</div>
+        <div class="stat-chip">Progress</div>
+      </div>
+    </div>
+
+    <div class="panel-title">Filter</div>
+    <div class="filters">
+      <div class="filter-row">
+        <label>
+          <small>Balai</small>
+          <select id="filter-balai">
+            <option value="">Semua Balai</option>
+          </select>
+        </label>
+        <label>
+          <small>Provinsi</small>
+          <select id="filter-prov">
+            <option value="">Semua Provinsi</option>
+          </select>
+        </label>
       </div>
 
-```
-  <div style="height:10px"></div>
+      <div class="filter-row">
+        <label>
+          <small>Kabupaten / Desa</small>
+          <input type="text" id="filter-kabkec" placeholder="Ketik kabupaten / desa..." />
+        </label>
+      </div>
 
-  <div class="muted" style="margin-bottom:6px">Cari</div>
-  <input id="q" placeholder="contoh: Piji / Sragen / 75 / Irwan ..." />
+      <div class="filter-inline">
+        <label style="flex:1;">
+          <small>Min. progress (%)</small>
+          <input type="number" id="filter-progress" value="0" min="0" max="100" />
+        </label>
+        <button id="btn-reset" type="button" style="
+          margin-top:14px;
+          border-radius:999px;
+          border:1px solid rgba(148,163,184,.6);
+          background:#020617;
+          color:var(--muted);
+          font-size:10px;
+          padding:5px 9px;
+          cursor:pointer;
+        ">Reset</button>
+      </div>
+    </div>
 
-  <div style="height:10px"></div>
-
-  <div class="stat">
-    <div class="pill"><span class="dot"></span> Titik tampil: <span id="nShown">0</span></div>
-    <div class="pill"><span class="dot bad"></span> Koordinat invalid: <span id="nBad">0</span></div>
-  </div>
-
-  <div style="height:10px"></div>
-
-  <div class="muted">
-    Mode: <span class="mono" id="mode">-</span><br/>
-    Kolom koordinat: <span class="mono">lat, lng</span>
-  </div>
-
-  <div style="height:10px"></div>
-  <div class="muted">
-    Kalau kamu pakai endpoint JSON yang return <span class="mono">{ok:true, items:[...]}</span>, isi <b>DATA_URL</b>.
-    Kalau mau GViz, kosongkan DATA_URL lalu isi PROXY bila perlu.
-  </div>
-</div>
-
-<div class="card">
-  <div style="font-weight:900; margin-bottom:8px">Daftar Titik</div>
-  <div id="list"></div>
-</div>
-```
-
+    <div class="table-wrap">
+      <div class="table-header">
+        <div>
+          <strong>Daftar Log</strong>
+          <span id="table-count">(0 baris)</span>
+        </div>
+        <div style="font-size:10px;color:var(--muted);">
+          Klik baris untuk zoom ke peta
+        </div>
+      </div>
+      <div class="table-body">
+        <table>
+          <thead>
+          <tr>
+            <th>Waktu</th>
+            <th>Balai</th>
+            <th>Prov</th>
+            <th>Kab / Desa</th>
+            <th>Petugas</th>
+            <th>Prog</th>
+            <th>Foto</th>
+          </tr>
+          </thead>
+          <tbody id="table-body">
+          <!-- rows via JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
   </aside>
 
-  <main>
+  <!-- MAP AREA -->
+  <section class="map-wrapper">
+    <div class="map-header">
+      <div class="map-header-left">
+        <strong>Peta Lokasi Log Tahap 3</strong><br/>
+        <span>Data: Sheet <code>In_Tahap3_cleaned / log_tahap3</code></span>
+      </div>
+      <div class="map-legend">
+        <span class="dot"></span> Titik log
+      </div>
+    </div>
     <div id="map"></div>
-  </main>
+    <div class="map-footer">
+      Klik marker atau baris tabel untuk detail log. 📍
+    </div>
+  </section>
 </div>
 
-<div class="toast" id="toast"></div>
-
-<script>
-/** =========================
- *  CONFIG (EDIT INI SAJA)
- *  ========================= */
-
-// Google Sheet
-const SHEET_ID   = "1YkNmEcQw1_1_xL0BTxYXl1f4Tkk2-22tXuQB-IoEeuY";
-const SHEET_NAME = "log_progres3";
-
-/**
- * PILIH SALAH SATU SUMBER:
- * 1) DATA_URL: endpoint JSON kamu (misal GAS/Worker) yang mengembalikan:
- *    { ok:true, items:[ {timestamp,key,balai,...,lat,lng,...} ] }
- *
- * 2) Jika DATA_URL kosong, script akan coba GViz:
- *    https://docs.google.com/spreadsheets/d/<ID>/gviz/tq?tqx=out:json&sheet=log_progres3
- *    Kalau GViz kena CORS/login, isi PROXY.
- */
-const DATA_URL = "https://script.google.com/macros/s/AKfycbwixAzu4MFs8Ms-K1sWMqCYmesje762mPYRW9uxkBCxbiTswKiaykXzD-D76naKlPWa/exec"; // <-- isi ini kalau sudah punya endpoint JSON {ok:true,items:[...]}
-const PROXY    = ""; // <-- contoh: "https://gas-proxy3.tuic1677.workers.dev/?url="
-
-// Pusat peta awal
-const MAP_INIT = { center: [-2.5, 118.0], zoom: 5 };
-
-/** =========================
- *  KOLom yang ditampilkan (fixed)
- *  ========================= */
-const FIELDS = [
-  "timestamp","key","balai","provinsi","kabupaten","di","kecamatan","desa",
-  "lat","lng","nama","telepon","progress","foto_url"
-];
-
-/** =========================
- *  UTIL
- *  ========================= */
-const $ = (s)=>document.querySelector(s);
-
-function setBadge(text, kind="info"){
-  $("#badgeStatus").textContent = text;
-  if (kind==="error"){
-    $("#badgeStatus").style.background = "var(--bad)";
-    $("#badgeStatus").style.color = "#fff";
-  } else if (kind==="ok"){
-    $("#badgeStatus").style.background = "var(--good)";
-    $("#badgeStatus").style.color = "#fff";
-  } else {
-    $("#badgeStatus").style.background = "var(--yellow)";
-    $("#badgeStatus").style.color = "#111827";
-  }
-}
-function toast(msg, kind="info"){
-  const t = $("#toast");
-  t.innerHTML = msg;
-  t.classList.add("show");
-  setBadge(kind.toUpperCase(), kind==="error" ? "error" : "info");
-  setTimeout(()=>t.classList.remove("show"), 5200);
-}
-
-function norm(s){ return (s??"").toString().trim(); }
-function escapeHtml(s){
-  return norm(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-}
-function maybeLinkify(v){
-  const s = norm(v);
-  if (!s) return "";
-  if (/^https?:\/\/\S+/i.test(s)) return `<a href="${escapeHtml(s)}" target="_blank" rel="noopener">Buka Link</a>`;
-  return escapeHtml(s);
-}
-function parseCoord(v){
-  if (v===null || v===undefined) return NaN;
-  if (typeof v === "number") return v;
-  const s = norm(v).replace(",", ".");
-  return parseFloat(s);
-}
-
-/** =========================
- *  MAP INIT
- *  ========================= */
-const map = L.map("map").setView(MAP_INIT.center, MAP_INIT.zoom);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  maxZoom: 20,
-  attribution: "&copy; OpenStreetMap"
-}).addTo(map);
-
-const cluster = L.markerClusterGroup({ chunkedLoading:true, chunkInterval:150, chunkDelay:20 });
-map.addLayer(cluster);
-
-let allRows = [];
-let markers = [];
-
-/** =========================
- *  FETCH: JSON (ok/items) atau GViz
- *  ========================= */
-function gvizUrl(){
-  const base = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq`;
-  return `${base}?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&t=${Date.now()}`;
-}
-function parseGVizText(rawText){
-  const s = (rawText || "").trim();
-  const m = s.match(/setResponse\(([\s\S]+)\)\s*;?\s*$/);
-  if (!m) throw new Error("Respon bukan format GViz. Potongan awal: " + s.slice(0, 160));
-  const data = JSON.parse(m[1]);
-  if (!data || !data.table) throw new Error("GViz ter-parse tapi tidak ada data.table.");
-  return data.table;
-}
-function tableToObjects(table){
-  const cols = (table.cols||[]).map(c => norm(c.label || c.id || "").toLowerCase().replace(/\s+/g,"_"));
-  const rows = table.rows || [];
-  const out = [];
-  for (const r of rows){
-    const o = {};
-    (r.c||[]).forEach((cell, i)=>{
-      const key = cols[i] || `col_${i+1}`;
-      let v = cell ? (cell.f ?? cell.v) : null;
-      if (typeof v === "string") v = v.trim();
-      o[key] = v;
-    });
-    // hanya ambil field yang kita butuhkan
-    const filtered = {};
-    for (const f of FIELDS){
-      filtered[f] = (o[f]!==undefined) ? o[f] : null;
-    }
-    const hasAny = Object.values(filtered).some(v => v !== null && v !== "");
-    if (hasAny) out.push(filtered);
-  }
-  return out;
-}
-
-async function fetchRows(){
-  // 1) DATA_URL (JSON ok/items)
-  if (DATA_URL){
-    $("#mode").textContent = "DATA_URL (JSON ok/items)";
-    const res = await fetch(DATA_URL + (DATA_URL.includes("?") ? "&" : "?") + "t=" + Date.now(), { cache:"no-store" });
-    if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
-    const j = await res.json();
-
-    let items = null;
-    if (Array.isArray(j)) items = j;
-    else if (j && j.ok === true && Array.isArray(j.items)) items = j.items;
-
-    if (!items) throw new Error("DATA_URL harus mengembalikan array atau {ok:true, items:[...]}");
-
-    // normalize + ambil field fixed
-    return items.map(it=>{
-      const o = {};
-      for (const f of FIELDS){
-        o[f] = (it && Object.prototype.hasOwnProperty.call(it, f)) ? it[f] : null;
-      }
-      return o;
-    });
-  }
-
-  // 2) GViz direct / via PROXY
-  const url = gvizUrl();
-  const finalUrl = PROXY ? (PROXY + encodeURIComponent(url)) : url;
-  $("#mode").textContent = PROXY ? "GViz via PROXY" : "GViz direct";
-
-  const res = await fetch(finalUrl, { cache:"no-store" });
-  const txt = await res.text();
-
-  const head = (txt || "").slice(0, 300).toLowerCase();
-  if (head.includes("<html") || head.includes("<!doctype html")) {
-    throw new Error("Yang kebaca HTML login/redirect. Sheet belum publik atau proxy salah.");
-  }
-
-  // kalau proxy ngembaliin JSON (misal ok/items)
-  let maybe = null;
-  try { maybe = JSON.parse(txt); } catch(e) {}
-
-  if (maybe && maybe.ok === true && Array.isArray(maybe.items)) {
-    $("#mode").textContent += " (ok/items)";
-    return maybe.items.map(it=>{
-      const o = {};
-      for (const f of FIELDS){
-        o[f] = (it && Object.prototype.hasOwnProperty.call(it, f)) ? it[f] : null;
-      }
-      return o;
-    });
-  }
-
-  const table = parseGVizText(txt);
-  return tableToObjects(table);
-}
-
-/** =========================
- *  RENDER
- *  ========================= */
-function clearMap(){
-  cluster.clearLayers();
-  markers = [];
-}
-
-function buildPopup(r){
-  const title = escapeHtml(norm(r.di) || "DI (tanpa nama)");
-  const sub = escapeHtml([r.desa, r.kecamatan, r.kabupaten, r.provinsi].filter(Boolean).join(" • "));
-
-  function row(label, value){
-    if (value===null || value===undefined || value==="") return "";
-
-    const v = norm(value);
-
-    if (label === "foto_url" && /^https?:\/\/\S+/i.test(v)){
-      const isImg = /^https?:\/\/\S+\.(png|jpg|jpeg|webp|gif)(\?\S*)?$/i.test(v);
-      return `
-        <div style="padding:6px 0;border-top:1px solid rgba(255,255,255,.10)">
-          <div style="font-size:11px;color:#a7b0c0;font-weight:900">FOTO</div>
-          <div style="margin-top:6px">
-            <a href="${escapeHtml(v)}" target="_blank" rel="noopener">Buka Foto</a>
-            ${isImg ? `<div style="margin-top:8px">
-              <img src="${escapeHtml(v)}" alt="foto" style="width:100%;max-width:360px;border-radius:12px;border:1px solid rgba(255,255,255,.12)">
-            </div>` : ``}
-          </div>
-        </div>`;
-    }
-
-    return `
-      <div style="padding:6px 0;border-top:1px solid rgba(255,255,255,.10)">
-        <div style="font-size:11px;color:#a7b0c0;font-weight:900">${escapeHtml(label.toUpperCase())}</div>
-        <div style="font-size:12px;line-height:1.25">${maybeLinkify(v)}</div>
-      </div>`;
-  }
-
-  let html = `
-    <div style="min-width:240px;max-width:380px">
-      <div style="font-weight:900;font-size:14px">${title}</div>
-      ${sub ? `<div style="font-size:12px;color:#a7b0c0;margin-top:4px">${sub}</div>` : ""}
-  `;
-
-  // urutan sesuai request
-  for (const f of FIELDS){
-    html += row(f, r[f]);
-  }
-
-  html += `</div>`;
-  return html;
-}
-
-function renderList(rows){
-  const list = $("#list");
-  list.innerHTML = "";
-  if (!rows.length){
-    list.innerHTML = `<div class="muted">Tidak ada data yang cocok.</div>`;
-    return;
-  }
-
-  for (const r of rows){
-    const diName = norm(r.di) || "DI (tanpa nama)";
-    const lokasi = [r.desa, r.kecamatan, r.kabupaten, r.provinsi].filter(Boolean).join(" • ");
-    const prog = (r.progress!==null && r.progress!==undefined && r.progress!=="") ? `${r.progress}%` : "-";
-
-    const lat = parseCoord(r.lat);
-    const lng = parseCoord(r.lng);
-
-    const div = document.createElement("div");
-    div.className = "item";
-    div.innerHTML = `
-      <div class="h">${escapeHtml(diName)}</div>
-      <div class="s">${escapeHtml(lokasi || "—")}</div>
-      <div class="k">
-        <span class="tag">Progress: ${escapeHtml(prog)}</span>
-        <span class="tag">Nama: ${escapeHtml(norm(r.nama) || "-")}</span>
-      </div>
-    `;
-
-    div.onclick = ()=>{
-      if (!isFinite(lat) || !isFinite(lng)) return;
-      map.setView([lat,lng], 18, { animate:true });
-      const m = markers.find(mm => mm.__id === r.__id);
-      if (m) m.openPopup();
-    };
-
-    list.appendChild(div);
-  }
-}
-
-function renderMap(rows){
-  clearMap();
-  let bad = 0, ok = 0;
-
-  for (const r of rows){
-    const lat = parseCoord(r.lat);
-    const lng = parseCoord(r.lng);
-
-    if (!isFinite(lat) || !isFinite(lng) || Math.abs(lat)>90 || Math.abs(lng)>180){
-      bad++; continue;
-    }
-
-    ok++;
-    const m = L.marker([lat,lng]);
-    m.__id = r.__id;
-    m.bindPopup(buildPopup(r), { maxWidth: 420 });
-    cluster.addLayer(m);
-    markers.push(m);
-  }
-
-  $("#nShown").textContent = ok.toString();
-  $("#nBad").textContent = bad.toString();
-
-  if (ok>0){
-    const b = cluster.getBounds();
-    if (b.isValid()) map.fitBounds(b.pad(0.15));
-  }
-}
-
-function applyFilter(){
-  const q = norm($("#q").value).toLowerCase();
-  if (!q){
-    renderMap(allRows);
-    renderList(allRows);
-    return;
-  }
-  const filtered = allRows.filter(r=>{
-    const hay = FIELDS.map(f => norm(r[f])).join(" ").toLowerCase();
-    return hay.includes(q);
-  });
-  renderMap(filtered);
-  renderList(filtered);
-}
-
-/** =========================
- *  LOAD
- *  ========================= */
-async function load(){
-  setBadge("LOADING");
-  toast(`Ambil data <b>${escapeHtml(SHEET_NAME)}</b>...`, "info");
-
-  try{
-    const rows = await fetchRows();
-    allRows = rows.map((o, idx)=>({ __id: idx+1, ...o }));
-
-    toast(`OK. Total baris: <b>${allRows.length}</b> • Kolom: <b>lat/lng</b>`, "ok");
-    renderMap(allRows);
-    renderList(allRows);
-
-    setBadge("OK", "ok");
-
-  }catch(err){
-    console.error(err);
-    toast(`<b>Gagal load</b> ⚠️<br>${escapeHtml((err && err.message) ? err.message : String(err))}`, "error");
-    setBadge("ERROR", "error");
-  }
-}
-
-$("#btnReload").addEventListener("click", load);
-$("#q").addEventListener("input", ()=>{ window.requestAnimationFrame(applyFilter); });
-
-load();
+<!-- Leaflet JS -->
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin="">
 </script>
 
+<script>
+  // ==============================
+  // 1. KONFIGURASI SHEET
+  // ==============================
+  const SHEET_ID   = "1YkNmEcQw1_1_xL0BTxYX1f4Tkk2-22tXuQB-IoEeuY"; // In_Tahap3_cleaned
+  const SHEET_NAME = "log_tahap3";                                   // nama sheet
+  const SHEET_URL  =
+    `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NAME)}&t=${Date.now()}`;
+
+  // ==============================
+  // 2. INISIALISASI PETA
+  // ==============================
+  const map = L.map("map", {
+    center: [-2, 118],
+    zoom: 5,
+    worldCopyJump: true
+  });
+
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "&copy; OpenStreetMap contributors"
+  }).addTo(map);
+
+  const markerLayer = L.layerGroup().addTo(map);
+
+  // ==============================
+  // 3. GLOBAL STATE
+  // ==============================
+  let rawData = [];
+  let filteredData = [];
+
+  const elStatTotal    = document.getElementById("stat-total");
+  const elStatBalai    = document.getElementById("stat-balai");
+  const elStatProgress = document.getElementById("stat-progress");
+  const elLastUpdated  = document.getElementById("last-updated");
+  const elFilterBalai  = document.getElementById("filter-balai");
+  const elFilterProv   = document.getElementById("filter-prov");
+  const elFilterKabKec = document.getElementById("filter-kabkec");
+  const elFilterProg   = document.getElementById("filter-progress");
+  const elTableBody    = document.getElementById("table-body");
+  const elTableCount   = document.getElementById("table-count");
+  const elBtnReset     = document.getElementById("btn-reset");
+
+  // ==============================
+  // 4. PARSER CSV SIMPLE
+  // ==============================
+  function parseCSV(text){
+    const rows = text.trim().split("\n").map(r => r.split(","));
+    const headers = rows[0].map(h => h.trim());
+    return rows.slice(1).map(r => {
+      const obj = {};
+      headers.forEach((h, i) => {
+        obj[h] = (r[i] || "").trim();
+      });
+      return obj;
+    });
+  }
+
+  // ==============================
+  // 5. HELPERS
+  // ==============================
+  function formatTime(ts){
+    if(!ts) return "";
+    // ts dari form sudah berupa string "MM/DD/YYYY HH:MM:SS"
+    // kita tampilkan apa adanya saja
+    return ts;
+  }
+
+  function uniqueList(arr){
+    return Array.from(new Set(arr.filter(Boolean))).sort();
+  }
+
+  function toNumber(val, def=0){
+    const n = parseFloat(val);
+    return isNaN(n) ? def : n;
+  }
+
+  // ==============================
+  // 6. RENDER STAT
+  // ==============================
+  function renderStats(data){
+    const total = data.length;
+    elStatTotal.textContent = total.toString();
+
+    const balaiSet = uniqueList(data.map(r => r.balai || r.key || ""));
+    elStatBalai.textContent = balaiSet.length.toString();
+
+    const nums = data.map(r => toNumber(r.progress_ || r.progress));
+    const avg = nums.length ? (nums.reduce((a,b)=>a+b,0)/nums.length) : 0;
+    elStatProgress.textContent = avg.toFixed(0) + "%";
+
+    // last updated pakai timestamp maksimum
+    const times = uniqueList(rawData.map(r => r.timestamp || ""));
+    if(times.length){
+      elLastUpdated.textContent = times[times.length-1];
+    }else{
+      elLastUpdated.textContent = "–";
+    }
+  }
+
+  // ==============================
+  // 7. RENDER FILTER OPTIONS
+  // ==============================
+  function initFilters(data){
+    const balaiList = uniqueList(data.map(r => r.balai || r.key || ""));
+    balaiList.forEach(v => {
+      const opt = document.createElement("option");
+      opt.value = v;
+      opt.textContent = v;
+      elFilterBalai.appendChild(opt);
+    });
+
+    const provList = uniqueList(data.map(r => r.provinsi || ""));
+    provList.forEach(v => {
+      const opt = document.createElement("option");
+      opt.value = v;
+      opt.textContent = v;
+      elFilterProv.appendChild(opt);
+    });
+  }
+
+  // ==============================
+  // 8. FILTER DATA
+  // ==============================
+  function applyFilters(){
+    const balaiVal  = elFilterBalai.value.trim();
+    const provVal   = elFilterProv.value.trim();
+    const kabkecVal = elFilterKabKec.value.trim().toLowerCase();
+    const progMin   = toNumber(elFilterProg.value,0);
+
+    filteredData = rawData.filter(r => {
+      const balai = (r.balai || r.key || "").trim();
+      const prov  = (r.provinsi || "").trim();
+      const kab   = (r["kabupate di"] || r["kabupaten di"] || "").trim();
+      const kec   = (r["kecamata desa"] || "").trim();
+      const progress = toNumber(r.progress_ || r.progress, 0);
+
+      if(balaiVal && balai !== balaiVal) return false;
+      if(provVal && prov !== provVal) return false;
+
+      const fullKabKec = (kab + " " + kec).toLowerCase();
+      if(kabkecVal && !fullKabKec.includes(kabkecVal)) return false;
+
+      if(progress < progMin) return false;
+
+      return true;
+    });
+
+    renderStats(filteredData);
+    renderTable(filteredData);
+    renderMarkers(filteredData);
+  }
+
+  // ==============================
+  // 9. RENDER TABEL
+  // ==============================
+  function renderTable(data){
+    elTableBody.innerHTML = "";
+    elTableCount.textContent = `(${data.length} baris)`;
+
+    data.forEach((row, idx) => {
+      const tr = document.createElement("tr");
+      tr.dataset.index = String(idx);
+
+      const kab = row["kabupate di"] || row["kabupaten di"] || "";
+      const kec = row["kecamata desa"] || "";
+      const prov = row.provinsi || "";
+      const balai = row.balai || row.key || "";
+      const nama  = row.nama || "";
+      const progress = toNumber(row.progress_ || row.progress,0);
+      const hasFoto = !!(row.foto_url || "").trim();
+
+      tr.innerHTML = `
+        <td>${formatTime(row.timestamp || "")}</td>
+        <td>${balai}</td>
+        <td>${prov}</td>
+        <td>${kab} / ${kec}</td>
+        <td>${nama}</td>
+        <td><span class="badge-progress">${progress}%</span></td>
+        <td>${hasFoto ? '<span class="badge-foto">Foto</span>' : ''}</td>
+      `;
+
+      tr.addEventListener("click", () => {
+        document
+          .querySelectorAll("#table-body tr.selected")
+          .forEach(x => x.classList.remove("selected"));
+        tr.classList.add("selected");
+
+        const marker = row._marker;
+        if(marker){
+          map.setView(marker.getLatLng(), 14);
+          marker.openPopup();
+        }else{
+          const lat = toNumber(row.lat);
+          const lng = toNumber(row.lng);
+          if(!isNaN(lat) && !isNaN(lng)){
+            map.setView([lat,lng],14);
+          }
+        }
+      });
+
+      elTableBody.appendChild(tr);
+    });
+  }
+
+  // ==============================
+  // 10. RENDER MARKERS
+  // ==============================
+  function renderMarkers(data){
+    markerLayer.clearLayers();
+
+    const bounds = [];
+
+    data.forEach(row => {
+      const lat = toNumber(row.lat);
+      const lng = toNumber(row.lng);
+      if(isNaN(lat) || isNaN(lng)) return;
+
+      const prov      = row.provinsi || "";
+      const kab       = row["kabupate di"] || row["kabupaten di"] || "";
+      const kecdesa   = row["kecamata desa"] || "";
+      const nama      = row.nama || "";
+      const telepon   = row.telepon || "";
+      const balai     = row.balai || row.key || "";
+      const progress  = toNumber(row.progress_ || row.progress,0);
+      const fotoUrl   = row.foto_url || "";
+      const ts        = row.timestamp || "";
+
+      const popupHtml = `
+        <div style="min-width:220px;">
+          <div style="font-weight:600;margin-bottom:4px;">
+            ${prov} · ${kab}
+            <span class="badge-progress" style="float:right;">${progress}%</span>
+          </div>
+          <div style="font-size:12px;">
+            <div><span style="color:${"var(--muted)"};">Balai</span> : <b>${balai}</b></div>
+            <div><span style="color:${"var(--muted)"};">Desa</span>  : <b>${kecdesa}</b></div>
+            <div><span style="color:${"var(--muted)"};">Petugas</span> : ${nama}</div>
+            <div><span style="color:${"var(--muted)"};">Telp</span>    : ${telepon}</div>
+            <div style="margin-top:4px;font-size:11px;color:#9ca3af;">${ts}</div>
+            ${fotoUrl ? `<div style="margin-top:6px;"><a href="${fotoUrl}" target="_blank">📷 Buka foto di Drive</a></div>` : ""}
+          </div>
+        </div>
+      `;
+
+      const marker = L.marker([lat,lng]).bindPopup(popupHtml);
+      marker.addTo(markerLayer);
+      row._marker = marker;
+      bounds.push([lat,lng]);
+    });
+
+    if(bounds.length){
+      const latLngBounds = L.latLngBounds(bounds);
+      map.fitBounds(latLngBounds, {padding:[30,30]});
+    }
+  }
+
+  // ==============================
+  // 11. LOAD DATA
+  // ==============================
+  async function loadData(){
+    try{
+      const res  = await fetch(SHEET_URL);
+      const text = await res.text();
+      rawData = parseCSV(text);
+      if(!rawData.length){
+        alert("Sheet kosong atau gagal dibaca. Cek izin share dan nama sheet (log_tahap3).");
+        return;
+      }
+
+      initFilters(rawData);
+      applyFilters(); // ini akan panggil renderStats, renderTable, renderMarkers
+    }catch(err){
+      console.error("Gagal load data:", err);
+      alert("Gagal memuat data dari Google Sheet.\nPastikan file sudah di-share publik (Anyone with the link - Viewer).");
+    }
+  }
+
+  // ==============================
+  // 12. EVENT LISTENER FILTER
+  // ==============================
+  elFilterBalai.addEventListener("change", applyFilters);
+  elFilterProv.addEventListener("change", applyFilters);
+  elFilterKabKec.addEventListener("input", () => {
+    // sedikit debounce manual sederhana
+    clearTimeout(elFilterKabKec._t);
+    elFilterKabKec._t = setTimeout(applyFilters, 250);
+  });
+  elFilterProg.addEventListener("input", applyFilters);
+  elBtnReset.addEventListener("click", () => {
+    elFilterBalai.value  = "";
+    elFilterProv.value   = "";
+    elFilterKabKec.value = "";
+    elFilterProg.value   = "0";
+    applyFilters();
+  });
+
+  // Start
+  loadData();
+</script>
 </body>
 </html>
