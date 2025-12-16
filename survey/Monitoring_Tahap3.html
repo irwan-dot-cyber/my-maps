@@ -20,8 +20,8 @@
   <style>
     :root{
       --bg:#0b1222; --panel:rgba(15,23,42,.92); --text:#e5e7eb; --muted:#a7b0c0;
-      --line:rgba(255,255,255,.12); --accent:#1d5fd1; --yellow:#ffb300;
-      --good:#27b06e; --bad:#ff5c7a; --hdrH:64px;
+      --line:rgba(255,255,255,.12); --yellow:#ffb300; --good:#27b06e; --bad:#ff5c7a;
+      --hdrH:64px;
     }
     *{box-sizing:border-box}
     body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial;color:var(--text);background:var(--bg)}
@@ -56,7 +56,7 @@
     .muted{color:var(--muted); font-size:12px}
     .btn{
       cursor:pointer; border:1px solid var(--line); background:rgba(255,255,255,.06);
-      color:var(--text); padding:10px 12px; border-radius:12px; font-weight:800;
+      color:var(--text); padding:10px 12px; border-radius:12px; font-weight:900;
     }
     .btn:hover{border-color:rgba(255,255,255,.25)}
     .btn.primary{background:rgba(29,95,209,.22); border-color:rgba(29,95,209,.55)}
@@ -91,7 +91,7 @@
     #map{height:100%; width:100%}
     .toast{
       position:fixed; left:16px; bottom:16px; z-index:2000;
-      max-width:min(640px, calc(100vw - 32px));
+      max-width:min(720px, calc(100vw - 32px));
       background:rgba(15,23,42,.92);
       border:1px solid var(--line);
       border-radius:14px;
@@ -121,7 +121,7 @@
       <div class="row" style="justify-content:space-between">
         <div>
           <div style="font-weight:900">Sumber Data</div>
-          <div class="muted">GViz / JSON Proxy → Peta</div>
+          <div class="muted">Kolom fixed sesuai sheet</div>
         </div>
         <button class="btn primary" id="btnReload">Reload</button>
       </div>
@@ -130,7 +130,7 @@
   <div style="height:10px"></div>
 
   <div class="muted" style="margin-bottom:6px">Cari</div>
-  <input id="q" placeholder="ketik kata kunci (nama / desa / status / dll)..." />
+  <input id="q" placeholder="contoh: Piji / Sragen / 75 / Irwan ..." />
 
   <div style="height:10px"></div>
 
@@ -142,14 +142,14 @@
   <div style="height:10px"></div>
 
   <div class="muted">
-    Mode data: <span class="mono" id="mode">-</span><br/>
-    Kolom koordinat: <span class="mono" id="coordKeys">-</span>
+    Mode: <span class="mono" id="mode">-</span><br/>
+    Kolom koordinat: <span class="mono">lat, lng</span>
   </div>
 
   <div style="height:10px"></div>
-
   <div class="muted">
-    Kalau CORS/login, pakai PROXY atau set DATA_URL ke endpoint JSON kamu.
+    Kalau kamu pakai endpoint JSON yang return <span class="mono">{ok:true, items:[...]}</span>, isi <b>DATA_URL</b>.
+    Kalau mau GViz, kosongkan DATA_URL lalu isi PROXY bila perlu.
   </div>
 </div>
 
@@ -179,17 +179,26 @@ const SHEET_NAME = "log_progres3";
 
 /**
  * PILIH SALAH SATU SUMBER:
- * A) DATA_URL (langsung endpoint JSON yang return {ok:true, items:[...]})
- *    Isi kalau kamu sudah punya endpoint seperti itu (dari GAS/Worker).
+ * 1) DATA_URL: endpoint JSON kamu (misal GAS/Worker) yang mengembalikan:
+ *    { ok:true, items:[ {timestamp,key,balai,...,lat,lng,...} ] }
  *
- * B) Kalau DATA_URL kosong, script akan pakai GViz (docs.google.com/.../gviz/tq)
- *    Kalau GViz kena CORS, isi PROXY untuk forward request.
+ * 2) Jika DATA_URL kosong, script akan coba GViz:
+ *    https://docs.google.com/spreadsheets/d/<ID>/gviz/tq?tqx=out:json&sheet=log_progres3
+ *    Kalau GViz kena CORS/login, isi PROXY.
  */
-const DATA_URL = "https://script.google.com/macros/s/AKfycbwixAzu4MFs8Ms-K1sWMqCYmesje762mPYRW9uxkBCxbiTswKiaykXzD-D76naKlPWa/exec?sheet=log_tahap3"; // contoh: "https://script.google.com/macros/s/XXXXX/exec?sheet=log_progres3"
-const PROXY    = ""; // contoh: "https://gas-proxy3.tuic1677.workers.dev/?url="
+const DATA_URL = ""; // <-- isi ini kalau sudah punya endpoint JSON {ok:true,items:[...]}
+const PROXY    = "https://gas-proxy3.tuic1677.workers.dev/?url="; // <-- contoh: "https://gas-proxy3.tuic1677.workers.dev/?url="
 
 // Pusat peta awal
 const MAP_INIT = { center: [-2.5, 118.0], zoom: 5 };
+
+/** =========================
+ *  KOLom yang ditampilkan (fixed)
+ *  ========================= */
+const FIELDS = [
+  "timestamp","key","balai","provinsi","kabupaten","di","kecamatan","desa",
+  "lat","lng","nama","telepon","progress","foto_url"
+];
 
 /** =========================
  *  UTIL
@@ -218,65 +227,20 @@ function toast(msg, kind="info"){
 }
 
 function norm(s){ return (s??"").toString().trim(); }
-function normKey(s){
-  return norm(s).toLowerCase()
-    .replace(/\s+/g,"_")
-    .replace(/[^\w]/g,"");
-}
-function parseCoord(v){
-  if (v===null || v===undefined) return NaN;
-  if (typeof v === "number") return v;
-  const s = norm(v).replace(",", ".");
-  const n = parseFloat(s);
-  return n;
-}
-
-function pickLatKey(keys){
-  const candidates = ["lat","latitude","lintang","y","koord_y","koordinat_y"];
-  const k = keys.find(k => candidates.includes(k));
-  if (k) return k;
-  return keys.find(k => k.includes("lat") || k.includes("lintang"));
-}
-function pickLngKey(keys){
-  const candidates = ["lng","lon","long","longitude","bujur","x","koord_x","koordinat_x"];
-  const k = keys.find(k => candidates.includes(k));
-  if (k) return k;
-  return keys.find(k => k.includes("lng") || k.includes("lon") || k.includes("long") || k.includes("bujur"));
-}
-
-function bestTitle(obj){
-  const keys = Object.keys(obj);
-  const prefs = ["nama","name","judul","lokasi","nama_di","namadi","daerah_irigasi","di","nama_daerah_irigasi","kabupaten","kecamatan","desa"];
-  for (const p of prefs){
-    const k = keys.find(k=>k===p);
-    if (k && norm(obj[k])) return norm(obj[k]);
-  }
-  for (const k of keys){
-    const v = obj[k];
-    if (typeof v==="string" && norm(v)) return norm(v);
-  }
-  return "Titik";
-}
-function bestSubtitle(obj){
-  const keys = Object.keys(obj);
-  const prefs = ["keterangan","ket","catatan","progress","status","uraian","tanggal_usulan","tanggal","timestamp","waktu","pengusul"];
-  for (const p of prefs){
-    const k = keys.find(k=>k===p);
-    if (k && norm(obj[k])) return norm(obj[k]);
-  }
-  return "";
-}
-
 function escapeHtml(s){
   return norm(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
 function maybeLinkify(v){
   const s = norm(v);
   if (!s) return "";
-  if (/^https?:\/\/\S+/i.test(s)) {
-    return `<a href="${escapeHtml(s)}" target="_blank" rel="noopener">Buka Link</a>`;
-  }
+  if (/^https?:\/\/\S+/i.test(s)) return `<a href="${escapeHtml(s)}" target="_blank" rel="noopener">Buka Link</a>`;
   return escapeHtml(s);
+}
+function parseCoord(v){
+  if (v===null || v===undefined) return NaN;
+  if (typeof v === "number") return v;
+  const s = norm(v).replace(",", ".");
+  return parseFloat(s);
 }
 
 /** =========================
@@ -293,107 +257,24 @@ map.addLayer(cluster);
 
 let allRows = [];
 let markers = [];
-let latKey = null;
-let lngKey = null;
 
 /** =========================
- *  DATA FETCH + PARSE
+ *  FETCH: JSON (ok/items) atau GViz
  *  ========================= */
 function gvizUrl(){
   const base = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq`;
-  const params = new URLSearchParams({
-    tqx: "out:json",
-    sheet: SHEET_NAME,
-    t: Date.now().toString()
-  });
-  return `${base}?${params.toString()}`;
+  return `${base}?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&t=${Date.now()}`;
 }
-
 function parseGVizText(rawText){
   const s = (rawText || "").trim();
   const m = s.match(/setResponse\(([\s\S]+)\)\s*;?\s*$/);
-  if (!m) {
-    throw new Error("Respon bukan format GViz. Potongan awal: " + s.slice(0, 160));
-  }
-  let data;
-  try { data = JSON.parse(m[1]); }
-  catch(e){ throw new Error("GViz ketemu tapi JSON gagal diparse. Potongan: " + m[1].slice(0, 160)); }
-  if (!data || !data.table) throw new Error("GViz ter-parse tapi tidak ada data.table. Cek izin sheet / sheet name.");
+  if (!m) throw new Error("Respon bukan format GViz. Potongan awal: " + s.slice(0, 160));
+  const data = JSON.parse(m[1]);
+  if (!data || !data.table) throw new Error("GViz ter-parse tapi tidak ada data.table.");
   return data.table;
 }
-
-function itemsToTable(items){
-  const keys = Array.from(new Set(items.flatMap(o => Object.keys(o || {}))));
-  return {
-    cols: keys.map(k => ({ label: k, id: k })),
-    rows: items.map(o => ({
-      c: keys.map(k => {
-        const v = (o && Object.prototype.hasOwnProperty.call(o, k)) ? o[k] : null;
-        return (v === null || v === undefined) ? null : ({ v });
-      })
-    }))
-  };
-}
-
-async function fetchTable(){
-  // Prioritas 1: endpoint JSON langsung (kalau diisi)
-  if (DATA_URL){
-    $("#mode").textContent = "DATA_URL (JSON)";
-    const res = await fetch(DATA_URL + (DATA_URL.includes("?") ? "&" : "?") + "t=" + Date.now(), { cache:"no-store" });
-    if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
-    const j = await res.json();
-
-    // support {ok:true, items:[...]} atau array langsung
-    if (Array.isArray(j)) return itemsToTable(j);
-    if (j && j.ok === true && Array.isArray(j.items)) return itemsToTable(j.items);
-    if (j && j.table) return j.table;
-
-    throw new Error("DATA_URL JSON tidak sesuai. Harus array / {ok:true,items:[...]} / {table:...}");
-  }
-
-  // Prioritas 2: GViz (dengan optional proxy)
-  const url = gvizUrl();
-  const finalUrl = PROXY ? (PROXY + encodeURIComponent(url)) : url;
-
-  $("#mode").textContent = PROXY ? "GViz via PROXY" : "GViz direct";
-
-  const res = await fetch(finalUrl, { cache:"no-store" });
-  const txt = await res.text();
-
-  // kalau HTML login/error page
-  const head = (txt || "").slice(0, 300).toLowerCase();
-  if (head.includes("<html") || head.includes("<!doctype html")) {
-    throw new Error("Yang kebaca HTML (login/redirect/error). Sheet belum publik atau proxy nge-redirect.");
-  }
-
-  // coba parse JSON langsung (kalau proxy bungkus)
-  let maybe = null;
-  try { maybe = JSON.parse(txt); } catch(e) {}
-
-  if (maybe && maybe.table) return maybe.table;
-  if (maybe && maybe.data && maybe.data.table) return maybe.data.table;
-
-  // format {ok:true, items:[...]} dari proxy
-  if (maybe && maybe.ok === true && Array.isArray(maybe.items)) {
-    $("#mode").textContent += " (ok/items)";
-    return itemsToTable(maybe.items);
-  }
-
-  // wrapper string contents/body/data
-  if (maybe && (typeof maybe.contents === "string" || typeof maybe.body === "string" || typeof maybe.data === "string")) {
-    const inner = (maybe.contents || maybe.body || maybe.data || "").toString();
-    return parseGVizText(inner);
-  }
-
-  // default GViz text
-  return parseGVizText(txt);
-}
-
-/** =========================
- *  TABLE → OBJECTS
- *  ========================= */
 function tableToObjects(table){
-  const cols = (table.cols||[]).map(c => normKey(c.label || c.id || ""));
+  const cols = (table.cols||[]).map(c => norm(c.label || c.id || "").toLowerCase().replace(/\s+/g,"_"));
   const rows = table.rows || [];
   const out = [];
   for (const r of rows){
@@ -404,10 +285,71 @@ function tableToObjects(table){
       if (typeof v === "string") v = v.trim();
       o[key] = v;
     });
-    const hasAny = Object.values(o).some(v => v !== null && v !== "");
-    if (hasAny) out.push(o);
+    // hanya ambil field yang kita butuhkan
+    const filtered = {};
+    for (const f of FIELDS){
+      filtered[f] = (o[f]!==undefined) ? o[f] : null;
+    }
+    const hasAny = Object.values(filtered).some(v => v !== null && v !== "");
+    if (hasAny) out.push(filtered);
   }
   return out;
+}
+
+async function fetchRows(){
+  // 1) DATA_URL (JSON ok/items)
+  if (DATA_URL){
+    $("#mode").textContent = "DATA_URL (JSON ok/items)";
+    const res = await fetch(DATA_URL + (DATA_URL.includes("?") ? "&" : "?") + "t=" + Date.now(), { cache:"no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+    const j = await res.json();
+
+    let items = null;
+    if (Array.isArray(j)) items = j;
+    else if (j && j.ok === true && Array.isArray(j.items)) items = j.items;
+
+    if (!items) throw new Error("DATA_URL harus mengembalikan array atau {ok:true, items:[...]}");
+
+    // normalize + ambil field fixed
+    return items.map(it=>{
+      const o = {};
+      for (const f of FIELDS){
+        o[f] = (it && Object.prototype.hasOwnProperty.call(it, f)) ? it[f] : null;
+      }
+      return o;
+    });
+  }
+
+  // 2) GViz direct / via PROXY
+  const url = gvizUrl();
+  const finalUrl = PROXY ? (PROXY + encodeURIComponent(url)) : url;
+  $("#mode").textContent = PROXY ? "GViz via PROXY" : "GViz direct";
+
+  const res = await fetch(finalUrl, { cache:"no-store" });
+  const txt = await res.text();
+
+  const head = (txt || "").slice(0, 300).toLowerCase();
+  if (head.includes("<html") || head.includes("<!doctype html")) {
+    throw new Error("Yang kebaca HTML login/redirect. Sheet belum publik atau proxy salah.");
+  }
+
+  // kalau proxy ngembaliin JSON (misal ok/items)
+  let maybe = null;
+  try { maybe = JSON.parse(txt); } catch(e) {}
+
+  if (maybe && maybe.ok === true && Array.isArray(maybe.items)) {
+    $("#mode").textContent += " (ok/items)";
+    return maybe.items.map(it=>{
+      const o = {};
+      for (const f of FIELDS){
+        o[f] = (it && Object.prototype.hasOwnProperty.call(it, f)) ? it[f] : null;
+      }
+      return o;
+    });
+  }
+
+  const table = parseGVizText(txt);
+  return tableToObjects(table);
 }
 
 /** =========================
@@ -418,45 +360,33 @@ function clearMap(){
   markers = [];
 }
 
-function buildPopup(obj){
-  const title = escapeHtml(bestTitle(obj));
-  const sub = escapeHtml(bestSubtitle(obj));
+function buildPopup(r){
+  const title = escapeHtml(norm(r.di) || "DI (tanpa nama)");
+  const sub = escapeHtml([r.desa, r.kecamatan, r.kabupaten, r.provinsi].filter(Boolean).join(" • "));
 
-  const keys = Object.keys(obj).filter(k => k !== "__id" && k !== latKey && k !== lngKey);
+  function row(label, value){
+    if (value===null || value===undefined || value==="") return "";
 
-  // prioritas field penting (kalau ada)
-  const priority = [
-    "no","no.","nomor","tanggal_usulan","tanggal","timestamp","waktu",
-    "pengusul","nama_di","nama_di_","namadi","nama_di__","nama_di",
-    "jenis_di","status","progress","keterangan","ket","catatan",
-    "desa","kecamatan","kabupaten","provinsi","bws",
-    "foto","photo","image","url","link"
-  ].map(normKey);
+    const v = norm(value);
 
-  const ordered = [];
-  const used = new Set();
-
-  for (const p of priority){
-    const k = keys.find(x => x === p);
-    if (k && !used.has(k)) { ordered.push(k); used.add(k); }
-  }
-  for (const k of keys){
-    if (!used.has(k)) { ordered.push(k); used.add(k); }
-  }
-
-  function row(k){
-    const v = obj[k];
-    if (v===null || v===undefined || v==="") return "";
-    const s = norm(v);
-    const isImg = /^https?:\/\/\S+\.(png|jpg|jpeg|webp|gif)(\?\S*)?$/i.test(s);
-    const val = isImg
-      ? `<div style="margin-top:6px"><img src="${escapeHtml(s)}" alt="foto" style="width:100%;max-width:360px;border-radius:12px;border:1px solid rgba(255,255,255,.12)"></div>`
-      : `<span>${maybeLinkify(v)}</span>`;
+    if (label === "foto_url" && /^https?:\/\/\S+/i.test(v)){
+      const isImg = /^https?:\/\/\S+\.(png|jpg|jpeg|webp|gif)(\?\S*)?$/i.test(v);
+      return `
+        <div style="padding:6px 0;border-top:1px solid rgba(255,255,255,.10)">
+          <div style="font-size:11px;color:#a7b0c0;font-weight:900">FOTO</div>
+          <div style="margin-top:6px">
+            <a href="${escapeHtml(v)}" target="_blank" rel="noopener">Buka Foto</a>
+            ${isImg ? `<div style="margin-top:8px">
+              <img src="${escapeHtml(v)}" alt="foto" style="width:100%;max-width:360px;border-radius:12px;border:1px solid rgba(255,255,255,.12)">
+            </div>` : ``}
+          </div>
+        </div>`;
+    }
 
     return `
       <div style="padding:6px 0;border-top:1px solid rgba(255,255,255,.10)">
-        <div style="font-size:11px;color:#a7b0c0;font-weight:900">${escapeHtml(k.toUpperCase())}</div>
-        <div style="font-size:12px;line-height:1.25">${val}</div>
+        <div style="font-size:11px;color:#a7b0c0;font-weight:900">${escapeHtml(label.toUpperCase())}</div>
+        <div style="font-size:12px;line-height:1.25">${maybeLinkify(v)}</div>
       </div>`;
   }
 
@@ -465,9 +395,12 @@ function buildPopup(obj){
       <div style="font-weight:900;font-size:14px">${title}</div>
       ${sub ? `<div style="font-size:12px;color:#a7b0c0;margin-top:4px">${sub}</div>` : ""}
   `;
-  for (const k of ordered){
-    html += row(k);
+
+  // urutan sesuai request
+  for (const f of FIELDS){
+    html += row(f, r[f]);
   }
+
   html += `</div>`;
   return html;
 }
@@ -481,27 +414,31 @@ function renderList(rows){
   }
 
   for (const r of rows){
-    const title = bestTitle(r);
-    const sub = bestSubtitle(r);
-    const lat = parseCoord(r[latKey]);
-    const lng = parseCoord(r[lngKey]);
+    const diName = norm(r.di) || "DI (tanpa nama)";
+    const lokasi = [r.desa, r.kecamatan, r.kabupaten, r.provinsi].filter(Boolean).join(" • ");
+    const prog = (r.progress!==null && r.progress!==undefined && r.progress!=="") ? `${r.progress}%` : "-";
+
+    const lat = parseCoord(r.lat);
+    const lng = parseCoord(r.lng);
 
     const div = document.createElement("div");
     div.className = "item";
     div.innerHTML = `
-      <div class="h">${escapeHtml(title)}</div>
-      <div class="s">${escapeHtml(sub || "—")}</div>
+      <div class="h">${escapeHtml(diName)}</div>
+      <div class="s">${escapeHtml(lokasi || "—")}</div>
       <div class="k">
-        <span class="tag">Lat: ${isFinite(lat) ? lat.toFixed(6) : "-"}</span>
-        <span class="tag">Lng: ${isFinite(lng) ? lng.toFixed(6) : "-"}</span>
+        <span class="tag">Progress: ${escapeHtml(prog)}</span>
+        <span class="tag">Nama: ${escapeHtml(norm(r.nama) || "-")}</span>
       </div>
     `;
+
     div.onclick = ()=>{
       if (!isFinite(lat) || !isFinite(lng)) return;
       map.setView([lat,lng], 18, { animate:true });
       const m = markers.find(mm => mm.__id === r.__id);
       if (m) m.openPopup();
     };
+
     list.appendChild(div);
   }
 }
@@ -511,8 +448,8 @@ function renderMap(rows){
   let bad = 0, ok = 0;
 
   for (const r of rows){
-    const lat = parseCoord(r[latKey]);
-    const lng = parseCoord(r[lngKey]);
+    const lat = parseCoord(r.lat);
+    const lng = parseCoord(r.lng);
 
     if (!isFinite(lat) || !isFinite(lng) || Math.abs(lat)>90 || Math.abs(lng)>180){
       bad++; continue;
@@ -543,7 +480,7 @@ function applyFilter(){
     return;
   }
   const filtered = allRows.filter(r=>{
-    const hay = Object.values(r).map(v=>norm(v)).join(" ").toLowerCase();
+    const hay = FIELDS.map(f => norm(r[f])).join(" ").toLowerCase();
     return hay.includes(q);
   });
   renderMap(filtered);
@@ -558,29 +495,10 @@ async function load(){
   toast(`Ambil data <b>${escapeHtml(SHEET_NAME)}</b>...`, "info");
 
   try{
-    const table = await fetchTable();
-    const objs = tableToObjects(table);
+    const rows = await fetchRows();
+    allRows = rows.map((o, idx)=>({ __id: idx+1, ...o }));
 
-    allRows = objs.map((o, idx)=>({ __id: idx+1, ...o }));
-
-    const keys = Object.keys(allRows[0] || {}).filter(k=>k!=="__id");
-    latKey = pickLatKey(keys);
-    lngKey = pickLngKey(keys);
-
-    $("#coordKeys").textContent = (latKey && lngKey) ? `${latKey}, ${lngKey}` : "-";
-
-    if (!latKey || !lngKey){
-      toast(
-        `Gak nemu kolom koordinat 😵‍💫<br>
-         Header kebaca: <span class="mono">${escapeHtml(keys.join(", ") || "(kosong)")}</span><br>
-         Pastikan ada kolom lat/lng (misal: <b>lat</b> & <b>lng</b> / <b>latitude</b> & <b>longitude</b>).`,
-        "error"
-      );
-      setBadge("ERROR", "error");
-      return;
-    }
-
-    toast(`OK. Total baris: <b>${allRows.length}</b> • Kolom: <b>${latKey}</b>/<b>${lngKey}</b>`, "ok");
+    toast(`OK. Total baris: <b>${allRows.length}</b> • Kolom: <b>lat/lng</b>`, "ok");
     renderMap(allRows);
     renderList(allRows);
 
@@ -588,11 +506,7 @@ async function load(){
 
   }catch(err){
     console.error(err);
-    toast(
-      `<b>Gagal load</b> ⚠️<br>${escapeHtml((err && err.message) ? err.message : String(err))}<br><br>
-       <span class="muted">Kalau mode GViz ke-login, set sheet jadi publik atau pakai DATA_URL / PROXY yang benar.</span>`,
-      "error"
-    );
+    toast(`<b>Gagal load</b> ⚠️<br>${escapeHtml((err && err.message) ? err.message : String(err))}`, "error");
     setBadge("ERROR", "error");
   }
 }
