@@ -277,14 +277,49 @@ let lngKey = null;
 /** =========================
  *  GViz FETCH + PARSE
  *  ========================= */
+/** =========================
+
+* GViz FETCH + PARSE (FIXED)
+* ========================= */
+
+function gvizUrl(){
+const base = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq`;
+const params = new URLSearchParams({
+tqx: "out:json",
+sheet: SHEET_NAME,
+t: Date.now().toString()
+});
+return `${base}?${params.toString()}`;
+}
+
+function parseGVizText(rawText){
+const s = (rawText || "").trim();
+
+// format GViz: google.visualization.Query.setResponse({...});
+const m = s.match(/setResponse(([\s\S]+))\s*;?\s*$/);
+if (!m) {
+throw new Error("Respon bukan format GViz. Potongan awal: " + s.slice(0, 160));
+}
+
+let data;
+try {
+data = JSON.parse(m[1]);
+} catch(e){
+throw new Error("GViz ketemu tapi JSON gagal diparse. Potongan: " + m[1].slice(0, 160));
+}
+
+if (!data || !data.table) {
+throw new Error("GViz ter-parse tapi tidak ada data.table. Cek izin sheet / sheet name.");
+}
+return data.table;
+}
+
 async function fetchGViz(){
-const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&t=${Date.now()}`;
+const url = gvizUrl();
 const finalUrl = PROXY ? (PROXY + encodeURIComponent(url)) : url;
 
 const res = await fetch(finalUrl, { cache:"no-store" });
 const txt = await res.text();
-// ...lanjutin isi fetchGViz lo yang patch kemarin...
-}
 
 // 1) Kalau yang balik HTML (login / error page), kasih error jelas
 const head = (txt || "").slice(0, 300).toLowerCase();
@@ -296,48 +331,21 @@ throw new Error(
 }
 
 // 2) Coba parse sebagai JSON langsung (beberapa proxy ngembaliin JSON wrapper)
-//    Contoh wrapper umum: { contents: "...." } / { body: "...." } / { data: "...." }
 let maybe = null;
 try { maybe = JSON.parse(txt); } catch(e) {}
 
-// Kalau sudah bentuk GViz JSON: { table: {...} }
 if (maybe && maybe.table) return maybe.table;
-
-// Kalau bentuk: { data: { table: {...} } }
 if (maybe && maybe.data && maybe.data.table) return maybe.data.table;
 
-// Kalau wrapper string: { contents/body/data: "google.visualization..." }
 if (maybe && (typeof maybe.contents === "string" || typeof maybe.body === "string" || typeof maybe.data === "string")) {
 const inner = (maybe.contents || maybe.body || maybe.data || "").toString();
 return parseGVizText(inner);
 }
 
-// 3) Kalau bukan JSON wrapper, anggap GViz text normal
+// 3) Default: GViz text normal
 return parseGVizText(txt);
 }
 
-function parseGVizText(rawText){
-const s = (rawText || "").trim();
-
-// format GViz: google.visualization.Query.setResponse({...});
-const m = s.match(/setResponse(([\s\S]+))\s*;?\s*$/);
-if (!m) {
-// bantu debug: tunjukin potongan awal response
-throw new Error("Respon bukan format GViz. Potongan awal: " + s.slice(0, 160));
-}
-
-let data;
-try {
-data = JSON.parse(m[1]);
-} catch(e){
-throw new Error("GViz ketemu tapi JSON-nya gagal diparse. Potongan: " + m[1].slice(0, 160));
-}
-
-if (!data || !data.table) {
-throw new Error("GViz ter-parse tapi tidak ada data.table. Cek izin sheet / sheet name.");
-}
-return data.table;
-}
 
 
 /** =========================
