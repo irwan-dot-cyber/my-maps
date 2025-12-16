@@ -278,11 +278,13 @@ let lngKey = null;
  *  GViz FETCH + PARSE
  *  ========================= */
 async function fetchGViz(){
-const url = gvizUrl();
+const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}&t=${Date.now()}`;
 const finalUrl = PROXY ? (PROXY + encodeURIComponent(url)) : url;
 
 const res = await fetch(finalUrl, { cache:"no-store" });
 const txt = await res.text();
+// ...lanjutin isi fetchGViz lo yang patch kemarin...
+}
 
 // 1) Kalau yang balik HTML (login / error page), kasih error jelas
 const head = (txt || "").slice(0, 300).toLowerCase();
