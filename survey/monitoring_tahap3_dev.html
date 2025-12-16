@@ -145,13 +145,13 @@
 <script>
 /* 1. KONFIGURASI GOOGLE SHEETS */
 // Ganti dengan ID file In_Tahap3_cleaned
-const SHEET_ID      = "1YkNmEcQw1_1_xL0BTxYXl1f4Tkk2-22tXuQB-IoEeuY";
+const SHEET_ID      = "GANTI_DENGAN_SHEET_ID_IN_TAHAP3_CLEANED";
 
 // Ganti dengan gid tab "baseline"
-const GID_BASELINE  = "466754170";
+const GID_BASELINE  = "GANTI_DENGAN_GID_BASELINE";
 
 // Ganti dengan gid tab "log_tahap3"
-const GID_LOG       = "732855223";
+const GID_LOG       = "GANTI_DENGAN_GID_LOG_TAHAP3";
 
 const URL_BASELINE  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID_BASELINE}`;
 const URL_LOG       = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID_LOG}`;
@@ -163,20 +163,59 @@ const norm  = s => (s==null ? "" : String(s)).trim();
 const canon = s => norm(s).toLowerCase();
 const $     = sel => document.querySelector(sel);
 
+/* Parser CSV yang tahan koma & tanda kutip */
 function parseCSV(text){
-  const rows = text.trim().split("\n").map(r => r.split(","));
-  if(!rows.length) return [];
-  const headers = rows[0].map(h => h.trim());
-  const data = [];
-  for(let i=1;i<rows.length;i++){
-    const row = rows[i];
-    const obj = {};
-    headers.forEach((h,j)=>{
-      obj[h] = (row[j] || "").trim();
-    });
-    data.push(obj);
+  const rows = [];
+  let row = [];
+  let cur = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    const next = text[i + 1];
+
+    if (inQuotes) {
+      if (c === '"' && next === '"') {
+        cur += '"';
+        i++;
+      } else if (c === '"') {
+        inQuotes = false;
+      } else {
+        cur += c;
+      }
+    } else {
+      if (c === '"') {
+        inQuotes = true;
+      } else if (c === ",") {
+        row.push(cur);
+        cur = "";
+      } else if (c === "\r") {
+        // skip
+      } else if (c === "\n") {
+        row.push(cur);
+        rows.push(row);
+        row = [];
+        cur = "";
+      } else {
+        cur += c;
+      }
+    }
   }
-  return data;
+
+  if (cur.length > 0 || row.length > 0) {
+    row.push(cur);
+    rows.push(row);
+  }
+
+  if (!rows.length) return [];
+  const headers = rows[0].map(h => h.trim());
+  return rows.slice(1).map(r => {
+    const obj = {};
+    headers.forEach((h, idx) => {
+      obj[h] = (r[idx] || "").trim();
+    });
+    return obj;
+  });
 }
 
 function fillSelect(el, items, placeholder){
@@ -250,7 +289,7 @@ async function loadBaseline(){
   const rows = parseCSV(text);
 
   const out = rows.map(r=>{
-    // ambil B/BWS dulu
+    // ambil kolom B/BWS dulu
     const rawBalai = norm(
       r["B/BWS"] ||
       r["BWS"]   ||
@@ -259,8 +298,17 @@ async function loadBaseline(){
       r["balai"] ||
       ""
     );
-    // kalau cuma angka, jangan dipakai sebagai nama balai
-    const balai = /^[0-9]+$/.test(rawBalai) ? "" : rawBalai;
+
+    let balai = rawBalai;
+
+    // WAJIB mengandung "BWS" (BBWS/BWS) dan bukan cuma angka / simbol
+    if(
+      !balai ||
+      /^[0-9.,\-\s]+$/.test(balai) ||
+      !/bws/i.test(balai)
+    ){
+      balai = "";
+    }
 
     return {
       key:   norm(r["key"] || r["Key"] || ""),
@@ -276,7 +324,7 @@ async function loadBaseline(){
         ""
       )
     };
-  }).filter(r => r.key || r.desa || r.kab || r.namaDi || r.balai);
+  }).filter(r => r.key || r.desa || r.kab || r.namaDi);
 
   return out;
 }
@@ -309,8 +357,8 @@ async function loadLogTahap3(){
       desa:      norm(r["kecamata desa"] || r["desa"]),
       lat:       parseFloat(r["lat"]),
       lng:       parseFloat(r["lng"]),
-      nama:      norm(r["nama"]),      // tidak dipakai di popup
-      telp:      norm(r["telepon"]),   // tidak dipakai di popup
+      nama:      norm(r["nama"]),      // tidak ditampilkan
+      telp:      norm(r["telepon"]),   // tidak ditampilkan
       progress:  Number.isFinite(numProg) ? numProg : 0,
       foto:      norm(r["foto_url"]),
       namaDi:    norm(
@@ -596,7 +644,9 @@ async function build(){
 
     const mapBalai = new Map();
     baseline.forEach(b=>{
-      const balai = b.balai || "-";
+      // hanya balai valid (ada "BWS") yang ikut rekap per-balai
+      if(!b.balai) return;
+      const balai = b.balai;
       if(!mapBalai.has(balai)) mapBalai.set(balai,{balai:balai, total:0, filled:0});
       const o = mapBalai.get(balai);
       o.total++;
