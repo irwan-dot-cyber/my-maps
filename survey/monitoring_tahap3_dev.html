@@ -330,6 +330,7 @@ async function loadBaseline(){
 }
 
 /* 8. LOAD LOG_TAHAP3 + MARKER */
+/* 8. LOAD LOG_TAHAP3 + MARKER */
 async function loadLogTahap3(){
   const res = await fetch(URL_LOG + "&t=" + Date.now(), {cache:"no-store"});
   if(!res.ok) throw new Error("HTTP "+res.status+" saat akses log_tahap3");
@@ -354,11 +355,13 @@ async function loadLogTahap3(){
       balai:     norm(r["balai"] || r["BWS"] || r["B/BWS"] || ""),
       prov:      norm(r["provinsi"]),
       kab:       norm(r["kabupate di"] || r["kabupaten di"] || r["kabupaten"]),
-      desa:      norm(r["kecamata desa"] || r["desa"]),
+      kec:       norm(r["kecamatan"] || r["kecamata"] || r["kec"]),   // asumsi nama kolom
+      desa:      norm(r["desa"]),
       lat:       parseFloat(r["lat"]),
       lng:       parseFloat(r["lng"]),
-      nama:      norm(r["nama"]),      // tidak ditampilkan
-      telp:      norm(r["telepon"]),   // tidak ditampilkan
+      // nama & telp tidak ditampilkan di popup
+      nama:      norm(r["nama"]),
+      telp:      norm(r["telepon"]),
       progress:  Number.isFinite(numProg) ? numProg : 0,
       foto:      norm(r["foto_url"]),
       namaDi:    norm(
@@ -372,22 +375,23 @@ async function loadLogTahap3(){
 
     if (!Number.isFinite(rec.lat) || !Number.isFinite(rec.lng)) return;
 
-    const lokasi = (rec.kab || "-") + " / " + (rec.desa || "-");
-    rec.lokasi = lokasi;
+    // lokasi pendek utk filter & label
+    const lokasiPendek = (rec.kab || "-") + " / " + (rec.desa || rec.kec || "-");
+    rec.lokasi = lokasiPendek;
 
     const keyBalai = rec.balai || "-";
     if(!balaiToLokasiUploaded.has(keyBalai)) balaiToLokasiUploaded.set(keyBalai, new Set());
-    balaiToLokasiUploaded.get(keyBalai).add(lokasi);
+    balaiToLokasiUploaded.get(keyBalai).add(lokasiPendek);
 
     result.push(rec);
 
-    const gmaps = "https://www.google.com/maps?q=" + rec.lat + "," + rec.lng;
+    const gmaps  = "https://www.google.com/maps?q=" + rec.lat + "," + rec.lng;
     const stages = [25,50,75,100];
     const prog   = Number.isFinite(rec.progress) ? rec.progress : 0;
     const bucket = stages.find(s => Math.round(prog) === s) || null;
 
+    // kalau ada foto, semua tombol hidup; yang sama dengan progress_ jadi biru
     const hasFoto = !!rec.foto;
-
     const btns = stages.map(s=>{
       if(!hasFoto){
         return '<span class="btn-photo disabled">Foto ' + s + '%</span>';
@@ -396,16 +400,20 @@ async function loadLogTahap3(){
       return '<a class="' + cls + '" href="' + rec.foto + '" target="_blank" rel="noopener">Foto ' + s + '%</a>';
     }).join("");
 
-    const title = rec.namaDi || rec.lokasi;
+    // Judul = Nama DI; kalau kosong fallback ke kab/desa
+    const title = rec.namaDi || lokasiPendek;
 
     const popup =
       "<b>" + title + "</b>" +
       '<div style="font-size:12px;color:#555;margin:4px 0">' +
-      "Balai: " + (rec.balai || "-") + "<br/>" +
-      "Provinsi: " + (rec.prov || "-") + "<br/>" +
-      "Progress: <b>" + Math.round(prog) + "%</b><br/>" +
-      "📍 " + rec.lat.toFixed(6) + ", " + rec.lng.toFixed(6) + " — " +
-      '<a href="' + gmaps + '" target="_blank" rel="noopener">Google Maps</a>' +
+        "Balai: " + (rec.balai || "-") + "<br/>" +
+        "Provinsi: " + (rec.prov || "-") + "<br/>" +
+        "Kabupaten: " + (rec.kab || "-") + "<br/>" +
+        "Kecamatan: " + (rec.kec || "-") + "<br/>" +
+        "Desa: " + (rec.desa || "-") + "<br/>" +
+        "Progress: <b>" + Math.round(prog) + "%</b><br/>" +
+        "📍 " + rec.lat.toFixed(6) + ", " + rec.lng.toFixed(6) + " — " +
+        '<a href="' + gmaps + '" target="_blank" rel="noopener">Google Maps</a>' +
       "</div>" +
       '<div class="stage-grid">' + btns + "</div>";
 
@@ -421,6 +429,7 @@ async function loadLogTahap3(){
       })
     }).bindPopup(popup);
 
+    // meta untuk filter & search
     m.__meta = {bbws:rec.balai, di:title, stage:prog};
     cluster.addLayer(m);
     markers.push(m);
@@ -445,6 +454,7 @@ async function loadLogTahap3(){
 
   return result;
 }
+
 
 /* 9. STATS UI (BASELINE + LOG) */
 function buildStatsUI({totalBaseline,totalFilled,percent,byBalai,missing}){
