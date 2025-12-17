@@ -140,30 +140,25 @@
 <div id="stats">Memuat statistik…</div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.js"></script>
 
 <script>
 /* 1. KONFIGURASI GOOGLE SHEETS */
-// Ganti dengan ID file In_Tahap3_cleaned
-const SHEET_ID      = "1YkNmEcQw1_1_xL0BTxYXl1f4Tkk2-22tXuQB-IoEeuY";
-
-// Ganti dengan gid tab "baseline"
-const GID_BASELINE  = "466754170";
-
-// Ganti dengan gid tab "log_tahap3"
-const GID_LOG       = "732855223";
+const SHEET_ID      = "GANTI_DENGAN_SHEET_ID_IN_TAHAP3_CLEANED";  // <- isi sendiri
+const GID_BASELINE  = "GANTI_DENGAN_GID_BASELINE";                // <- gid sheet baseline
+const GID_LOG       = "GANTI_DENGAN_GID_LOG_TAHAP3";              // <- gid sheet log_tahap3
 
 const URL_BASELINE  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID_BASELINE}`;
 const URL_LOG       = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID_LOG}`;
 
-const ZOOM_LABEL    = 14; // label tampil mulai zoom ini
+const ZOOM_LABEL    = 14;
 
 /* 2. HELPERS */
 const norm  = s => (s==null ? "" : String(s)).trim();
 const canon = s => norm(s).toLowerCase();
 const $     = sel => document.querySelector(sel);
 
-/* Parser CSV yang tahan koma & tanda kutip */
+/* Parser CSV tahan koma & tanda kutip */
 function parseCSV(text){
   const rows = [];
   let row = [];
@@ -176,8 +171,7 @@ function parseCSV(text){
 
     if (inQuotes) {
       if (c === '"' && next === '"') {
-        cur += '"';
-        i++;
+        cur += '"'; i++;
       } else if (c === '"') {
         inQuotes = false;
       } else {
@@ -187,21 +181,16 @@ function parseCSV(text){
       if (c === '"') {
         inQuotes = true;
       } else if (c === ",") {
-        row.push(cur);
-        cur = "";
+        row.push(cur); cur = "";
       } else if (c === "\r") {
         // skip
       } else if (c === "\n") {
-        row.push(cur);
-        rows.push(row);
-        row = [];
-        cur = "";
+        row.push(cur); rows.push(row); row = []; cur = "";
       } else {
         cur += c;
       }
     }
   }
-
   if (cur.length > 0 || row.length > 0) {
     row.push(cur);
     rows.push(row);
@@ -257,8 +246,9 @@ const balaiToLokasiUploaded = new Map();
 let index = [];
 
 /* 5. LABEL VISIBILITY */
+const ZOOM_LABEL_MIN = ZOOM_LABEL;
 function refreshLabels(){
-  const show = map.getZoom() >= ZOOM_LABEL;
+  const show = map.getZoom() >= ZOOM_LABEL_MIN;
   allMarkers.forEach(m=>{
     const lbl = m.__label; if(!lbl) return;
     const el = lbl.getElement() || lbl._icon; if(!el) return;
@@ -270,7 +260,7 @@ function refreshLabels(){
 map.on("zoomend moveend", refreshLabels);
 cluster.on("animationend spiderfied unspiderfied", refreshLabels);
 
-/* 6. KEY JOIN BASELINE VS LOG */
+/* 6. KEY JOIN */
 function makeKey(rec){
   if(rec.key) return "key:" + canon(rec.key);
   return "loc:" + [
@@ -289,7 +279,6 @@ async function loadBaseline(){
   const rows = parseCSV(text);
 
   const out = rows.map(r=>{
-    // ambil kolom B/BWS dulu
     const rawBalai = norm(
       r["B/BWS"] ||
       r["BWS"]   ||
@@ -300,8 +289,6 @@ async function loadBaseline(){
     );
 
     let balai = rawBalai;
-
-    // WAJIB mengandung "BWS" (BBWS/BWS) dan bukan cuma angka / simbol
     if(
       !balai ||
       /^[0-9.,\-\s]+$/.test(balai) ||
@@ -324,18 +311,26 @@ async function loadBaseline(){
         ""
       )
     };
-  }).filter(r => r.key || r.desa || r.kab || r.namaDi);
+  }).filter(r =>
+    r.key || r.balai || r.prov || r.kab || r.desa || r.namaDi
+  ); // <- supaya count baseline penuh (harusnya 806)
 
   return out;
 }
 
-/* 8. LOAD LOG_TAHAP3 + MARKER */
-/* 8. LOAD LOG_TAHAP3 + MARKER */
-async function loadLogTahap3(){
+/* 8. LOAD LOG_TAHAP3 + MARKER
+   (pakai baseline utk ambil Nama DI via key) */
+async function loadLogTahap3(baseline){
   const res = await fetch(URL_LOG + "&t=" + Date.now(), {cache:"no-store"});
   if(!res.ok) throw new Error("HTTP "+res.status+" saat akses log_tahap3");
   const text = await res.text();
   const rows = parseCSV(text);
+
+  // Map baseline by key → untuk Nama DI
+  const baselineKeyMap = new Map();
+  baseline.forEach(b=>{
+    if (b.key) baselineKeyMap.set(canon(b.key), b);
+  });
 
   allMarkers = [];
   cluster.clearLayers();
@@ -346,36 +341,44 @@ async function loadLogTahap3(){
   const markers = [];
 
   rows.forEach(r=>{
+    const keyVal  = norm(r["key"]);
     const rawProg = norm(r["progress_"] || r["progress"] || "0");
     const numProg = parseFloat(rawProg.replace("%","").replace(",","."));
+    const rawFoto = norm(r["foto_url"]);
+    const hasFotoUrl = /^https?:\/\//i.test(rawFoto); // hanya http/https yang dianggap ada foto
+
+    // Nama DI: dari log_tahap3 dulu, kalau kosong ambil dari baseline by key
+    let namaDi = norm(
+      r["Nama DI"]  ||
+      r["nama_di"]  ||
+      r["Nama_DI"]  ||
+      r["DI"]       ||
+      ""
+    );
+    if (!namaDi && keyVal) {
+      const b = baselineKeyMap.get(canon(keyVal));
+      if (b && b.namaDi) namaDi = b.namaDi;
+    }
 
     const rec = {
       timestamp: norm(r["timestamp"]),
-      key:       norm(r["key"]),
+      key:       keyVal,
       balai:     norm(r["balai"] || r["BWS"] || r["B/BWS"] || ""),
       prov:      norm(r["provinsi"]),
       kab:       norm(r["kabupate di"] || r["kabupaten di"] || r["kabupaten"]),
-      kec:       norm(r["kecamatan"] || r["kecamata"] || r["kec"]),   // asumsi nama kolom
+      kec:       norm(r["kecamatan"] || r["kecamata"] || r["kec"]),
       desa:      norm(r["desa"]),
       lat:       parseFloat(r["lat"]),
       lng:       parseFloat(r["lng"]),
-      // nama & telp tidak ditampilkan di popup
       nama:      norm(r["nama"]),
       telp:      norm(r["telepon"]),
       progress:  Number.isFinite(numProg) ? numProg : 0,
-      foto:      norm(r["foto_url"]),
-      namaDi:    norm(
-        r["Nama DI"]  ||
-        r["nama_di"]  ||
-        r["Nama_DI"]  ||
-        r["DI"]       ||
-        ""
-      )
+      foto:      hasFotoUrl ? rawFoto : "",
+      namaDi:    namaDi
     };
 
     if (!Number.isFinite(rec.lat) || !Number.isFinite(rec.lng)) return;
 
-    // lokasi pendek utk filter & label
     const lokasiPendek = (rec.kab || "-") + " / " + (rec.desa || rec.kec || "-");
     rec.lokasi = lokasiPendek;
 
@@ -390,8 +393,8 @@ async function loadLogTahap3(){
     const prog   = Number.isFinite(rec.progress) ? rec.progress : 0;
     const bucket = stages.find(s => Math.round(prog) === s) || null;
 
-    // kalau ada foto, semua tombol hidup; yang sama dengan progress_ jadi biru
     const hasFoto = !!rec.foto;
+
     const btns = stages.map(s=>{
       if(!hasFoto){
         return '<span class="btn-photo disabled">Foto ' + s + '%</span>';
@@ -400,8 +403,7 @@ async function loadLogTahap3(){
       return '<a class="' + cls + '" href="' + rec.foto + '" target="_blank" rel="noopener">Foto ' + s + '%</a>';
     }).join("");
 
-    // Judul = Nama DI; kalau kosong fallback ke kab/desa
-    const title = rec.namaDi || lokasiPendek;
+    const title = rec.namaDi || lokasiPendek; // <- Judul popup: Nama DI dulu
 
     const popup =
       "<b>" + title + "</b>" +
@@ -429,7 +431,6 @@ async function loadLogTahap3(){
       })
     }).bindPopup(popup);
 
-    // meta untuk filter & search
     m.__meta = {bbws:rec.balai, di:title, stage:prog};
     cluster.addLayer(m);
     markers.push(m);
@@ -455,8 +456,7 @@ async function loadLogTahap3(){
   return result;
 }
 
-
-/* 9. STATS UI (BASELINE + LOG) */
+/* 9. STATS UI */
 function buildStatsUI({totalBaseline,totalFilled,percent,byBalai,missing}){
   const head =
     '<div class="stats-head">' +
@@ -638,9 +638,10 @@ async function build(){
   try{
     $("#stats").textContent="Memuat statistik…";
 
-    const [baseline, logs] = await Promise.all([loadBaseline(), loadLogTahap3()]);
-    baselineData = baseline;
-    logData      = logs;
+    const baseline = await loadBaseline();
+    const logs     = await loadLogTahap3(baseline);
+    baselineData   = baseline;
+    logData        = logs;
 
     const uniqBalai = uniqueList(logs.map(r=>r.balai || "-"));
     fillSelect($("#f-bbws"), uniqBalai, "— Semua B/BWS (yang sudah upload) —");
@@ -654,8 +655,7 @@ async function build(){
 
     const mapBalai = new Map();
     baseline.forEach(b=>{
-      // hanya balai valid (ada "BWS") yang ikut rekap per-balai
-      if(!b.balai) return;
+      if(!b.balai) return;       // hanya balai valid
       const balai = b.balai;
       if(!mapBalai.has(balai)) mapBalai.set(balai,{balai:balai, total:0, filled:0});
       const o = mapBalai.get(balai);
