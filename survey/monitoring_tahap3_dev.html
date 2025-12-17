@@ -11,20 +11,18 @@
   <style>
     :root{
       --bg:#0b1222;
-      --panel:#ffffff;
       --text:#111827;
       --muted:#6b7280;
       --line:#e5e7eb;
       --blue:#2563eb;
       --blue2:#1d4ed8;
-      --disabled:#e5e7eb;
     }
 
     html,body{ height:100%; margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
     #map{ height:100vh; width:100vw; background:var(--bg); }
 
     /* Popup */
-    .popup-wrap{ min-width: 280px; max-width: 340px; }
+    .popup-wrap{ min-width: 290px; max-width: 360px; }
     .popup-title{ font-weight:800; font-size:18px; margin:0 0 6px 0; }
     .popup-row{ margin:2px 0; color:var(--text); }
     .popup-row .lbl{ color:var(--muted); }
@@ -70,9 +68,17 @@
     }
     .gmaps-link:hover{ text-decoration:underline; }
 
-    /* Leaflet popup style tweaks */
     .leaflet-popup-content{ margin:14px 14px 12px 14px; }
     .leaflet-popup-content-wrapper{ border-radius:16px; }
+
+    /* Marker style (circle) */
+    .marker-circle{
+      width:14px; height:14px;
+      border-radius:999px;
+      background:#60a5fa;
+      border:2px solid #2563eb;
+      box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    }
   </style>
 </head>
 <body>
@@ -80,48 +86,35 @@
 
 <script>
 /** =========================
- *  KONFIG (ganti di sini)
+ *  KONFIG
  *  ========================= */
-const SHEET_ID = "1YkNmEcQw1_1_xL0BTxYXl1f4Tkk2-22tXuQB-IoEeuY"; // ganti kalau beda
-const SHEET_BASELINE = "baseline";   // sheet geojson / data DI (yang jadi layer)
-const SHEET_LOG = "log_tahap3";      // sheet log foto progres
+const SHEET_ID   = "1YkNmEcQw1_1_xL0BTxYXl1f4Tkk2-22tXuQB-IoEeuY";
+const SHEET_LOG  = "log_tahap3";
 
-// Proxy (opsional) untuk anti-CORS. Kalau tanpa proxy bisa, set PROXY_PREFIX = "".
+// Proxy untuk anti CORS (kalau nggak perlu, kosongin "")
 const PROXY_PREFIX = "https://gas-proxy3.tuic1677.workers.dev/?url=";
-
-// Kalau baseline kamu bukan dari sheet (misal file geojson), isi URL GEOJSON-nya di sini:
-const BASELINE_GEOJSON_URL = ""; // contoh: "https://.../DI.geojson"
-
-// Nama field DI di GeoJSON/baseline (akan dicoba beberapa nama juga).
-const PROP_KEYS = {
-  di:   ["di","DI","Nama DI","nama_di","namadi","NAMA_DI","Nama_DI","name","Name"],
-  balai:["balai","Balai","BWS","bws"],
-  prov: ["provinsi","Provinsi"],
-  kab:  ["kabupaten","Kabupaten","kab","Kab"],
-  kec:  ["kecamatan","Kecamatan","kec","Kec"],
-  desa: ["desa","Desa"]
-};
 
 /** =========================
  *  UTIL
  *  ========================= */
-function pickProp(obj, keys){
+function wrapProxy(url){
+  return PROXY_PREFIX ? (PROXY_PREFIX + encodeURIComponent(url)) : url;
+}
+function pickAny(obj, keys){
   for (const k of keys){
     if (obj && obj[k] != null && String(obj[k]).trim() !== "") return obj[k];
   }
   return "";
 }
-
 function normText(s){
   return String(s ?? "")
     .toLowerCase()
     .trim()
     .replace(/\s+/g,' ')
-    .replace(/[^\w\s]/g,'')           // buang titik/koma/dll
-    .replace(/^di\s+/,'')             // buang prefix "di "
+    .replace(/[^\w\s]/g,'')
+    .replace(/^di\s+/,'')
     .replace(/^daerah irigasi\s+/,'');
 }
-
 function bucketizeProgress(p){
   p = Number(p) || 0;
   if (p >= 100) return 100;
@@ -130,33 +123,36 @@ function bucketizeProgress(p){
   if (p >= 25)  return 25;
   return 0;
 }
-
+function escapeHtml(s){
+  return String(s ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
 function gmapsLink(lat,lng){
   if (!lat || !lng) return "";
   const u = `https://www.google.com/maps?q=${encodeURIComponent(lat + "," + lng)}`;
   return `<a class="gmaps-link" href="${u}" target="_blank" rel="noopener">Google Maps</a>`;
 }
 
-function wrapProxy(url){
-  if (!PROXY_PREFIX) return url;
-  return PROXY_PREFIX + encodeURIComponent(url);
-}
-
 /** =========================
- *  GVIZ PARSER (Google Sheets gviz/tq)
+ *  GVIZ FETCH
  *  ========================= */
 async function fetchGVizRows(sheetName){
   const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}&t=${Date.now()}`;
   const res = await fetch(wrapProxy(url));
   const txt = await res.text();
 
-  // Extract JSON from "google.visualization.Query.setResponse({...});"
-  const m = txt.match(/setResponse\\((.*)\\);?\\s*$/s);
-  if (!m) throw new Error("Respon bukan format GViz. Potongan awal: " + txt.slice(0,120));
+  const m = txt.match(/setResponse\((.*)\);?\s*$/s);
+  if (!m) throw new Error("Respon bukan GViz. Potongan awal: " + txt.slice(0,120));
+
   const json = JSON.parse(m[1]);
   const table = json.table;
   const cols = table.cols.map(c => (c.label || "").trim());
-  const rows = table.rows.map(r => {
+
+  return table.rows.map(r => {
     const o = {};
     r.c.forEach((cell, i) => {
       const v = cell ? (cell.f ?? cell.v) : "";
@@ -164,7 +160,6 @@ async function fetchGVizRows(sheetName){
     });
     return o;
   });
-  return rows;
 }
 
 /** =========================
@@ -177,82 +172,31 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution: "&copy; OpenStreetMap"
 }).addTo(map);
 
-const layerDI = L.geoJSON(null, {
-  style: () => ({ weight: 1.2, color: "#2563eb", fillColor:"#93c5fd", fillOpacity: 0.18 }),
-  onEachFeature: (feature, layer) => {
-    layer.on("click", () => onClickDI(feature, layer));
-  }
-}).addTo(map);
+const markersLayer = L.layerGroup().addTo(map);
 
 /** =========================
- *  LOG INDEX (global)
+ *  LOG INDEX
  *  ========================= */
-window.__LOG_T3_INDEX__ = {};
-window.__LOG_T3_READY__ = false;
+window.__LOG_T3_INDEX__ = {};     // key -> rec
+window.__LOG_T3_READY__ = false;  // bool
 
-/** =========================
- *  LOADERS
- *  ========================= */
-async function loadBaseline(){
-  // 1) Kalau BASELINE_GEOJSON_URL diisi, pakai itu
-  if (BASELINE_GEOJSON_URL){
-    const res = await fetch(BASELINE_GEOJSON_URL);
-    const gj = await res.json();
-    layerDI.addData(gj);
-    try { map.fitBounds(layerDI.getBounds(), { padding:[20,20] }); } catch(e){}
-    return;
-  }
-
-  // 2) Kalau baseline ada di Google Sheet, ini asumsi: ada kolom lat,lng atau geojson string.
-  // Kalau baseline kamu sudah berbentuk geojson di sheet lain, bilang gue ya, nanti gue sesuaikan parsernya.
-  // Untuk sementara: coba load dari sheet baseline sebagai POINT marker (lat/lng).
-  const rows = await fetchGVizRows(SHEET_BASELINE);
-  const feats = [];
+function buildLogIndex(rows){
+  const idx = {};
 
   for (const r of rows){
-    const lat = Number(r.lat ?? r.latitude ?? r.Lat ?? r.LAT);
-    const lng = Number(r.lng ?? r.longitude ?? r.Long ?? r.LNG ?? r.lon);
-    if (!isFinite(lat) || !isFinite(lng)) continue;
+    const di   = r.di || r["Nama DI"] || r["Nama_DI"] || r["nama_di"] || r["namadi"];
+    const prov = r.provinsi || r["Provinsi"] || r["provinsi"];
+    const kab  = r.kabupaten || r["Kabupaten"] || r["kabupaten"] || r["Kab/Kota"];
+    const kec  = r.kecamatan || r["Kecamatan"] || r["kecamatan"] || r["Kec"];
+    const desa = r.desa || r["Desa"] || r["desa"];
 
-    const props = { ...r };
-    feats.push({
-      type:"Feature",
-      geometry:{ type:"Point", coordinates:[lng, lat] },
-      properties: props
-    });
-  }
+    const p = Number(r.progress ?? r["progress"] ?? 0) || 0;
+    const foto = r.foto_url || r["foto_url"] || r["foto"] || "";
 
-  if (!feats.length){
-    console.warn("Baseline tidak menghasilkan fitur. Kalau baseline kamu polygon/geojson, isi BASELINE_GEOJSON_URL atau kasih format sheet-nya.");
-  }
-
-  layerDI.clearLayers();
-  layerDI.addData({ type:"FeatureCollection", features: feats });
-  try { map.fitBounds(layerDI.getBounds(), { padding:[20,20] }); } catch(e){}
-}
-
-async function loadLogTahap3(){
-  const rows = await fetchGVizRows(SHEET_LOG);
-
-  const logIndex = {};
-
-  for (const r of rows){
-    const di   = r.di || r["di"] || r["Nama DI"] || r["nama_di"] || r["Nama_DI"];
-    const prov = r.provinsi || r["provinsi"] || r["Provinsi"];
-    const kab  = r.kabupaten || r["kabupaten"] || r["Kabupaten"] || r["kab"];
-    const kec  = r.kecamatan || r["kecamatan"] || r["Kecamatan"] || r["kec"];
-    const desa = r.desa || r["desa"] || r["Desa"];
-
-    const pRaw = r.progress ?? r["progress"] ?? 0;
-    const p = Number(pRaw) || 0;
-
-    const foto = r.foto_url || r["foto_url"] || r["foto"] || r["Foto"] || "";
     const bucket = bucketizeProgress(p);
-
     const diN = normText(di);
     if (!diN) continue;
 
-    // Multi-key fallback biar match makin besar peluangnya
     const keys = [
       `di:${diN}`,
       `di:${diN}|kab:${normText(kab)}`,
@@ -261,32 +205,62 @@ async function loadLogTahap3(){
     ];
 
     for (const k of keys){
-      if (!logIndex[k]){
-        logIndex[k] = {
+      if (!idx[k]){
+        idx[k] = {
           di, provinsi:prov, kabupaten:kab, kecamatan:kec, desa,
           latestProgress: 0,
-          stages: {} // {25:url, 50:url, ...}
+          stages: {} // {25:url, 50:url,...}
         };
       }
-      if (foto) logIndex[k].stages[bucket] = foto;
-      if (p > logIndex[k].latestProgress) logIndex[k].latestProgress = p;
+      if (foto) idx[k].stages[bucket] = foto;
+      if (p > idx[k].latestProgress) idx[k].latestProgress = p;
     }
   }
 
-  window.__LOG_T3_INDEX__ = logIndex;
+  window.__LOG_T3_INDEX__ = idx;
   window.__LOG_T3_READY__ = true;
-
-  console.log("LOG TAHAP3 READY. keys:", Object.keys(logIndex).length);
 }
 
 /** =========================
- *  POPUP BUILDER
+ *  DEDUP MARKER PER DI
  *  ========================= */
-function getLogRecForProps(props){
-  const di   = pickProp(props, PROP_KEYS.di);
-  const kab  = pickProp(props, PROP_KEYS.kab);
-  const kec  = pickProp(props, PROP_KEYS.kec);
-  const desa = pickProp(props, PROP_KEYS.desa);
+function pickLatestPointPerDI(rows){
+  // 1 DI = 1 titik, ambil row terbaru berdasar timestamp (string compare cukup untuk format sheet timestamp)
+  const byDI = new Map();
+
+  for (const r of rows){
+    const di = r.di || r["Nama DI"] || r["Nama_DI"] || r["nama_di"] || r["namadi"];
+    const diN = normText(di);
+    if (!diN) continue;
+
+    const lat = Number(r.lat ?? r.latitude ?? r.Lat ?? r.LAT);
+    const lng = Number(r.lng ?? r.longitude ?? r.Long ?? r.LNG ?? r.lon);
+    if (!isFinite(lat) || !isFinite(lng)) continue;
+
+    const ts = String(r.timestamp ?? r["timestamp"] ?? "");
+
+    const old = byDI.get(diN);
+    if (!old){
+      byDI.set(diN, { r, lat, lng, ts });
+    }else{
+      const oldTs = String(old.ts ?? "");
+      if (ts && ts > oldTs){
+        byDI.set(diN, { r, lat, lng, ts });
+      }
+    }
+  }
+
+  return Array.from(byDI.values());
+}
+
+/** =========================
+ *  POPUP: cari record log untuk props
+ *  ========================= */
+function getLogRecForRow(row){
+  const di   = row.di || row["Nama DI"] || row["Nama_DI"] || row["nama_di"] || row["namadi"];
+  const kab  = row.kabupaten || row["Kabupaten"] || row["kabupaten"] || row["Kab/Kota"];
+  const kec  = row.kecamatan || row["Kecamatan"] || row["kecamatan"] || row["Kec"];
+  const desa = row.desa || row["Desa"] || row["desa"];
 
   const diN = normText(di);
   const idx = window.__LOG_T3_INDEX__ || {};
@@ -299,20 +273,15 @@ function getLogRecForProps(props){
   return idx[k1] || idx[k2] || idx[k3] || idx[k4] || null;
 }
 
-function buildPopupHtml(feature){
-  const props = feature.properties || {};
+function buildPopupHtmlFromRow(row, lat, lng){
+  const di   = row.di || row["Nama DI"] || row["Nama_DI"] || row["nama_di"] || row["namadi"] || "(Tanpa nama)";
+  const balai= row.balai || row["Balai"] || row["BWS"] || row["bws"] || "-";
+  const prov = row.provinsi || row["Provinsi"] || "-";
+  const kab  = row.kabupaten || row["Kabupaten"] || row["Kab/Kota"] || "-";
+  const kec  = row.kecamatan || row["Kecamatan"] || row["Kec"] || "-";
+  const desa = row.desa || row["Desa"] || "-";
 
-  const di   = pickProp(props, PROP_KEYS.di) || "(Tanpa nama)";
-  const balai= pickProp(props, PROP_KEYS.balai) || "-";
-  const prov = pickProp(props, PROP_KEYS.prov) || "-";
-  const kab  = pickProp(props, PROP_KEYS.kab) || "-";
-  const kec  = pickProp(props, PROP_KEYS.kec) || "-";
-  const desa = pickProp(props, PROP_KEYS.desa) || "-";
-
-  const lat = props.lat ?? props.latitude ?? props.Lat ?? "";
-  const lng = props.lng ?? props.longitude ?? props.Long ?? props.lon ?? "";
-
-  const rec = getLogRecForProps(props);
+  const rec = getLogRecForRow(row);
   const prog = rec ? (Number(rec.latestProgress)||0) : 0;
 
   const stagesList = [25,50,75,100];
@@ -338,59 +307,59 @@ function buildPopupHtml(feature){
   `;
 }
 
-function escapeHtml(s){
-  return String(s ?? "")
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
-}
-
 /** =========================
- *  CLICK HANDLER (anti keburu)
+ *  LOAD + RENDER MARKERS
  *  ========================= */
-function onClickDI(feature, layer){
-  const props = feature.properties || {};
-  const di = pickProp(props, PROP_KEYS.di) || "(Tanpa nama)";
+async function loadAll(){
+  // 1) ambil semua rows log
+  const rows = await fetchGVizRows(SHEET_LOG);
 
-  // kalau log belum ready -> tampilkan loading, lalu auto refresh
-  if (!window.__LOG_T3_READY__){
-    layer.bindPopup(`<b>${escapeHtml(di)}</b><br>Memuat log tahap 3...`).openPopup();
+  // 2) bikin index log (buat progress max + foto per bucket)
+  buildLogIndex(rows);
 
-    const t = setInterval(()=>{
-      if (window.__LOG_T3_READY__){
-        clearInterval(t);
-        layer.setPopupContent(buildPopupHtml(feature));
+  // 3) buat marker 1 DI 1 titik (ambil terbaru)
+  const points = pickLatestPointPerDI(rows);
+
+  markersLayer.clearLayers();
+
+  for (const item of points){
+    const r = item.r;
+    const lat = item.lat;
+    const lng = item.lng;
+
+    const icon = L.divIcon({ className:"", html:`<div class="marker-circle"></div>`, iconSize:[14,14], iconAnchor:[7,7] });
+    const m = L.marker([lat,lng], { icon }).addTo(markersLayer);
+
+    m.on("click", ()=>{
+      if (!window.__LOG_T3_READY__){
+        m.bindPopup(`<b>${escapeHtml(r.di || r["Nama DI"] || "DI")}</b><br>Memuat log tahap 3...`).openPopup();
+        const t = setInterval(()=>{
+          if (window.__LOG_T3_READY__){
+            clearInterval(t);
+            m.setPopupContent(buildPopupHtmlFromRow(r, lat, lng));
+          }
+        }, 200);
+        setTimeout(()=>{ try{ clearInterval(t); }catch(e){} }, 8000);
+        return;
       }
-    }, 200);
-
-    // safety stop
-    setTimeout(()=>{ try{ clearInterval(t); }catch(e){} }, 8000);
-    return;
+      m.bindPopup(buildPopupHtmlFromRow(r, lat, lng)).openPopup();
+    });
   }
 
-  layer.bindPopup(buildPopupHtml(feature)).openPopup();
+  // Fit bounds
+  try{
+    const b = markersLayer.getBounds();
+    if (b && b.isValid()) map.fitBounds(b, { padding:[20,20] });
+  }catch(e){}
 }
 
 /** =========================
  *  BOOT
  *  ========================= */
-(async function boot(){
-  try{
-    // baseline dulu supaya layer tampil cepat
-    await loadBaseline();
-  }catch(e){
-    console.error("Gagal load baseline:", e);
-  }
-
-  try{
-    await loadLogTahap3();
-  }catch(e){
-    console.error("Gagal load log_tahap3:", e);
-    window.__LOG_T3_READY__ = false;
-  }
-})();
+loadAll().catch(err => {
+  console.error(err);
+  alert("Gagal memuat data. Cek console. " + (err?.message || err));
+});
 </script>
 </body>
 </html>
