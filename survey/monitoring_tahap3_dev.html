@@ -4,9 +4,12 @@
 <meta charset="UTF-8" />
 <title>Pelaksanaan Inpres 2/2025 Tahap 3 - Monitoring</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
+
+<!-- Leaflet & MarkerCluster CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+
 <style>
   :root{
     --brand:#FFD700; --ink:#111827; --mut:#6b7280;
@@ -120,7 +123,7 @@
 <body>
 
 <div id="header">
-  <img src="https://iconape.com/wp-content/png_logo_vector/pu-logo.png" alt="Logo PU"/>
+  <img src="https://irwan-dot-cyber.github.io/my-maps/assets/LogoPUPR.png" alt="Logo PU"/>
   <div>KEMENTERIAN PEKERJAAN UMUM • DITJEN SDA • DIREKTORAT IRIGASI DAN RAWA • MONITORING INPRES 2/2025 TAHAP 3</div>
 </div>
 
@@ -139,14 +142,15 @@
 
 <div id="stats">Memuat statistik…</div>
 
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.js"></script>
+<!-- JS: Leaflet & MarkerCluster -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
 <script>
 /* 1. KONFIGURASI GOOGLE SHEETS */
-const SHEET_ID      = "1YkNmEcQw1_1_xL0BTxYXl1f4Tkk2-22tXuQB-IoEeuY";  // <- isi sendiri
-const GID_BASELINE  = "466754170";                // <- gid sheet baseline
-const GID_LOG       = "732855223";              // <- gid sheet log_tahap3
+const SHEET_ID      = "1YkNmEcQw1_1_xL0BTxYXl1f4Tkk2-22tXuQB-IoEeuY";  // <- isi
+const GID_BASELINE  = "466754170";                // <- gid baseline
+const GID_LOG       = "732855223";              // <- gid log_tahap3
 
 const URL_BASELINE  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID_BASELINE}`;
 const URL_LOG       = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID_LOG}`;
@@ -246,9 +250,8 @@ const balaiToLokasiUploaded = new Map();
 let index = [];
 
 /* 5. LABEL VISIBILITY */
-const ZOOM_LABEL_MIN = ZOOM_LABEL;
 function refreshLabels(){
-  const show = map.getZoom() >= ZOOM_LABEL_MIN;
+  const show = map.getZoom() >= ZOOM_LABEL;
   allMarkers.forEach(m=>{
     const lbl = m.__label; if(!lbl) return;
     const el = lbl.getElement() || lbl._icon; if(!el) return;
@@ -313,20 +316,18 @@ async function loadBaseline(){
     };
   }).filter(r =>
     r.key || r.balai || r.prov || r.kab || r.desa || r.namaDi
-  ); // <- supaya count baseline penuh (harusnya 806)
+  );
 
   return out;
 }
 
-/* 8. LOAD LOG_TAHAP3 + MARKER
-   (pakai baseline utk ambil Nama DI via key) */
+/* 8. LOAD LOG_TAHAP3 + MARKER (pakai baseline utk Nama DI) */
 async function loadLogTahap3(baseline){
   const res = await fetch(URL_LOG + "&t=" + Date.now(), {cache:"no-store"});
   if(!res.ok) throw new Error("HTTP "+res.status+" saat akses log_tahap3");
   const text = await res.text();
   const rows = parseCSV(text);
 
-  // Map baseline by key → untuk Nama DI
   const baselineKeyMap = new Map();
   baseline.forEach(b=>{
     if (b.key) baselineKeyMap.set(canon(b.key), b);
@@ -345,9 +346,8 @@ async function loadLogTahap3(baseline){
     const rawProg = norm(r["progress_"] || r["progress"] || "0");
     const numProg = parseFloat(rawProg.replace("%","").replace(",","."));
     const rawFoto = norm(r["foto_url"]);
-    const hasFotoUrl = /^https?:\/\//i.test(rawFoto); // hanya http/https yang dianggap ada foto
+    const hasFotoUrl = /^https?:\/\//i.test(rawFoto);
 
-    // Nama DI: dari log_tahap3 dulu, kalau kosong ambil dari baseline by key
     let namaDi = norm(
       r["Nama DI"]  ||
       r["nama_di"]  ||
@@ -403,7 +403,7 @@ async function loadLogTahap3(baseline){
       return '<a class="' + cls + '" href="' + rec.foto + '" target="_blank" rel="noopener">Foto ' + s + '%</a>';
     }).join("");
 
-    const title = rec.namaDi || lokasiPendek; // <- Judul popup: Nama DI dulu
+    const title = rec.namaDi || lokasiPendek;
 
     const popup =
       "<b>" + title + "</b>" +
@@ -427,7 +427,7 @@ async function loadLogTahap3(baseline){
       icon:L.icon({
         iconUrl:iconUrl,
         iconSize:[25,41],iconAnchor:[12,41],
-        shadowUrl:"https://unpkg.com/leaflet/dist/images/marker-shadow.png",shadowSize:[41,41]
+        shadowUrl:"https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",shadowSize:[41,41]
       })
     }).bindPopup(popup);
 
@@ -510,7 +510,7 @@ function buildStatsUI({totalBaseline,totalFilled,percent,byBalai,missing}){
       L.marker([lat,lng],{icon:L.icon({
         iconUrl:"https://maps.google.com/mapfiles/ms/icons/green-dot.png",
         iconSize:[25,41],iconAnchor:[12,41],
-        shadowUrl:"https://unpkg.com/leaflet/dist/images/marker-shadow.png",shadowSize:[41,41]
+        shadowUrl:"https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",shadowSize:[41,41]
       })}).addTo(map).bindPopup("Lokasi Anda").openPopup();
       map.setView([lat,lng],13);
     }, ()=>alert("Tidak dapat mengakses lokasi."));
@@ -647,15 +647,15 @@ async function build(){
     fillSelect($("#f-bbws"), uniqBalai, "— Semua B/BWS (yang sudah upload) —");
     updateDiOptions();
 
-    const baseKeys = new Set(baseline.map(makeKey));
     const logKeys  = new Set(logs.map(makeKey));
-    const totalBaseline = baseKeys.size;
-    const totalFilled   = [...baseKeys].filter(k => logKeys.has(k)).length;
+
+    const totalBaseline = baseline.length;  // harusnya 806
+    const totalFilled   = baseline.filter(b => logKeys.has(makeKey(b))).length;
     const percent       = totalBaseline ? Math.round(totalFilled/totalBaseline*100) : 0;
 
     const mapBalai = new Map();
     baseline.forEach(b=>{
-      if(!b.balai) return;       // hanya balai valid
+      if(!b.balai) return;
       const balai = b.balai;
       if(!mapBalai.has(balai)) mapBalai.set(balai,{balai:balai, total:0, filled:0});
       const o = mapBalai.get(balai);
