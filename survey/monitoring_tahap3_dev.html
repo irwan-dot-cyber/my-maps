@@ -17,9 +17,11 @@
       --blue:#2563eb;
       --blue2:#1d4ed8;
     }
-
     html,body{ height:100%; margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
     #map{ height:100vh; width:100vw; background:var(--bg); }
+
+    .leaflet-popup-content{ margin:14px 14px 12px 14px; }
+    .leaflet-popup-content-wrapper{ border-radius:16px; }
 
     .popup-wrap{ min-width: 290px; max-width: 360px; }
     .popup-title{ font-weight:800; font-size:18px; margin:0 0 6px 0; }
@@ -67,9 +69,6 @@
     }
     .gmaps-link:hover{ text-decoration:underline; }
 
-    .leaflet-popup-content{ margin:14px 14px 12px 14px; }
-    .leaflet-popup-content-wrapper{ border-radius:16px; }
-
     .marker-circle{
       width:14px; height:14px;
       border-radius:999px;
@@ -77,28 +76,51 @@
       border:2px solid #2563eb;
       box-shadow: 0 2px 8px rgba(0,0,0,.25);
     }
+
+    /* debug badge */
+    .debug{
+      position:fixed;
+      left:12px; bottom:12px;
+      background:rgba(255,255,255,.92);
+      color:#111827;
+      border:1px solid rgba(0,0,0,.08);
+      border-radius:12px;
+      padding:10px 12px;
+      font-size:12px;
+      line-height:1.35;
+      max-width:380px;
+      z-index:9999;
+    }
+    .debug b{ font-weight:800; }
+    .debug .muted{ color:#6b7280; }
   </style>
 </head>
 <body>
 <div id="map"></div>
+<div id="dbg" class="debug"><b>Status:</b> init…</div>
 
 <script>
 /** =========================
- *  KONFIG
+ *  KONFIG WAJIB
  *  ========================= */
-const SHEET_ID  = "1YkNmEcQw1_1_xL0BTxYXl1f4Tkk2-22tXuQB-IoEeuY";
-const SHEET_LOG = "log_tahap3";
+// Ini WEBAPP GAS lo (bukan GViz)
+const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwixAzu4MFs8Ms-K1sWMqCYmesje762mPYRW9uxkBCxbiTswKiaykXzD-D76naKlPWa/exec";
 
-// Proxy lo balikin JSON {"ok":true,"items":[...]}.
-// Kalau mau coba langsung GViz tanpa proxy: set jadi ""
+// Proxy untuk GitHub Pages (kalau gak perlu, kosongin "")
 const PROXY_PREFIX = "https://gas-proxy3.tuic1677.workers.dev/?url=";
+
+// Sheet sumber titik & foto
+const SHEET_LOG = "log_tahap3";
 
 /** =========================
  *  UTIL
  *  ========================= */
+const dbg = (msg)=> document.getElementById("dbg").innerHTML = msg;
+
 function wrapProxy(url){
   return PROXY_PREFIX ? (PROXY_PREFIX + encodeURIComponent(url)) : url;
 }
+
 function normText(s){
   return String(s ?? "")
     .toLowerCase()
@@ -108,6 +130,7 @@ function normText(s){
     .replace(/^di\s+/,'')
     .replace(/^daerah irigasi\s+/,'');
 }
+
 function bucketizeProgress(p){
   p = Number(p) || 0;
   if (p >= 100) return 100;
@@ -116,6 +139,7 @@ function bucketizeProgress(p){
   if (p >= 25)  return 25;
   return 0;
 }
+
 function escapeHtml(s){
   return String(s ?? "")
     .replaceAll("&","&amp;")
@@ -124,6 +148,7 @@ function escapeHtml(s){
     .replaceAll('"',"&quot;")
     .replaceAll("'","&#039;");
 }
+
 function gmapsLink(lat,lng){
   if (!lat || !lng) return "";
   const u = `https://www.google.com/maps?q=${encodeURIComponent(lat + "," + lng)}`;
@@ -131,52 +156,22 @@ function gmapsLink(lat,lng){
 }
 
 /** =========================
- *  FETCH rows (AUTO: GViz atau JSON)
+ *  FETCH dari GAS (JSON ok/items)
  *  ========================= */
-function parseGVizText(txt){
-  const m = txt.match(/setResponse\((.*)\);?\s*$/s);
-  if (!m) return null;
-  return JSON.parse(m[1]);
-}
-
-function gvizToRows(json){
-  const table = json.table;
-  const cols = table.cols.map(c => (c.label || "").trim());
-  return table.rows.map(r => {
-    const o = {};
-    r.c.forEach((cell, i) => {
-      const v = cell ? (cell.f ?? cell.v) : "";
-      o[cols[i] || ("col"+i)] = v;
-    });
-    return o;
-  });
-}
-
-async function fetchRowsSmart(sheetName){
-  const gvizUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}&t=${Date.now()}`;
-
-  const res = await fetch(wrapProxy(gvizUrl));
-  const txt = await res.text();
-
-  // 1) Coba parse sebagai GViz
-  const gviz = parseGVizText(txt);
-  if (gviz) return gvizToRows(gviz);
-
-  // 2) Kalau bukan GViz, coba parse JSON biasa (proxy GAS lo)
-  try{
-    const j = JSON.parse(txt);
-    if (j && Array.isArray(j.items)) return j.items;
-    if (Array.isArray(j)) return j;
-  }catch(e){}
-
-  throw new Error("Respon bukan GViz/JSON yang dikenal. Potongan awal: " + txt.slice(0,120));
+async function fetchLogRows(){
+  const url = `${GAS_WEBAPP_URL}?sheet=${encodeURIComponent(SHEET_LOG)}&t=${Date.now()}`;
+  const res = await fetch(wrapProxy(url));
+  const j = await res.json();
+  if (!j || !Array.isArray(j.items)) {
+    throw new Error("Format GAS tidak sesuai. Expect {ok:true, items:[...]}");
+  }
+  return j.items;
 }
 
 /** =========================
  *  MAP INIT
  *  ========================= */
 const map = L.map("map", { zoomControl:true }).setView([-2.5, 118], 5);
-
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19,
   attribution: "&copy; OpenStreetMap"
@@ -185,10 +180,10 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 const markersLayer = L.layerGroup().addTo(map);
 
 /** =========================
- *  LOG INDEX
+ *  INDEX LOG (progress max + foto per bucket)
  *  ========================= */
-window.__LOG_T3_INDEX__ = {};
-window.__LOG_T3_READY__ = false;
+let LOG_INDEX = {};   // key -> {latestProgress, stages{25:url..}}
+let LOG_READY = false;
 
 function buildLogIndex(rows){
   const idx = {};
@@ -227,12 +222,12 @@ function buildLogIndex(rows){
     }
   }
 
-  window.__LOG_T3_INDEX__ = idx;
-  window.__LOG_T3_READY__ = true;
+  LOG_INDEX = idx;
+  LOG_READY = true;
 }
 
 /** =========================
- *  DEDUP: 1 DI = 1 TITIK (ambil terbaru)
+ *  DEDUP: 1 DI = 1 TITIK (ambil row terbaru)
  *  ========================= */
 function pickLatestPointPerDI(rows){
   const byDI = new Map();
@@ -272,14 +267,12 @@ function getLogRecForRow(row){
   const desa = row.desa || row["Desa"] || row["desa"];
 
   const diN = normText(di);
-  const idx = window.__LOG_T3_INDEX__ || {};
-
   const k1 = `di:${diN}|kab:${normText(kab)}|kec:${normText(kec)}|desa:${normText(desa)}`;
   const k2 = `di:${diN}|kab:${normText(kab)}|kec:${normText(kec)}`;
   const k3 = `di:${diN}|kab:${normText(kab)}`;
   const k4 = `di:${diN}`;
 
-  return idx[k1] || idx[k2] || idx[k3] || idx[k4] || null;
+  return LOG_INDEX[k1] || LOG_INDEX[k2] || LOG_INDEX[k3] || LOG_INDEX[k4] || null;
 }
 
 function buildPopupHtml(row, lat, lng){
@@ -320,13 +313,19 @@ function buildPopupHtml(row, lat, lng){
  *  MAIN LOAD
  *  ========================= */
 async function loadAll(){
-  const rows = await fetchRowsSmart(SHEET_LOG);
+  dbg(`<b>Status:</b> loading <span class="muted">(sheet: ${escapeHtml(SHEET_LOG)})</span>…`);
+
+  const rows = await fetchLogRows();
+  const total = rows.length;
 
   buildLogIndex(rows);
 
   const points = pickLatestPointPerDI(rows);
+  const pts = points.length;
+
   markersLayer.clearLayers();
 
+  let created = 0;
   for (const item of points){
     const r = item.r;
     const lat = item.lat;
@@ -334,24 +333,32 @@ async function loadAll(){
 
     const icon = L.divIcon({ className:"", html:`<div class="marker-circle"></div>`, iconSize:[14,14], iconAnchor:[7,7] });
     const m = L.marker([lat,lng], { icon }).addTo(markersLayer);
+    created++;
 
     m.on("click", ()=>{
+      if (!LOG_READY){
+        m.bindPopup("Memuat log…").openPopup();
+        return;
+      }
       m.bindPopup(buildPopupHtml(r, lat, lng)).openPopup();
     });
   }
 
+  // Fit bounds
   try{
     const b = markersLayer.getBounds();
     if (b && b.isValid()) map.fitBounds(b, { padding:[20,20] });
   }catch(e){}
+
+  dbg(`<b>Status:</b> OK ✅<br>
+       <span class="muted">rows:</span> ${total} | <span class="muted">DI uniq (marker):</span> ${pts} | <span class="muted">created:</span> ${created}<br>
+       <span class="muted">log keys:</span> ${Object.keys(LOG_INDEX).length}`);
 }
 
-/** =========================
- *  BOOT
- *  ========================= */
-loadAll().catch(err => {
+loadAll().catch(err=>{
   console.error(err);
-  alert("Gagal memuat data. Cek console. " + (err?.message || err));
+  dbg(`<b>Status:</b> ERROR ❌<br><span class="muted">${escapeHtml(err?.message || err)}</span>`);
+  alert("Gagal memuat data. " + (err?.message || err));
 });
 </script>
 </body>
