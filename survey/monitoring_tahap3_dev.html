@@ -456,21 +456,15 @@ async function loadLogTahap3(baseline){
 
     const gmaps  = "https://www.google.com/maps?q=" + rec.lat + "," + rec.lng;
 
-    const nearestBucket = prog > 0
-      ? stagesList.reduce((best,s)=>{
-          return Math.abs(prog - s) < Math.abs(prog - best) ? s : best;
-        },25)
-      : null;
-
-    const btns = stagesList.map(s=>{
-      const url = rec.stages[s];
-      if (!url){
-        return '<span class="btn-photo disabled">Foto ' + s + '%</span>';
-      }
-      const cls = "btn-photo" + (nearestBucket === s ? " active" : "");
-      return '<a class="' + cls + '" href="' + url +
-             '" target="_blank" rel="noopener">Foto ' + s + '%</a>';
-    }).join("");
+   const btns = stagesList.map(s=>{
+  const url = rec.stages[s];
+  if (!url){
+    return '<span class="btn-photo disabled">Foto ' + s + '%</span>';
+  }
+  // Kalau ada foto_url untuk stage ini -> tombol aktif (biru) + bisa diklik
+  return '<a class="btn-photo active" href="' + url +
+         '" target="_blank" rel="noopener">Foto ' + s + '%</a>';
+}).join("");
 
     const popup =
       "<b>" + title + "</b>" +
