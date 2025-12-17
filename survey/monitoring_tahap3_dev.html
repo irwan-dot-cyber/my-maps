@@ -211,6 +211,27 @@ function parseCSV(text){
   });
 }
 
+/* Baca progress dengan toleran nama kolom */
+function readProgress(row){
+  const direct = ["progress_","progress","Progress","PROGRESS","progres"];
+  for (const k of direct){
+    if (k in row && row[k] !== ""){
+      const v = norm(row[k]);
+      const num = parseFloat(v.replace("%","").replace(",","."));
+      if (Number.isFinite(num)) return num;
+    }
+  }
+  const autoKey = Object.keys(row).find(
+    k => k.toLowerCase().replace(/\s|_/g,"")==="progress"
+  );
+  if (autoKey){
+    const v = norm(row[autoKey]);
+    const num = parseFloat(v.replace("%","").replace(",","."));
+    if (Number.isFinite(num)) return num;
+  }
+  return 0;
+}
+
 function fillSelect(el, items, placeholder){
   const cur = el.value;
   el.innerHTML = "";
@@ -345,8 +366,7 @@ async function loadLogTahap3(baseline){
 
   rows.forEach(r=>{
     const keyVal  = norm(r["key"]);
-    const rawProg = norm(r["progress_"] || r["progress"] || "0");
-    const numProg = parseFloat(rawProg.replace("%","").replace(",","."));
+    const numProg = readProgress(r);          // ← progress dibaca pakai helper
     const rawFoto = norm(r["foto_url"]);
     const hasFotoUrl = /^https?:\/\//i.test(rawFoto);
 
@@ -411,11 +431,15 @@ async function loadLogTahap3(baseline){
     const hasFoto = !!rec.foto;
 
     const btns = stages.map(s=>{
-      if(!hasFoto){
+      // Tidak ada foto atau progress tidak 25/50/75/100 → semua disabled
+      if(!hasFoto || !bucket){
         return '<span class="btn-photo disabled">Foto ' + s + '%</span>';
       }
-      const cls = "btn-photo" + (bucket === s ? " active" : "");
-      return '<a class="' + cls + '" href="' + rec.foto + '" target="_blank" rel="noopener">Foto ' + s + '%</a>';
+      // Hanya stage yang sama dengan progress yang aktif & bisa diklik
+      if (s === bucket){
+        return '<a class="btn-photo active" href="' + rec.foto + '" target="_blank" rel="noopener">Foto ' + s + '%</a>';
+      }
+      return '<span class="btn-photo disabled">Foto ' + s + '%</span>';
     }).join("");
 
     // JUDUL: DI.<nama>, kalau kosong baru Kab/Desa
