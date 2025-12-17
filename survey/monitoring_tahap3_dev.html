@@ -148,9 +148,9 @@
 
 <script>
 /* 1. KONFIGURASI GOOGLE SHEETS */
-const SHEET_ID      = "1YkNmEcQw1_1_xL0BTxYXl1f4Tkk2-22tXuQB-IoEeuY";  // <- isi
-const GID_BASELINE  = "466754170";                // <- gid baseline
-const GID_LOG       = "732855223";              // <- gid log_tahap3
+const SHEET_ID      = "1YkNmEcQw1_1_xL0BTxYXl1f4Tkk2-22tXuQB-IoEeuY";
+const GID_BASELINE  = "466754170";
+const GID_LOG       = "732855223";
 
 const URL_BASELINE  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID_BASELINE}`;
 const URL_LOG       = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID_LOG}`;
@@ -316,7 +316,7 @@ async function loadBaseline(){
     };
   });
 
-  return out;   // tidak di-filter, supaya hitungan baseline = jumlah baris (806)
+  return out;   // tanpa filter supaya count = 806
 }
 
 /* 8. LOAD LOG_TAHAP3 + MARKER (pakai baseline utk Nama DI) */
@@ -348,27 +348,26 @@ async function loadLogTahap3(baseline){
     const rawProg = norm(r["progress_"] || r["progress"] || "0");
     const numProg = parseFloat(rawProg.replace("%","").replace(",","."));
     const rawFoto = norm(r["foto_url"]);
-    const hasFotoUrl = /^https?:\/\//i.test(rawFoto);  // hanya http/https yang dianggap ada foto
-
-    // Nama DI: dari log, kalau kosong dari baseline (key atau lokasi)
-    let namaDi = norm(
-      r["Nama DI"]  ||
-      r["nama_di"]  ||
-      r["Nama_DI"]  ||
-      r["DI"]       ||
-      ""
-    );
+    const hasFotoUrl = /^https?:\/\//i.test(rawFoto);
 
     const balai = norm(r["balai"] || r["BWS"] || r["B/BWS"] || "");
     const prov  = norm(r["provinsi"]);
     const kab   = norm(r["kabupate di"] || r["kabupaten di"] || r["kabupaten"]);
     const desa  = norm(r["desa"]);
 
-    if (!namaDi) {
-      if (keyVal) {
-        const b1 = baselineKeyMap.get(canon(keyVal));
-        if (b1 && b1.namaDi) namaDi = b1.namaDi;
-      }
+    // Ambil nama DI dari log (kolom "di"/"DI"), kalau kosong baru dari baseline
+    let namaDi = norm(
+      r["di"]       ||
+      r["DI"]       ||
+      r["Nama DI"]  ||
+      r["nama_di"]  ||
+      r["Nama_DI"]  ||
+      ""
+    );
+
+    if (!namaDi && keyVal) {
+      const b1 = baselineKeyMap.get(canon(keyVal));
+      if (b1 && b1.namaDi) namaDi = b1.namaDi;
     }
     if (!namaDi) {
       const locKey = [balai,prov,kab,desa].map(canon).join("|");
@@ -419,8 +418,8 @@ async function loadLogTahap3(baseline){
       return '<a class="' + cls + '" href="' + rec.foto + '" target="_blank" rel="noopener">Foto ' + s + '%</a>';
     }).join("");
 
-    // JUDUL: Nama DI, kalau masih kosong baru Kab/Desa
-    const title = rec.namaDi || lokasiPendek;
+    // JUDUL: DI.<nama>, kalau kosong baru Kab/Desa
+    const title = rec.namaDi ? ("DI. " + rec.namaDi) : lokasiPendek;
 
     const popup =
       "<b>" + title + "</b>" +
@@ -666,25 +665,35 @@ async function build(){
 
     const logKeys  = new Set(logs.map(makeKey));
 
-    const totalBaseline = baseline.length;  // target: 806
-    const totalFilled   = baseline.filter(b => logKeys.has(makeKey(b))).length;
+    // total baseline = semua baris baseline (target 806)
+    const totalBaseline = baseline.length;
+
+    // total terisi = jumlah lokasi unik di log_tahap3
+    const totalFilled   = logKeys.size;
     const percent       = totalBaseline ? Math.round(totalFilled/totalBaseline*100) : 0;
 
-    const mapBalai = new Map();
+    // Rekap per balai
+    const mapBalaiBase = new Map();
     baseline.forEach(b=>{
-      if(!b.balai) return;
-      const balai = b.balai;
-      if(!mapBalai.has(balai)) mapBalai.set(balai,{balai:balai, total:0, filled:0});
-      const o = mapBalai.get(balai);
-      o.total++;
-      if (logKeys.has(makeKey(b))) o.filled++;
+      const balai = b.balai || "-";
+      if(!mapBalaiBase.has(balai)) mapBalaiBase.set(balai,{balai:balai, total:0, filled:0});
+      mapBalaiBase.get(balai).total++;
     });
-    const byBalai = [...mapBalai.values()].map(x=>({
-      balai:x.balai,
-      total:x.total,
-      filled:x.filled,
-      pct:x.total ? Math.round(x.filled/x.total*100) : 0
-    }));
+
+    const mapBalaiFilled = new Map();
+    logs.forEach(l=>{
+      const balai = l.balai || "-";
+      if(!mapBalaiFilled.has(balai)) mapBalaiFilled.set(balai,new Set());
+      mapBalaiFilled.get(balai).add(makeKey(l));
+    });
+
+    const byBalai = [];
+    mapBalaiBase.forEach((val,balai)=>{
+      const filledSet = mapBalaiFilled.get(balai);
+      const filled = filledSet ? filledSet.size : 0;
+      const pct = val.total ? Math.round(filled/val.total*100) : 0;
+      byBalai.push({balai:balai, total:val.total, filled:filled, pct:pct});
+    });
 
     const missing = baseline.filter(b => !logKeys.has(makeKey(b)));
 
