@@ -103,14 +103,15 @@
     border:1px solid var(--line);
     background:#f3f4f6;color:#6b7280;
     font-size:11px;font-weight:700;
-    text-decoration:none;line-height:1.2
+    text-decoration:none;line-height:1.2;
+    cursor:pointer;
   }
   .btn-photo.active{
     background:var(--btn);color:#fff;border-color:var(--btn)
   }
   .btn-photo.disabled{
     cursor:not-allowed;background:#f3f4f6;
-    color:#9ca3af;border-color:#e5e7eb
+    color:#9ca3af;border-color:#e5e7eb;text-decoration:none
   }
 
   @media (max-width:560px){
@@ -340,7 +341,7 @@ async function loadBaseline(){
   return out;   // tanpa filter supaya count = 806
 }
 
-/* 8. LOAD LOG_TAHAP3 + MARKER (pakai baseline utk Nama DI) */
+/* 8. LOAD LOG_TAHAP3 + GROUP PER LOKASI */
 async function loadLogTahap3(baseline){
   const res = await fetch(URL_LOG + "&t=" + Date.now(), {cache:"no-store"});
   if(!res.ok) throw new Error("HTTP "+res.status+" saat akses log_tahap3");
@@ -361,21 +362,21 @@ async function loadLogTahap3(baseline){
   labelsGroup.clearLayers();
   balaiToLokasiUploaded.clear();
 
-  const result = [];
-  const markers = [];
+  const groupMap = new Map();
 
   rows.forEach(r=>{
     const keyVal  = norm(r["key"]);
-    const numProg = readProgress(r);          // ← progress dibaca pakai helper
-    const rawFoto = norm(r["foto_url"]);
-    const hasFotoUrl = /^https?:\/\//i.test(rawFoto);
+    const latNum  = parseFloat(r["lat"]);
+    const lngNum  = parseFloat(r["lng"]);
+    if (!Number.isFinite(latNum) || !Number.isFinite(lngNum)) return;
 
     const balai = norm(r["balai"] || r["BWS"] || r["B/BWS"] || "");
     const prov  = norm(r["provinsi"]);
     const kab   = norm(r["kabupate di"] || r["kabupaten di"] || r["kabupaten"]);
     const desa  = norm(r["desa"]);
+    const kec   = norm(r["kecamatan"] || r["kecamata"] || r["kec"]);
 
-    // Ambil nama DI dari log (kolom "di"/"DI"), kalau kosong baru dari baseline
+    // Nama DI dari log/baseline
     let namaDi = norm(
       r["di"]       ||
       r["DI"]       ||
@@ -384,7 +385,6 @@ async function loadLogTahap3(baseline){
       r["Nama_DI"]  ||
       ""
     );
-
     if (!namaDi && keyVal) {
       const b1 = baselineKeyMap.get(canon(keyVal));
       if (b1 && b1.namaDi) namaDi = b1.namaDi;
@@ -395,27 +395,53 @@ async function loadLogTahap3(baseline){
       if (b2 && b2.namaDi) namaDi = b2.namaDi;
     }
 
-    const rec = {
-      timestamp: norm(r["timestamp"]),
-      key:       keyVal,
-      balai:     balai,
-      prov:      prov,
-      kab:       kab,
-      kec:       norm(r["kecamatan"] || r["kecamata"] || r["kec"]),
-      desa:      desa,
-      lat:       parseFloat(r["lat"]),
-      lng:       parseFloat(r["lng"]),
-      nama:      norm(r["nama"]),
-      telp:      norm(r["telepon"]),
-      progress:  Number.isFinite(numProg) ? numProg : 0,
-      foto:      hasFotoUrl ? rawFoto : "",
-      namaDi:    namaDi
-    };
+    const progressVal = readProgress(r);
+    const fotoUrlRaw  = norm(r["foto_url"]);
+    const hasFoto     = /^https?:\/\//i.test(fotoUrlRaw);
 
-    if (!Number.isFinite(rec.lat) || !Number.isFinite(rec.lng)) return;
+    const groupId = keyVal ? ("key:" + canon(keyVal))
+                           : ("coord:" + latNum.toFixed(6) + "," + lngNum.toFixed(6));
 
+    let g = groupMap.get(groupId);
+    if(!g){
+      g = {
+        groupId,
+        key: keyVal,
+        balai, prov, kab, kec, desa,
+        lat: latNum,
+        lng: lngNum,
+        namaDi,
+        stages:{25:"",50:"",75:"",100:""},
+        latestProgress: 0
+      };
+      groupMap.set(groupId,g);
+    }else{
+      if(!g.namaDi && namaDi) g.namaDi = namaDi;
+    }
+
+    if (hasFoto && progressVal > 0){
+      const stages = [25,50,75,100];
+      const bucket = stages.reduce((best,s)=>{
+        return Math.abs(progressVal - s) < Math.abs(progressVal - best) ? s : best;
+      },25);
+      g.stages[bucket] = fotoUrlRaw;
+    }
+
+    if (progressVal > g.latestProgress){
+      g.latestProgress = progressVal;
+    }
+  });
+
+  const groups = Array.from(groupMap.values());
+
+  const result = [];
+  const markers = [];
+
+  groups.forEach(rec=>{
+    const prog   = Number.isFinite(rec.latestProgress) ? rec.latestProgress : 0;
+    const stagesList = [25,50,75,100];
     const lokasiPendek = (rec.kab || "-") + " / " + (rec.desa || rec.kec || "-");
-    rec.lokasi = lokasiPendek;
+    const title = rec.namaDi ? ("DI. " + rec.namaDi) : lokasiPendek;
 
     const keyBalai = rec.balai || "-";
     if(!balaiToLokasiUploaded.has(keyBalai)) balaiToLokasiUploaded.set(keyBalai, new Set());
@@ -424,26 +450,22 @@ async function loadLogTahap3(baseline){
     result.push(rec);
 
     const gmaps  = "https://www.google.com/maps?q=" + rec.lat + "," + rec.lng;
-    const stages = [25,50,75,100];
-    const prog   = Number.isFinite(rec.progress) ? rec.progress : 0;
-    const bucket = stages.find(s => Math.round(prog) === s) || null;
 
-    const hasFoto = !!rec.foto;
+    const nearestBucket = prog > 0
+      ? stagesList.reduce((best,s)=>{
+          return Math.abs(prog - s) < Math.abs(prog - best) ? s : best;
+        },25)
+      : null;
 
-    const btns = stages.map(s=>{
-      // Tidak ada foto atau progress tidak 25/50/75/100 → semua disabled
-      if(!hasFoto || !bucket){
+    const btns = stagesList.map(s=>{
+      const url = rec.stages[s];
+      if (!url){
         return '<span class="btn-photo disabled">Foto ' + s + '%</span>';
       }
-      // Hanya stage yang sama dengan progress yang aktif & bisa diklik
-      if (s === bucket){
-        return '<a class="btn-photo active" href="' + rec.foto + '" target="_blank" rel="noopener">Foto ' + s + '%</a>';
-      }
-      return '<span class="btn-photo disabled">Foto ' + s + '%</span>';
+      const cls = "btn-photo" + (nearestBucket === s ? " active" : "");
+      return '<a class="' + cls + '" href="' + url +
+             '" target="_blank" rel="noopener">Foto ' + s + '%</a>';
     }).join("");
-
-    // JUDUL: DI.<nama>, kalau kosong baru Kab/Desa
-    const title = rec.namaDi ? ("DI. " + rec.namaDi) : lokasiPendek;
 
     const popup =
       "<b>" + title + "</b>" +
@@ -557,24 +579,27 @@ function buildStatsUI({totalBaseline,totalFilled,percent,byBalai,missing}){
   };
 
   $("#btnExportCSV").onclick = ()=>{
-    const header = ["timestamp","key","balai","provinsi","nama_di","kabupaten_desa","lat","lng","progress","foto_url"];
+    const header = ["key","balai","provinsi","nama_di","kabupaten","desa","lat","lng","progress_terakhir","foto_25","foto_50","foto_75","foto_100"];
     const lines = [header.join(",")].concat(
       logData.map(r=>[
-        r.timestamp,
         r.key,
         r.balai,
         r.prov,
         r.namaDi,
-        r.kab + " / " + r.desa,
+        r.kab,
+        r.desa,
         r.lat,
         r.lng,
-        r.progress,
-        r.foto
+        r.latestProgress || 0,
+        r.stages["25"] || r.stages[25] || "",
+        r.stages["50"] || r.stages[50] || "",
+        r.stages["75"] || r.stages[75] || "",
+        r.stages["100"] || r.stages[100] || ""
       ].map(v=>'"'+String(v==null?"":v).replace(/"/g,'""')+'"').join(","))
     );
     const blob = new Blob([lines.join("\n")],{type:"text/csv;charset=utf-8"});
     const url = URL.createObjectURL(blob);
-    const a=document.createElement("a"); a.href=url; a.download="log_tahap3.csv";
+    const a=document.createElement("a"); a.href=url; a.download="log_tahap3_grouped.csv";
     document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
   };
 
@@ -689,14 +714,10 @@ async function build(){
 
     const logKeys  = new Set(logs.map(makeKey));
 
-    // total baseline = semua baris baseline (target 806)
     const totalBaseline = baseline.length;
-
-    // total terisi = jumlah lokasi unik di log_tahap3
     const totalFilled   = logKeys.size;
     const percent       = totalBaseline ? Math.round(totalFilled/totalBaseline*100) : 0;
 
-    // Rekap per balai
     const mapBalaiBase = new Map();
     baseline.forEach(b=>{
       const balai = b.balai || "-";
