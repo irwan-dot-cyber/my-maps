@@ -21,7 +21,6 @@
     html,body{ height:100%; margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
     #map{ height:100vh; width:100vw; background:var(--bg); }
 
-    /* Popup */
     .popup-wrap{ min-width: 290px; max-width: 360px; }
     .popup-title{ font-weight:800; font-size:18px; margin:0 0 6px 0; }
     .popup-row{ margin:2px 0; color:var(--text); }
@@ -71,7 +70,6 @@
     .leaflet-popup-content{ margin:14px 14px 12px 14px; }
     .leaflet-popup-content-wrapper{ border-radius:16px; }
 
-    /* Marker style (circle) */
     .marker-circle{
       width:14px; height:14px;
       border-radius:999px;
@@ -88,10 +86,11 @@
 /** =========================
  *  KONFIG
  *  ========================= */
-const SHEET_ID   = "1YkNmEcQw1_1_xL0BTxYXl1f4Tkk2-22tXuQB-IoEeuY";
-const SHEET_LOG  = "log_tahap3";
+const SHEET_ID  = "1YkNmEcQw1_1_xL0BTxYXl1f4Tkk2-22tXuQB-IoEeuY";
+const SHEET_LOG = "log_tahap3";
 
-// Proxy untuk anti CORS (kalau nggak perlu, kosongin "")
+// Proxy lo balikin JSON {"ok":true,"items":[...]}.
+// Kalau mau coba langsung GViz tanpa proxy: set jadi ""
 const PROXY_PREFIX = "https://gas-proxy3.tuic1677.workers.dev/?url=";
 
 /** =========================
@@ -99,12 +98,6 @@ const PROXY_PREFIX = "https://gas-proxy3.tuic1677.workers.dev/?url=";
  *  ========================= */
 function wrapProxy(url){
   return PROXY_PREFIX ? (PROXY_PREFIX + encodeURIComponent(url)) : url;
-}
-function pickAny(obj, keys){
-  for (const k of keys){
-    if (obj && obj[k] != null && String(obj[k]).trim() !== "") return obj[k];
-  }
-  return "";
 }
 function normText(s){
   return String(s ?? "")
@@ -138,20 +131,17 @@ function gmapsLink(lat,lng){
 }
 
 /** =========================
- *  GVIZ FETCH
+ *  FETCH rows (AUTO: GViz atau JSON)
  *  ========================= */
-async function fetchGVizRows(sheetName){
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}&t=${Date.now()}`;
-  const res = await fetch(wrapProxy(url));
-  const txt = await res.text();
-
+function parseGVizText(txt){
   const m = txt.match(/setResponse\((.*)\);?\s*$/s);
-  if (!m) throw new Error("Respon bukan GViz. Potongan awal: " + txt.slice(0,120));
+  if (!m) return null;
+  return JSON.parse(m[1]);
+}
 
-  const json = JSON.parse(m[1]);
+function gvizToRows(json){
   const table = json.table;
   const cols = table.cols.map(c => (c.label || "").trim());
-
   return table.rows.map(r => {
     const o = {};
     r.c.forEach((cell, i) => {
@@ -160,6 +150,26 @@ async function fetchGVizRows(sheetName){
     });
     return o;
   });
+}
+
+async function fetchRowsSmart(sheetName){
+  const gvizUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}&t=${Date.now()}`;
+
+  const res = await fetch(wrapProxy(gvizUrl));
+  const txt = await res.text();
+
+  // 1) Coba parse sebagai GViz
+  const gviz = parseGVizText(txt);
+  if (gviz) return gvizToRows(gviz);
+
+  // 2) Kalau bukan GViz, coba parse JSON biasa (proxy GAS lo)
+  try{
+    const j = JSON.parse(txt);
+    if (j && Array.isArray(j.items)) return j.items;
+    if (Array.isArray(j)) return j;
+  }catch(e){}
+
+  throw new Error("Respon bukan GViz/JSON yang dikenal. Potongan awal: " + txt.slice(0,120));
 }
 
 /** =========================
@@ -177,8 +187,8 @@ const markersLayer = L.layerGroup().addTo(map);
 /** =========================
  *  LOG INDEX
  *  ========================= */
-window.__LOG_T3_INDEX__ = {};     // key -> rec
-window.__LOG_T3_READY__ = false;  // bool
+window.__LOG_T3_INDEX__ = {};
+window.__LOG_T3_READY__ = false;
 
 function buildLogIndex(rows){
   const idx = {};
@@ -186,7 +196,7 @@ function buildLogIndex(rows){
   for (const r of rows){
     const di   = r.di || r["Nama DI"] || r["Nama_DI"] || r["nama_di"] || r["namadi"];
     const prov = r.provinsi || r["Provinsi"] || r["provinsi"];
-    const kab  = r.kabupaten || r["Kabupaten"] || r["kabupaten"] || r["Kab/Kota"];
+    const kab  = r.kabupaten || r["Kabupaten"] || r["kabupaten"] || r["Kab/Kota"] || r["KabKota"];
     const kec  = r.kecamatan || r["Kecamatan"] || r["kecamatan"] || r["Kec"];
     const desa = r.desa || r["Desa"] || r["desa"];
 
@@ -209,7 +219,7 @@ function buildLogIndex(rows){
         idx[k] = {
           di, provinsi:prov, kabupaten:kab, kecamatan:kec, desa,
           latestProgress: 0,
-          stages: {} // {25:url, 50:url,...}
+          stages: {}
         };
       }
       if (foto) idx[k].stages[bucket] = foto;
@@ -222,10 +232,9 @@ function buildLogIndex(rows){
 }
 
 /** =========================
- *  DEDUP MARKER PER DI
+ *  DEDUP: 1 DI = 1 TITIK (ambil terbaru)
  *  ========================= */
 function pickLatestPointPerDI(rows){
-  // 1 DI = 1 titik, ambil row terbaru berdasar timestamp (string compare cukup untuk format sheet timestamp)
   const byDI = new Map();
 
   for (const r of rows){
@@ -254,11 +263,11 @@ function pickLatestPointPerDI(rows){
 }
 
 /** =========================
- *  POPUP: cari record log untuk props
+ *  POPUP
  *  ========================= */
 function getLogRecForRow(row){
   const di   = row.di || row["Nama DI"] || row["Nama_DI"] || row["nama_di"] || row["namadi"];
-  const kab  = row.kabupaten || row["Kabupaten"] || row["kabupaten"] || row["Kab/Kota"];
+  const kab  = row.kabupaten || row["Kabupaten"] || row["kabupaten"] || row["Kab/Kota"] || row["KabKota"];
   const kec  = row.kecamatan || row["Kecamatan"] || row["kecamatan"] || row["Kec"];
   const desa = row.desa || row["Desa"] || row["desa"];
 
@@ -273,7 +282,7 @@ function getLogRecForRow(row){
   return idx[k1] || idx[k2] || idx[k3] || idx[k4] || null;
 }
 
-function buildPopupHtmlFromRow(row, lat, lng){
+function buildPopupHtml(row, lat, lng){
   const di   = row.di || row["Nama DI"] || row["Nama_DI"] || row["nama_di"] || row["namadi"] || "(Tanpa nama)";
   const balai= row.balai || row["Balai"] || row["BWS"] || row["bws"] || "-";
   const prov = row.provinsi || row["Provinsi"] || "-";
@@ -308,18 +317,14 @@ function buildPopupHtmlFromRow(row, lat, lng){
 }
 
 /** =========================
- *  LOAD + RENDER MARKERS
+ *  MAIN LOAD
  *  ========================= */
 async function loadAll(){
-  // 1) ambil semua rows log
-  const rows = await fetchGVizRows(SHEET_LOG);
+  const rows = await fetchRowsSmart(SHEET_LOG);
 
-  // 2) bikin index log (buat progress max + foto per bucket)
   buildLogIndex(rows);
 
-  // 3) buat marker 1 DI 1 titik (ambil terbaru)
   const points = pickLatestPointPerDI(rows);
-
   markersLayer.clearLayers();
 
   for (const item of points){
@@ -331,22 +336,10 @@ async function loadAll(){
     const m = L.marker([lat,lng], { icon }).addTo(markersLayer);
 
     m.on("click", ()=>{
-      if (!window.__LOG_T3_READY__){
-        m.bindPopup(`<b>${escapeHtml(r.di || r["Nama DI"] || "DI")}</b><br>Memuat log tahap 3...`).openPopup();
-        const t = setInterval(()=>{
-          if (window.__LOG_T3_READY__){
-            clearInterval(t);
-            m.setPopupContent(buildPopupHtmlFromRow(r, lat, lng));
-          }
-        }, 200);
-        setTimeout(()=>{ try{ clearInterval(t); }catch(e){} }, 8000);
-        return;
-      }
-      m.bindPopup(buildPopupHtmlFromRow(r, lat, lng)).openPopup();
+      m.bindPopup(buildPopupHtml(r, lat, lng)).openPopup();
     });
   }
 
-  // Fit bounds
   try{
     const b = markersLayer.getBounds();
     if (b && b.isValid()) map.fitBounds(b, { padding:[20,20] });
