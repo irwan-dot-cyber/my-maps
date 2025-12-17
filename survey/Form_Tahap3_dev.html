@@ -1,1017 +1,243 @@
 <!doctype html>
 <html lang="id">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Form Tahap 3 (Progres Foto)</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" referrerpolicy="no-referrer"/>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js" referrerpolicy="no-referrer"></script>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Riwayat Foto Progres (Slider)</title>
+<style>
+  :root{
+    --bg:#0b1222; --panel:#0f172a; --card:#111b34;
+    --text:#e5e7eb; --muted:#94a3b8; --line:#1f2a44;
+    --ok:#22c55e; --warn:#f59e0b; --no:#64748b;
+    --border:#18233d;
+  }
+  body{margin:0;font-family:Inter,system-ui,Segoe UI,Arial;background:var(--bg);color:var(--text);}
+  .wrap{max-width:1100px;margin:24px auto;padding:0 16px;}
+  .panel{background:linear-gradient(180deg,#0f172a,#0b1222);border:1px solid var(--border);
+    border-radius:16px;padding:18px;box-shadow:0 12px 30px rgba(0,0,0,.35);}
+  h2{margin:0 0 14px;font-size:18px;}
+  .top{
+    display:flex; gap:16px; align-items:center; flex-wrap:wrap;
+    padding:12px; border:1px solid var(--border); border-radius:12px; background:rgba(255,255,255,.02);
+  }
+  .value{min-width:170px;display:flex;flex-direction:column;gap:4px}
+  .value b{font-size:22px}
+  .value small{color:var(--muted)}
+  .sliderBox{flex:1; min-width:260px}
+  input[type="range"]{width:100%}
+  .marks{display:flex;justify-content:space-between;color:var(--muted);font-size:12px;margin-top:6px;}
+  .rail{margin:16px 0 14px; display:flex; align-items:center; gap:10px;}
+  .dot{width:14px;height:14px;border-radius:999px;border:2px solid var(--no);background:transparent}
+  .dot.ok{border-color:var(--ok);background:rgba(34,197,94,.18)}
+  .dot.now{border-color:var(--warn);box-shadow:0 0 0 6px rgba(245,158,11,.12)}
+  .seg{flex:1;height:3px;background:var(--line);border-radius:99px;position:relative;overflow:hidden}
+  .seg > i{position:absolute;inset:0; width:0%; background:rgba(245,158,11,.55)}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+  @media (max-width: 980px){ .grid{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width: 520px){ .grid{grid-template-columns:1fr;} }
 
-  <style>
-    :root{
-      --bg:#0b1224;
-      --panel:#0f172a;
-      --panel2:#0b1328;
-      --border:#223047;
-      --text:#e5e7eb;
-      --mut:#9aa3b2;
-      --mut2:#7f8aa5;
-      --accent:#22c55e;
-      --warn:#f59e0b;
-      --bad:#fb7185;
-      --shadow: 0 18px 55px rgba(0,0,0,.45);
-      --r:16px;
-      --r2:12px;
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family: system-ui, Segoe UI, Roboto, Arial;
-      background:
-        radial-gradient(900px 500px at 20% -10%, rgba(59,130,246,.22), transparent 60%),
-        radial-gradient(700px 420px at 90% 0%, rgba(34,197,94,.14), transparent 60%),
-        linear-gradient(180deg, #050914, #070c1a);
-      color:var(--text);
-      min-height:100vh;
-    }
-
-    header{
-      padding:14px 16px;
-      border-bottom:1px solid rgba(255,255,255,.08);
-      background:rgba(4,8,20,.72);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      position:sticky;top:0;z-index:50;
-      display:flex;align-items:center;justify-content:space-between;gap:12px;
-    }
-    .hdr-left{display:flex;flex-direction:column;gap:4px}
-    .hdr-title{font-weight:900;font-size:20px;letter-spacing:.2px}
-    .hdr-sub{font-size:12px;color:var(--mut)}
-    .btn-home{
-      text-decoration:none;
-      padding:9px 12px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.14);
-      background:rgba(255,255,255,.05);
-      color:var(--text);
-      font-weight:800;
-      font-size:13px;
-    }
-    .btn-home:active{transform:translateY(1px)}
-
-    main{max-width:980px;margin:0 auto;padding:14px}
-    .card{
-      border:1px solid rgba(255,255,255,.10);
-      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
-      border-radius:20px;
-      box-shadow: var(--shadow);
-      overflow:hidden;
-    }
-    .card-inner{
-      background: rgba(9, 16, 36, .78);
-      border:1px solid rgba(255,255,255,.08);
-      border-radius:20px;
-      margin:12px;
-      padding:14px;
-    }
-    .section-title{
-      margin:2px 0 12px;
-      font-size:18px;
-      font-weight:900;
-    }
-
-    /* form layout */
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    @media(max-width:820px){ .grid{grid-template-columns:1fr} }
-
-    label{font-size:12px;color:var(--mut);display:block;margin:2px 0 6px}
-    select,input{
-      width:100%;
-      padding:12px 12px;
-      border-radius: var(--r2);
-      border:1px solid rgba(255,255,255,.14);
-      background: rgba(3, 8, 22, .55);
-      color:var(--text);
-      outline:none;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
-    }
-    select:disabled,input:disabled{opacity:.55;cursor:not-allowed}
-    input::placeholder{color:rgba(168,177,199,.55)}
-
-    .chips{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 6px}
-    .chip{
-      display:inline-flex;align-items:center;gap:8px;
-      border:1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.03);
-      padding:8px 12px;
-      border-radius:999px;
-      font-size:12px;
-      font-weight:800;
-    }
-    .dot{width:9px;height:9px;border-radius:50%;background:var(--warn);box-shadow:0 0 0 4px rgba(245,158,11,.12)}
-    .dot.good{background:var(--accent);box-shadow:0 0 0 4px rgba(34,197,94,.14)}
-    .dot.bad{background:var(--bad);box-shadow:0 0 0 4px rgba(251,113,133,.14)}
-
-    /* map */
-    .mapwrap{position:relative;border:1px solid rgba(255,255,255,.10);border-radius:16px;overflow:hidden;background:rgba(255,255,255,.03);margin-top:10px}
-    #map{height:46vh;min-height:280px}
-    .crosshair{position:absolute;inset:0;pointer-events:none;display:grid;place-items:center;z-index:1000}
-    .crosshair .reticle{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:28px;height:28px}
-    .crosshair .reticle::before{content:"";position:absolute;inset:0;border:2px solid #e5e7ebcc;border-radius:50%;box-shadow:0 0 8px #000a}
-    .crosshair .reticle .h,.crosshair .reticle .v{position:absolute;background:#e5e7ebaa;box-shadow:0 0 6px #0008}
-    .crosshair .reticle .h{width:14px;height:2px;left:50%;top:50%;transform:translate(-50%,-50%)}
-    .crosshair .reticle .v{width:2px;height:14px;left:50%;top:50%;transform:translate(-50%,-50%)}
-
-    .map-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
-    button{cursor:pointer;border:0;border-radius:12px;padding:10px 12px;font-weight:800}
-    .primary{background:var(--accent);color:#01250f}
-    .ghost{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.14);color:var(--text)}
-    button:disabled{opacity:.6;cursor:not-allowed}
-
-    .hint{font-size:12px;color:var(--mut2);line-height:1.45}
-
-    /* project info */
-    .proj{
-      margin-top:10px;
-      border:1px solid rgba(255,255,255,.10);
-      border-radius:16px;
-      background: rgba(255,255,255,.03);
-      overflow:hidden;
-    }
-    .proj-hdr{
-      padding:10px 12px;
-      display:flex;justify-content:space-between;align-items:center;gap:10px;
-      border-bottom:1px solid rgba(255,255,255,.08);
-    }
-    .proj-hdr b{font-size:14px}
-    .proj-body{padding:10px 12px;display:grid;gap:8px}
-    .kv{
-      display:grid;grid-template-columns: 180px 1fr;gap:10px;
-      font-size:12px;color:var(--mut);
-    }
-    .kv span{color:var(--text);font-weight:700}
-    @media(max-width:520px){
-      .kv{grid-template-columns:1fr;gap:2px}
-    }
-
-    /* history */
-    .hist{
-      margin-top:12px;
-      border:1px solid rgba(255,255,255,.10);
-      border-radius:16px;
-      background: rgba(255,255,255,.03);
-      overflow:hidden;
-    }
-    .hist h3{
-      margin:0;padding:10px 12px;
-      border-bottom:1px solid rgba(255,255,255,.08);
-      font-size:14px;font-weight:900;
-    }
-    .hist-grid{
-      padding:10px 12px;
-      display:grid;
-      grid-template-columns: repeat(3, minmax(0,1fr));
-      gap:10px;
-    }
-    @media(max-width:820px){ .hist-grid{grid-template-columns:1fr} }
-
-    .hist-card{
-      border:1px solid rgba(255,255,255,.10);
-      background: rgba(0,0,0,.10);
-      border-radius:16px;
-      padding:10px;
-    }
-    .hist-card .hdr{
-      display:flex;justify-content:space-between;align-items:center;gap:8px;
-      font-weight:900;font-size:13px;
-      margin-bottom:8px;
-    }
-    .pill{
-      display:inline-flex;align-items:center;gap:6px;
-      border:1px solid rgba(255,255,255,.14);
-      background:rgba(255,255,255,.04);
-      padding:4px 8px;border-radius:999px;
-      font-size:11px;font-weight:800;color:var(--text);
-      white-space:nowrap;
-    }
-    .pill .dot{width:8px;height:8px;box-shadow:none}
-    .thumb{
-      height:58px;
-      display:flex;align-items:center;justify-content:center;
-      border-radius:12px;
-      background: rgba(255,255,255,.03);
-      border:1px dashed rgba(255,255,255,.12);
-    }
-    .thumb .ok{
-      font-size:28px; line-height:1;
-    }
-    .thumb .no{
-      font-size:20px; opacity:.6;
-    }
-    .hist-meta{
-      display:flex;justify-content:space-between;align-items:center;gap:10px;
-      margin-top:8px;
-    }
-    .hist-meta .fn{
-      font-size:11px;color:var(--mut2);
-      overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-      max-width:70%;
-    }
-    .openlink{
-      font-size:12px;
-      font-weight:800;
-      color:#60a5fa;
-      text-decoration:none;
-    }
-
-    /* upload */
-    .upload{
-      margin-top:12px;
-      border:1px solid rgba(255,255,255,.10);
-      border-radius:16px;
-      background: rgba(255,255,255,.03);
-      overflow:hidden;
-    }
-    .upload h3{
-      margin:0;padding:10px 12px;
-      border-bottom:1px solid rgba(255,255,255,.08);
-      font-size:14px;font-weight:900;
-    }
-    .upload-body{padding:10px 12px;display:grid;gap:10px}
-    .stageBtns{display:flex;gap:8px;flex-wrap:wrap}
-    .toast{margin:10px 0 0; padding:10px 12px;border-radius:12px;background:#052e1a;border:1px solid #14532d;color:#bbf7d0;display:none;font-size:13px}
-
-    /* overlay upload */
-    #uploadOverlay{
-      position:fixed;inset:0;display:none;align-items:center;justify-content:center;
-      background:rgba(2,6,23,.65);
-      backdrop-filter:blur(3px);
-      -webkit-backdrop-filter:blur(3px);
-      z-index:9999;
-    }
-
-    /* leaflet tweaks */
-    .leaflet-control-zoom a{
-      background: rgba(0,0,0,.45) !important;
-      color: var(--text) !important;
-      border-color: rgba(255,255,255,.14) !important;
-    }
-    .leaflet-control-attribution{
-      background: rgba(0,0,0,.25) !important;
-      color: rgba(255,255,255,.75) !important;
-      border-radius: 10px;
-      padding: 2px 8px !important;
-      border: 1px solid rgba(255,255,255,.12);
-      margin: 8px !important;
-    }
-  </style>
+  .slot{
+    border:1px solid var(--border); border-radius:14px; padding:12px;
+    background:rgba(255,255,255,.02);
+  }
+  .slotHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:10px;}
+  .badge{
+    font-size:12px; padding:6px 10px; border-radius:999px;
+    border:1px solid var(--border); color:var(--muted); display:flex; align-items:center; gap:8px;
+  }
+  .lamp{width:10px;height:10px;border-radius:99px;background:var(--no)}
+  .badge.ok .lamp{background:var(--ok)}
+  .badge.now .lamp{background:var(--warn)}
+  .badge.ok{color:var(--text)}
+  .badge.now{color:var(--text)}
+  .thumb{
+    height:120px; border-radius:12px; border:1px dashed rgba(148,163,184,.35);
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
+    background:rgba(0,0,0,.15);
+  }
+  .thumb img{width:100%;height:100%;object-fit:cover}
+  .slotFoot{margin-top:10px; display:flex; gap:8px; align-items:center; justify-content:space-between; flex-wrap:wrap;}
+  .meta{color:var(--muted); font-size:12px}
+  .btn{
+    cursor:pointer; border:1px solid var(--border); background:rgba(255,255,255,.03);
+    color:var(--text); padding:8px 10px; border-radius:10px; font-size:12px;
+  }
+  .btn:hover{background:rgba(255,255,255,.06)}
+  input[type="file"]{display:none}
+</style>
 </head>
-
 <body>
-<header>
-  <div class="hdr-left">
-    <div class="hdr-title">Form Tahap 3</div>
-    <div class="hdr-sub">INPRES 2/2025 · Pelaksanaan Tahap 3</div>
-  </div>
-  <a class="btn-home" href="https://irwan-dot-cyber.github.io/my-maps/landingpage/beranda.html">Beranda</a>
-</header>
+<div class="wrap">
+  <div class="panel">
+    <h2>Riwayat Foto Progres</h2>
 
-<main>
-  <section class="card">
-    <div class="card-inner">
-      <div class="section-title">Data Survey</div>
-
-      <div id="toast" class="toast"></div>
-
-      <div class="grid">
-        <div>
-          <label for="balai">B/BWS</label>
-          <select id="balai" required title="Pilih B/BWS">
-            <option value="">-- pilih B/BWS --</option>
-          </select>
-        </div>
-        <div>
-          <label for="prov">Provinsi</label>
-          <select id="prov" disabled required title="Pilih Provinsi">
-            <option value="">-- pilih Provinsi --</option>
-          </select>
-        </div>
+    <div class="top">
+      <div class="value">
+        <b id="pctText">24,4%</b>
+        <small>Progres saat ini (0–100%)</small>
       </div>
 
-      <div class="grid" style="margin-top:10px">
-        <div>
-          <label for="kab">Kabupaten/Kota</label>
-          <select id="kab" disabled required title="Pilih Kabupaten/Kota">
-            <option value="">-- pilih Kab/Kota --</option>
-          </select>
-        </div>
-        <div>
-          <label for="di">Daerah Irigasi (DI)</label>
-          <select id="di" disabled required title="Pilih DI">
-            <option value="">-- pilih DI --</option>
-          </select>
+      <div class="sliderBox">
+        <input id="pct" type="range" min="0" max="100" step="0.1" value="24.4" />
+        <div class="marks">
+          <span>0</span><span>25</span><span>50</span><span>75</span><span>100</span>
         </div>
       </div>
-
-      <div class="chips">
-        <div class="chip">
-          <span class="dot good" id="dotProg"></span>
-          Progres terakhir: <span id="lastStage">0%</span>
-        </div>
-        <div class="chip">
-          <span class="dot" id="dotKoord"></span>
-          Koordinat: <span id="koordVal">-</span>
-        </div>
-      </div>
-
-      <div class="grid" style="margin-top:10px">
-        <div>
-          <label for="kecamatan">Kecamatan</label>
-          <input id="kecamatan" placeholder="(otomatis/isi manual)" required title="Isi Kecamatan"/>
-        </div>
-        <div>
-          <label for="desa">Desa/Kelurahan</label>
-          <input id="desa" placeholder="(otomatis/isi manual)" required title="Isi Desa/Kelurahan"/>
-        </div>
-      </div>
-
-      <!-- Info Proyek -->
-      <div class="proj" id="projBlock">
-        <div class="proj-hdr">
-          <b>Informasi Paket</b>
-          <button type="button" class="ghost" id="btnProjToggle" style="padding:8px 10px;border-radius:999px;font-size:12px">Ciutkan</button>
-        </div>
-        <div class="proj-body" id="projBody">
-          <div class="hint">Pilih B/BWS, Provinsi, Kab/Kota, dan DI untuk melihat detail.</div>
-        </div>
-      </div>
-
-      <!-- MAP -->
-      <div style="margin-top:12px">
-        <label>Peta Lokasi</label>
-        <div class="mapwrap">
-          <div id="map"></div>
-          <div class="crosshair"><div class="reticle"><span class="h"></span><span class="v"></span></div></div>
-        </div>
-
-        <div class="map-actions">
-          <button type="button" class="ghost" id="btnLocate">📍 Lokasi saya</button>
-          <button type="button" class="primary" id="btnPick">✅ Pilih lokasi (ambil dari tanda ＋)</button>
-          <button type="button" class="ghost" id="btnPan">🧭 Pan ke koordinat</button>
-          <span class="hint" id="coords">Lat: -, Lng: -</span>
-        </div>
-
-        <div class="grid" style="margin-top:10px">
-          <div>
-            <label for="lat">Latitude</label>
-            <input type="number" step="0.000001" id="lat" placeholder="Klik 'Pilih lokasi' atau isi manual" required title="Latitude"/>
-          </div>
-          <div>
-            <label for="lng">Longitude</label>
-            <input type="number" step="0.000001" id="lng" required title="Longitude"/>
-          </div>
-        </div>
-      </div>
-
-      <!-- HISTORY -->
-      <div class="hist" id="historyBlock">
-        <h3>Riwayat Foto Progres</h3>
-        <div class="hist-grid" id="historyGals">
-          <div class="hint" style="opacity:.75">Belum ada foto progres untuk kombinasi terpilih.</div>
-        </div>
-      </div>
-
-      <!-- UPLOAD -->
-      <div class="upload">
-        <h3>Upload Foto Progres</h3>
-        <div class="upload-body">
-          <div class="stageBtns" id="stageBtns"></div>
-
-          <div class="map-actions" style="margin-top:0">
-            <button type="button" class="ghost" id="btnCamera">📷 Kamera</button>
-            <button type="button" class="ghost" id="btnGallery">🖼️ Galeri</button>
-            <span class="hint" id="photoMeta"></span>
-          </div>
-          <input type="file" accept="image/*" id="fileInput" name="foto" style="display:none">
-
-          <div class="hint">Pilih kamera/galeri. Foto dikompresi otomatis & dikirim juga sebagai base64 fallback.</div>
-
-          <div class="grid" style="margin-top:6px">
-            <div>
-              <label for="nama">Nama Pengirim</label>
-              <input id="nama" placeholder="Nama lengkap" required title="Nama Pengirim"/>
-            </div>
-            <div>
-              <label for="telepon">Nomor WA/HP</label>
-              <input id="telepon" placeholder="08xxxxxxxxxx / 628xxxxxxxxx" pattern="[0-9+]{8,15}" required title="Nomor WA/HP"/>
-            </div>
-          </div>
-
-          <div class="map-actions">
-            <button type="button" class="primary" id="btnSubmit" disabled>Kirim</button>
-            <button type="button" class="ghost" id="btnReset">Reset</button>
-          </div>
-        </div>
-      </div>
-
     </div>
-  </section>
-</main>
 
-<!-- Overlay Upload -->
-<div id="uploadOverlay">
-  <div style="background:#0b1222;border:1px solid #263142;border-radius:16px;padding:18px 22px;min-width:300px;max-width:92vw">
-    <div style="font-weight:900;margin-bottom:6px" id="uploadTitle">Mengunggah data…</div>
-    <div style="height:10px;border:1px solid #263142;border-radius:999px;overflow:hidden;margin-top:10px;background:#0b1222">
-      <div id="progressBar" style="height:100%;width:0%;background:linear-gradient(90deg,#22c55e,#86efac)"></div>
+    <!-- indikator milestone -->
+    <div class="rail" aria-label="milestone">
+      <div id="d25" class="dot"></div>
+      <div class="seg"><i id="s25"></i></div>
+      <div id="d50" class="dot"></div>
+      <div class="seg"><i id="s50"></i></div>
+      <div id="d75" class="dot"></div>
+      <div class="seg"><i id="s75"></i></div>
+      <div id="d100" class="dot"></div>
     </div>
-    <div style="font-size:12px;color:#a1a1aa;margin-top:8px" id="uploadHint">Jangan tutup halaman ini.</div>
+
+    <!-- 4 slot foto selalu terbuka -->
+    <div class="grid" id="slots"></div>
   </div>
 </div>
 
 <script>
-/* ===== CONFIG ===== */
-const DATA_URL = 'https://gas-proxy3.tuic1677.workers.dev/'; // GET baseline/history
-const POST_URL = 'https://gas-proxy3.tuic1677.workers.dev/'; // POST submit via worker (proxy → GAS)
-const HOME_URL = 'https://irwan-dot-cyber.github.io/my-maps/landingpage/beranda.html';
-
-/* ===== Utils ===== */
-const $ = (id)=>document.getElementById(id);
-const toast = (m)=>{const t=$('toast'); t.textContent=m; t.style.display='block'; clearTimeout(window.__t); window.__t=setTimeout(()=>t.style.display='none',4200);};
-const norm = (s)=>String(s??'').trim();
-const uniq = (arr)=>Array.from(new Set(arr));
-const byAlpha = (a,b)=>norm(a).localeCompare(norm(b),'id');
-const safeText = (s)=>String(s??'').replace(/[<>&]/g, c=>({ '<':'&lt;','>':'&gt;','&':'&amp;' }[c]));
-function parseNum(v){ const n = Number(String(v??'').trim().replace(',','.')); return Number.isFinite(n)?n:NaN; }
-function isValidLatLng(lat,lng){ return Number.isFinite(lat)&&Number.isFinite(lng)&&Math.abs(lat)<=90&&Math.abs(lng)<=180; }
-
-function setUploadingUI(show, percent){
-  const ov = $('uploadOverlay'), bar=$('progressBar');
-  if(typeof percent==='number') bar.style.width=Math.max(0,Math.min(100,Math.round(percent)))+'%';
-  ov.style.display = show ? 'flex' : 'none';
-}
-
-/* ===== DOM ===== */
-const balai=$('balai'), prov=$('prov'), kab=$('kab'), di=$('di');
-const kecamatan=$('kecamatan'), desa=$('desa');
-const lat=$('lat'), lng=$('lng');
-const btnLocate=$('btnLocate'), btnPick=$('btnPick'), btnPan=$('btnPan');
-const coordsTxt=$('coords');
-const lastStageEl=$('lastStage');
-const dotKoord=$('dotKoord');
-const koordVal=$('koordVal');
-
-const fileInput=$('fileInput');
-const btnCamera=$('btnCamera'), btnGallery=$('btnGallery');
-const photoMeta=$('photoMeta');
-
-const btnSubmit=$('btnSubmit');
-const btnReset=$('btnReset');
-const stageBtns=$('stageBtns');
-
-const historyGals=$('historyGals');
-
-const projBody=$('projBody');
-const btnProjToggle=$('btnProjToggle');
-
-/* ===== Map ===== */
-const baseOSM=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:20, attribution:'© OpenStreetMap'});
-const baseImg=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20, attribution:'Tiles © Esri/Maxar'});
-const map=L.map('map',{zoomControl:true,layers:[baseOSM]});
-L.control.layers({OSM:baseOSM,'Esri Imagery':baseImg},{},{position:'topright',collapsed:false}).addTo(map);
-map.setView([-2.5,118],5);
-function updCenter(){ const c=map.getCenter(); coordsTxt.textContent=`Lat: ${c.lat.toFixed(6)}, Lng: ${c.lng.toFixed(6)}`; }
-map.on('move', updCenter); map.whenReady(updCenter);
-
-/* marker titik terpilih */
-let pickedMarker=null;
-const pickedIcon=L.icon({
-  iconUrl:'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-  iconSize:[25,41], iconAnchor:[12,41],
-  shadowUrl:'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-  shadowSize:[41,41]
-});
-function showPicked(la,lo,{zoom=null}={}){
-  if(!isValidLatLng(la,lo)) return;
-  const ll=L.latLng(la,lo);
-  if(!pickedMarker) pickedMarker=L.marker(ll,{icon:pickedIcon}).addTo(map);
-  else pickedMarker.setLatLng(ll);
-  if(zoom!=null) map.setView(ll, zoom);
-}
-
-btnLocate.addEventListener('click',()=>map.locate({setView:true,maxZoom:17,enableHighAccuracy:true}));
-map.on('locationfound',(e)=>{
-  lat.value=e.latitude.toFixed(6);
-  lng.value=e.longitude.toFixed(6);
-  setKoordChip(parseFloat(lat.value), parseFloat(lng.value));
-  showPicked(e.latitude,e.longitude,{zoom:17});
-  updateSubmitState();
-});
-map.on('locationerror',()=>toast('Izin lokasi ditolak. Geser peta manual & klik "Pilih lokasi".'));
-
-btnPick.addEventListener('click',()=>{
-  const c=map.getCenter();
-  lat.value=c.lat.toFixed(6);
-  lng.value=c.lng.toFixed(6);
-  setKoordChip(c.lat,c.lng);
-  showPicked(c.lat,c.lng,{zoom:Math.max(map.getZoom(),16)});
-  updateSubmitState();
-});
-
-btnPan.addEventListener('click',()=>{
-  const la=parseFloat(lat.value), lo=parseFloat(lng.value);
-  if(isValidLatLng(la,lo)){
-    showPicked(la,lo,{zoom:Math.max(map.getZoom(),16)});
-  }
-});
-
-function setKoordChip(la,lo){
-  if(!isValidLatLng(la,lo)){
-    koordVal.textContent='-';
-    dotKoord.className='dot';
-    return;
-  }
-  koordVal.textContent=`${la.toFixed(6)}, ${lo.toFixed(6)}`;
-  dotKoord.className='dot good';
-}
-
-/* lock coord */
-function setCoordLock(locked, la, lo){
-  if(locked){
-    if(isValidLatLng(la,lo)){
-      lat.value=Number(la).toFixed(6);
-      lng.value=Number(lo).toFixed(6);
-      setKoordChip(Number(la),Number(lo));
-      showPicked(Number(la),Number(lo),{zoom:17});
-    }
-    lat.disabled=true; lng.disabled=true;
-    btnPick.disabled=true; btnPan.disabled=true; btnLocate.disabled=true;
-    btnPick.classList.remove('primary'); btnPick.classList.add('ghost');
-  }else{
-    lat.disabled=false; lng.disabled=false;
-    btnPick.disabled=false; btnPan.disabled=false; btnLocate.disabled=false;
-    btnPick.classList.add('primary'); btnPick.classList.remove('ghost');
-  }
-}
-
-/* ===== Data ===== */
-let RAW=[];               // baseline items
-let INDEX={};             // cascade map
-let CURRENT_BASELINE_ROW=null; // row selected DI
-let currentStage=null;    // next stage allowed
-let selectedFile=null;
-let lockedCoords=null;    // {lat,lng} kalau ada
-
-function makeKey(b,p,k,d){ return [b,p,k,d].map(norm).join('||').toLowerCase(); }
-
-/* build index from baseline */
-function buildIndex(items){
-  INDEX={};
-  (items||[]).forEach(row=>{
-    const b = norm(row['B/BWS'] ?? row['B/BWS PELAKSANA'] ?? row['Balai'] ?? row['BWS']);
-    const p = norm(row['Provinsi'] ?? row['PROVINSI']);
-    const k = norm(row['Kab/Kota'] ?? row['Kabupaten'] ?? row['KABUPATEN']);
-    const d = norm(row['Nama DI'] ?? row['NAMA DI/DIR'] ?? row['DI'] ?? row['nama di'] ?? row['Paket']);
-    if(!b||!p||!k||!d) return;
-
-    INDEX[b] ??= {};
-    INDEX[b][p] ??= {};
-    INDEX[b][p][k] ??= {};
-    INDEX[b][p][k][d] ??= row;
-  });
-}
-
-function fillSelect(el, items, ph){
-  el.innerHTML='';
-  const o=document.createElement('option');
-  o.value=''; o.textContent=ph;
-  el.appendChild(o);
-  (items||[]).forEach(v=>{
-    const opt=document.createElement('option');
-    opt.value=v; opt.textContent=v;
-    el.appendChild(opt);
-  });
-  el.disabled = !(items && items.length);
-}
-
-async function loadBaseline(){
-  try{
-    const url = DATA_URL + (DATA_URL.includes('?')?'&':'?') + 'fn=baseline&t=' + Date.now();
-    const res = await fetch(url,{cache:'no-store'});
-    const j = await res.json();
-    if(!j || j.ok!==true || !Array.isArray(j.items)) throw new Error('Baseline format invalid');
-    RAW = j.items;
-    buildIndex(RAW);
-    fillSelect(balai, Object.keys(INDEX).sort(byAlpha), '-- pilih B/BWS --');
-    prov.disabled=kab.disabled=di.disabled=true;
-  }catch(e){
-    console.error(e);
-    toast('Gagal memuat baseline.');
-  }
-}
-
-/* cascade handlers */
-balai.addEventListener('change',()=>{
-  const b=balai.value;
-  resetAfter('balai');
-  if(!b){ return; }
-  const provs = Object.keys(INDEX[b]||{}).sort(byAlpha);
-  fillSelect(prov, provs, '-- pilih Provinsi --');
-  prov.disabled=false;
-  updateSubmitState();
-});
-
-prov.addEventListener('change',()=>{
-  const b=balai.value, p=prov.value;
-  resetAfter('prov');
-  if(!b||!p) return;
-  const kabs = Object.keys((INDEX[b]||{})[p]||{}).sort(byAlpha);
-  fillSelect(kab, kabs, '-- pilih Kab/Kota --');
-  kab.disabled=false;
-  updateSubmitState();
-});
-
-kab.addEventListener('change',()=>{
-  const b=balai.value, p=prov.value, k=kab.value;
-  resetAfter('kab');
-  if(!b||!p||!k) return;
-  const dis = Object.keys((((INDEX[b]||{})[p]||{})[k]||{})).sort(byAlpha);
-  fillSelect(di, dis, '-- pilih DI --');
-  di.disabled=false;
-  updateSubmitState();
-});
-
-/* project info rendering */
-function pickField(row, names){
-  for(const n of names){
-    if(row && row[n]!==undefined && row[n]!==null && String(row[n]).trim()!=='') return row[n];
-  }
-  return '';
-}
-function renderProjectInfo(row){
-  // Exclude "Total Alokasi Usulan"
-  const fields = [
-    {label:'Jenis Usulan Kegiatan', keys:['Jenis Usulan Kegiatan','JENIS USULAN KEGIATAN']},
-    {label:'Urutan Prioritas', keys:['Urutan Prioritas','URUTAN PRIORITAS']},
-    {label:'IP Padi Semula (%)', keys:['IP Padi Semula (%)','IP Padi Semula','IP PADI SEMULA (%)']},
-    {label:'IP Padi Menjadi (%)', keys:['IP Padi Menjadi (%)','IP Padi Menjadi','IP PADI MENJADI (%)']},
-    {label:'Outcome (Ha)', keys:['Outcome (Ha)','OUTCOME (HA)','Outcome']},
-    {label:'Masa Pelaksanaan', keys:['Masa Pelaksanaan','MASA PELAKSANAAN']},
+  const milestones = [
+    { key:"p25",  label:"Foto Progres 25%",  m:25 },
+    { key:"p50",  label:"Foto Progres 50%",  m:50 },
+    { key:"p75",  label:"Foto Progres 75%",  m:75 },
+    { key:"p100", label:"Foto Progres 100%", m:100 }
   ];
 
-  if(!row){
-    projBody.innerHTML = `<div class="hint">Pilih B/BWS, Provinsi, Kab/Kota, dan DI untuk melihat detail.</div>`;
-    return;
+  const pct = document.getElementById('pct');
+  const pctText = document.getElementById('pctText');
+
+  // store dummy (bisa diganti localStorage / backend nanti)
+  const state = {
+    photos: { p25:null, p50:null, p75:null, p100:null },   // dataURL
+    times:  { p25:null, p50:null, p75:null, p100:null }    // string
+  };
+
+  function fmtPct(v){
+    // 24.4 -> "24,4%"
+    const s = Number(v).toFixed(1).replace('.', ',');
+    // buang .0 biar rapih
+    return s.endsWith(',0') ? s.slice(0,-2) + '%' : s + '%';
   }
 
-  const html = fields.map(f=>{
-    const val = pickField(row, f.keys);
-    return `<div class="kv"><div>${safeText(f.label)}</div><span>${safeText(val || '-')}</span></div>`;
-  }).join('');
+  function statusClass(current, m){
+    // warna milestone: ok kalau >= m, now kalau paling dekat setelah nilai (opsional)
+    if (current >= m) return 'ok';
+    return '';
+  }
 
-  projBody.innerHTML = html || `<div class="hint">Tidak ada informasi proyek di baseline.</div>`;
-}
+  function renderSlots(){
+    const el = document.getElementById('slots');
+    const current = Number(pct.value);
 
-btnProjToggle.addEventListener('click',()=>{
-  const body = $('projBody');
-  const isHidden = body.style.display==='none';
-  body.style.display = isHidden ? 'grid' : 'none';
-  btnProjToggle.textContent = isHidden ? 'Ciutkan' : 'Tampilkan';
-});
+    el.innerHTML = milestones.map(ms => {
+      const img = state.photos[ms.key];
+      const time = state.times[ms.key];
+      const st = statusClass(current, ms.m);
+      const badgeCls = st ? `badge ${st}` : 'badge';
+      const badgeText = current >= ms.m ? 'Tercapai' : 'Belum';
 
-/* history */
-function renderHistory(photos){
-  const stages=[25,50,75,100];
-  const html = stages.map(st=>{
-    const p = photos && photos[String(st)];
-    const uploaded = !!(p && p.url);
-    const filename = uploaded ? (p.name || ('Stage '+st)) : 'Belum upload';
-    const url = uploaded ? p.url : '';
-    return `
-      <div class="hist-card">
-        <div class="hdr">
-          <div>Foto Progres ${st}%</div>
-          <span class="pill">
-            <span class="dot ${uploaded?'good':''}"></span>
-            ${uploaded?'Sudah upload':'Belum'}
-          </span>
+      return `
+        <div class="slot" data-key="${ms.key}">
+          <div class="slotHead">
+            <div style="font-weight:700">${ms.label}</div>
+            <div class="${badgeCls}">
+              <span class="lamp"></span>
+              <span>${badgeText}</span>
+            </div>
+          </div>
+
+          <div class="thumb">
+            ${img ? `<img src="${img}" alt="${ms.label}">` : `<span style="color:var(--muted)">Belum ada foto</span>`}
+          </div>
+
+          <div class="slotFoot">
+            <div class="meta">${time ? `Terakhir: ${time}` : `Belum upload`}</div>
+            <div style="display:flex;gap:8px">
+              <label class="btn">
+                Upload
+                <input type="file" accept="image/*" data-upload="${ms.key}">
+              </label>
+              <button class="btn" data-clear="${ms.key}">Hapus</button>
+            </div>
+          </div>
         </div>
-        <div class="thumb">
-          <div class="${uploaded?'ok':'no'}">${uploaded?'✅':'—'}</div>
-        </div>
-        <div class="hist-meta">
-          <div class="fn" title="${safeText(filename)}">${safeText(filename)}</div>
-          ${uploaded ? `<a class="openlink" href="${url}" target="_blank" rel="noopener">Buka</a>` : `<span class="hint" style="margin:0">-</span>`}
-        </div>
-      </div>
-    `;
-  }).join('');
-  historyGals.innerHTML = html;
-}
-
-/* stage buttons gating */
-function renderStageButtons(maxStage){
-  stageBtns.innerHTML='';
-  const stages=[25,50,75,100];
-  const nextStage = (maxStage>=100) ? null : (maxStage===0 ? 25 : (maxStage+25));
-  currentStage = nextStage;
-
-  stages.forEach(st=>{
-    const btn=document.createElement('button');
-    btn.type='button';
-    btn.textContent = `Progres ${st}%`;
-    const enabled = (st===nextStage);
-    btn.className = enabled ? 'primary' : 'ghost';
-    btn.disabled = !enabled;
-    btn.addEventListener('click',()=>{
-      currentStage = st;
-      toast(`Stage dipilih: ${st}%`);
-      updateSubmitState();
-    });
-    stageBtns.appendChild(btn);
-  });
-
-  updateSubmitState();
-}
-
-/* get history from GAS */
-async function fetchHistory(bws, p, k, d){
-  const qs = new URLSearchParams({fn:'history', bws, prov:p, kab:k, di:d});
-  const url = DATA_URL + (DATA_URL.includes('?')?'&':'?') + qs.toString() + '&t=' + Date.now();
-  const res = await fetch(url,{cache:'no-store'});
-  try{
-    const j=await res.json();
-    if(j && j.ok) return j;
-    return {ok:false, maxStage:0, coords:null, photos:{}};
-  }catch{
-    return {ok:false, maxStage:0, coords:null, photos:{}};
-  }
-}
-
-/* DI change: fill kec/desa + project info + history lock coords */
-di.addEventListener('change', async ()=>{
-  const b=balai.value, p=prov.value, k=kab.value, d=di.value;
-  lockedCoords=null;
-
-  CURRENT_BASELINE_ROW = (((INDEX[b]||{})[p]||{})[k]||{})[d] || null;
-
-  // auto fill kec/desa from baseline if exist
-  const kecVal = norm(pickField(CURRENT_BASELINE_ROW, ['Kecamatan','KECAMATAN','Kec']));
-  const desaVal= norm(pickField(CURRENT_BASELINE_ROW, ['Desa','DESA','Desa/Kelurahan','Kel']));
-  if(kecVal) kecamatan.value = kecVal;
-  if(desaVal) desa.value = desaVal;
-
-  // show project info
-  renderProjectInfo(CURRENT_BASELINE_ROW);
-
-  if(!b||!p||!k||!d){
-    lastStageEl.textContent='0%';
-    renderHistory({});
-    renderStageButtons(0);
-    setCoordLock(false);
-    setKoordChip(NaN,NaN);
-    updateSubmitState();
-    return;
+      `;
+    }).join('');
   }
 
-  const hist = await fetchHistory(b,p,k,d);
-  const maxStage = Number(hist.maxStage||0);
-  lastStageEl.textContent = maxStage + '%';
-  renderHistory(hist.photos||{});
-  renderStageButtons(maxStage);
+  function updateMilestoneRail(){
+    const current = Number(pct.value);
+    // dot classes
+    document.getElementById('d25').className  = 'dot ' + (current >= 25 ? 'ok' : '');
+    document.getElementById('d50').className  = 'dot ' + (current >= 50 ? 'ok' : '');
+    document.getElementById('d75').className  = 'dot ' + (current >= 75 ? 'ok' : '');
+    document.getElementById('d100').className = 'dot ' + (current >= 100 ? 'ok' : '');
 
-  const hasCoord = hist.coords && isValidLatLng(hist.coords.lat, hist.coords.lng);
-  if(hasCoord){
-    lockedCoords = {lat: hist.coords.lat, lng: hist.coords.lng};
-    setCoordLock(true, hist.coords.lat, hist.coords.lng);
-    map.setView([hist.coords.lat, hist.coords.lng], 17);
-  }else{
-    setCoordLock(false);
-  }
-
-  updateSubmitState();
-});
-
-/* reset helper */
-function resetAfter(level){
-  // clear lower selects
-  if(level==='balai'){
-    fillSelect(prov,[], '-- pilih Provinsi --'); prov.disabled=true;
-    fillSelect(kab,[], '-- pilih Kab/Kota --'); kab.disabled=true;
-    fillSelect(di,[], '-- pilih DI --'); di.disabled=true;
-  }
-  if(level==='prov'){
-    fillSelect(kab,[], '-- pilih Kab/Kota --'); kab.disabled=true;
-    fillSelect(di,[], '-- pilih DI --'); di.disabled=true;
-  }
-  if(level==='kab'){
-    fillSelect(di,[], '-- pilih DI --'); di.disabled=true;
-  }
-
-  // clear dependent UI
-  lastStageEl.textContent='0%';
-  renderHistory({});
-  renderStageButtons(0);
-  CURRENT_BASELINE_ROW=null;
-  renderProjectInfo(null);
-
-  // unlock coords, clear marker? keep marker optional
-  setCoordLock(false);
-  lockedCoords=null;
-
-  updateSubmitState();
-}
-
-/* file pick */
-btnCamera.addEventListener('click',()=>{ fileInput.setAttribute('capture','environment'); fileInput.click(); });
-btnGallery.addEventListener('click',()=>{ fileInput.removeAttribute('capture'); fileInput.click(); });
-
-fileInput.addEventListener('change',()=>{
-  selectedFile = fileInput.files?.[0] || null;
-  photoMeta.textContent = selectedFile ? `Dipilih: ${selectedFile.name} • ${(selectedFile.size/1024).toFixed(1)} KB` : '';
-  updateSubmitState();
-});
-
-/* compress image */
-async function compressImage(file,{maxDim=2000,quality=0.82,mime='image/jpeg'}={}){
-  try{
-    if(!(file && file.type && file.type.startsWith('image/'))) return file;
-    const bitmap = await createImageBitmap(file,{imageOrientation:'from-image'});
-    const W=bitmap.width,H=bitmap.height;
-    const s=Math.min(1, maxDim/Math.max(W,H));
-    const w=Math.round(W*s), h=Math.round(H*s);
-    if(s===1 && file.type==='image/jpeg' && file.size<700*1024) return file;
-    const c=document.createElement('canvas'); c.width=w; c.height=h;
-    const ctx=c.getContext('2d'); ctx.drawImage(bitmap,0,0,w,h);
-    const blob=await new Promise(r=>c.toBlob(r,mime,quality));
-    if(!blob || blob.size>=file.size) return file;
-    const base=(file.name.replace(/\.(jpe?g|png|webp|heic|heif)$/i,'')||'foto');
-    return new File([blob], base+'.jpg', {type:mime});
-  }catch(e){
-    console.warn('compress fail',e);
-    return file;
-  }
-}
-
-/* submit state */
-function missingList(){
-  const m=[];
-  if(!balai.value) m.push('B/BWS');
-  if(!prov.value) m.push('Provinsi');
-  if(!kab.value) m.push('Kab/Kota');
-  if(!di.value) m.push('DI');
-  if(!kecamatan.value) m.push('Kecamatan');
-  if(!desa.value) m.push('Desa');
-  const la=parseFloat(lat.value), lo=parseFloat(lng.value);
-  if(!isValidLatLng(la,lo)) m.push('Koordinat');
-  if(!norm($('nama').value)) m.push('Nama');
-  if(!norm($('telepon').value)) m.push('Nomor WA/HP');
-  if(!currentStage) m.push('Stage Progres');
-  // wajib foto untuk tahap 3 (biar gak kosong)
-  if(!selectedFile) m.push('Foto');
-  return m;
-}
-function updateSubmitState(){
-  const ok = missingList().length===0;
-  btnSubmit.disabled = !ok;
-}
-document.addEventListener('input', updateSubmitState);
-document.addEventListener('change', updateSubmitState);
-
-/* submit */
-btnSubmit.addEventListener('click', async ()=>{
-  const miss = missingList();
-  if(miss.length){
-    toast('Harus diisi dulu: '+miss.join(', '));
-    return;
-  }
-
-  const b=balai.value, p=prov.value, k=kab.value, d=di.value;
-  const stage = currentStage;
-
-  // rename file -> NamaDI_Progres.jpg (tanpa ubah stage yg sudah ada; stage gating sudah handle)
-  const diSafe = norm(d).replace(/[^\w\-]+/g,'_').replace(/_+/g,'_').replace(/^_+|_+$/g,'') || 'DI';
-  const rename = `${diSafe}_${stage}.jpg`;
-
-  let photo = await compressImage(selectedFile,{maxDim:2000,quality:0.82});
-  // force name
-  photo = new File([photo], rename, {type: photo.type || 'image/jpeg'});
-
-  const b64 = await new Promise((res, rej)=>{
-    const r=new FileReader();
-    r.onload=()=>res(String(r.result));
-    r.onerror=rej;
-    r.readAsDataURL(photo);
-  });
-
-  // build form payload
-  const fd = new FormData();
-  fd.set('balai', b);
-  fd.set('provinsi', p);
-  fd.set('kabupaten', k);
-  fd.set('di', d);
-  fd.set('kecamatan', kecamatan.value);
-  fd.set('desa', desa.value);
-
-  // coords: kalau locked, tetap kirim locked value
-  const la=parseFloat(lat.value), lo=parseFloat(lng.value);
-  fd.set('lat', String(la));
-  fd.set('lng', String(lo));
-
-  fd.set('nama', $('nama').value);
-  fd.set('telepon', $('telepon').value);
-  fd.set('progress_stage', String(stage));
-
-  fd.set('foto_b64', b64);
-  fd.set('foto_name', rename);
-  fd.set('foto_type', photo.type || 'image/jpeg');
-
-  setUploadingUI(true, 6);
-  btnSubmit.disabled=true;
-
-  try{
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', POST_URL, true);
-    xhr.upload.onprogress = (ev)=>{ if(ev.lengthComputable) setUploadingUI(true, (ev.loaded/ev.total)*100); };
-    xhr.onloadstart=()=>setUploadingUI(true, 5);
-    xhr.onreadystatechange=()=>{ if(xhr.readyState===XMLHttpRequest.HEADERS_RECEIVED) setUploadingUI(true, 95); };
-    xhr.onerror=()=>{ setUploadingUI(false); toast('Gagal kirim (jaringan/proxy).'); updateSubmitState(); };
-
-    xhr.onload = async ()=>{
-      let data={}; try{ data=JSON.parse(xhr.responseText||'{}'); }catch{}
-      if(xhr.status>=200 && xhr.status<300 && data && data.ok){
-        setUploadingUI(true,100);
-        toast('✅ Terkirim!');
-        // refresh history to update maxStage + lock coords
-        const hist = await fetchHistory(b,p,k,d);
-        const maxStage = Number(hist.maxStage||0);
-        lastStageEl.textContent = maxStage + '%';
-        renderHistory(hist.photos||{});
-        renderStageButtons(maxStage);
-
-        if(hist.coords && isValidLatLng(hist.coords.lat,hist.coords.lng)){
-          lockedCoords={lat:hist.coords.lat,lng:hist.coords.lng};
-          setCoordLock(true,hist.coords.lat,hist.coords.lng);
-        }
-        // clear file
-        selectedFile=null;
-        fileInput.value='';
-        photoMeta.textContent='';
-        setTimeout(()=>setUploadingUI(false), 600);
-      }else{
-        setUploadingUI(false);
-        toast('❌ Gagal kirim (server). ' + (data && data.error ? data.error : ''));
-      }
-      updateSubmitState();
+    // seg fill (antara milestone)
+    const fill = (a,b) => {
+      if (current <= a) return 0;
+      if (current >= b) return 100;
+      return ((current - a) / (b - a)) * 100;
     };
+    document.getElementById('s25').style.width  = fill(0,25) + '%';
+    document.getElementById('s50').style.width  = fill(25,50) + '%';
+    document.getElementById('s75').style.width  = fill(50,75) + '%';
 
-    xhr.send(fd);
-  }catch(e){
-    console.error(e);
-    setUploadingUI(false);
-    toast('❌ Error submit.');
-    updateSubmitState();
+    // seg terakhir (75-100)
+    document.getElementById('s75').parentElement.nextElementSibling?.querySelector('i')?.style;
+    const lastSeg = document.querySelectorAll('.seg i')[3]; // i ke-4 ga ada, jadi aman? kita handle:
+    const segs = document.querySelectorAll('.seg i');
+    if (segs[3]) segs[3].style.width = fill(75,100) + '%'; // kalau kamu nambah seg 4 nanti
   }
-});
 
-/* reset */
-btnReset.addEventListener('click',()=>{
-  // keep baseline loaded, just reset selections
-  balai.value=''; prov.value=''; kab.value=''; di.value='';
-  fillSelect(prov,[], '-- pilih Provinsi --'); prov.disabled=true;
-  fillSelect(kab,[], '-- pilih Kab/Kota --'); kab.disabled=true;
-  fillSelect(di,[], '-- pilih DI --'); di.disabled=true;
+  function updateHeader(){
+    pctText.textContent = fmtPct(pct.value);
+  }
 
-  $('nama').value=''; $('telepon').value='';
-  kecamatan.value=''; desa.value='';
-  lat.value=''; lng.value='';
-  setKoordChip(NaN,NaN);
-  setCoordLock(false);
-  lockedCoords=null;
+  // events
+  pct.addEventListener('input', () => {
+    updateHeader();
+    updateMilestoneRail();
+    renderSlots();
+  });
 
-  lastStageEl.textContent='0%';
-  renderHistory({});
-  renderStageButtons(0);
+  document.addEventListener('change', (e) => {
+    const inp = e.target;
+    if (inp && inp.matches('input[type="file"][data-upload]')) {
+      const key = inp.dataset.upload;
+      const file = inp.files && inp.files[0];
+      if (!file) return;
 
-  CURRENT_BASELINE_ROW=null;
-  renderProjectInfo(null);
+      const reader = new FileReader();
+      reader.onload = () => {
+        state.photos[key] = reader.result;
+        state.times[key] = new Date().toLocaleString('id-ID');
+        renderSlots();
+      };
+      reader.readAsDataURL(file);
+    }
+  });
 
-  selectedFile=null;
-  fileInput.value='';
-  photoMeta.textContent='';
+  document.addEventListener('click', (e) => {
+    const btn = e.target;
+    if (btn && btn.dataset && btn.dataset.clear) {
+      const key = btn.dataset.clear;
+      state.photos[key] = null;
+      state.times[key] = null;
+      renderSlots();
+    }
+  });
 
-  if(pickedMarker){ map.removeLayer(pickedMarker); pickedMarker=null; }
-
-  updateSubmitState();
-});
-
-/* boot */
-renderHistory({});
-renderProjectInfo(null);
-renderStageButtons(0);
-setKoordChip(NaN,NaN);
-loadBaseline();
-updateSubmitState();
+  // init
+  updateHeader();
+  updateMilestoneRail();
+  renderSlots();
 </script>
 </body>
 </html>
