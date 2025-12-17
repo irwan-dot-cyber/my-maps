@@ -314,11 +314,9 @@ async function loadBaseline(){
         ""
       )
     };
-  }).filter(r =>
-    r.key || r.balai || r.prov || r.kab || r.desa || r.namaDi
-  );
+  });
 
-  return out;
+  return out;   // tidak di-filter, supaya hitungan baseline = jumlah baris (806)
 }
 
 /* 8. LOAD LOG_TAHAP3 + MARKER (pakai baseline utk Nama DI) */
@@ -328,9 +326,13 @@ async function loadLogTahap3(baseline){
   const text = await res.text();
   const rows = parseCSV(text);
 
+  // Map baseline by key & by lokasi
   const baselineKeyMap = new Map();
+  const baselineLocMap = new Map();
   baseline.forEach(b=>{
     if (b.key) baselineKeyMap.set(canon(b.key), b);
+    const locKey = [b.balai,b.prov,b.kab,b.desa].map(canon).join("|");
+    if (locKey !== "|||") baselineLocMap.set(locKey, b);
   });
 
   allMarkers = [];
@@ -346,8 +348,9 @@ async function loadLogTahap3(baseline){
     const rawProg = norm(r["progress_"] || r["progress"] || "0");
     const numProg = parseFloat(rawProg.replace("%","").replace(",","."));
     const rawFoto = norm(r["foto_url"]);
-    const hasFotoUrl = /^https?:\/\//i.test(rawFoto);
+    const hasFotoUrl = /^https?:\/\//i.test(rawFoto);  // hanya http/https yang dianggap ada foto
 
+    // Nama DI: dari log, kalau kosong dari baseline (key atau lokasi)
     let namaDi = norm(
       r["Nama DI"]  ||
       r["nama_di"]  ||
@@ -355,19 +358,32 @@ async function loadLogTahap3(baseline){
       r["DI"]       ||
       ""
     );
-    if (!namaDi && keyVal) {
-      const b = baselineKeyMap.get(canon(keyVal));
-      if (b && b.namaDi) namaDi = b.namaDi;
+
+    const balai = norm(r["balai"] || r["BWS"] || r["B/BWS"] || "");
+    const prov  = norm(r["provinsi"]);
+    const kab   = norm(r["kabupate di"] || r["kabupaten di"] || r["kabupaten"]);
+    const desa  = norm(r["desa"]);
+
+    if (!namaDi) {
+      if (keyVal) {
+        const b1 = baselineKeyMap.get(canon(keyVal));
+        if (b1 && b1.namaDi) namaDi = b1.namaDi;
+      }
+    }
+    if (!namaDi) {
+      const locKey = [balai,prov,kab,desa].map(canon).join("|");
+      const b2 = baselineLocMap.get(locKey);
+      if (b2 && b2.namaDi) namaDi = b2.namaDi;
     }
 
     const rec = {
       timestamp: norm(r["timestamp"]),
       key:       keyVal,
-      balai:     norm(r["balai"] || r["BWS"] || r["B/BWS"] || ""),
-      prov:      norm(r["provinsi"]),
-      kab:       norm(r["kabupate di"] || r["kabupaten di"] || r["kabupaten"]),
+      balai:     balai,
+      prov:      prov,
+      kab:       kab,
       kec:       norm(r["kecamatan"] || r["kecamata"] || r["kec"]),
-      desa:      norm(r["desa"]),
+      desa:      desa,
       lat:       parseFloat(r["lat"]),
       lng:       parseFloat(r["lng"]),
       nama:      norm(r["nama"]),
@@ -403,6 +419,7 @@ async function loadLogTahap3(baseline){
       return '<a class="' + cls + '" href="' + rec.foto + '" target="_blank" rel="noopener">Foto ' + s + '%</a>';
     }).join("");
 
+    // JUDUL: Nama DI, kalau masih kosong baru Kab/Desa
     const title = rec.namaDi || lokasiPendek;
 
     const popup =
@@ -649,7 +666,7 @@ async function build(){
 
     const logKeys  = new Set(logs.map(makeKey));
 
-    const totalBaseline = baseline.length;  // harusnya 806
+    const totalBaseline = baseline.length;  // target: 806
     const totalFilled   = baseline.filter(b => logKeys.has(makeKey(b))).length;
     const percent       = totalBaseline ? Math.round(totalFilled/totalBaseline*100) : 0;
 
