@@ -1,243 +1,363 @@
-<!doctype html>
-<html lang="id">
-<head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Riwayat Foto Progres (Slider)</title>
-<style>
-  :root{
-    --bg:#0b1222; --panel:#0f172a; --card:#111b34;
-    --text:#e5e7eb; --muted:#94a3b8; --line:#1f2a44;
-    --ok:#22c55e; --warn:#f59e0b; --no:#64748b;
-    --border:#18233d;
-  }
-  body{margin:0;font-family:Inter,system-ui,Segoe UI,Arial;background:var(--bg);color:var(--text);}
-  .wrap{max-width:1100px;margin:24px auto;padding:0 16px;}
-  .panel{background:linear-gradient(180deg,#0f172a,#0b1222);border:1px solid var(--border);
-    border-radius:16px;padding:18px;box-shadow:0 12px 30px rgba(0,0,0,.35);}
-  h2{margin:0 0 14px;font-size:18px;}
-  .top{
-    display:flex; gap:16px; align-items:center; flex-wrap:wrap;
-    padding:12px; border:1px solid var(--border); border-radius:12px; background:rgba(255,255,255,.02);
-  }
-  .value{min-width:170px;display:flex;flex-direction:column;gap:4px}
-  .value b{font-size:22px}
-  .value small{color:var(--muted)}
-  .sliderBox{flex:1; min-width:260px}
-  input[type="range"]{width:100%}
-  .marks{display:flex;justify-content:space-between;color:var(--muted);font-size:12px;margin-top:6px;}
-  .rail{margin:16px 0 14px; display:flex; align-items:center; gap:10px;}
-  .dot{width:14px;height:14px;border-radius:999px;border:2px solid var(--no);background:transparent}
-  .dot.ok{border-color:var(--ok);background:rgba(34,197,94,.18)}
-  .dot.now{border-color:var(--warn);box-shadow:0 0 0 6px rgba(245,158,11,.12)}
-  .seg{flex:1;height:3px;background:var(--line);border-radius:99px;position:relative;overflow:hidden}
-  .seg > i{position:absolute;inset:0; width:0%; background:rgba(245,158,11,.55)}
-  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
-  @media (max-width: 980px){ .grid{grid-template-columns:repeat(2,1fr);} }
-  @media (max-width: 520px){ .grid{grid-template-columns:1fr;} }
-
-  .slot{
-    border:1px solid var(--border); border-radius:14px; padding:12px;
-    background:rgba(255,255,255,.02);
-  }
-  .slotHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:10px;}
-  .badge{
-    font-size:12px; padding:6px 10px; border-radius:999px;
-    border:1px solid var(--border); color:var(--muted); display:flex; align-items:center; gap:8px;
-  }
-  .lamp{width:10px;height:10px;border-radius:99px;background:var(--no)}
-  .badge.ok .lamp{background:var(--ok)}
-  .badge.now .lamp{background:var(--warn)}
-  .badge.ok{color:var(--text)}
-  .badge.now{color:var(--text)}
-  .thumb{
-    height:120px; border-radius:12px; border:1px dashed rgba(148,163,184,.35);
-    display:flex; align-items:center; justify-content:center; overflow:hidden;
-    background:rgba(0,0,0,.15);
-  }
-  .thumb img{width:100%;height:100%;object-fit:cover}
-  .slotFoot{margin-top:10px; display:flex; gap:8px; align-items:center; justify-content:space-between; flex-wrap:wrap;}
-  .meta{color:var(--muted); font-size:12px}
-  .btn{
-    cursor:pointer; border:1px solid var(--border); background:rgba(255,255,255,.03);
-    color:var(--text); padding:8px 10px; border-radius:10px; font-size:12px;
-  }
-  .btn:hover{background:rgba(255,255,255,.06)}
-  input[type="file"]{display:none}
-</style>
-</head>
-<body>
-<div class="wrap">
-  <div class="panel">
-    <h2>Riwayat Foto Progres</h2>
-
-    <div class="top">
-      <div class="value">
-        <b id="pctText">24,4%</b>
-        <small>Progres saat ini (0–100%)</small>
-      </div>
-
-      <div class="sliderBox">
-        <input id="pct" type="range" min="0" max="100" step="0.1" value="24.4" />
-        <div class="marks">
-          <span>0</span><span>25</span><span>50</span><span>75</span><span>100</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- indikator milestone -->
-    <div class="rail" aria-label="milestone">
-      <div id="d25" class="dot"></div>
-      <div class="seg"><i id="s25"></i></div>
-      <div id="d50" class="dot"></div>
-      <div class="seg"><i id="s50"></i></div>
-      <div id="d75" class="dot"></div>
-      <div class="seg"><i id="s75"></i></div>
-      <div id="d100" class="dot"></div>
-    </div>
-
-    <!-- 4 slot foto selalu terbuka -->
-    <div class="grid" id="slots"></div>
+<!-- =========================
+     FOTO PROGRES (SIMPEL)
+     ========================= -->
+<section class="panel">
+  <div class="panelHead">
+    <h3>Riwayat Foto Progres</h3>
   </div>
-</div>
+
+  <!-- SLIDER PROGRES -->
+  <div class="progressCard">
+    <div class="progressLeft">
+      <div class="progressValue"><span id="progressText">29,4%</span></div>
+      <div class="progressHint">Progres saat ini (0–100%)</div>
+    </div>
+
+    <div class="progressRight">
+      <input id="progressSlider" type="range" min="0" max="100" step="0.1" value="29.4" />
+      <div class="progressMarks">
+        <span>0</span><span>25</span><span>50</span><span>75</span><span>100</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIWAYAT FOTO (RINGKAS) -->
+  <div class="miniHistory" id="miniHistory">
+    <!-- diisi via JS: 25/50/75/100 thumbnail kecil + status -->
+  </div>
+</section>
+
+<!-- =========================
+     UPLOAD FOTO PROGRES
+     ========================= -->
+<section class="panel">
+  <div class="panelHead">
+    <h3>Upload Foto Progres</h3>
+  </div>
+
+  <!-- PILIH SLOT PROGRES -->
+  <div class="chipRow" id="slotChips">
+    <button type="button" class="chip active" data-slot="25">Progres 25%</button>
+    <button type="button" class="chip" data-slot="50">Progres 50%</button>
+    <button type="button" class="chip" data-slot="75">Progres 75%</button>
+    <button type="button" class="chip" data-slot="100">Progres 100%</button>
+  </div>
+
+  <!-- TOMBOL KAMERA / GALERI -->
+  <div class="btnRow">
+    <button type="button" class="btnGhost" id="btnCamera">📷 Kamera</button>
+    <button type="button" class="btnGhost" id="btnGallery">🖼️ Galeri</button>
+  </div>
+
+  <!-- INPUT HIDDEN UNTUK FILE -->
+  <input id="inputCamera" type="file" accept="image/*" capture="environment" hidden>
+  <input id="inputGallery" type="file" accept="image/*" hidden>
+
+  <!-- PREVIEW FOTO SLOT YANG DIPILIH -->
+  <div class="previewBox">
+    <div class="previewThumb" id="previewThumb">
+      <span class="muted">Belum ada foto</span>
+    </div>
+    <div class="previewMeta">
+      <div><b id="previewTitle">Slot Progres 25%</b></div>
+      <div class="muted" id="previewStatus">Belum upload</div>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <!-- INPUT NAMA + TELP + KIRIM (GAYA FORM TAHAP 3) -->
+  <div class="formGrid">
+    <label class="field">
+      <span>Nama</span>
+      <input id="nama" type="text" placeholder="Nama pengusul" autocomplete="name">
+    </label>
+
+    <label class="field">
+      <span>No. Telp</span>
+      <input id="telp" type="tel" placeholder="08xxxxxxxxxx" autocomplete="tel">
+    </label>
+  </div>
+
+  <!-- simpan nilai slider + foto slot -->
+  <input id="progressValue" type="hidden" value="29.4">
+  <input id="selectedSlot" type="hidden" value="25">
+
+  <div class="sendRow">
+    <button type="button" class="btnPrimary" id="btnKirim">Kirim</button>
+  </div>
+</section>
+
+<style>
+  /* ====== sesuaikan dengan theme Form_Tahap3.html lu ====== */
+  .panel{
+    background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+    border: 1px solid rgba(148,163,184,.18);
+    border-radius: 18px;
+    padding: 16px;
+    margin: 14px 0;
+  }
+  .panelHead h3{ margin:0 0 12px; font-size: 20px; font-weight: 800; color:#e5e7eb; }
+  .muted{ color: rgba(148,163,184,.95); }
+
+  .progressCard{
+    display:flex; gap:18px; align-items:center; flex-wrap:wrap;
+    border: 1px solid rgba(148,163,184,.18);
+    border-radius: 16px;
+    padding: 14px;
+    background: rgba(0,0,0,.15);
+  }
+  .progressLeft{ min-width: 180px; }
+  .progressValue{ font-size: 34px; font-weight: 900; color:#e5e7eb; line-height: 1; }
+  .progressHint{ margin-top:6px; }
+  .progressRight{ flex: 1; min-width: 260px; }
+  .progressRight input[type="range"]{ width:100%; }
+  .progressMarks{
+    display:flex; justify-content:space-between;
+    font-size: 13px; margin-top:6px; color: rgba(148,163,184,.95);
+  }
+
+  .miniHistory{
+    display:grid; grid-template-columns: repeat(4, 1fr);
+    gap: 10px; margin-top: 12px;
+  }
+  @media (max-width: 900px){ .miniHistory{ grid-template-columns: repeat(2, 1fr);} }
+  @media (max-width: 520px){ .miniHistory{ grid-template-columns: 1fr;} }
+
+  .miniItem{
+    display:flex; gap:10px; align-items:center;
+    border: 1px solid rgba(148,163,184,.18);
+    border-radius: 14px;
+    padding: 10px;
+    background: rgba(0,0,0,.12);
+  }
+  .miniThumb{
+    width: 64px; height: 46px; border-radius: 10px;
+    border: 1px dashed rgba(148,163,184,.35);
+    overflow:hidden; display:flex; align-items:center; justify-content:center;
+    background: rgba(0,0,0,.15);
+  }
+  .miniThumb img{ width:100%; height:100%; object-fit:cover; }
+  .miniTitle{ font-weight: 800; color:#e5e7eb; font-size: 14px; }
+  .miniStatus{ font-size: 12px; }
+  .dot{
+    width:10px; height:10px; border-radius: 999px; display:inline-block; margin-right:6px;
+    background: #f59e0b;
+  }
+  .dot.ok{ background:#22c55e; }
+  .dot.no{ background:#64748b; }
+
+  .chipRow{ display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; }
+  .chip{
+    border: 1px solid rgba(148,163,184,.18);
+    background: rgba(255,255,255,.03);
+    color:#e5e7eb;
+    padding: 10px 14px;
+    border-radius: 14px;
+    font-weight: 800;
+    cursor:pointer;
+  }
+  .chip.active{
+    background: rgba(34,197,94,.85);
+    color:#071018;
+    border-color: rgba(34,197,94,.85);
+  }
+
+  .btnRow{ display:flex; gap:12px; margin-top:12px; flex-wrap:wrap; }
+  .btnGhost{
+    border: 1px solid rgba(148,163,184,.18);
+    background: rgba(255,255,255,.03);
+    color:#e5e7eb;
+    padding: 12px 16px;
+    border-radius: 14px;
+    font-weight: 800;
+    cursor:pointer;
+  }
+
+  .previewBox{
+    margin-top: 14px;
+    display:flex; gap:12px; align-items:center; flex-wrap:wrap;
+    border: 1px solid rgba(148,163,184,.18);
+    border-radius: 16px;
+    padding: 12px;
+    background: rgba(0,0,0,.12);
+  }
+  .previewThumb{
+    width: 160px; height: 110px;
+    border-radius: 14px;
+    border: 1px dashed rgba(148,163,184,.35);
+    overflow:hidden; display:flex; align-items:center; justify-content:center;
+    background: rgba(0,0,0,.15);
+  }
+  .previewThumb img{ width:100%; height:100%; object-fit:cover; }
+  .previewMeta{ min-width: 220px; }
+  .sep{ border:0; border-top:1px solid rgba(148,163,184,.15); margin:16px 0; }
+
+  .formGrid{
+    display:grid; grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  @media (max-width: 700px){ .formGrid{ grid-template-columns: 1fr; } }
+
+  .field span{ display:block; margin-bottom:6px; color: rgba(148,163,184,.95); font-weight:700; }
+  .field input{
+    width:100%;
+    padding: 12px 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(148,163,184,.18);
+    background: rgba(0,0,0,.18);
+    color:#e5e7eb;
+    outline:none;
+  }
+
+  .sendRow{ margin-top: 14px; display:flex; justify-content:flex-end; }
+  .btnPrimary{
+    border: 0;
+    background: rgba(34,197,94,.90);
+    color:#06110b;
+    padding: 12px 18px;
+    border-radius: 14px;
+    font-weight: 900;
+    cursor:pointer;
+  }
+</style>
 
 <script>
-  const milestones = [
-    { key:"p25",  label:"Foto Progres 25%",  m:25 },
-    { key:"p50",  label:"Foto Progres 50%",  m:50 },
-    { key:"p75",  label:"Foto Progres 75%",  m:75 },
-    { key:"p100", label:"Foto Progres 100%", m:100 }
-  ];
+  // ====== STATE FOTO 4 SLOT ======
+  const slots = [25,50,75,100];
+  const fotoSlot = { 25:null, 50:null, 75:null, 100:null }; // simpan dataURL
+  const timeSlot = { 25:null, 50:null, 75:null, 100:null };
 
-  const pct = document.getElementById('pct');
-  const pctText = document.getElementById('pctText');
-
-  // store dummy (bisa diganti localStorage / backend nanti)
-  const state = {
-    photos: { p25:null, p50:null, p75:null, p100:null },   // dataURL
-    times:  { p25:null, p50:null, p75:null, p100:null }    // string
-  };
+  // ====== SLIDER ======
+  const slider = document.getElementById('progressSlider');
+  const progressText = document.getElementById('progressText');
+  const progressValue = document.getElementById('progressValue');
 
   function fmtPct(v){
-    // 24.4 -> "24,4%"
-    const s = Number(v).toFixed(1).replace('.', ',');
-    // buang .0 biar rapih
-    return s.endsWith(',0') ? s.slice(0,-2) + '%' : s + '%';
+    const n = Number(v);
+    let s = n.toFixed(1).replace('.', ',');
+    if (s.endsWith(',0')) s = s.slice(0,-2);
+    return s + '%';
   }
 
-  function statusClass(current, m){
-    // warna milestone: ok kalau >= m, now kalau paling dekat setelah nilai (opsional)
-    if (current >= m) return 'ok';
-    return '';
-  }
+  function renderMiniHistory(){
+    const v = Number(slider.value);
+    const box = document.getElementById('miniHistory');
 
-  function renderSlots(){
-    const el = document.getElementById('slots');
-    const current = Number(pct.value);
-
-    el.innerHTML = milestones.map(ms => {
-      const img = state.photos[ms.key];
-      const time = state.times[ms.key];
-      const st = statusClass(current, ms.m);
-      const badgeCls = st ? `badge ${st}` : 'badge';
-      const badgeText = current >= ms.m ? 'Tercapai' : 'Belum';
+    box.innerHTML = slots.map(m => {
+      const ok = v >= m;
+      const has = !!fotoSlot[m];
+      const dotCls = ok ? 'ok' : 'no';
+      const status = has ? 'Ada foto' : 'Belum upload';
 
       return `
-        <div class="slot" data-key="${ms.key}">
-          <div class="slotHead">
-            <div style="font-weight:700">${ms.label}</div>
-            <div class="${badgeCls}">
-              <span class="lamp"></span>
-              <span>${badgeText}</span>
-            </div>
+        <div class="miniItem">
+          <div class="miniThumb">
+            ${has ? `<img src="${fotoSlot[m]}" alt="foto ${m}%">` : `<span class="muted">—</span>`}
           </div>
-
-          <div class="thumb">
-            ${img ? `<img src="${img}" alt="${ms.label}">` : `<span style="color:var(--muted)">Belum ada foto</span>`}
-          </div>
-
-          <div class="slotFoot">
-            <div class="meta">${time ? `Terakhir: ${time}` : `Belum upload`}</div>
-            <div style="display:flex;gap:8px">
-              <label class="btn">
-                Upload
-                <input type="file" accept="image/*" data-upload="${ms.key}">
-              </label>
-              <button class="btn" data-clear="${ms.key}">Hapus</button>
-            </div>
+          <div>
+            <div class="miniTitle">${m}%</div>
+            <div class="miniStatus"><span class="dot ${dotCls}"></span>${status}</div>
           </div>
         </div>
       `;
     }).join('');
   }
 
-  function updateMilestoneRail(){
-    const current = Number(pct.value);
-    // dot classes
-    document.getElementById('d25').className  = 'dot ' + (current >= 25 ? 'ok' : '');
-    document.getElementById('d50').className  = 'dot ' + (current >= 50 ? 'ok' : '');
-    document.getElementById('d75').className  = 'dot ' + (current >= 75 ? 'ok' : '');
-    document.getElementById('d100').className = 'dot ' + (current >= 100 ? 'ok' : '');
+  function onSlider(){
+    progressText.textContent = fmtPct(slider.value);
+    progressValue.value = slider.value;
+    renderMiniHistory();
+    // status chip/preview tetap ngikut slot terpilih, slider hanya nilai progress
+    refreshPreview();
+  }
 
-    // seg fill (antara milestone)
-    const fill = (a,b) => {
-      if (current <= a) return 0;
-      if (current >= b) return 100;
-      return ((current - a) / (b - a)) * 100;
+  slider.addEventListener('input', onSlider);
+
+  // ====== PILIH SLOT ======
+  const chips = document.querySelectorAll('#slotChips .chip');
+  const selectedSlot = document.getElementById('selectedSlot');
+
+  chips.forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      chips.forEach(x=>x.classList.remove('active'));
+      btn.classList.add('active');
+      selectedSlot.value = btn.dataset.slot;
+      refreshPreview();
+    });
+  });
+
+  // ====== KAMERA / GALERI ======
+  const btnCamera = document.getElementById('btnCamera');
+  const btnGallery = document.getElementById('btnGallery');
+  const inputCamera = document.getElementById('inputCamera');
+  const inputGallery = document.getElementById('inputGallery');
+
+  btnCamera.addEventListener('click', ()=> inputCamera.click());
+  btnGallery.addEventListener('click', ()=> inputGallery.click());
+
+  function handleFile(file){
+    if(!file) return;
+    const slot = Number(selectedSlot.value);
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      fotoSlot[slot] = reader.result;
+      timeSlot[slot] = new Date().toLocaleString('id-ID');
+      refreshPreview();
+      renderMiniHistory();
     };
-    document.getElementById('s25').style.width  = fill(0,25) + '%';
-    document.getElementById('s50').style.width  = fill(25,50) + '%';
-    document.getElementById('s75').style.width  = fill(50,75) + '%';
-
-    // seg terakhir (75-100)
-    document.getElementById('s75').parentElement.nextElementSibling?.querySelector('i')?.style;
-    const lastSeg = document.querySelectorAll('.seg i')[3]; // i ke-4 ga ada, jadi aman? kita handle:
-    const segs = document.querySelectorAll('.seg i');
-    if (segs[3]) segs[3].style.width = fill(75,100) + '%'; // kalau kamu nambah seg 4 nanti
+    reader.readAsDataURL(file);
   }
 
-  function updateHeader(){
-    pctText.textContent = fmtPct(pct.value);
+  inputCamera.addEventListener('change', e => handleFile(e.target.files?.[0]));
+  inputGallery.addEventListener('change', e => handleFile(e.target.files?.[0]));
+
+  // ====== PREVIEW SLOT ======
+  function refreshPreview(){
+    const slot = Number(selectedSlot.value);
+    const thumb = document.getElementById('previewThumb');
+    const title = document.getElementById('previewTitle');
+    const status = document.getElementById('previewStatus');
+
+    title.textContent = `Slot Progres ${slot}%`;
+
+    if(fotoSlot[slot]){
+      thumb.innerHTML = `<img src="${fotoSlot[slot]}" alt="preview ${slot}%">`;
+      status.textContent = `Terakhir: ${timeSlot[slot] || '—'}`;
+    }else{
+      thumb.innerHTML = `<span class="muted">Belum ada foto</span>`;
+      status.textContent = `Belum upload`;
+    }
   }
 
-  // events
-  pct.addEventListener('input', () => {
-    updateHeader();
-    updateMilestoneRail();
-    renderSlots();
-  });
+  // ====== KIRIM (sesuaikan dengan fungsi di Form_Tahap3.html) ======
+  document.getElementById('btnKirim').addEventListener('click', async ()=>{
+    const payload = {
+      progress: Number(progressValue.value),
+      nama: document.getElementById('nama').value?.trim(),
+      telp: document.getElementById('telp').value?.trim(),
+      foto25: fotoSlot[25],
+      foto50: fotoSlot[50],
+      foto75: fotoSlot[75],
+      foto100: fotoSlot[100],
+      waktu25: timeSlot[25],
+      waktu50: timeSlot[50],
+      waktu75: timeSlot[75],
+      waktu100: timeSlot[100],
+    };
 
-  document.addEventListener('change', (e) => {
-    const inp = e.target;
-    if (inp && inp.matches('input[type="file"][data-upload]')) {
-      const key = inp.dataset.upload;
-      const file = inp.files && inp.files[0];
-      if (!file) return;
+    // TODO: SAMAKAN PERSIS dengan Form_Tahap3.html:
+    // biasanya di sini ada fetch POST ke Apps Script / endpoint kamu
+    // contoh:
+    // await fetch(GAS_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })
 
-      const reader = new FileReader();
-      reader.onload = () => {
-        state.photos[key] = reader.result;
-        state.times[key] = new Date().toLocaleString('id-ID');
-        renderSlots();
-      };
-      reader.readAsDataURL(file);
-    }
-  });
-
-  document.addEventListener('click', (e) => {
-    const btn = e.target;
-    if (btn && btn.dataset && btn.dataset.clear) {
-      const key = btn.dataset.clear;
-      state.photos[key] = null;
-      state.times[key] = null;
-      renderSlots();
-    }
+    console.log('KIRIM payload:', payload);
+    alert('Data siap dikirim ✅ (tinggal sambungkan ke endpoint Form_Tahap3.html)');
   });
 
   // init
-  updateHeader();
-  updateMilestoneRail();
-  renderSlots();
+  onSlider();
+  renderMiniHistory();
+  refreshPreview();
 </script>
-</body>
-</html>
