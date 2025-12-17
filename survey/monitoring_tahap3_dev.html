@@ -212,25 +212,30 @@ function parseCSV(text){
   });
 }
 
-/* Baca progress dengan toleran nama kolom */
+/* Ambil kolom progress apapun namanya */
 function readProgress(row){
-  const direct = ["progress_","progress","Progress","PROGRESS","progres"];
-  for (const k of direct){
-    if (k in row && row[k] !== ""){
-      const v = norm(row[k]);
-      const num = parseFloat(v.replace("%","").replace(",","."));
-      if (Number.isFinite(num)) return num;
-    }
+  const keys = Object.keys(row);
+  const key = keys.find(k => k.toLowerCase().replace(/\s|_/g,"")==="progress");
+  if (!key) return 0;
+  const v = norm(row[key]);
+  const m = v.match(/[\d.,]+/);
+  if (!m) return 0;
+  const num = parseFloat(m[0].replace(",","."));
+  return Number.isFinite(num) ? num : 0;
+}
+
+/* Ambil kolom foto_url apapun namanya */
+function readFotoUrl(row){
+  const keys = Object.keys(row);
+  let key = keys.find(k => k.toLowerCase().replace(/\s/g,"")==="foto_url");
+  if (!key){
+    key = keys.find(k => {
+      const low = k.toLowerCase();
+      return low.includes("foto") && low.includes("url");
+    });
   }
-  const autoKey = Object.keys(row).find(
-    k => k.toLowerCase().replace(/\s|_/g,"")==="progress"
-  );
-  if (autoKey){
-    const v = norm(row[autoKey]);
-    const num = parseFloat(v.replace("%","").replace(",","."));
-    if (Number.isFinite(num)) return num;
-  }
-  return 0;
+  if (!key) return "";
+  return norm(row[key]);
 }
 
 function fillSelect(el, items, placeholder){
@@ -396,7 +401,7 @@ async function loadLogTahap3(baseline){
     }
 
     const progressVal = readProgress(r);
-    const fotoUrlRaw  = norm(r["foto_url"]);
+    const fotoUrlRaw  = readFotoUrl(r);
     const hasFoto     = /^https?:\/\//i.test(fotoUrlRaw);
 
     const groupId = keyVal ? ("key:" + canon(keyVal))
