@@ -1,363 +1,693 @@
-<!-- =========================
-     FOTO PROGRES (SIMPEL)
-     ========================= -->
-<section class="panel">
-  <div class="panelHead">
-    <h3>Riwayat Foto Progres</h3>
-  </div>
-
-  <!-- SLIDER PROGRES -->
-  <div class="progressCard">
-    <div class="progressLeft">
-      <div class="progressValue"><span id="progressText">29,4%</span></div>
-      <div class="progressHint">Progres saat ini (0–100%)</div>
-    </div>
-
-    <div class="progressRight">
-      <input id="progressSlider" type="range" min="0" max="100" step="0.1" value="29.4" />
-      <div class="progressMarks">
-        <span>0</span><span>25</span><span>50</span><span>75</span><span>100</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- RIWAYAT FOTO (RINGKAS) -->
-  <div class="miniHistory" id="miniHistory">
-    <!-- diisi via JS: 25/50/75/100 thumbnail kecil + status -->
-  </div>
-</section>
-
-<!-- =========================
-     UPLOAD FOTO PROGRES
-     ========================= -->
-<section class="panel">
-  <div class="panelHead">
-    <h3>Upload Foto Progres</h3>
-  </div>
-
-  <!-- PILIH SLOT PROGRES -->
-  <div class="chipRow" id="slotChips">
-    <button type="button" class="chip active" data-slot="25">Progres 25%</button>
-    <button type="button" class="chip" data-slot="50">Progres 50%</button>
-    <button type="button" class="chip" data-slot="75">Progres 75%</button>
-    <button type="button" class="chip" data-slot="100">Progres 100%</button>
-  </div>
-
-  <!-- TOMBOL KAMERA / GALERI -->
-  <div class="btnRow">
-    <button type="button" class="btnGhost" id="btnCamera">📷 Kamera</button>
-    <button type="button" class="btnGhost" id="btnGallery">🖼️ Galeri</button>
-  </div>
-
-  <!-- INPUT HIDDEN UNTUK FILE -->
-  <input id="inputCamera" type="file" accept="image/*" capture="environment" hidden>
-  <input id="inputGallery" type="file" accept="image/*" hidden>
-
-  <!-- PREVIEW FOTO SLOT YANG DIPILIH -->
-  <div class="previewBox">
-    <div class="previewThumb" id="previewThumb">
-      <span class="muted">Belum ada foto</span>
-    </div>
-    <div class="previewMeta">
-      <div><b id="previewTitle">Slot Progres 25%</b></div>
-      <div class="muted" id="previewStatus">Belum upload</div>
-    </div>
-  </div>
-
-  <hr class="sep">
-
-  <!-- INPUT NAMA + TELP + KIRIM (GAYA FORM TAHAP 3) -->
-  <div class="formGrid">
-    <label class="field">
-      <span>Nama</span>
-      <input id="nama" type="text" placeholder="Nama pengusul" autocomplete="name">
-    </label>
-
-    <label class="field">
-      <span>No. Telp</span>
-      <input id="telp" type="tel" placeholder="08xxxxxxxxxx" autocomplete="tel">
-    </label>
-  </div>
-
-  <!-- simpan nilai slider + foto slot -->
-  <input id="progressValue" type="hidden" value="29.4">
-  <input id="selectedSlot" type="hidden" value="25">
-
-  <div class="sendRow">
-    <button type="button" class="btnPrimary" id="btnKirim">Kirim</button>
-  </div>
-</section>
-
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<title>Pelaksanaan Inpres 2/2025 Tahap 3 - Monitoring</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
 <style>
-  /* ====== sesuaikan dengan theme Form_Tahap3.html lu ====== */
-  .panel{
-    background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
-    border: 1px solid rgba(148,163,184,.18);
-    border-radius: 18px;
-    padding: 16px;
-    margin: 14px 0;
+  :root{
+    --brand:#FFD700; --ink:#111827; --mut:#6b7280;
+    --ok1:#16a34a; --ok2:#86efac; --card:#ffffff; --line:#e5e7eb;
+    --btn:#2563eb;
   }
-  .panelHead h3{ margin:0 0 12px; font-size: 20px; font-weight: 800; color:#e5e7eb; }
-  .muted{ color: rgba(148,163,184,.95); }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;font-family:system-ui,Segoe UI,Roboto,Arial;color:var(--ink)}
+  #header{
+    background:var(--brand);color:#000;padding:10px 12px;
+    font-weight:800;font-size:14px;display:flex;align-items:center;gap:10px
+  }
+  #header img{height:40px}
 
-  .progressCard{
-    display:flex; gap:18px; align-items:center; flex-wrap:wrap;
-    border: 1px solid rgba(148,163,184,.18);
-    border-radius: 16px;
-    padding: 14px;
-    background: rgba(0,0,0,.15);
+  .top-controls{
+    position:sticky;top:0;z-index:999;
+    background:#fff;border-bottom:1px solid var(--line);
+    padding:8px 10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center
   }
-  .progressLeft{ min-width: 180px; }
-  .progressValue{ font-size: 34px; font-weight: 900; color:#e5e7eb; line-height: 1; }
-  .progressHint{ margin-top:6px; }
-  .progressRight{ flex: 1; min-width: 260px; }
-  .progressRight input[type="range"]{ width:100%; }
-  .progressMarks{
-    display:flex; justify-content:space-between;
-    font-size: 13px; margin-top:6px; color: rgba(148,163,184,.95);
+  .filters{display:flex;gap:8px;flex:1;flex-wrap:wrap}
+  .filters select,.search-box input{
+    padding:8px 10px;border:1px solid var(--line);border-radius:10px;
+    min-width:160px;background:#fff
   }
+  .search-box{position:relative}
+  #suggestions{
+    position:absolute;top:42px;left:0;right:0;background:#fff;
+    border:1px solid var(--line);border-radius:10px;
+    max-height:220px;overflow:auto;display:none;z-index:1000
+  }
+  #suggestions div{padding:8px 10px;cursor:pointer}
+  #suggestions div:hover{background:#f3f4f6}
 
-  .miniHistory{
-    display:grid; grid-template-columns: repeat(4, 1fr);
-    gap: 10px; margin-top: 12px;
-  }
-  @media (max-width: 900px){ .miniHistory{ grid-template-columns: repeat(2, 1fr);} }
-  @media (max-width: 520px){ .miniHistory{ grid-template-columns: 1fr;} }
+  #map{height:54vh}
 
-  .miniItem{
-    display:flex; gap:10px; align-items:center;
-    border: 1px solid rgba(148,163,184,.18);
-    border-radius: 14px;
-    padding: 10px;
-    background: rgba(0,0,0,.12);
+  /* Stats area */
+  #stats{background:#fafafa;border-top:1px solid var(--line);padding:12px}
+  .stats-head{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:10px;flex-wrap:wrap;margin-bottom:8px
   }
-  .miniThumb{
-    width: 64px; height: 46px; border-radius: 10px;
-    border: 1px dashed rgba(148,163,184,.35);
-    overflow:hidden; display:flex; align-items:center; justify-content:center;
-    background: rgba(0,0,0,.15);
+  .stats-title{font-weight:800;font-size:15px}
+  .stats-actions{display:flex;gap:6px;flex-wrap:wrap}
+  .btn-mini{
+    display:inline-block;font-size:12px;font-weight:700;
+    padding:6px 10px;border-radius:10px;border:1px solid var(--line);
+    background:#fff;color:#1f2937;text-decoration:none;line-height:1
   }
-  .miniThumb img{ width:100%; height:100%; object-fit:cover; }
-  .miniTitle{ font-weight: 800; color:#e5e7eb; font-size: 14px; }
-  .miniStatus{ font-size: 12px; }
-  .dot{
-    width:10px; height:10px; border-radius: 999px; display:inline-block; margin-right:6px;
-    background: #f59e0b;
-  }
-  .dot.ok{ background:#22c55e; }
-  .dot.no{ background:#64748b; }
+  .btn-mini.primary{background:var(--btn);color:#fff;border-color:var(--btn)}
+  .btn-mini.success{background:#4CAF50;color:#fff;border-color:#4CAF50}
+  .btn-mini.warn{background:#ff5722;color:#fff;border-color:#ff5722}
 
-  .chipRow{ display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; }
-  .chip{
-    border: 1px solid rgba(148,163,184,.18);
-    background: rgba(255,255,255,.03);
-    color:#e5e7eb;
-    padding: 10px 14px;
-    border-radius: 14px;
-    font-weight: 800;
-    cursor:pointer;
+  .bar{height:12px;background:#e5e7eb;border-radius:999px;overflow:hidden}
+  .bar>span{display:block;height:100%;background:linear-gradient(90deg,var(--ok1),var(--ok2))}
+  .pill{
+    display:inline-block;background:#fff;border:1px solid var(--line);
+    border-radius:999px;padding:4px 10px;font-weight:700
   }
-  .chip.active{
-    background: rgba(34,197,94,.85);
-    color:#071018;
-    border-color: rgba(34,197,94,.85);
+  .stats-row{
+    display:flex;gap:10px;align-items:center;justify-content:space-between;
+    flex-wrap:wrap;margin:8px 0
   }
+  table.stats{
+    width:100%;border-collapse:collapse;margin-top:8px;
+    background:#fff;border:1px solid var(--line)
+  }
+  table.stats th,table.stats td{
+    border-top:1px solid var(--line);padding:8px 10px;
+    font-size:13px;text-align:left
+  }
+  table.stats th{background:#f9fafb}
 
-  .btnRow{ display:flex; gap:12px; margin-top:12px; flex-wrap:wrap; }
-  .btnGhost{
-    border: 1px solid rgba(148,163,184,.18);
-    background: rgba(255,255,255,.03);
-    color:#e5e7eb;
-    padding: 12px 16px;
-    border-radius: 14px;
-    font-weight: 800;
-    cursor:pointer;
+  /* Label mini di atas marker */
+  .di-label{
+    background:rgba(255,255,255,.92);
+    border:1px solid #d1d5db;
+    border-radius:999px;
+    padding:2px 8px;font-size:12px;color:#111827;
+    white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.08);
+    transform: translateY(-28px);pointer-events:none;display:none;
   }
 
-  .previewBox{
-    margin-top: 14px;
-    display:flex; gap:12px; align-items:center; flex-wrap:wrap;
-    border: 1px solid rgba(148,163,184,.18);
-    border-radius: 16px;
-    padding: 12px;
-    background: rgba(0,0,0,.12);
+  /* Tombol foto per stage di popup */
+  .stage-grid{
+    display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:6px;margin-top:6px
   }
-  .previewThumb{
-    width: 160px; height: 110px;
-    border-radius: 14px;
-    border: 1px dashed rgba(148,163,184,.35);
-    overflow:hidden; display:flex; align-items:center; justify-content:center;
-    background: rgba(0,0,0,.15);
+  .btn-photo{
+    display:inline-block;text-align:center;
+    padding:6px 4px;border-radius:10px;
+    border:1px solid var(--line);
+    background:#f3f4f6;color:#6b7280;
+    font-size:11px;font-weight:700;
+    text-decoration:none;line-height:1.2
   }
-  .previewThumb img{ width:100%; height:100%; object-fit:cover; }
-  .previewMeta{ min-width: 220px; }
-  .sep{ border:0; border-top:1px solid rgba(148,163,184,.15); margin:16px 0; }
-
-  .formGrid{
-    display:grid; grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+  .btn-photo.active{
+    background:var(--btn);color:#fff;border-color:var(--btn)
   }
-  @media (max-width: 700px){ .formGrid{ grid-template-columns: 1fr; } }
-
-  .field span{ display:block; margin-bottom:6px; color: rgba(148,163,184,.95); font-weight:700; }
-  .field input{
-    width:100%;
-    padding: 12px 12px;
-    border-radius: 14px;
-    border: 1px solid rgba(148,163,184,.18);
-    background: rgba(0,0,0,.18);
-    color:#e5e7eb;
-    outline:none;
+  .btn-photo.disabled{
+    cursor:not-allowed;background:#f3f4f6;
+    color:#9ca3af;border-color:#e5e7eb
   }
 
-  .sendRow{ margin-top: 14px; display:flex; justify-content:flex-end; }
-  .btnPrimary{
-    border: 0;
-    background: rgba(34,197,94,.90);
-    color:#06110b;
-    padding: 12px 18px;
-    border-radius: 14px;
-    font-weight: 900;
-    cursor:pointer;
+  @media (max-width:560px){
+    #map{height:50vh}
+    .stats-title{font-size:14px}
+    .btn-mini{font-size:11px;padding:6px 8px}
   }
 </style>
+</head>
+<body>
+
+<div id="header">
+  <img src="https://iconape.com/wp-content/png_logo_vector/pu-logo.png" alt="Logo PU"/>
+  <div>KEMENTERIAN PEKERJAAN UMUM • DITJEN SDA • DIREKTORAT IRIGASI DAN RAWA • MONITORING INPRES 2/2025 TAHAP 3</div>
+</div>
+
+<div class="top-controls">
+  <div class="filters">
+    <select id="f-bbws"><option value="">— Semua B/BWS (yang sudah upload) —</option></select>
+    <select id="f-di" style="min-width:220px" disabled><option value="">— Pilih B/BWS dulu —</option></select>
+  </div>
+  <div class="search-box">
+    <input id="search" type="text" placeholder="Cari Nama DI / kabupaten / desa…" />
+    <div id="suggestions"></div>
+  </div>
+</div>
+
+<div id="map"></div>
+
+<div id="stats">Memuat statistik…</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.js"></script>
 
 <script>
-  // ====== STATE FOTO 4 SLOT ======
-  const slots = [25,50,75,100];
-  const fotoSlot = { 25:null, 50:null, 75:null, 100:null }; // simpan dataURL
-  const timeSlot = { 25:null, 50:null, 75:null, 100:null };
+/* 1. KONFIGURASI GOOGLE SHEETS */
+const SHEET_ID      = "1YkNmEcQw1_1_xL0BTxYXl1f4Tkk2-22tXuQB-IoEeuY";  // <- isi sendiri
+const GID_BASELINE  = "466754170";                // <- gid sheet baseline
+const GID_LOG       = "732855223";              // <- gid sheet log_tahap3
 
-  // ====== SLIDER ======
-  const slider = document.getElementById('progressSlider');
-  const progressText = document.getElementById('progressText');
-  const progressValue = document.getElementById('progressValue');
+const URL_BASELINE  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID_BASELINE}`;
+const URL_LOG       = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID_LOG}`;
 
-  function fmtPct(v){
-    const n = Number(v);
-    let s = n.toFixed(1).replace('.', ',');
-    if (s.endsWith(',0')) s = s.slice(0,-2);
-    return s + '%';
-  }
+const ZOOM_LABEL    = 14;
 
-  function renderMiniHistory(){
-    const v = Number(slider.value);
-    const box = document.getElementById('miniHistory');
+/* 2. HELPERS */
+const norm  = s => (s==null ? "" : String(s)).trim();
+const canon = s => norm(s).toLowerCase();
+const $     = sel => document.querySelector(sel);
 
-    box.innerHTML = slots.map(m => {
-      const ok = v >= m;
-      const has = !!fotoSlot[m];
-      const dotCls = ok ? 'ok' : 'no';
-      const status = has ? 'Ada foto' : 'Belum upload';
+/* Parser CSV tahan koma & tanda kutip */
+function parseCSV(text){
+  const rows = [];
+  let row = [];
+  let cur = "";
+  let inQuotes = false;
 
-      return `
-        <div class="miniItem">
-          <div class="miniThumb">
-            ${has ? `<img src="${fotoSlot[m]}" alt="foto ${m}%">` : `<span class="muted">—</span>`}
-          </div>
-          <div>
-            <div class="miniTitle">${m}%</div>
-            <div class="miniStatus"><span class="dot ${dotCls}"></span>${status}</div>
-          </div>
-        </div>
-      `;
-    }).join('');
-  }
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    const next = text[i + 1];
 
-  function onSlider(){
-    progressText.textContent = fmtPct(slider.value);
-    progressValue.value = slider.value;
-    renderMiniHistory();
-    // status chip/preview tetap ngikut slot terpilih, slider hanya nilai progress
-    refreshPreview();
-  }
-
-  slider.addEventListener('input', onSlider);
-
-  // ====== PILIH SLOT ======
-  const chips = document.querySelectorAll('#slotChips .chip');
-  const selectedSlot = document.getElementById('selectedSlot');
-
-  chips.forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      chips.forEach(x=>x.classList.remove('active'));
-      btn.classList.add('active');
-      selectedSlot.value = btn.dataset.slot;
-      refreshPreview();
-    });
-  });
-
-  // ====== KAMERA / GALERI ======
-  const btnCamera = document.getElementById('btnCamera');
-  const btnGallery = document.getElementById('btnGallery');
-  const inputCamera = document.getElementById('inputCamera');
-  const inputGallery = document.getElementById('inputGallery');
-
-  btnCamera.addEventListener('click', ()=> inputCamera.click());
-  btnGallery.addEventListener('click', ()=> inputGallery.click());
-
-  function handleFile(file){
-    if(!file) return;
-    const slot = Number(selectedSlot.value);
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      fotoSlot[slot] = reader.result;
-      timeSlot[slot] = new Date().toLocaleString('id-ID');
-      refreshPreview();
-      renderMiniHistory();
-    };
-    reader.readAsDataURL(file);
-  }
-
-  inputCamera.addEventListener('change', e => handleFile(e.target.files?.[0]));
-  inputGallery.addEventListener('change', e => handleFile(e.target.files?.[0]));
-
-  // ====== PREVIEW SLOT ======
-  function refreshPreview(){
-    const slot = Number(selectedSlot.value);
-    const thumb = document.getElementById('previewThumb');
-    const title = document.getElementById('previewTitle');
-    const status = document.getElementById('previewStatus');
-
-    title.textContent = `Slot Progres ${slot}%`;
-
-    if(fotoSlot[slot]){
-      thumb.innerHTML = `<img src="${fotoSlot[slot]}" alt="preview ${slot}%">`;
-      status.textContent = `Terakhir: ${timeSlot[slot] || '—'}`;
-    }else{
-      thumb.innerHTML = `<span class="muted">Belum ada foto</span>`;
-      status.textContent = `Belum upload`;
+    if (inQuotes) {
+      if (c === '"' && next === '"') {
+        cur += '"'; i++;
+      } else if (c === '"') {
+        inQuotes = false;
+      } else {
+        cur += c;
+      }
+    } else {
+      if (c === '"') {
+        inQuotes = true;
+      } else if (c === ",") {
+        row.push(cur); cur = "";
+      } else if (c === "\r") {
+        // skip
+      } else if (c === "\n") {
+        row.push(cur); rows.push(row); row = []; cur = "";
+      } else {
+        cur += c;
+      }
     }
   }
+  if (cur.length > 0 || row.length > 0) {
+    row.push(cur);
+    rows.push(row);
+  }
 
-  // ====== KIRIM (sesuaikan dengan fungsi di Form_Tahap3.html) ======
-  document.getElementById('btnKirim').addEventListener('click', async ()=>{
-    const payload = {
-      progress: Number(progressValue.value),
-      nama: document.getElementById('nama').value?.trim(),
-      telp: document.getElementById('telp').value?.trim(),
-      foto25: fotoSlot[25],
-      foto50: fotoSlot[50],
-      foto75: fotoSlot[75],
-      foto100: fotoSlot[100],
-      waktu25: timeSlot[25],
-      waktu50: timeSlot[50],
-      waktu75: timeSlot[75],
-      waktu100: timeSlot[100],
+  if (!rows.length) return [];
+  const headers = rows[0].map(h => h.trim());
+  return rows.slice(1).map(r => {
+    const obj = {};
+    headers.forEach((h, idx) => {
+      obj[h] = (r[idx] || "").trim();
+    });
+    return obj;
+  });
+}
+
+function fillSelect(el, items, placeholder){
+  const cur = el.value;
+  el.innerHTML = "";
+  const opt0 = document.createElement("option"); opt0.value=""; opt0.textContent=placeholder;
+  el.appendChild(opt0);
+  items.sort((a,b)=> a.localeCompare(b)).forEach(v=>{
+    const o=document.createElement("option"); o.value=v; o.textContent=v; el.appendChild(o);
+  });
+  if ([...items,""].includes(cur)) el.value=cur;
+}
+
+function uniqueList(arr){
+  return Array.from(new Set(arr.filter(Boolean)));
+}
+
+/* 3. PETA & LAYER */
+const osm  = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19, attribution:"© OpenStreetMap"});
+const img  = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{maxZoom:19, attribution:"Tiles © Esri/Maxar"});
+const map  = L.map("map", {layers:[osm]}).setView([-2.5,117],5);
+L.control.layers({"OSM":osm, "Esri Imagery":img}, {}, {position:"topright"}).addTo(map);
+
+let cluster = L.markerClusterGroup({ disableClusteringAtZoom: 15 });
+map.addLayer(cluster);
+const labelsGroup = L.layerGroup().addTo(map);
+
+let allMarkers = [];
+const origAdd = cluster.addLayer.bind(cluster);
+cluster.addLayer = function(layer){
+  allMarkers.push(layer);
+  return origAdd(layer);
+};
+
+/* 4. GLOBAL STATE */
+let baselineData = [];
+let logData      = [];
+const balaiToLokasiUploaded = new Map();
+let index = [];
+
+/* 5. LABEL VISIBILITY */
+const ZOOM_LABEL_MIN = ZOOM_LABEL;
+function refreshLabels(){
+  const show = map.getZoom() >= ZOOM_LABEL_MIN;
+  allMarkers.forEach(m=>{
+    const lbl = m.__label; if(!lbl) return;
+    const el = lbl.getElement() || lbl._icon; if(!el) return;
+    const vp = cluster.getVisibleParent(m);
+    const visible = (vp === m) && show;
+    el.style.display = visible ? "block" : "none";
+  });
+}
+map.on("zoomend moveend", refreshLabels);
+cluster.on("animationend spiderfied unspiderfied", refreshLabels);
+
+/* 6. KEY JOIN */
+function makeKey(rec){
+  if(rec.key) return "key:" + canon(rec.key);
+  return "loc:" + [
+    canon(rec.balai || rec.bbws || ""),
+    canon(rec.prov || ""),
+    canon(rec.kab || ""),
+    canon(rec.desa || rec.lokasi || rec.namaDi || "")
+  ].join("|");
+}
+
+/* 7. LOAD BASELINE */
+async function loadBaseline(){
+  const res = await fetch(URL_BASELINE + "&t=" + Date.now(), {cache:"no-store"});
+  if(!res.ok) throw new Error("HTTP "+res.status+" saat akses baseline");
+  const text = await res.text();
+  const rows = parseCSV(text);
+
+  const out = rows.map(r=>{
+    const rawBalai = norm(
+      r["B/BWS"] ||
+      r["BWS"]   ||
+      r["BBWS"]  ||
+      r["Balai"] ||
+      r["balai"] ||
+      ""
+    );
+
+    let balai = rawBalai;
+    if(
+      !balai ||
+      /^[0-9.,\-\s]+$/.test(balai) ||
+      !/bws/i.test(balai)
+    ){
+      balai = "";
+    }
+
+    return {
+      key:   norm(r["key"] || r["Key"] || ""),
+      balai: balai,
+      prov:  norm(r["provinsi"] || r["Provinsi"] || ""),
+      kab:   norm(r["kabupate di"] || r["kabupaten di"] || r["kabupaten"] || r["KABUPATEN"] || ""),
+      desa:  norm(r["kecamata desa"] || r["desa"] || r["DESA"] || ""),
+      namaDi: norm(
+        r["Nama DI"]  ||
+        r["nama_di"]  ||
+        r["Nama_DI"]  ||
+        r["DI"]       ||
+        ""
+      )
     };
+  }).filter(r =>
+    r.key || r.balai || r.prov || r.kab || r.desa || r.namaDi
+  ); // <- supaya count baseline penuh (harusnya 806)
 
-    // TODO: SAMAKAN PERSIS dengan Form_Tahap3.html:
-    // biasanya di sini ada fetch POST ke Apps Script / endpoint kamu
-    // contoh:
-    // await fetch(GAS_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })
+  return out;
+}
 
-    console.log('KIRIM payload:', payload);
-    alert('Data siap dikirim ✅ (tinggal sambungkan ke endpoint Form_Tahap3.html)');
+/* 8. LOAD LOG_TAHAP3 + MARKER
+   (pakai baseline utk ambil Nama DI via key) */
+async function loadLogTahap3(baseline){
+  const res = await fetch(URL_LOG + "&t=" + Date.now(), {cache:"no-store"});
+  if(!res.ok) throw new Error("HTTP "+res.status+" saat akses log_tahap3");
+  const text = await res.text();
+  const rows = parseCSV(text);
+
+  // Map baseline by key → untuk Nama DI
+  const baselineKeyMap = new Map();
+  baseline.forEach(b=>{
+    if (b.key) baselineKeyMap.set(canon(b.key), b);
   });
 
-  // init
-  onSlider();
-  renderMiniHistory();
-  refreshPreview();
+  allMarkers = [];
+  cluster.clearLayers();
+  labelsGroup.clearLayers();
+  balaiToLokasiUploaded.clear();
+
+  const result = [];
+  const markers = [];
+
+  rows.forEach(r=>{
+    const keyVal  = norm(r["key"]);
+    const rawProg = norm(r["progress_"] || r["progress"] || "0");
+    const numProg = parseFloat(rawProg.replace("%","").replace(",","."));
+    const rawFoto = norm(r["foto_url"]);
+    const hasFotoUrl = /^https?:\/\//i.test(rawFoto); // hanya http/https yang dianggap ada foto
+
+    // Nama DI: dari log_tahap3 dulu, kalau kosong ambil dari baseline by key
+    let namaDi = norm(
+      r["Nama DI"]  ||
+      r["nama_di"]  ||
+      r["Nama_DI"]  ||
+      r["DI"]       ||
+      ""
+    );
+    if (!namaDi && keyVal) {
+      const b = baselineKeyMap.get(canon(keyVal));
+      if (b && b.namaDi) namaDi = b.namaDi;
+    }
+
+    const rec = {
+      timestamp: norm(r["timestamp"]),
+      key:       keyVal,
+      balai:     norm(r["balai"] || r["BWS"] || r["B/BWS"] || ""),
+      prov:      norm(r["provinsi"]),
+      kab:       norm(r["kabupate di"] || r["kabupaten di"] || r["kabupaten"]),
+      kec:       norm(r["kecamatan"] || r["kecamata"] || r["kec"]),
+      desa:      norm(r["desa"]),
+      lat:       parseFloat(r["lat"]),
+      lng:       parseFloat(r["lng"]),
+      nama:      norm(r["nama"]),
+      telp:      norm(r["telepon"]),
+      progress:  Number.isFinite(numProg) ? numProg : 0,
+      foto:      hasFotoUrl ? rawFoto : "",
+      namaDi:    namaDi
+    };
+
+    if (!Number.isFinite(rec.lat) || !Number.isFinite(rec.lng)) return;
+
+    const lokasiPendek = (rec.kab || "-") + " / " + (rec.desa || rec.kec || "-");
+    rec.lokasi = lokasiPendek;
+
+    const keyBalai = rec.balai || "-";
+    if(!balaiToLokasiUploaded.has(keyBalai)) balaiToLokasiUploaded.set(keyBalai, new Set());
+    balaiToLokasiUploaded.get(keyBalai).add(lokasiPendek);
+
+    result.push(rec);
+
+    const gmaps  = "https://www.google.com/maps?q=" + rec.lat + "," + rec.lng;
+    const stages = [25,50,75,100];
+    const prog   = Number.isFinite(rec.progress) ? rec.progress : 0;
+    const bucket = stages.find(s => Math.round(prog) === s) || null;
+
+    const hasFoto = !!rec.foto;
+
+    const btns = stages.map(s=>{
+      if(!hasFoto){
+        return '<span class="btn-photo disabled">Foto ' + s + '%</span>';
+      }
+      const cls = "btn-photo" + (bucket === s ? " active" : "");
+      return '<a class="' + cls + '" href="' + rec.foto + '" target="_blank" rel="noopener">Foto ' + s + '%</a>';
+    }).join("");
+
+    const title = rec.namaDi || lokasiPendek; // <- Judul popup: Nama DI dulu
+
+    const popup =
+      "<b>" + title + "</b>" +
+      '<div style="font-size:12px;color:#555;margin:4px 0">' +
+        "Balai: " + (rec.balai || "-") + "<br/>" +
+        "Provinsi: " + (rec.prov || "-") + "<br/>" +
+        "Kabupaten: " + (rec.kab || "-") + "<br/>" +
+        "Kecamatan: " + (rec.kec || "-") + "<br/>" +
+        "Desa: " + (rec.desa || "-") + "<br/>" +
+        "Progress: <b>" + Math.round(prog) + "%</b><br/>" +
+        "📍 " + rec.lat.toFixed(6) + ", " + rec.lng.toFixed(6) + " — " +
+        '<a href="' + gmaps + '" target="_blank" rel="noopener">Google Maps</a>' +
+      "</div>" +
+      '<div class="stage-grid">' + btns + "</div>";
+
+    const iconUrl = (prog >= 100)
+      ? "https://maps.google.com/mapfiles/ms/icons/red-dot.png"
+      : "https://maps.google.com/mapfiles/ms/icons/blue-dot.png";
+
+    const m = L.marker([rec.lat, rec.lng],{
+      icon:L.icon({
+        iconUrl:iconUrl,
+        iconSize:[25,41],iconAnchor:[12,41],
+        shadowUrl:"https://unpkg.com/leaflet/dist/images/marker-shadow.png",shadowSize:[41,41]
+      })
+    }).bindPopup(popup);
+
+    m.__meta = {bbws:rec.balai, di:title, stage:prog};
+    cluster.addLayer(m);
+    markers.push(m);
+
+    const lbl = L.marker([rec.lat, rec.lng], {
+      icon: L.divIcon({
+        className: "di-label",
+        html: title + " " + Math.round(prog) + "%",
+        iconSize: null
+      }),
+      interactive:false,
+      zIndexOffset: 1000
+    }).addTo(labelsGroup);
+    m.__label = lbl;
+  });
+
+  if(markers.length){
+    const g=L.featureGroup(markers); map.fitBounds(g.getBounds(),{padding:[20,20]});
+  }
+
+  setTimeout(refreshLabels, 0);
+
+  return result;
+}
+
+/* 9. STATS UI */
+function buildStatsUI({totalBaseline,totalFilled,percent,byBalai,missing}){
+  const head =
+    '<div class="stats-head">' +
+      '<div class="stats-actions">' +
+        '<a class="btn-mini" href="https://irwan-dot-cyber.github.io/my-maps/landingpage/beranda.html" target="_blank" rel="noopener">Beranda</a>' +
+        '<button id="btnResetView" class="btn-mini warn" type="button">Reset Tampilan</button>' +
+        '<button id="btnLocateMini" class="btn-mini success" type="button">Posisi Saya</button>' +
+      "</div>" +
+      '<div class="stats-title">Statistik Keterisian Log Tahap 3</div>' +
+    "</div>";
+
+  const row =
+    '<div class="stats-row">' +
+      '<div class="pill">Baseline: ' + totalBaseline + " lokasi</div>" +
+      '<div class="pill">Sudah terisi: ' + totalFilled + " lokasi</div>" +
+      '<div class="pill">Keterisian: ' + percent + "%</div>" +
+    "</div>";
+
+  const bar  = '<div class="bar"><span style="width:' + percent + '%"></span></div>';
+
+  const rows = byBalai.length
+    ? byBalai.map(r=>"<tr><td>"+r.balai+"</td><td>"+r.total+"</td><td>"+r.filled+"</td><td>"+r.pct+"%</td></tr>").join("")
+    : '<tr><td colspan="4">Belum ada data</td></tr>';
+
+  const table =
+    '<table class="stats">' +
+      "<thead>" +
+        "<tr>" +
+          "<th>Balai</th>" +
+          "<th>Baseline lokasi</th>" +
+          "<th>Sudah terisi</th>" +
+          "<th>%</th>" +
+        "</tr>" +
+      "</thead>" +
+      "<tbody>"+rows+"</tbody>" +
+    "</table>";
+
+  const exportBtns =
+    '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">' +
+      '<button class="btn-mini primary" id="btnExportCSV">Unduh data log (CSV)</button>' +
+      '<button class="btn-mini" id="btnExportMissing">Unduh baseline belum terisi</button>' +
+    "</div>";
+
+  $("#stats").innerHTML = head + row + bar + table + exportBtns;
+
+  $("#btnResetView").onclick = ()=> map.setView([-2.5,117],5);
+  $("#btnLocateMini").onclick = ()=>{
+    if(!navigator.geolocation) return alert("Geolocation tidak didukung");
+    navigator.geolocation.getCurrentPosition(pos=>{
+      const lat=pos.coords.latitude, lng=pos.coords.longitude;
+      L.marker([lat,lng],{icon:L.icon({
+        iconUrl:"https://maps.google.com/mapfiles/ms/icons/green-dot.png",
+        iconSize:[25,41],iconAnchor:[12,41],
+        shadowUrl:"https://unpkg.com/leaflet/dist/images/marker-shadow.png",shadowSize:[41,41]
+      })}).addTo(map).bindPopup("Lokasi Anda").openPopup();
+      map.setView([lat,lng],13);
+    }, ()=>alert("Tidak dapat mengakses lokasi."));
+  };
+
+  $("#btnExportCSV").onclick = ()=>{
+    const header = ["timestamp","key","balai","provinsi","nama_di","kabupaten_desa","lat","lng","progress","foto_url"];
+    const lines = [header.join(",")].concat(
+      logData.map(r=>[
+        r.timestamp,
+        r.key,
+        r.balai,
+        r.prov,
+        r.namaDi,
+        r.kab + " / " + r.desa,
+        r.lat,
+        r.lng,
+        r.progress,
+        r.foto
+      ].map(v=>'"'+String(v==null?"":v).replace(/"/g,'""')+'"').join(","))
+    );
+    const blob = new Blob([lines.join("\n")],{type:"text/csv;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a=document.createElement("a"); a.href=url; a.download="log_tahap3.csv";
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  };
+
+  $("#btnExportMissing").onclick = ()=>{
+    const header = ["Balai","Provinsi","Nama DI","Kabupaten","Desa"];
+    const lines = [header.join(",")].concat(
+      missing.map(m=>[
+        m.balai,
+        m.prov,
+        m.namaDi,
+        m.kab,
+        m.desa
+      ].map(v=>'"'+String(v||"").replace(/"/g,'""')+'"').join(","))
+    );
+    const blob = new Blob([lines.join("\n")],{type:"text/csv;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a=document.createElement("a"); a.href=url; a.download="baseline-belum-terisi-tahap3.csv";
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  };
+}
+
+/* 10. FILTER BALAI - LOKASI */
+function updateDiOptions(){
+  const bb = $("#f-bbws").value;
+  const diSel = $("#f-di");
+  if(!bb){
+    diSel.innerHTML = "<option value=\"\">— Pilih B/BWS dulu —</option>";
+    diSel.disabled = true;
+    return;
+  }
+  const list = Array.from(balaiToLokasiUploaded.get(bb) || []);
+  diSel.disabled = false;
+  fillSelect(diSel, list, "— Semua lokasi —");
+  diSel.value = "";
+}
+
+function applyFilters(){
+  const fB = canon($("#f-bbws").value);
+  const fD = canon($("#f-di").value);
+
+  cluster.clearLayers();
+  const visible=[];
+  allMarkers.forEach(m=>{
+    const meta = m.__meta || {};
+    const passB = !fB || canon(meta.bbws)===fB;
+    const passD = !fD || canon(meta.di)===fD;
+    if(passB && passD){ cluster.addLayer(m); visible.push(m); }
+  });
+  if(visible.length){
+    const g=L.featureGroup(visible); map.fitBounds(g.getBounds(),{padding:[20,20]});
+  }
+  refreshLabels();
+}
+$("#f-bbws").addEventListener("change", ()=>{ updateDiOptions(); applyFilters(); });
+$("#f-di").addEventListener("change", applyFilters);
+
+/* 11. SEARCH SUGGESTIONS */
+function rebuildIndex(){
+  index.length = 0;
+  allMarkers.forEach(m=>{
+    const name = m.__meta?.di || "";
+    if(name) index.push({name, marker:m});
+  });
+}
+
+function showSuggestions(q){
+  const box=$("#suggestions"); box.innerHTML="";
+  if(!q){ box.style.display="none"; return; }
+  const hits=index
+    .filter(it=>it.name && it.name.toLowerCase().includes(q.toLowerCase()))
+    .slice(0,100);
+  hits.forEach(it=>{
+    const d=document.createElement("div"); d.textContent=it.name;
+    d.onclick=()=>{
+      $("#search").value=it.name;
+      box.style.display="none";
+      map.setView(it.marker.getLatLng(),14);
+      it.marker.openPopup();
+    };
+    box.appendChild(d);
+  });
+  box.style.display = hits.length ? "block" : "none";
+}
+
+$("#search").addEventListener("input", e=> showSuggestions(e.currentTarget.value));
+$("#search").addEventListener("keydown", e=>{
+  if(e.key==="Enter"){
+    const q=e.currentTarget.value.trim().toLowerCase();
+    const hit=index.find(it=>it.name && it.name.toLowerCase()===q)
+      || index.find(it=>it.name && it.name.toLowerCase().includes(q));
+    if(hit){
+      map.setView(hit.marker.getLatLng(),14);
+      hit.marker.openPopup();
+      $("#suggestions").style.display="none";
+    }
+  }
+});
+
+/* 12. BUILD INIT */
+async function build(){
+  try{
+    $("#stats").textContent="Memuat statistik…";
+
+    const baseline = await loadBaseline();
+    const logs     = await loadLogTahap3(baseline);
+    baselineData   = baseline;
+    logData        = logs;
+
+    const uniqBalai = uniqueList(logs.map(r=>r.balai || "-"));
+    fillSelect($("#f-bbws"), uniqBalai, "— Semua B/BWS (yang sudah upload) —");
+    updateDiOptions();
+
+    const baseKeys = new Set(baseline.map(makeKey));
+    const logKeys  = new Set(logs.map(makeKey));
+    const totalBaseline = baseKeys.size;
+    const totalFilled   = [...baseKeys].filter(k => logKeys.has(k)).length;
+    const percent       = totalBaseline ? Math.round(totalFilled/totalBaseline*100) : 0;
+
+    const mapBalai = new Map();
+    baseline.forEach(b=>{
+      if(!b.balai) return;       // hanya balai valid
+      const balai = b.balai;
+      if(!mapBalai.has(balai)) mapBalai.set(balai,{balai:balai, total:0, filled:0});
+      const o = mapBalai.get(balai);
+      o.total++;
+      if (logKeys.has(makeKey(b))) o.filled++;
+    });
+    const byBalai = [...mapBalai.values()].map(x=>({
+      balai:x.balai,
+      total:x.total,
+      filled:x.filled,
+      pct:x.total ? Math.round(x.filled/x.total*100) : 0
+    }));
+
+    const missing = baseline.filter(b => !logKeys.has(makeKey(b)));
+
+    buildStatsUI({totalBaseline, totalFilled, percent, byBalai, missing});
+    rebuildIndex();
+    refreshLabels();
+  }catch(e){
+    console.error(e);
+    $("#stats").innerHTML =
+      '<div style="color:#b91c1c">Gagal memuat data Tahap 3.</div>' +
+      '<div style="font-size:12px;color:#6b7280">' +
+      "Pastikan sheet <b>baseline</b> dan <b>log_tahap3</b> berada di file yang sama, " +
+      "sudah publik (Anyone with the link - Viewer), " +
+      "dan nilai <code>SHEET_ID</code> / <code>GID_BASELINE</code> / <code>GID_LOG</code> sudah benar.<br/>" +
+      "Detail: " + (e.message || e) +
+      "</div>";
+  }
+}
+
+build();
 </script>
+</body>
+</html>
