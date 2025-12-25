@@ -210,41 +210,41 @@
   }
 
   function readProgress(row){
-    var v = row["progress_"];
-    if (!v && v !== 0) v = row["progress"];
-    if (!v && v !== 0) {
-      var keys = Object.keys(row);
-      var key = keys.find(function(k){
-        return k.toLowerCase().replace(/\s|_/g,"") === "progress";
-      });
-      if (!key) return 0;
-      v = row[key];
+  // Cari kolom yang namanya mengandung "progress" (abaikan spasi, underscore, dll)
+  var val = null;
+  Object.keys(row).forEach(function(k){
+    var clean = k.toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (clean.indexOf("progress") !== -1 && val === null){
+      val = row[k];
     }
-    v = norm(v);
-    var m = v.match(/[\d.,]+/);
-    if (!m) return 0;
-    var num = parseFloat(m[0].replace(",", "."));
-    return isFinite(num) ? num : 0;
-  }
+  });
 
-  function readFotoUrl(row){
-    var v = row["foto_url"];
-    if (!v) {
-      var keys = Object.keys(row);
-      var key = keys.find(function(k){
-        return k.toLowerCase().replace(/\s/g,"") === "foto_url";
-      });
-      if (!key) {
-        key = keys.find(function(k){
-          var low = k.toLowerCase();
-          return low.indexOf("foto") !== -1 && low.indexOf("url") !== -1;
-        });
-      }
-      if (!key) return "";
-      v = row[key];
+  if (val == null || val === "") return 0;
+
+  val = String(val).trim();
+  var m = val.match(/[\d.,]+/);
+  if (!m) return 0;
+
+  var num = parseFloat(m[0].replace(",", "."));
+  return isFinite(num) ? num : 0;
+}
+
+function readFotoUrl(row){
+  // Cari kolom yang namanya mengandung "foto" dan "url"
+  var url = null;
+  Object.keys(row).forEach(function(k){
+    var clean = k.toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (clean.indexOf("foto") !== -1 && clean.indexOf("url") !== -1 && url === null){
+      url = row[k];
     }
-    return norm(v);
-  }
+  });
+
+  if (!url) return "";
+  url = String(url).trim();
+  if (!/^https?:\/\//i.test(url)) return "";
+  return url;
+}
+
 
   function uniqueList(arr){
     var set = {};
