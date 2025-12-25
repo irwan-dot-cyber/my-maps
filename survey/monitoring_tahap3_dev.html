@@ -160,7 +160,28 @@
   function norm(s){ return (s == null ? "" : String(s)).trim(); }
   function canon(s){ return norm(s).toLowerCase(); }
 
-  /* CSV parser sederhana */
+  /* helper buka foto di tab baru tanpa auto-download */
+  function openPhotoInWindow(url, title){
+    var w = window.open("", "_blank");
+    if (!w){
+      alert("Popup diblokir browser, izinkan dulu ya.");
+      return;
+    }
+    var safeUrl = String(url).replace(/"/g,"&quot;");
+    var safeTitle = String(title || "Foto Progress").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    w.document.write(
+      "<!DOCTYPE html><html><head><meta charset='UTF-8' />" +
+      "<title>"+ safeTitle +"</title>" +
+      "<style>body{margin:0;background:#000;display:flex;align-items:center;justify-content:center;}" +
+      "img{max-width:100%;max-height:100vh;object-fit:contain;background:#000;}</style>" +
+      "</head><body>" +
+      "<img src=\"" + safeUrl + "\" alt=\""+ safeTitle +"\"/>" +
+      "</body></html>"
+    );
+    w.document.close();
+  }
+
+  /* CSV parser */
   function parseCSV(text){
     var rows = [];
     var row = [];
@@ -209,42 +230,37 @@
     });
   }
 
+  /* baca progress dari kolom yang mengandung kata "progress" */
   function readProgress(row){
-  // Cari kolom yang namanya mengandung "progress" (abaikan spasi, underscore, dll)
-  var val = null;
-  Object.keys(row).forEach(function(k){
-    var clean = k.toLowerCase().replace(/[^a-z0-9]/g, "");
-    if (clean.indexOf("progress") !== -1 && val === null){
-      val = row[k];
-    }
-  });
+    var val = null;
+    Object.keys(row).forEach(function(k){
+      var clean = k.toLowerCase().replace(/[^a-z0-9]/g,"");
+      if (clean.indexOf("progress") !== -1 && val === null){
+        val = row[k];
+      }
+    });
+    if (val == null || val === "") return 0;
+    val = String(val).trim();
+    var m = val.match(/[\d.,]+/);
+    if (!m) return 0;
+    var num = parseFloat(m[0].replace(",", "."));
+    return isFinite(num) ? num : 0;
+  }
 
-  if (val == null || val === "") return 0;
-
-  val = String(val).trim();
-  var m = val.match(/[\d.,]+/);
-  if (!m) return 0;
-
-  var num = parseFloat(m[0].replace(",", "."));
-  return isFinite(num) ? num : 0;
-}
-
-function readFotoUrl(row){
-  // Cari kolom yang namanya mengandung "foto" dan "url"
-  var url = null;
-  Object.keys(row).forEach(function(k){
-    var clean = k.toLowerCase().replace(/[^a-z0-9]/g, "");
-    if (clean.indexOf("foto") !== -1 && clean.indexOf("url") !== -1 && url === null){
-      url = row[k];
-    }
-  });
-
-  if (!url) return "";
-  url = String(url).trim();
-  if (!/^https?:\/\//i.test(url)) return "";
-  return url;
-}
-
+  /* baca url foto dari kolom yang mengandung "foto" & "url" */
+  function readFotoUrl(row){
+    var url = null;
+    Object.keys(row).forEach(function(k){
+      var clean = k.toLowerCase().replace(/[^a-z0-9]/g,"");
+      if (clean.indexOf("foto") !== -1 && clean.indexOf("url") !== -1 && url === null){
+        url = row[k];
+      }
+    });
+    if (!url) return "";
+    url = String(url).trim();
+    if (!/^https?:\/\//i.test(url)) return "";
+    return url;
+  }
 
   function uniqueList(arr){
     var set = {};
@@ -472,19 +488,6 @@ function readFotoUrl(row){
 
           var gmaps = "https://www.google.com/maps?q=" + rec.lat + "," + rec.lng;
 
-          var nearestBucket = null;
-          if (prog > 0){
-            nearestBucket = stagesList[0];
-            var minDiff2 = Math.abs(prog - nearestBucket);
-            for (var i2 = 1; i2 < stagesList.length; i2++){
-              var d2 = Math.abs(prog - stagesList[i2]);
-              if (d2 < minDiff2){
-                minDiff2 = d2;
-                nearestBucket = stagesList[i2];
-              }
-            }
-          }
-
           var popupDiv = document.createElement("div");
 
           var titleEl = document.createElement("b");
@@ -535,13 +538,15 @@ function readFotoUrl(row){
           stagesList.forEach(function(stage){
             var url = rec.stages[stage];
             if (url && /^https?:\/\//i.test(url)){
-              var a = document.createElement("a");
-              a.className = "btn-photo" + (nearestBucket === stage ? " active" : "");
-              a.href = url;
-              a.target = "_blank";
-              a.rel = "noopener";
-              a.textContent = "Foto " + stage + "%";
-              grid.appendChild(a);
+              var ab = document.createElement("a");
+              ab.className = "btn-photo active";   // semua yang punya foto = biru
+              ab.href = "#";
+              ab.textContent = "Foto " + stage + "%";
+              ab.onclick = function(e){
+                e.preventDefault();
+                openPhotoInWindow(url, title + " " + stage + "%");
+              };
+              grid.appendChild(ab);
             } else {
               var span = document.createElement("span");
               span.className = "btn-photo disabled";
