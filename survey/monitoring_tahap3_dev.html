@@ -161,12 +161,21 @@
   function canon(s){ return norm(s).toLowerCase(); }
 
   /* helper buka foto di tab baru tanpa auto-download */
-  function openPhotoInWindow(url, title){
-    var w = window.open("", "_blank");
-    if (!w){
-      alert("Popup diblokir browser, izinkan dulu ya.");
-      return;
+  function openPhotoInWindow(url){
+  var u = String(url || "").trim();
+  if (!u) return;
+
+  // Kalau dari Google Drive, pakai viewer
+  if (u.indexOf("drive.google.com") !== -1){
+    var m = u.match(/[\?&]id=([^&]+)/);
+    if (m){
+      u = "https://drive.google.com/uc?export=view&id=" + m[1];
     }
+  }
+
+  window.open(u, "_blank", "noopener");
+}
+
     var safeUrl = String(url).replace(/"/g,"&quot;");
     var safeTitle = String(title || "Foto Progress").replace(/</g,"&lt;").replace(/>/g,"&gt;");
     w.document.write(
