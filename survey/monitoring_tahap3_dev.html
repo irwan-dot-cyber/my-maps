@@ -147,59 +147,43 @@
 (function(){
   "use strict";
 
-  var SHEET_ID     = "1YkNmEcQw1_1_xL0BTxYXl1f4Tkk2-22tXuQB-IoEeuY";
-  var GID_BASELINE = "466754170";
-  var GID_LOG      = "732855223";
+  const SHEET_ID     = "1YkNmEcQw1_1_xL0BTxYXl1f4Tkk2-22tXuQB-IoEeuY";
+  const GID_BASELINE = "466754170";
+  const GID_LOG      = "732855223";
 
-  var URL_BASELINE = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/export?format=csv&gid=" + GID_BASELINE;
-  var URL_LOG      = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/export?format=csv&gid=" + GID_LOG;
+  const URL_BASELINE = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/export?format=csv&gid=" + GID_BASELINE;
+  const URL_LOG      = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/export?format=csv&gid=" + GID_LOG;
 
-  var ZOOM_LABEL   = 14;
+  const ZOOM_LABEL   = 14;
 
   function $(sel){ return document.querySelector(sel); }
   function norm(s){ return (s == null ? "" : String(s)).trim(); }
   function canon(s){ return norm(s).toLowerCase(); }
 
-  /* helper buka foto di tab baru tanpa auto-download */
-  function openPhotoInWindow(url){
-  var u = String(url || "").trim();
-  if (!u) return;
+  /* helper buka foto di tab baru; Drive → viewer */
+  function openPhotoInWindow(url, title){
+    let u = String(url || "").trim();
+    if (!u) return;
 
-  // Kalau dari Google Drive, pakai viewer
-  if (u.indexOf("drive.google.com") !== -1){
-    var m = u.match(/[\?&]id=([^&]+)/);
-    if (m){
-      u = "https://drive.google.com/uc?export=view&id=" + m[1];
+    if (u.indexOf("drive.google.com") !== -1){
+      const m = u.match(/[\?&]id=([^&]+)/);
+      if (m){
+        u = "https://drive.google.com/uc?export=view&id=" + m[1];
+      }
     }
-  }
-
-  window.open(u, "_blank", "noopener");
-}
-
-    var safeUrl = String(url).replace(/"/g,"&quot;");
-    var safeTitle = String(title || "Foto Progress").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-    w.document.write(
-      "<!DOCTYPE html><html><head><meta charset='UTF-8' />" +
-      "<title>"+ safeTitle +"</title>" +
-      "<style>body{margin:0;background:#000;display:flex;align-items:center;justify-content:center;}" +
-      "img{max-width:100%;max-height:100vh;object-fit:contain;background:#000;}</style>" +
-      "</head><body>" +
-      "<img src=\"" + safeUrl + "\" alt=\""+ safeTitle +"\"/>" +
-      "</body></html>"
-    );
-    w.document.close();
+    window.open(u, "_blank", "noopener");
   }
 
   /* CSV parser */
   function parseCSV(text){
-    var rows = [];
-    var row = [];
-    var cur = "";
-    var inQuotes = false;
+    const rows = [];
+    let row = [];
+    let cur = "";
+    let inQuotes = false;
 
-    for (var i = 0; i < text.length; i++) {
-      var c = text[i];
-      var next = text[i + 1];
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      const next = text[i + 1];
 
       if (inQuotes) {
         if (c === '"' && next === '"') {
@@ -229,38 +213,38 @@
     }
 
     if (!rows.length) return [];
-    var headers = rows[0].map(function(h){ return h.trim(); });
-    return rows.slice(1).map(function(r){
-      var obj = {};
-      headers.forEach(function(h, idx){
+    const headers = rows[0].map(h => h.trim());
+    return rows.slice(1).map(r => {
+      const obj = {};
+      headers.forEach((h, idx) => {
         obj[h] = (r[idx] || "").trim();
       });
       return obj;
     });
   }
 
-  /* baca progress dari kolom yang mengandung kata "progress" */
+  /* baca progress: kolom yg mengandung "progress" */
   function readProgress(row){
-    var val = null;
-    Object.keys(row).forEach(function(k){
-      var clean = k.toLowerCase().replace(/[^a-z0-9]/g,"");
+    let val = null;
+    Object.keys(row).forEach(k => {
+      const clean = k.toLowerCase().replace(/[^a-z0-9]/g,"");
       if (clean.indexOf("progress") !== -1 && val === null){
         val = row[k];
       }
     });
     if (val == null || val === "") return 0;
     val = String(val).trim();
-    var m = val.match(/[\d.,]+/);
+    const m = val.match(/[\d.,]+/);
     if (!m) return 0;
-    var num = parseFloat(m[0].replace(",", "."));
+    const num = parseFloat(m[0].replace(",", "."));
     return isFinite(num) ? num : 0;
   }
 
-  /* baca url foto dari kolom yang mengandung "foto" & "url" */
+  /* baca url foto: kolom yg mengandung "foto" & "url" */
   function readFotoUrl(row){
-    var url = null;
-    Object.keys(row).forEach(function(k){
-      var clean = k.toLowerCase().replace(/[^a-z0-9]/g,"");
+    let url = null;
+    Object.keys(row).forEach(k => {
+      const clean = k.toLowerCase().replace(/[^a-z0-9]/g,"");
       if (clean.indexOf("foto") !== -1 && clean.indexOf("url") !== -1 && url === null){
         url = row[k];
       }
@@ -272,47 +256,47 @@
   }
 
   function uniqueList(arr){
-    var set = {};
-    var out = [];
-    arr.forEach(function(v){
+    const set = {};
+    const out = [];
+    arr.forEach(v => {
       if (v && !set[v]){ set[v] = true; out.push(v); }
     });
     return out;
   }
 
   /* Leaflet */
-  var osm  = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19, attribution:"© OpenStreetMap"});
-  var img  = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{maxZoom:19, attribution:"Tiles © Esri/Maxar"});
+  const osm  = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19, attribution:"© OpenStreetMap"});
+  const img  = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{maxZoom:19, attribution:"Tiles © Esri/Maxar"});
 
-  var map  = L.map("map",{layers:[osm]}).setView([-2.5,117],5);
+  const map  = L.map("map",{layers:[osm]}).setView([-2.5,117],5);
   L.control.layers({"OSM":osm,"Esri Imagery":img}, {}, {position:"topright"}).addTo(map);
 
-  var cluster = L.markerClusterGroup({ disableClusteringAtZoom: 15 });
+  const cluster = L.markerClusterGroup({ disableClusteringAtZoom: 15 });
   map.addLayer(cluster);
 
-  var labelsLayer = L.layerGroup().addTo(map);
-  var allMarkers  = [];
+  const labelsLayer = L.layerGroup().addTo(map);
+  let allMarkers  = [];
 
-  var oldAdd = cluster.addLayer.bind(cluster);
+  const oldAdd = cluster.addLayer.bind(cluster);
   cluster.addLayer = function(layer){
     allMarkers.push(layer);
     return oldAdd(layer);
   };
 
-  var baselineData = [];
-  var logGroups    = [];
-  var balaiToLokasiUploaded = {};
-  var searchIndex  = [];
+  let baselineData = [];
+  let logGroups    = [];
+  let balaiToLokasiUploaded = {};
+  let searchIndex  = [];
 
   function refreshLabels(){
-    var show = map.getZoom() >= ZOOM_LABEL;
-    allMarkers.forEach(function(m){
-      var lbl = m.__label;
+    const show = map.getZoom() >= ZOOM_LABEL;
+    allMarkers.forEach(m => {
+      const lbl = m.__label;
       if (!lbl) return;
-      var el = lbl.getElement() || lbl._icon;
+      const el = lbl.getElement() || lbl._icon;
       if (!el) return;
-      var vp = cluster.getVisibleParent(m);
-      var visible = (vp === m) && show;
+      const vp = cluster.getVisibleParent(m);
+      const visible = (vp === m) && show;
       el.style.display = visible ? "block" : "none";
     });
   }
@@ -342,17 +326,17 @@
 
   function loadBaseline(){
     return fetch(URL_BASELINE + "&t=" + Date.now(), {cache:"no-store"})
-      .then(function(res){
+      .then(res => {
         if (!res.ok) throw new Error("HTTP "+res.status+" baseline");
         return res.text();
       })
-      .then(function(text){
-        var rows = parseCSV(text);
-        return rows.map(function(r){
-          var rawBalai = norm(
+      .then(text => {
+        const rows = parseCSV(text);
+        return rows.map(r => {
+          const rawBalai = norm(
             r["B/BWS"] || r["BWS"] || r["BBWS"] || r["Balai"] || r["balai"] || ""
           );
-          var balai = rawBalai;
+          let balai = rawBalai;
           if (!balai || /^[0-9.,\-\s]+$/.test(balai) || !/bws/i.test(balai)){
             balai = "";
           }
@@ -370,20 +354,20 @@
 
   function loadLogTahap3(baseline){
     return fetch(URL_LOG + "&t=" + Date.now(), {cache:"no-store"})
-      .then(function(res){
+      .then(res => {
         if (!res.ok) throw new Error("HTTP "+res.status+" log_tahap3");
         return res.text();
       })
-      .then(function(text){
-        var rows = parseCSV(text);
+      .then(text => {
+        const rows = parseCSV(text);
 
-        var baselineKeyMap = {};
-        var baselineLocMap = {};
-        baseline.forEach(function(b){
+        const baselineKeyMap = {};
+        const baselineLocMap = {};
+        baseline.forEach(b => {
           if (b.key){
             baselineKeyMap[canon(b.key)] = b;
           }
-          var locKey = [
+          const locKey = [
             canon(b.balai || ""),
             canon(b.prov  || ""),
             canon(b.kab   || ""),
@@ -399,46 +383,46 @@
         labelsLayer.clearLayers();
         balaiToLokasiUploaded = {};
 
-        var groupMap = {};
+        const groupMap = {};
 
-        rows.forEach(function(r){
-          var keyVal = norm(r["key"]);
-          var latNum = parseFloat(r["lat"]);
-          var lngNum = parseFloat(r["lng"]);
+        rows.forEach(r => {
+          const keyVal = norm(r["key"]);
+          const latNum = parseFloat(r["lat"]);
+          const lngNum = parseFloat(r["lng"]);
           if (!isFinite(latNum) || !isFinite(lngNum)) return;
 
-          var balai = norm(r["balai"] || r["BWS"] || r["B/BWS"] || "");
-          var prov  = norm(r["provinsi"]);
-          var kab   = norm(r["kabupate di"] || r["kabupaten di"] || r["kabupaten"]);
-          var desa  = norm(r["desa"]);
-          var kec   = norm(r["kecamatan"] || r["kecamata"] || r["kec"]);
+          const balai = norm(r["balai"] || r["BWS"] || r["B/BWS"] || "");
+          const prov  = norm(r["provinsi"]);
+          const kab   = norm(r["kabupate di"] || r["kabupaten di"] || r["kabupaten"]);
+          const desa  = norm(r["desa"]);
+          const kec   = norm(r["kecamatan"] || r["kecamata"] || r["kec"]);
 
-          var namaDi = norm(
+          let namaDi = norm(
             r["di"] || r["DI"] || r["Nama DI"] || r["nama_di"] || r["Nama_DI"] || ""
           );
           if (!namaDi && keyVal){
-            var b1 = baselineKeyMap[canon(keyVal)];
+            const b1 = baselineKeyMap[canon(keyVal)];
             if (b1 && b1.namaDi) namaDi = b1.namaDi;
           }
           if (!namaDi){
-            var locKey = [
+            const locKey = [
               canon(balai || ""),
               canon(prov  || ""),
               canon(kab   || ""),
               canon(desa  || "")
             ].join("|");
-            var b2 = baselineLocMap[locKey];
+            const b2 = baselineLocMap[locKey];
             if (b2 && b2.namaDi) namaDi = b2.namaDi;
           }
 
-          var progressVal = readProgress(r);
-          var fotoUrlRaw  = readFotoUrl(r);
-          var hasFoto     = /^https?:\/\//i.test(fotoUrlRaw);
+          const progressVal = readProgress(r);
+          const fotoUrlRaw  = readFotoUrl(r);
+          const hasFoto     = /^https?:\/\//i.test(fotoUrlRaw);
 
-          var groupId = keyVal ? "key:" + canon(keyVal)
-                               : "coord:" + latNum.toFixed(6) + "," + lngNum.toFixed(6);
+          const groupId = keyVal ? "key:" + canon(keyVal)
+                                 : "coord:" + latNum.toFixed(6) + "," + lngNum.toFixed(6);
 
-          var g = groupMap[groupId];
+          let g = groupMap[groupId];
           if (!g){
             g = {
               groupId: groupId,
@@ -460,11 +444,11 @@
           }
 
           if (hasFoto && progressVal > 0){
-            var stages = [25,50,75,100];
-            var bucket = stages[0];
-            var minDiff = Math.abs(progressVal - bucket);
-            for (var i = 1; i < stages.length; i++){
-              var d = Math.abs(progressVal - stages[i]);
+            const stages = [25,50,75,100];
+            let bucket = stages[0];
+            let minDiff = Math.abs(progressVal - bucket);
+            for (let i = 1; i < stages.length; i++){
+              const d = Math.abs(progressVal - stages[i]);
               if (d < minDiff){
                 minDiff = d;
                 bucket = stages[i];
@@ -478,38 +462,34 @@
           }
         });
 
-        var groups = [];
-        Object.keys(groupMap).forEach(function(id){
-          groups.push(groupMap[id]);
-        });
+        const groups = Object.keys(groupMap).map(id => groupMap[id]);
+        const markers = [];
 
-        var markers = [];
+        groups.forEach(rec => {
+          const prog   = isFinite(rec.latestProgress) ? rec.latestProgress : 0;
+          const stagesList = [25,50,75,100];
+          const lokasiPendek = (rec.kab || "-") + " / " + (rec.desa || rec.kec || "-");
+          const title = rec.namaDi ? ("DI. " + rec.namaDi) : lokasiPendek;
 
-        groups.forEach(function(rec){
-          var prog   = isFinite(rec.latestProgress) ? rec.latestProgress : 0;
-          var stagesList = [25,50,75,100];
-          var lokasiPendek = (rec.kab || "-") + " / " + (rec.desa || rec.kec || "-");
-          var title = rec.namaDi ? ("DI. " + rec.namaDi) : lokasiPendek;
-
-          var keyBalai = rec.balai || "-";
+          const keyBalai = rec.balai || "-";
           if (!balaiToLokasiUploaded[keyBalai]) balaiToLokasiUploaded[keyBalai] = {};
           balaiToLokasiUploaded[keyBalai][lokasiPendek] = true;
 
-          var gmaps = "https://www.google.com/maps?q=" + rec.lat + "," + rec.lng;
+          const gmaps = "https://www.google.com/maps?q=" + rec.lat + "," + rec.lng;
 
-          var popupDiv = document.createElement("div");
+          const popupDiv = document.createElement("div");
 
-          var titleEl = document.createElement("b");
+          const titleEl = document.createElement("b");
           titleEl.textContent = title;
           popupDiv.appendChild(titleEl);
 
-          var infoDiv = document.createElement("div");
+          const infoDiv = document.createElement("div");
           infoDiv.style.fontSize = "12px";
           infoDiv.style.color = "#555";
           infoDiv.style.margin = "4px 0";
 
           function addLine(label, value){
-            var p = document.createElement("div");
+            const p = document.createElement("div");
             p.textContent = label + ": " + (value || "-");
             infoDiv.appendChild(p);
           }
@@ -520,18 +500,18 @@
           addLine("Kecamatan", rec.kec || "-");
           addLine("Desa", rec.desa || "-");
 
-          var pProg = document.createElement("div");
-          var bProg = document.createElement("b");
+          const pProg = document.createElement("div");
+          const bProg = document.createElement("b");
           bProg.textContent = Math.round(prog) + "%";
           pProg.textContent = "Progress: ";
           pProg.appendChild(bProg);
           infoDiv.appendChild(pProg);
 
-          var pCoord = document.createElement("div");
-          var spanCoord = document.createElement("span");
+          const pCoord = document.createElement("div");
+          const spanCoord = document.createElement("span");
           spanCoord.textContent = "📍 " + rec.lat.toFixed(6) + ", " + rec.lng.toFixed(6) + " — ";
           pCoord.appendChild(spanCoord);
-          var aMap = document.createElement("a");
+          const aMap = document.createElement("a");
           aMap.href = gmaps;
           aMap.target = "_blank";
           aMap.rel = "noopener";
@@ -541,14 +521,14 @@
 
           popupDiv.appendChild(infoDiv);
 
-          var grid = document.createElement("div");
+          const grid = document.createElement("div");
           grid.className = "stage-grid";
 
-          stagesList.forEach(function(stage){
-            var url = rec.stages[stage];
+          stagesList.forEach(stage => {
+            const url = rec.stages[stage];
             if (url && /^https?:\/\//i.test(url)){
-              var ab = document.createElement("a");
-              ab.className = "btn-photo active";   // semua yang punya foto = biru
+              const ab = document.createElement("a");
+              ab.className = "btn-photo active";
               ab.href = "#";
               ab.textContent = "Foto " + stage + "%";
               ab.onclick = function(e){
@@ -557,7 +537,7 @@
               };
               grid.appendChild(ab);
             } else {
-              var span = document.createElement("span");
+              const span = document.createElement("span");
               span.className = "btn-photo disabled";
               span.textContent = "Foto " + stage + "%";
               grid.appendChild(span);
@@ -566,11 +546,11 @@
 
           popupDiv.appendChild(grid);
 
-          var iconUrl = (prog >= 100)
+          const iconUrl = (prog >= 100)
             ? "https://maps.google.com/mapfiles/ms/icons/red-dot.png"
             : "https://maps.google.com/mapfiles/ms/icons/blue-dot.png";
 
-          var marker = L.marker([rec.lat, rec.lng], {
+          const marker = L.marker([rec.lat, rec.lng], {
             icon: L.icon({
               iconUrl: iconUrl,
               iconSize: [25,41],
@@ -584,7 +564,7 @@
           cluster.addLayer(marker);
           markers.push(marker);
 
-          var labelMarker = L.marker([rec.lat, rec.lng], {
+          const labelMarker = L.marker([rec.lat, rec.lng], {
             icon: L.divIcon({
               className: "di-label",
               html: title + " " + Math.round(prog) + "%",
@@ -597,7 +577,7 @@
         });
 
         if (markers.length){
-          var fg = L.featureGroup(markers);
+          const fg = L.featureGroup(markers);
           map.fitBounds(fg.getBounds(), {padding:[20,20]});
         }
 
@@ -608,53 +588,49 @@
   }
 
   function buildStats(data){
-    var baseline = data.baseline;
-    var logs     = data.logs;
+    const baseline = data.baseline;
+    const logs     = data.logs;
 
-    var logKeys = {};
-    logs.forEach(function(g){
-      var k = makeKeyFromLog(g);
+    const logKeys = {};
+    logs.forEach(g => {
+      const k = makeKeyFromLog(g);
       logKeys[k] = true;
     });
 
-    var totalBaseline = baseline.length;
-    var totalFilled   = Object.keys(logKeys).length;
-    var percent       = totalBaseline ? Math.round(totalFilled/totalBaseline*100) : 0;
+    const totalBaseline = baseline.length;
+    const totalFilled   = Object.keys(logKeys).length;
+    const percent       = totalBaseline ? Math.round(totalFilled/totalBaseline*100) : 0;
 
-    var mapBalaiBase   = {};
-    var mapBalaiFilled = {};
+    const mapBalaiBase   = {};
+    const mapBalaiFilled = {};
 
-    baseline.forEach(function(b){
-      var balai = b.balai || "-";
+    baseline.forEach(b => {
+      const balai = b.balai || "-";
       if (!mapBalaiBase[balai]) mapBalaiBase[balai] = {balai: balai, total:0, filled:0};
       mapBalaiBase[balai].total += 1;
     });
 
-    logs.forEach(function(g){
-      var balai = g.balai || "-";
+    logs.forEach(g => {
+      const balai = g.balai || "-";
       if (!mapBalaiFilled[balai]) mapBalaiFilled[balai] = {};
       mapBalaiFilled[balai][makeKeyFromLog(g)] = true;
     });
 
-    Object.keys(mapBalaiBase).forEach(function(balai){
-      var filledSet = mapBalaiFilled[balai];
-      var filled = filledSet ? Object.keys(filledSet).length : 0;
+    Object.keys(mapBalaiBase).forEach(balai => {
+      const filledSet = mapBalaiFilled[balai];
+      const filled = filledSet ? Object.keys(filledSet).length : 0;
       mapBalaiBase[balai].filled = filled;
       mapBalaiBase[balai].pct    = mapBalaiBase[balai].total ?
         Math.round(filled / mapBalaiBase[balai].total * 100) : 0;
     });
 
-    var rowsArr = Object.keys(mapBalaiBase).map(function(k){
-      return mapBalaiBase[k];
-    });
+    const rowsArr = Object.keys(mapBalaiBase).map(k => mapBalaiBase[k]);
 
-    var missing = baseline.filter(function(b){
-      return !logKeys[makeKey(b)];
-    });
+    const missing = baseline.filter(b => !logKeys[makeKey(b)]);
 
-    var statsDiv = $("#stats");
+    const statsDiv = $("#stats");
 
-    var html = "";
+    let html = "";
     html += '<div class="stats-head">';
     html +=   '<div class="stats-actions">';
     html +=     '<a class="btn-mini" href="https://irwan-dot-cyber.github.io/my-maps/landingpage/beranda.html" target="_blank" rel="noopener">Beranda</a>';
@@ -676,7 +652,7 @@
     html +=   '<thead><tr><th>Balai</th><th>Baseline lokasi</th><th>Sudah terisi</th><th>%</th></tr></thead>';
     html +=   '<tbody>';
     if (rowsArr.length){
-      rowsArr.forEach(function(r){
+      rowsArr.forEach(r => {
         html += '<tr><td>'+r.balai+'</td><td>'+r.total+'</td><td>'+r.filled+'</td><td>'+r.pct+'%</td></tr>';
       });
     } else {
@@ -702,8 +678,8 @@
         return;
       }
       navigator.geolocation.getCurrentPosition(function(pos){
-        var lat = pos.coords.latitude;
-        var lng = pos.coords.longitude;
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
         L.marker([lat,lng],{
           icon:L.icon({
             iconUrl:"https://maps.google.com/mapfiles/ms/icons/green-dot.png",
@@ -720,11 +696,11 @@
     };
 
     $("#btnExportCSV").onclick = function(){
-      var header = ["key","balai","provinsi","nama_di","kabupaten","desa","lat","lng","progress_terakhir","foto_25","foto_50","foto_75","foto_100"];
-      var lines = [header.join(",")];
+      const header = ["key","balai","provinsi","nama_di","kabupaten","desa","lat","lng","progress_terakhir","foto_25","foto_50","foto_75","foto_100"];
+      const lines = [header.join(",")];
 
-      logGroups.forEach(function(g){
-        var row = [
+      logGroups.forEach(g => {
+        const row = [
           g.key || "",
           g.balai || "",
           g.prov || "",
@@ -739,16 +715,16 @@
           g.stages[75] || "",
           g.stages[100] || ""
         ];
-        var csvRow = row.map(function(v){
-          var s = String(v == null ? "" : v);
+        const csvRow = row.map(v => {
+          const s = String(v == null ? "" : v);
           return '"' + s.replace(/"/g,'""') + '"';
         }).join(",");
         lines.push(csvRow);
       });
 
-      var blob = new Blob([lines.join("\n")],{type:"text/csv;charset=utf-8"});
-      var url  = URL.createObjectURL(blob);
-      var a    = document.createElement("a");
+      const blob = new Blob([lines.join("\n")],{type:"text/csv;charset=utf-8"});
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
       a.href   = url;
       a.download = "log_tahap3_grouped.csv";
       document.body.appendChild(a);
@@ -758,27 +734,27 @@
     };
 
     $("#btnExportMissing").onclick = function(){
-      var header = ["Balai","Provinsi","Nama DI","Kabupaten","Desa"];
-      var lines = [header.join(",")];
+      const header = ["Balai","Provinsi","Nama DI","Kabupaten","Desa"];
+      const lines = [header.join(",")];
 
-      missing.forEach(function(m){
-        var row = [
+      missing.forEach(m => {
+        const row = [
           m.balai || "",
           m.prov || "",
           m.namaDi || "",
           m.kab || "",
           m.desa || ""
         ];
-        var csvRow = row.map(function(v){
-          var s = String(v || "");
+        const csvRow = row.map(v => {
+          const s = String(v || "");
           return '"' + s.replace(/"/g,'""') + '"';
         }).join(",");
         lines.push(csvRow);
       });
 
-      var blob = new Blob([lines.join("\n")],{type:"text/csv;charset=utf-8"});
-      var url  = URL.createObjectURL(blob);
-      var a    = document.createElement("a");
+      const blob = new Blob([lines.join("\n")],{type:"text/csv;charset=utf-8"});
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
       a.href   = url;
       a.download = "baseline-belum-terisi-tahap3.csv";
       document.body.appendChild(a);
@@ -791,9 +767,9 @@
   }
 
   function updateDiOptions(){
-    var fBbws = $("#f-bbws");
-    var diSel = $("#f-di");
-    var bb = fBbws.value;
+    const fBbws = $("#f-bbws");
+    const diSel = $("#f-di");
+    const bb = fBbws.value;
 
     if (!bb){
       diSel.innerHTML = '<option value="">— Pilih B/BWS dulu —</option>';
@@ -801,14 +777,14 @@
       return;
     }
 
-    var mapLok = balaiToLokasiUploaded[bb] || {};
-    var list = Object.keys(mapLok);
+    const mapLok = balaiToLokasiUploaded[bb] || {};
+    const list = Object.keys(mapLok);
 
     diSel.disabled = false;
 
-    var cur = diSel.value;
-    var html = '<option value="">— Semua lokasi —</option>';
-    list.sort().forEach(function(v){
+    const cur = diSel.value;
+    let html = '<option value="">— Semua lokasi —</option>';
+    list.sort().forEach(v => {
       html += '<option value="'+v+'">'+v+'</option>';
     });
     diSel.innerHTML = html;
@@ -816,18 +792,18 @@
   }
 
   function applyFilters(){
-    var fBbws = $("#f-bbws").value;
-    var fDi   = $("#f-di").value;
-    var fB = canon(fBbws);
-    var fD = canon(fDi);
+    const fBbws = $("#f-bbws").value;
+    const fDi   = $("#f-di").value;
+    const fB = canon(fBbws);
+    const fD = canon(fDi);
 
     cluster.clearLayers();
-    var visible = [];
+    const visible = [];
 
-    allMarkers.forEach(function(m){
-      var meta = m.__meta || {};
-      var passB = !fB || canon(meta.bbws || "") === fB;
-      var passD = !fD || canon(meta.di   || "") === fD;
+    allMarkers.forEach(m => {
+      const meta = m.__meta || {};
+      const passB = !fB || canon(meta.bbws || "") === fB;
+      const passD = !fD || canon(meta.di   || "") === fD;
       if (passB && passD){
         cluster.addLayer(m);
         visible.push(m);
@@ -835,7 +811,7 @@
     });
 
     if (visible.length){
-      var fg = L.featureGroup(visible);
+      const fg = L.featureGroup(visible);
       map.fitBounds(fg.getBounds(), {padding:[20,20]});
     }
     refreshLabels();
@@ -843,8 +819,8 @@
 
   function rebuildSearchIndex(){
     searchIndex = [];
-    allMarkers.forEach(function(m){
-      var meta = m.__meta || {};
+    allMarkers.forEach(m => {
+      const meta = m.__meta || {};
       if (meta.di){
         searchIndex.push({name: meta.di, marker: m});
       }
@@ -852,19 +828,19 @@
   }
 
   function showSuggestions(q){
-    var box = $("#suggestions");
+    const box = $("#suggestions");
     box.innerHTML = "";
     if (!q){
       box.style.display = "none";
       return;
     }
-    var lower = q.toLowerCase();
-    var hits = searchIndex.filter(function(it){
-      return it.name && it.name.toLowerCase().indexOf(lower) !== -1;
-    }).slice(0,100);
+    const lower = q.toLowerCase();
+    const hits = searchIndex.filter(it =>
+      it.name && it.name.toLowerCase().indexOf(lower) !== -1
+    ).slice(0,100);
 
-    hits.forEach(function(it){
-      var d = document.createElement("div");
+    hits.forEach(it => {
+      const d = document.createElement("div");
       d.textContent = it.name;
       d.onclick = function(){
         $("#search").value = it.name;
@@ -893,14 +869,14 @@
 
   $("#search").addEventListener("keydown", function(e){
     if (e.key === "Enter"){
-      var q = e.currentTarget.value.trim().toLowerCase();
-      var hit = searchIndex.find(function(it){
-        return it.name && it.name.toLowerCase() === q;
-      });
+      const q = e.currentTarget.value.trim().toLowerCase();
+      let hit = searchIndex.find(it =>
+        it.name && it.name.toLowerCase() === q
+      );
       if (!hit){
-        hit = searchIndex.find(function(it){
-          return it.name && it.name.toLowerCase().indexOf(q) !== -1;
-        });
+        hit = searchIndex.find(it =>
+          it.name && it.name.toLowerCase().indexOf(q) !== -1
+        );
       }
       if (hit){
         map.setView(hit.marker.getLatLng(),14);
@@ -914,17 +890,17 @@
     $("#stats").textContent = "Memuat statistik...";
 
     loadBaseline()
-      .then(function(baseline){
+      .then(baseline => {
         baselineData = baseline;
         return loadLogTahap3(baseline);
       })
-      .then(function(groups){
+      .then(groups => {
         logGroups = groups;
 
-        var uniqBalai = uniqueList(groups.map(function(g){ return g.balai || "-"; }));
-        var fBbws = $("#f-bbws");
-        var html = '<option value="">— Semua B/BWS (yang sudah upload) —</option>';
-        uniqBalai.sort().forEach(function(v){
+        const uniqBalai = uniqueList(groups.map(g => g.balai || "-"));
+        const fBbws = $("#f-bbws");
+        let html = '<option value="">— Semua B/BWS (yang sudah upload) —</option>';
+        uniqBalai.sort().forEach(v => {
           html += '<option value="'+v+'">'+v+'</option>';
         });
         fBbws.innerHTML = html;
@@ -934,7 +910,7 @@
         rebuildSearchIndex();
         refreshLabels();
       })
-      .catch(function(err){
+      .catch(err => {
         console.error(err);
         $("#stats").innerHTML =
           '<div style="color:#b91c1c">Gagal memuat data Tahap 3.</div>' +
