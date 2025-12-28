@@ -61,10 +61,9 @@
       grid-template-columns: minmax(0,2fr);
       gap:16px;
     }
-
     @media (min-width:960px){
       .grid-main{
-        grid-template-columns: minmax(0,3fr) minmax(0,2fr);
+        grid-template-columns:minmax(0,3fr) minmax(0,2fr);
       }
     }
 
@@ -124,15 +123,29 @@
       border-radius:999px;
       border:1px solid #3730a3;
       background:rgba(15,23,42,.85);
+      color:var(--muted);
     }
     .status-dot{
       width:8px;height:8px;border-radius:999px;
       background:#f97316;
       box-shadow:0 0 0 2px rgba(248,181,82,.3);
     }
-
     .status-text{
       font-weight:600;
+    }
+
+    /* status jika SUDAH upload */
+    .status-pill.done{
+      border-color:var(--accent-soft);
+      background:rgba(22,163,74,.18);
+      color:#bbf7d0;
+    }
+    .status-pill.done .status-dot{
+      background:#22c55e;
+      box-shadow:0 0 0 2px rgba(34,197,94,.35);
+    }
+    .status-pill.done .status-text{
+      color:#bbf7d0;
     }
 
     .riwayat-frame{
@@ -145,6 +158,11 @@
       font-size:24px;
       color:#4b5563;
       background:radial-gradient(circle at top,#020617 0,#020617 55%,#000 100%);
+    }
+    .riwayat-frame.done{
+      border-style:solid;
+      border-color:var(--accent-soft);
+      color:#22c55e;
     }
 
     .riwayat-meta{
@@ -283,76 +301,80 @@
     </header>
 
     <div class="grid-main">
-      <!-- KIRI: RIWAYAT FOTO PROGRES -->
+      <!-- KIRI: RIWAYAT FOTO PROGRES (4 slot) -->
       <section class="card">
         <h2>Riwayat Foto Progres</h2>
         <div class="riwayat-grid">
 
-          <div class="riwayat-item">
+          <!-- SLOT 1 -->
+          <div class="riwayat-item" id="slot1">
             <div class="riwayat-title-row">
-              <div class="riwayat-title">Foto Progres 25%</div>
-              <div class="status-pill">
+              <div class="riwayat-title" id="slot1Title">Foto Progres 25%</div>
+              <div class="status-pill" id="slot1StatusPill">
                 <span class="status-dot"></span>
-                <span class="status-text">Belum</span>
+                <span class="status-text" id="slot1StatusText">Belum</span>
               </div>
             </div>
-            <div class="riwayat-frame">
-              <span>—</span>
+            <div class="riwayat-frame" id="slot1Frame">
+              <span id="slot1Placeholder">—</span>
             </div>
             <div class="riwayat-meta">
-              <span>Belum upload</span>
-              <span>-</span>
+              <span id="slot1Meta">Belum upload</span>
+              <span id="slot1Meta2">-</span>
             </div>
           </div>
 
-          <div class="riwayat-item">
+          <!-- SLOT 2 -->
+          <div class="riwayat-item" id="slot2">
             <div class="riwayat-title-row">
-              <div class="riwayat-title">Foto Progres 50%</div>
-              <div class="status-pill">
+              <div class="riwayat-title" id="slot2Title">Foto Progres 50%</div>
+              <div class="status-pill" id="slot2StatusPill">
                 <span class="status-dot"></span>
-                <span class="status-text">Belum</span>
+                <span class="status-text" id="slot2StatusText">Belum</span>
               </div>
             </div>
-            <div class="riwayat-frame">
-              <span>—</span>
+            <div class="riwayat-frame" id="slot2Frame">
+              <span id="slot2Placeholder">—</span>
             </div>
             <div class="riwayat-meta">
-              <span>Belum upload</span>
-              <span>-</span>
+              <span id="slot2Meta">Belum upload</span>
+              <span id="slot2Meta2">-</span>
             </div>
           </div>
 
-          <div class="riwayat-item">
+          <!-- SLOT 3 -->
+          <div class="riwayat-item" id="slot3">
             <div class="riwayat-title-row">
-              <div class="riwayat-title">Foto Progres 75%</div>
-              <div class="status-pill">
+              <div class="riwayat-title" id="slot3Title">Foto Progres 75%</div>
+              <div class="status-pill" id="slot3StatusPill">
                 <span class="status-dot"></span>
-                <span class="status-text">Belum</span>
+                <span class="status-text" id="slot3StatusText">Belum</span>
               </div>
             </div>
-            <div class="riwayat-frame">
-              <span>—</span>
+            <div class="riwayat-frame" id="slot3Frame">
+              <span id="slot3Placeholder">—</span>
             </div>
             <div class="riwayat-meta">
-              <span>Belum upload</span>
-              <span>-</span>
+              <span id="slot3Meta">Belum upload</span>
+              <span id="slot3Meta2">-</span>
             </div>
           </div>
 
-          <div class="riwayat-item">
+          <!-- SLOT 4 -->
+          <div class="riwayat-item" id="slot4">
             <div class="riwayat-title-row">
-              <div class="riwayat-title">Foto Progres 100%</div>
-              <div class="status-pill">
+              <div class="riwayat-title" id="slot4Title">Foto Progres 100%</div>
+              <div class="status-pill" id="slot4StatusPill">
                 <span class="status-dot"></span>
-                <span class="status-text">Belum</span>
+                <span class="status-text" id="slot4StatusText">Belum</span>
               </div>
             </div>
-            <div class="riwayat-frame">
-              <span>—</span>
+            <div class="riwayat-frame" id="slot4Frame">
+              <span id="slot4Placeholder">—</span>
             </div>
             <div class="riwayat-meta">
-              <span>Belum upload</span>
-              <span>-</span>
+              <span id="slot4Meta">Belum upload</span>
+              <span id="slot4Meta2">-</span>
             </div>
           </div>
 
@@ -394,7 +416,7 @@
           <!-- Hidden yang dikirim ke Google Sheet (kolom progress_) -->
           <input type="hidden" name="progress_" id="progressHidden" value="0" />
 
-          <!-- CONTOH FIELD LAIN (sesuaikan dengan form yang asli) -->
+          <!-- FIELD TAMBAHAN (SAMAKAN DENGAN FORM ASLI) -->
           <div class="field-row" style="margin-top:14px;">
             <div class="field">
               <label for="nama">Nama Petugas</label>
@@ -417,7 +439,7 @@
             </button>
           </div>
           <div class="note">
-            Nilai progres yang dikirim ke Sheet: <span id="noteProgress">0</span>%
+            Nilai progres yang dikirim ke Sheet: <span id="noteProgress">0.0</span>%
           </div>
         </form>
       </section>
@@ -425,7 +447,15 @@
   </div>
 
   <script>
-    // === SLIDER LOGIC ===
+    // ======= UTIL =======
+    function fmtPercent(val){
+      return val.toLocaleString('id-ID',{
+        minimumFractionDigits:0,
+        maximumFractionDigits:1
+      });
+    }
+
+    // ======= SLIDER LOGIC =======
     function syncFromSlider(){
       const slider  = document.getElementById('progressSlider');
       const display = document.getElementById('progressDisplay');
@@ -436,11 +466,7 @@
 
       const val = parseFloat(slider.value) || 0;
 
-      display.textContent = val.toLocaleString('id-ID', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 1
-      }) + '%';
-
+      display.textContent = fmtPercent(val) + '%';
       number.value = val.toFixed(1);
       hidden.value = val.toFixed(1);
       if (note) note.textContent = val.toFixed(1);
@@ -460,13 +486,77 @@
       if (val > 100) val = 100;
 
       slider.value = val;
-      display.textContent = val.toLocaleString('id-ID', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 1
-      }) + '%';
-
+      display.textContent = fmtPercent(val) + '%';
       hidden.value = val.toFixed(1);
       if (note) note.textContent = val.toFixed(1);
+    }
+
+    // ======= RIWAYAT PROGRES (4 SLOT DINAMIS) =======
+    const MAX_SLOTS = 4;
+    const DEFAULT_LABELS = [25,50,75,100]; // fallback kalau belum ada riwayat
+    let historyValues = []; // disimpan di session halaman ini
+
+    function renderHistory(){
+      // urut dari kecil ke besar, kayak 25 / 50 / 75 / 100
+      const sorted = historyValues.slice().sort(function(a,b){return a-b;});
+
+      for (let i = 0; i < MAX_SLOTS; i++){
+        const percentVal = sorted[i];
+        const title      = document.getElementById('slot'+(i+1)+'Title');
+        const statusPill = document.getElementById('slot'+(i+1)+'StatusPill');
+        const statusText = document.getElementById('slot'+(i+1)+'StatusText');
+        const frame      = document.getElementById('slot'+(i+1)+'Frame');
+        const placeholder= document.getElementById('slot'+(i+1)+'Placeholder');
+        const meta       = document.getElementById('slot'+(i+1)+'Meta');
+        const meta2      = document.getElementById('slot'+(i+1)+'Meta2');
+        if (!title || !statusPill) continue;
+
+        if (typeof percentVal === 'number' && isFinite(percentVal)){
+          const label = 'Foto Progres ' + fmtPercent(percentVal) + '%';
+          title.textContent = label;
+
+          statusPill.classList.add('done');
+          statusText.textContent = 'Sudah';
+
+          if (frame) frame.classList.add('done');
+          if (placeholder) placeholder.textContent = '📷';
+
+          if (meta) meta.textContent = 'Sudah upload';
+          if (meta2) meta2.textContent = '';
+        } else {
+          // slot kosong → balik ke default
+          const defaultPct = DEFAULT_LABELS[i];
+          title.textContent = 'Foto Progres ' + defaultPct + '%';
+
+          statusPill.classList.remove('done');
+          statusText.textContent = 'Belum';
+
+          if (frame) frame.classList.remove('done');
+          if (placeholder) placeholder.textContent = '—';
+
+          if (meta) meta.textContent = 'Belum upload';
+          if (meta2) meta2.textContent = '-';
+        }
+      }
+    }
+
+    function addHistoryFromCurrentProgress(){
+      const hidden = document.getElementById('progressHidden');
+      if (!hidden) return;
+
+      const val = parseFloat(hidden.value);
+      if (!isFinite(val) || val <= 0) return;
+
+      // kalau sudah ada nilai yang sama, jangan dobel
+      const rounded = Math.round(val * 10) / 10; // 1 desimal
+      if (!historyValues.some(function(v){ return Math.abs(v-rounded) < 0.05; })){
+        historyValues.push(rounded);
+        if (historyValues.length > MAX_SLOTS){
+          // simpan 4 progres terakhir
+          historyValues = historyValues.slice(historyValues.length - MAX_SLOTS);
+        }
+      }
+      renderHistory();
     }
 
     document.addEventListener('DOMContentLoaded', function(){
@@ -481,43 +571,45 @@
         number.addEventListener('input', syncFromNumber);
       }
 
-      // === CONTOH SUBMIT (optional) ===
-      // Tinggal ganti URL di bawah ke Apps Script kamu,
-      // atau hapus blok ini kalau submit-nya sudah di-handle script lain.
+      renderHistory(); // inisialisasi tampilan riwayat (masih default)
+
+      // ====== SUBMIT KE APPS SCRIPT ======
       const form = document.getElementById('formTahap3');
       const btn  = document.getElementById('btnSubmit');
 
       form.addEventListener('submit', function(e){
         e.preventDefault();
 
-        // *** GANTI URL INI DENGAN URL APPS SCRIPT MILIK BRO ***
+        // GANTI DENGAN URL APPS SCRIPT KAMU
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwixAzu4MFs8Ms-K1sWMqCYmesje762mPYRW9uxkBCxbiTswKiaykXzD-D76naKlPWa/exec";
 
-        if (!SCRIPT_URL.includes("YOUR_SCRIPT_ID_HERE")){
-          btn.disabled = true;
-          btn.textContent = "Mengirim...";
-
-          const formData = new FormData(form);
-
-          fetch(SCRIPT_URL, {
-            method: "POST",
-            body: formData
-          })
-          .then(res => res.ok ? res.text() : Promise.reject(res.status))
-          .then(() => {
-            alert("Data berhasil dikirim!");
-          })
-          .catch(err => {
-            console.error(err);
-            alert("Gagal mengirim data. Coba lagi.");
-          })
-          .finally(() => {
-            btn.disabled = false;
-            btn.textContent = "Kirim";
-          });
-        } else {
-          alert("Form dummy: ganti SCRIPT_URL dulu biar bisa kirim ke Google Sheet.");
+        if (SCRIPT_URL === "https://script.google.com/macros/s/AKfycbwixAzu4MFs8Ms-K1sWMqCYmesje762mPYRW9uxkBCxbiTswKiaykXzD-D76naKlPWa/exec"){
+          alert("Form dummy: ganti SCRIPT_URL dulu dengan URL Apps Script Tahap 3.");
+          return;
         }
+
+        btn.disabled = true;
+        btn.textContent = "Mengirim...";
+
+        const formData = new FormData(form);
+
+        fetch(SCRIPT_URL, {
+          method: "POST",
+          body: formData
+        })
+        .then(res => res.ok ? res.text() : Promise.reject(res.status))
+        .then(() => {
+          alert("Data berhasil dikirim!");
+          addHistoryFromCurrentProgress();  // update kartu riwayat berdasarkan progres yang barusan di-upload
+        })
+        .catch(err => {
+          console.error(err);
+          alert("Gagal mengirim data. Coba lagi.");
+        })
+        .finally(() => {
+          btn.disabled = false;
+          btn.textContent = "Kirim";
+        });
       });
     });
   </script>
