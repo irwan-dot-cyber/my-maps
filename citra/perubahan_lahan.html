@@ -2,13 +2,15 @@
 <html lang="id">
 <head>
 <meta charset="utf-8" />
-<title>Perbandingan & Analisis Sentinel-2 (Inpres 2/2025) | Si-Irwan v2.0</title>
+<title>Compare Sentinel-2 & Imagery Wayback (Publik) | Si-Irwan v2.1</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 <link rel="icon" href="assets/LogoPUPR.png" />
+
 <style>
   :root{
     --survey:#0d47a1; --surveyLight:#1d5fd1;
@@ -17,95 +19,131 @@
     --puprYellow:#FFD700; --ok:#10b981; --warn:#f59e0b; --bad:#ef4444;
   }
   html,body{height:100%;margin:0;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);}
+
+  /* HEADER */
   #header{
-    background:var(--survey); color:#fff; padding:10px 16px;
-    display:flex; align-items:center; justify-content:space-between; gap:10px;
-    border-bottom:1px solid rgba(255,255,255,.15); box-shadow:0 4px 14px rgba(13,71,161,.25);
+    background:var(--survey);
+    color:#fff;
+    padding:10px 16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    border-bottom:1px solid rgba(255,255,255,.15);
+    box-shadow:0 4px 14px rgba(13,71,161,.25);
   }
   #header .left{display:flex;align-items:center;gap:10px;}
   #header img{height:42px;}
   #header span{font-size:14px;line-height:1.4;}
-  .btn-home{background:#fff;color:var(--survey);font-weight:700;font-size:13px;border-radius:8px;padding:6px 12px;text-decoration:none;transition:.25s;}
+  .btn-home{
+    background:#fff;color:var(--survey);
+    font-weight:800;font-size:13px;
+    border-radius:8px;padding:6px 12px;
+    text-decoration:none;transition:.25s;
+  }
   .btn-home:hover{background:#f9fafb;color:#000;}
 
+  /* TOOLBAR */
   #toolbar{
     position:absolute;top:72px;left:16px;z-index:1000;
     background:rgba(20,27,46,.92);
     padding:14px 16px;border-radius:14px;
     box-shadow:0 8px 22px rgba(0,0,0,.45);
     display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;
-    max-width:1120px;border:1px solid rgba(255,255,255,.12);
+    max-width:1180px;border:1px solid rgba(255,255,255,.12);
+    backdrop-filter: blur(6px);
   }
   #toolbar .col{display:flex;flex-direction:column;gap:4px;}
   #toolbar label{font-size:12px;color:var(--muted);}
   #toolbar select,#toolbar input{
     background:#1e263d;color:var(--text);
     border:1px solid rgba(255,255,255,.1);
-    border-radius:8px;padding:6px 10px;font-size:13px;min-width:180px;
+    border-radius:8px;padding:6px 10px;
+    font-size:13px;min-width:180px;
   }
   #toolbar select:focus,#toolbar input:focus{outline:none;border-color:var(--surveyLight);}
+
   #toolbar .btn{
-    background:var(--surveyLight);color:#fff;border:none;border-radius:8px;
-    padding:8px 14px;font-weight:800;cursor:pointer;
-    box-shadow:0 4px 10px rgba(29,95,209,.4); user-select:none;
+    background:var(--surveyLight);color:#fff;border:none;
+    border-radius:8px;padding:8px 14px;font-weight:900;cursor:pointer;
+    box-shadow:0 4px 10px rgba(29,95,209,.4);
+    user-select:none;
   }
   #toolbar .btn:hover{background:var(--survey);}
   #toolbar .btn.alt{background:var(--puprYellow);color:#111;box-shadow:none;}
   #toolbar .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,.18);box-shadow:none;}
   #toolbar .btn.ghost:hover{background:rgba(255,255,255,.07);}
-  .hint{font-size:11px;color:var(--muted);max-width:280px}
-  .row{display:flex;gap:8px;flex-wrap:wrap}
 
+  .hint{font-size:11px;color:var(--muted);max-width:280px;}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+
+  /* SEARCH */
   .search-box{position:relative;}
   .search-box input{min-width:260px;}
   .suggestions{
-    position:absolute;top:62px;left:0;right:0;background:#1e263d;
-    border:1px solid rgba(255,255,255,.1);max-height:220px;overflow:auto;display:none;
+    position:absolute;top:62px;left:0;right:0;
+    background:#1e263d;border:1px solid rgba(255,255,255,.1);
+    max-height:220px;overflow:auto;display:none;
     z-index:2000;border-radius:0 0 8px 8px;
   }
   .suggestions div{padding:6px 8px;cursor:pointer;color:var(--text);font-size:13px;}
   .suggestions div:hover{background:#2a3554;}
 
+  /* MAP */
   #map{height:calc(100% - 58px);}
   .leaflet-container{background:#000;}
   .leaflet-control-attribution{color:#ccc;background:rgba(0,0,0,.4)!important;}
+
+  /* MARKER bounce */
   .leaflet-marker-icon.bounce{
-    animation:marker-bounce 600ms cubic-bezier(.28,.84,.42,1) 1; transform-origin:bottom center;
+    animation:marker-bounce 600ms cubic-bezier(.28,.84,.42,1) 1;
+    transform-origin:bottom center;
   }
   @keyframes marker-bounce{
-    0%{transform:translateY(0)}25%{transform:translateY(-14px)}55%{transform:translateY(0)}75%{transform:translateY(-7px)}100%{transform:translateY(0)}
+    0%{transform:translateY(0)}
+    25%{transform:translateY(-14px)}
+    55%{transform:translateY(0)}
+    75%{transform:translateY(-7px)}
+    100%{transform:translateY(0)}
   }
 
+  /* BADGE */
   .badge{
     position:fixed;right:12px;bottom:10px;z-index:1200;
-    background:rgba(13,71,161,.85); border:1px solid rgba(255,255,255,.2);
-    color:#fff;font-size:12px;font-weight:800; padding:6px 10px;border-radius:10px;
-    box-shadow:0 0 10px rgba(13,71,161,.6); backdrop-filter:blur(6px);
+    background:rgba(13,71,161,.85);
+    border:1px solid rgba(255,255,255,.2);
+    color:#fff;font-size:12px;font-weight:900;
+    padding:6px 10px;border-radius:10px;
+    box-shadow:0 0 10px rgba(13,71,161,.6);
+    backdrop-filter:blur(6px);
     animation:glow 2.8s ease-in-out infinite;
   }
   .badge span{color:var(--puprYellow);}
-  @keyframes glow {0%,100%{box-shadow:0 0 8px rgba(13,71,161,.6);}50%{box-shadow:0 0 18px rgba(255,215,0,.8);} }
+  @keyframes glow {
+    0%,100% {box-shadow:0 0 8px rgba(13,71,161,.6);}
+    50%     {box-shadow:0 0 18px rgba(255,215,0,.8);}
+  }
 
-  /* status toast */
+  /* TOAST */
   #toast{
     position:fixed;left:14px;bottom:12px;z-index:1300;
     background:rgba(20,27,46,.92);border:1px solid rgba(255,255,255,.12);
-    padding:10px 12px;border-radius:12px;min-width:280px;max-width:520px;
+    padding:10px 12px;border-radius:12px;min-width:280px;max-width:540px;
     box-shadow:0 12px 26px rgba(0,0,0,.48);display:none;
   }
-  #toast .t{font-weight:800;font-size:12px;margin-bottom:4px}
+  #toast .t{font-weight:900;font-size:12px;margin-bottom:4px}
   #toast .m{font-size:12px;color:var(--text);opacity:.92;line-height:1.35}
   #toast .m small{color:var(--muted)}
-  .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:800;margin-right:6px}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:900;margin-right:6px}
   .pill.ok{background:rgba(16,185,129,.18);color:#a7f3d0;border:1px solid rgba(16,185,129,.28)}
   .pill.warn{background:rgba(245,158,11,.18);color:#fde68a;border:1px solid rgba(245,158,11,.28)}
   .pill.bad{background:rgba(239,68,68,.18);color:#fecaca;border:1px solid rgba(239,68,68,.28)}
 
-  /* legend */
+  /* LEGEND */
   #legend{
     position:absolute;right:16px;top:72px;z-index:1000;
     background:rgba(20,27,46,.92);border:1px solid rgba(255,255,255,.12);
-    padding:10px 12px;border-radius:12px;min-width:220px;
+    padding:10px 12px;border-radius:12px;min-width:240px;
     box-shadow:0 10px 24px rgba(0,0,0,.5);backdrop-filter:blur(6px);
   }
   #legend h4{margin:0 0 6px 0;font-size:12px}
@@ -114,17 +152,25 @@
   #legend .ticks{display:flex;justify-content:space-between;font-size:10px;color:var(--muted)}
 </style>
 </head>
+
 <body>
 
+<!-- HEADER -->
 <div id="header">
   <div class="left">
     <img src="assets/LogoPUPR.png" alt="Logo PU">
-    <span>Kementerian Pekerjaan Umum<br>Ditjen SDA — Direktorat Irigasi &amp; Rawa<br>Compare &amp; Analisis Sentinel-2 (Si-Irwan)</span>
+    <span>
+      Kementerian Pekerjaan Umum<br>
+      Ditjen SDA — Direktorat Irigasi &amp; Rawa<br>
+      Compare Publik: Sentinel-2 (Analitik) + Imagery Wayback (Visual)
+    </span>
   </div>
   <a href="si-irwan.html" class="btn-home">Beranda</a>
 </div>
 
+<!-- TOOLBAR -->
 <div id="toolbar">
+
   <div class="col search-box">
     <label>Cari Daerah Irigasi (survey.csv)</label>
     <input id="search" placeholder="Ketik nama DI…">
@@ -135,7 +181,16 @@
   <div class="col">
     <label>Lokasi Fokus (lat, lng)</label>
     <input id="center" value="-6.175392, 106.827153">
-    <small class="hint">Shortcut: tekan <b>Enter</b> untuk apply</small>
+    <small class="hint">Enter untuk apply cepat</small>
+  </div>
+
+  <div class="col">
+    <label>Sumber Compare</label>
+    <select id="source">
+      <option value="sentinel" selected>Sentinel-2 (Analitik)</option>
+      <option value="wayback">Esri Imagery Wayback (Visual HR)</option>
+    </select>
+    <small class="hint">Sentinel bisa indeks, Wayback untuk bukti visual resolusi tinggi</small>
   </div>
 
   <div class="col">
@@ -144,41 +199,62 @@
       <option value="compare" selected>Compare (Side-by-side)</option>
       <option value="single">Single (Hanya kanan/After)</option>
     </select>
-    <small class="hint">Compare cocok buat inspeksi. Single cocok buat cepat.</small>
+    <small class="hint">Compare untuk inspeksi, Single untuk cepat</small>
   </div>
 
-  <div class="col">
-    <label>Produk</label>
+  <!-- SENTINEL BOX -->
+  <div class="col" id="sentinelBox">
+    <label>Produk Sentinel</label>
     <select id="product">
       <option value="natural" selected>Natural Color (RGB)</option>
       <option value="false">False Color (Vegetation)</option>
       <option value="ndvi">NDVI (Vegetasi)</option>
       <option value="ndbi">NDBI (Terbangun)</option>
       <option value="ndwi">NDWI (Air)</option>
-      <option value="d_ndvi">ΔNDVI (After - Before)</option>
-      <option value="d_ndbi">ΔNDBI (After - Before)</option>
-      <option value="d_ndwi">ΔNDWI (After - Before)</option>
     </select>
-    <small class="hint">Δ = peta perubahan indeks. Cocok deteksi perubahan lahan.</small>
-  </div>
 
-  <div class="col">
+    <div style="height:6px"></div>
+
     <label>Kiri (Before) — Bulan</label>
     <select id="leftMonth"></select>
+
     <label style="margin-top:4px">Kanan (After) — Bulan</label>
     <select id="rightMonth"></select>
   </div>
 
-  <div class="col">
+  <div class="col" id="cloudBox">
     <label>Cloud Cover max (%)</label>
-    <input id="cloud" type="number" min="0" max="100" step="5" value="60">
-    <small class="hint">Kalau kosong/blank, naikkan ke 80</small>
+    <input id="cloud" type="number" min="0" max="100" step="5" value="70">
+    <small class="hint">Kalau blank, naikkan ke 80 atau ganti bulan</small>
+  </div>
+
+  <!-- WAYBACK BOX -->
+  <div class="col" id="waybackBox" style="display:none">
+    <label>Wayback (Before) — Tahun</label>
+    <select id="wbLeft">
+      <option value="2018">2018</option>
+      <option value="2020">2020</option>
+      <option value="2022">2022</option>
+      <option value="2023">2023</option>
+      <option value="2024" selected>2024</option>
+    </select>
+    <label style="margin-top:4px">Wayback (After) — Tahun</label>
+    <select id="wbRight">
+      <option value="2018">2018</option>
+      <option value="2020">2020</option>
+      <option value="2022">2022</option>
+      <option value="2023">2023</option>
+      <option value="2024" selected>2024</option>
+    </select>
+    <small class="hint">
+      Wayback = mosaic imagery resolusi tinggi, tidak ada cloud filter, tidak ada indeks spektral
+    </small>
   </div>
 
   <div class="col">
     <label>Opacity</label>
     <input id="opacity" type="range" min="0" max="100" value="100">
-    <small class="hint">Atur transparansi layer citra</small>
+    <small class="hint">Atur transparansi layer compare</small>
   </div>
 
   <div class="col" style="gap:6px">
@@ -187,15 +263,16 @@
       <button class="btn ghost" id="shareBtn" title="Copy link dengan parameter">Share</button>
       <button class="btn alt" id="clearBtn" style="display:none">Keluar</button>
     </div>
-    <small class="hint">Tips: <b>Ctrl+L</b> fokus search, <b>Esc</b> tutup saran</small>
+    <small class="hint">Ctrl+L fokus search, Esc tutup saran</small>
   </div>
+
 </div>
 
 <div id="legend">
   <h4 id="legendTitle">Legend</h4>
-  <div class="l" id="legendText">Natural color. Gunakan NDVI/NDBI/NDWI untuk analisis.</div>
+  <div class="l" id="legendText">Siap.</div>
   <div class="bar" id="legendBar"></div>
-  <div class="ticks"><span id="tMin">-1</span><span id="tMid">0</span><span id="tMax">+1</span></div>
+  <div class="ticks"><span id="tMin"></span><span id="tMid"></span><span id="tMax"></span></div>
 </div>
 
 <div id="map"></div>
@@ -205,8 +282,9 @@
   <div class="m" id="toastMsg">…</div>
 </div>
 
-<div class="badge"><span>Si-Irwan v2.0</span></div>
+<div class="badge"><span>Si-Irwan v2.1</span></div>
 
+<!-- Libraries -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
 <script src="https://unpkg.com/esri-leaflet@3.0.12/dist/esri-leaflet.js"></script>
@@ -215,17 +293,60 @@
 
 <script>
 /* ===================== CONFIG ===================== */
-const CSV_URL="https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/data/survey.csv";
-const S2_URL="https://sentinel.arcgis.com/arcgis/rest/services/Sentinel2/ImageServer";
+const CSV_URL = "https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/data/survey.csv";
+const S2_URL  = "https://sentinel.arcgis.com/arcgis/rest/services/Sentinel2/ImageServer";
 
-/* ===================== MAP ===================== */
-const map=L.map('map',{center:[-6.175392,106.827153],zoom:11});
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+/*
+  WAYBACK IMPORTANT:
+  - Untuk dashboard publik, kita pakai Esri World Imagery Wayback yang RESMI.
+  - Kamu harus isi MapServer URL per tahun di bawah ini (1 kali saja).
+  - Cara ambil URL:
+    1) Buka "Wayback Imagery" di ArcGIS Online (resmi Esri)
+    2) Pilih tahun tertentu
+    3) Buka item details / layer details
+    4) Copy service URL yang berakhir .../MapServer
+
+  Kalau belum diisi, mode Wayback akan tampil pesan error yang jelas.
+*/
+const WAYBACK_URL_BY_YEAR = {
+  2018: "", // contoh: "https://.../World_Imagery_2018/MapServer"
+  2020: "",
+  2022: "",
+  2023: "",
+  2024: ""
+};
+
+/* ===================== MAP + BASEMAP ===================== */
+const map = L.map('map', {center:[-6.175392,106.827153], zoom:11});
+
+// Basemap default: Esri World Imagery (bukan time series, cuma basemap)
+const baseImagery = L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  {maxZoom: 19, attribution: 'Tiles © Esri'}
+).addTo(map);
+
+const baseOSM = L.tileLayer(
+  'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  {maxZoom:19, attribution:'© OpenStreetMap'}
+);
+
+// Control basemap
+L.control.layers(
+  {"Basemap: Imagery (Esri)": baseImagery, "Basemap: OSM": baseOSM},
+  null,
+  {collapsed:true}
+).addTo(map);
 
 /* ===================== UI HELPERS ===================== */
 const $ = (id)=>document.getElementById(id);
 
-function toast(type, title, msg, ms=2200){
+function pill(type){
+  const cls = type==='ok'?'ok':type==='warn'?'warn':'bad';
+  const txt = type==='ok'?'OK':type==='warn'?'INFO':'ERR';
+  return `<span class="pill ${cls}">${txt}</span>`;
+}
+
+function toast(type, title, msg, ms=2300){
   const t=$('toast');
   $('toastTitle').innerHTML = `${pill(type)} ${title}`;
   $('toastMsg').innerHTML = msg;
@@ -233,13 +354,11 @@ function toast(type, title, msg, ms=2200){
   clearTimeout(toast._tm);
   toast._tm=setTimeout(()=>{t.style.display='none'}, ms);
 }
-function pill(type){
-  const cls = type==='ok'?'ok':type==='warn'?'warn':'bad';
-  const txt = type==='ok'?'OK':type==='warn'?'INFO':'ERR';
-  return `<span class="pill ${cls}">${txt}</span>`;
-}
 
-function fmtMonth(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0');return`${y}-${m}`;}
+function fmtMonth(d){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0');
+  return `${y}-${m}`;
+}
 function monthStartEnd(ym){
   const [y,m]=ym.split('-').map(Number);
   const s=new Date(y,m-1,1), e=new Date(y,m,1);
@@ -249,7 +368,7 @@ function fillMonths(id,def){
   const sel=$(id); sel.innerHTML="";
   const now=new Date();
   for(let i=0;i<24;i++){
-    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    const d=new Date(now.getFullYear(), now.getMonth()-i, 1);
     const ym=fmtMonth(d);
     const o=document.createElement('option');
     o.value=ym; o.textContent=ym;
@@ -258,35 +377,89 @@ function fillMonths(id,def){
   }
 }
 
+/* Fill month dropdowns */
 const now=new Date();
 fillMonths('leftMonth', fmtMonth(new Date(now.getFullYear(), now.getMonth()-1, 1)));
 fillMonths('rightMonth', fmtMonth(now));
 
+/* ===================== LEGEND ===================== */
+function setLegend(title, text, gradient, tmin="", tmid="", tmax=""){
+  $('legendTitle').textContent = title;
+  $('legendText').innerHTML = text;
+  $('legendBar').style.background = gradient || "linear-gradient(90deg,#111827,#6b7280)";
+  $('tMin').textContent = tmin;
+  $('tMid').textContent = tmid;
+  $('tMax').textContent = tmax;
+}
+
+function legendForSentinel(product){
+  if(product==="natural"){
+    setLegend("Sentinel-2: Natural Color",
+      "Warna asli. Cocok inspeksi visual. Untuk perubahan lahan, coba NDVI/NDBI.",
+      "linear-gradient(90deg,#111827,#6b7280)",
+      "", "", ""
+    );
+    return;
+  }
+  if(product==="false"){
+    setLegend("Sentinel-2: False Color (Vegetation)",
+      "Vegetasi tampak merah. Cocok bedain vegetasi vs terbangun.",
+      "linear-gradient(90deg,#0f172a,#ef4444)",
+      "rendah","", "tinggi"
+    );
+    return;
+  }
+  if(product==="ndvi"){
+    setLegend("Sentinel-2: NDVI",
+      "NDVI: -1..+1. Semakin tinggi semakin hijau (vegetasi).",
+      "linear-gradient(90deg,#ef4444,#f59e0b,#10b981)",
+      "-1","0","+1"
+    );
+    return;
+  }
+  if(product==="ndbi"){
+    setLegend("Sentinel-2: NDBI",
+      "NDBI: indikator area terbangun. Nilai tinggi sering terkait permukiman/beton.",
+      "linear-gradient(90deg,#0ea5e9,#f59e0b,#ef4444)",
+      "-1","0","+1"
+    );
+    return;
+  }
+  if(product==="ndwi"){
+    setLegend("Sentinel-2: NDWI",
+      "NDWI: indikator air/kelembapan. Nilai tinggi sering terkait badan air.",
+      "linear-gradient(90deg,#ef4444,#f59e0b,#0ea5e9)",
+      "-1","0","+1"
+    );
+    return;
+  }
+}
+
+function legendForWayback(){
+  setLegend("Wayback Imagery (Visual HR)",
+    "Perbandingan citra resolusi tinggi berbasis tahun. Cocok untuk bukti visual before-after.<br><small>Tidak ada cloud filter dan tidak ada indeks spektral.</small>",
+    "linear-gradient(90deg,#111827,#9ca3af)",
+    "lama","","baru"
+  );
+}
+
 /* ===================== SENTINEL LAYER FACTORY ===================== */
 /*
-  Kita main di ImageServer mosaicRule where (date + cloud).
-  renderingRule diatur berdasarkan "produk".
-
-  NOTE: Kalau rasterFunction name beda di server, tinggal ubah di map functionRules.
+  NOTE: Nama rasterFunction pada ImageServer bisa beda.
+  Kamu sudah pakai "Natural Color with DRA", ini biasanya aman.
+  Untuk NDVI/NDBI/NDWI, kalau blank, kemungkinan server kamu tidak punya rasterFunction tersebut.
+  Solusi: tetap pakai Natural/False atau pindah ke pipeline GEE untuk indeks.
 */
 const functionRules = {
   natural: {"rasterFunction":"Natural Color with DRA"},
   false:   {"rasterFunction":"False Color with DRA"},
-  // Untuk indeks, beberapa server punya raster function built-in: "NDVI Colorized", dst.
-  // Kalau tidak ada, kita fallback ke "None" dan tetap tampilkan (bisa blank).
   ndvi:    {"rasterFunction":"NDVI Colorized"},
   ndbi:    {"rasterFunction":"NDBI Colorized"},
-  ndwi:    {"rasterFunction":"NDWI Colorized"},
-  // Delta kita buat via "RasterFunction" yang mengurangi 2 layer tidak selalu tersedia di ImageServer publik.
-  // Jadi delta kita render sebagai NDVI left + NDVI right di mode compare (visual), dan untuk single kita gunakan right saja.
-  // Untuk bener-bener Δ layer, idealnya pakai GEE atau ImageServer custom.
-  d_ndvi:  {"rasterFunction":"NDVI Colorized"},
-  d_ndbi:  {"rasterFunction":"NDBI Colorized"},
-  d_ndwi:  {"rasterFunction":"NDWI Colorized"},
+  ndwi:    {"rasterFunction":"NDWI Colorized"}
 };
 
 function buildWhere(ym, cloud){
-  const [s,e]=monthStartEnd(ym);
+  const [s,e] = monthStartEnd(ym);
   const cc = Number.isFinite(+cloud) ? Math.max(0, Math.min(100, +cloud)) : 100;
   return `acquisitiondate >= DATE '${s} 00:00:00' AND acquisitiondate < DATE '${e} 00:00:00' AND cloudcover <= ${cc}`;
 }
@@ -294,18 +467,29 @@ function buildWhere(ym, cloud){
 function buildS2Layer(ym, cloud, product){
   const where = buildWhere(ym, cloud);
   const rr = functionRules[product] || functionRules.natural;
-
   return L.esri.imageMapLayer({
-    url:S2_URL,
-    mosaicRule:{ where, mosaicMethod:"attribute", ascending:true },
+    url: S2_URL,
+    mosaicRule: { where, mosaicMethod:"attribute", ascending:true },
     renderingRule: rr,
+    opacity: (+$('opacity').value || 100)/100
+  });
+}
+
+/* ===================== WAYBACK LAYER FACTORY ===================== */
+function buildWaybackLayer(year){
+  const url = (WAYBACK_URL_BY_YEAR[year] || "").trim();
+  if(!url){
+    throw new Error(`Wayback URL untuk tahun ${year} belum diisi. Isi WAYBACK_URL_BY_YEAR[${year}] dengan service URL .../MapServer`);
+  }
+  return L.esri.tiledMapLayer({
+    url,
     opacity: (+$('opacity').value || 100)/100
   });
 }
 
 /* ===================== COMPARE CONTROL ===================== */
 let leftLayer=null, rightLayer=null, sbs=null;
-let aoiRect=null; // box buffer
+let aoiRect=null;
 
 function clearCompare(remove=true){
   if(sbs){ sbs.remove(); sbs=null; }
@@ -326,45 +510,26 @@ function parseCenter(){
 }
 
 function setAOI(lat,lng, km=1){
-  // kotak ~ km di sekitar titik (aproksimasi)
-  const dLat = km/111; // ~111 km per 1 derajat
+  const dLat = km/111;
   const dLng = km/(111*Math.cos(lat*Math.PI/180));
   const b = [[lat-dLat, lng-dLng],[lat+dLat, lng+dLng]];
   if(aoiRect) map.removeLayer(aoiRect);
   aoiRect = L.rectangle(b,{color:"#FFD700",weight:1,fillOpacity:0.05}).addTo(map);
 }
 
-function updateLegend(product){
-  const titleMap = {
-    natural:"Natural Color (RGB)",
-    false:"False Color (Vegetation)",
-    ndvi:"NDVI (Vegetasi)",
-    ndbi:"NDBI (Terbangun)",
-    ndwi:"NDWI (Air)",
-    d_ndvi:"ΔNDVI (After - Before)",
-    d_ndbi:"ΔNDBI (After - Before)",
-    d_ndwi:"ΔNDWI (After - Before)",
-  };
-  $('legendTitle').textContent = titleMap[product] || "Legend";
-  let txt="";
+function syncUI(){
+  const src = $('source').value;
+  const isWayback = (src === 'wayback');
 
-  // gradient legend sederhana (visual)
-  const bar=$('legendBar');
-  let grad = "linear-gradient(90deg, #1f2937, #9ca3af)";
-  let ticks = {min:"-", mid:"", max:"+"};
+  $('sentinelBox').style.display = isWayback ? "none" : "flex";
+  $('cloudBox').style.display    = isWayback ? "none" : "flex";
+  $('waybackBox').style.display  = isWayback ? "flex" : "none";
 
-  if(product==="natural"){ txt="Citra warna asli. Cocok inspeksi visual."; grad="linear-gradient(90deg, #111827, #6b7280)"; ticks={min:"",mid:"",max:""}; }
-  if(product==="false"){ txt="Vegetasi tampak merah. Cocok bedain vegetasi vs terbangun."; grad="linear-gradient(90deg, #0f172a, #ef4444)"; ticks={min:"rendah",mid:"",max:"tinggi"}; }
-  if(product.includes("ndvi")){ txt="NDVI: -1..+1. Semakin tinggi semakin hijau (vegetasi)."; grad="linear-gradient(90deg, #ef4444, #f59e0b, #10b981)"; ticks={min:"-1",mid:"0",max:"+1"}; }
-  if(product.includes("ndbi")){ txt="NDBI: indikator area terbangun. Nilai tinggi sering terkait permukiman/beton."; grad="linear-gradient(90deg, #0ea5e9, #f59e0b, #ef4444)"; ticks={min:"-1",mid:"0",max:"+1"}; }
-  if(product.includes("ndwi")){ txt="NDWI: indikator air/kelembapan. Nilai tinggi sering terkait badan air."; grad="linear-gradient(90deg, #ef4444, #f59e0b, #0ea5e9)"; ticks={min:"-1",mid:"0",max:"+1"}; }
-  if(product.startsWith("d_")){ txt += "<br><small>Catatan: Δ layer full idealnya pakai GEE/Server custom. Di sini tetap membantu inspeksi indeks Before vs After.</small>"; }
-
-  $('legendText').innerHTML = txt;
-  bar.style.background = grad;
-  $('tMin').textContent = ticks.min;
-  $('tMid').textContent = ticks.mid;
-  $('tMax').textContent = ticks.max;
+  if(isWayback){
+    legendForWayback();
+  }else{
+    legendForSentinel($('product').value);
+  }
 }
 
 async function applyCompare(){
@@ -373,74 +538,121 @@ async function applyCompare(){
     map.setView([center.lat, center.lng], 13);
     setAOI(center.lat, center.lng, 1);
   }else{
-    toast('warn','Input lokasi','Format <b>lat, lng</b> belum valid. Contoh: <small>-6.175392, 106.827153</small>', 2600);
+    toast('warn','Lokasi belum valid','Format harus <b>lat, lng</b>. Contoh: <small>-6.175392, 106.827153</small>', 2600);
   }
 
-  const viewMode=$('viewMode').value;
-  const product=$('product').value;
-  const ymL=$('leftMonth').value, ymR=$('rightMonth').value;
-  const cloud=$('cloud').value;
+  const src = $('source').value;
+  const viewMode = $('viewMode').value;
 
   clearCompare(false);
-  updateLegend(product);
 
-  toast('warn','Memuat citra…',`Produk: <b>${$('product').selectedOptions[0].textContent}</b><br><small>Jika blank, naikkan Cloud Cover atau ganti bulan.</small>`, 2400);
+  try{
+    if(src === "sentinel"){
+      const product = $('product').value;
+      const ymL = $('leftMonth').value;
+      const ymR = $('rightMonth').value;
+      const cloud = $('cloud').value;
 
-  // Always create right layer (After)
-  rightLayer = buildS2Layer(ymR, cloud, product).addTo(map);
+      legendForSentinel(product);
 
-  if(viewMode==="compare"){
-    leftLayer = buildS2Layer(ymL, cloud, product).addTo(map);
-    sbs = L.control.sideBySide(leftLayer, rightLayer).addTo(map);
-  } else {
-    // single: only after
-    if(leftLayer){ map.removeLayer(leftLayer); leftLayer=null; }
+      toast('warn','Memuat Sentinel-2…',
+        `Before: <b>${ymL}</b> | After: <b>${ymR}</b><br><small>Jika blank: naikkan Cloud Cover atau ganti bulan.</small>`, 2400);
+
+      leftLayer  = buildS2Layer(ymL, cloud, product).addTo(map);
+      rightLayer = buildS2Layer(ymR, cloud, product).addTo(map);
+
+    } else {
+      const yL = +$('wbLeft').value;
+      const yR = +$('wbRight').value;
+
+      legendForWayback();
+
+      toast('warn','Memuat Wayback Imagery…',
+        `Before: <b>${yL}</b> | After: <b>${yR}</b><br><small>Pastikan URL Wayback per tahun sudah diisi di kode.</small>`, 2600);
+
+      leftLayer  = buildWaybackLayer(yL).addTo(map);
+      rightLayer = buildWaybackLayer(yR).addTo(map);
+    }
+
+    if(viewMode === "compare"){
+      sbs = L.control.sideBySide(leftLayer, rightLayer).addTo(map);
+    } else {
+      if(leftLayer){ map.removeLayer(leftLayer); leftLayer=null; }
+    }
+
+    $('applyBtn').textContent="Perbarui";
+    $('clearBtn').style.display="inline-block";
+    toast('ok','Siap','Compare aktif. Geser slider di peta untuk lihat before-after.', 2000);
+
+  }catch(err){
+    console.error(err);
+    toast('bad','Gagal apply', `${(err && err.message) ? err.message : 'Unknown error'}`, 4200);
+    clearCompare(true);
   }
-
-  $('applyBtn').textContent="Perbarui";
-  $('clearBtn').style.display="inline-block";
 }
 
-/* opacity live update */
+/* Live opacity update */
 $('opacity').addEventListener('input', ()=>{
   const op = (+$('opacity').value || 100)/100;
-  if(leftLayer) leftLayer.setOpacity(op);
-  if(rightLayer) rightLayer.setOpacity(op);
+  if(leftLayer && leftLayer.setOpacity) leftLayer.setOpacity(op);
+  if(rightLayer && rightLayer.setOpacity) rightLayer.setOpacity(op);
 });
 
-$('applyBtn').onclick=applyCompare;
-$('clearBtn').onclick=()=>clearCompare(true);
+$('applyBtn').onclick = ()=>applyCompare();
+$('clearBtn').onclick = ()=>clearCompare(true);
 
-/* Share */
-$('shareBtn').onclick=()=>{
+/* Share link with params */
+$('shareBtn').onclick = ()=>{
   const c = parseCenter();
   const params = new URLSearchParams();
+
   if(c){ params.set('lat', c.lat); params.set('lng', c.lng); }
+  params.set('src', $('source').value);
   params.set('vm', $('viewMode').value);
-  params.set('prod', $('product').value);
-  params.set('l', $('leftMonth').value);
-  params.set('r', $('rightMonth').value);
-  params.set('cloud', $('cloud').value);
+  params.set('op', $('opacity').value);
+
+  if($('source').value === 'sentinel'){
+    params.set('prod', $('product').value);
+    params.set('l', $('leftMonth').value);
+    params.set('r', $('rightMonth').value);
+    params.set('cloud', $('cloud').value);
+  } else {
+    params.set('yl', $('wbLeft').value);
+    params.set('yr', $('wbRight').value);
+  }
+
   const url = `${location.origin}${location.pathname}?${params.toString()}`;
   navigator.clipboard?.writeText(url);
-  toast('ok','Link disalin',`<small>${url}</small>`, 2200);
+  toast('ok','Link disalin',`<small>${url}</small>`, 2600);
 };
 
-/* keyboard shortcuts */
+/* Keyboard shortcuts */
 document.addEventListener('keydown', (e)=>{
-  if(e.key==='Enter' && document.activeElement===$('center')) applyCompare();
-  if(e.key==='Escape'){ $('suggestions').style.display='none'; }
-  if(e.ctrlKey && e.key.toLowerCase()==='l'){ e.preventDefault(); $('search').focus(); $('search').select(); }
+  if(e.key==='Enter' && document.activeElement === $('center')) applyCompare();
+  if(e.key==='Escape') $('suggestions').style.display='none';
+  if(e.ctrlKey && e.key.toLowerCase()==='l'){
+    e.preventDefault();
+    $('search').focus(); $('search').select();
+  }
 });
+
+/* Toggle UI on change */
+$('source').addEventListener('change', ()=>{ syncUI(); applyCompare(); });
+$('product').addEventListener('change', ()=>{ if($('source').value==='sentinel'){ legendForSentinel($('product').value); } });
+$('viewMode').addEventListener('change', ()=>applyCompare());
 
 /* ===================== MARKERS + SEARCH ===================== */
 const cluster=L.markerClusterGroup();
 const idx=[];
 
 function getIcon(nm){
-  const url=(nm&&nm.startsWith('D.I.R.'))?'https://maps.google.com/mapfiles/ms/icons/red-dot.png':'https://maps.google.com/mapfiles/ms/icons/blue-dot.png';
-  return L.icon({iconUrl:url,iconSize:[25,41],iconAnchor:[12,41],popupAnchor:[1,-34],
-    shadowUrl:'https://unpkg.com/leaflet/dist/images/marker-shadow.png',shadowSize:[41,41]});
+  const url=(nm && nm.startsWith('D.I.R.'))
+    ? 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
+    : 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png';
+  return L.icon({
+    iconUrl:url, iconSize:[25,41], iconAnchor:[12,41], popupAnchor:[1,-34],
+    shadowUrl:'https://unpkg.com/leaflet/dist/images/marker-shadow.png', shadowSize:[41,41]
+  });
 }
 
 Papa.parse(CSV_URL,{
@@ -448,19 +660,20 @@ Papa.parse(CSV_URL,{
   complete:r=>{
     (r.data||[]).forEach(d=>{
       const nm=(d.nama_di||d.Nama||"").trim();
-      const lat=parseFloat(d.y||d.lat), lng=parseFloat(d.x||d.lng);
-      if(!nm||isNaN(lat)||isNaN(lng)) return;
+      const lat=parseFloat(d.y||d.lat);
+      const lng=parseFloat(d.x||d.lng);
+      if(!nm || isNaN(lat) || isNaN(lng)) return;
 
-      const prov=d.provinsi||d.Provinsi||"-",
-            kab=d.kabupaten||d.Kabupaten||"-",
-            bbws=d.bbws||d.BBWS||"-",
-            note=d.catatan||d.Catatan||"-";
+      const prov=d.provinsi||d.Provinsi||"-";
+      const kab=d.kabupaten||d.Kabupaten||"-";
+      const bbws=d.bbws||d.BBWS||"-";
+      const note=d.catatan||d.Catatan||"-";
 
       const html=`<b>${nm}</b><br>
-      <div style="color:#aaa;font-size:12px">📍 <b>Koordinat:</b> ${lat.toFixed(6)}, ${lng.toFixed(6)}</div>
-      Provinsi: ${prov}<br>Kabupaten: ${kab}<br>BBWS: ${bbws}<br>Catatan: ${note}<br><br>
-      <a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank">Buka di Google Maps</a><br>
-      <a href="#" onclick="focusAndApply(${lat},${lng},'${encodeURIComponent(nm)}');return false;">Fokus &amp; Apply</a>`;
+        <div style="color:#aaa;font-size:12px">📍 <b>Koordinat:</b> ${lat.toFixed(6)}, ${lng.toFixed(6)}</div>
+        Provinsi: ${prov}<br>Kabupaten: ${kab}<br>BBWS: ${bbws}<br>Catatan: ${note}<br><br>
+        <a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank">Buka di Google Maps</a><br>
+        <a href="#" onclick="focusAndApply(${lat},${lng});return false;">Fokus &amp; Apply Compare</a>`;
 
       const m=L.marker([lat,lng],{icon:getIcon(nm)}).bindPopup(html);
       m.on('popupopen',()=>{
@@ -473,16 +686,15 @@ Papa.parse(CSV_URL,{
     });
 
     map.addLayer(cluster);
-    toast('ok','Marker loaded',`Total titik: <b>${idx.length}</b>`, 2000);
-
-    setTimeout(tryCenterFromParams, 650);
+    toast('ok','Marker loaded',`Total titik: <b>${idx.length}</b>`, 1800);
+    setTimeout(tryCenterFromParams, 700);
   },
-  error:()=>toast('bad','Gagal load CSV','Cek URL survey.csv atau izin raw github.', 2800)
+  error:()=>toast('bad','Gagal load CSV','Cek URL survey.csv atau akses raw github.', 3800)
 });
 
-window.focusAndApply=(lat,lng,encName)=>{
-  $('center').value=`${lat}, ${lng}`;
-  map.setView([lat,lng],13);
+window.focusAndApply = (lat,lng)=>{
+  $('center').value = `${lat}, ${lng}`;
+  map.setView([lat,lng], 13);
   applyCompare();
 };
 
@@ -494,9 +706,9 @@ sInput.oninput=()=>{
   if(!q){ sBox.style.display="none"; return; }
   const hits=idx.filter(it=>it.name.toLowerCase().includes(q)).slice(0,80);
   hits.forEach(it=>{
-    const d=document.createElement('div');
-    d.textContent=it.name;
-    d.onclick=()=>{
+    const div=document.createElement('div');
+    div.textContent=it.name;
+    div.onclick=()=>{
       sInput.value=it.name;
       sBox.style.display="none";
       $('center').value=`${it.lat}, ${it.lng}`;
@@ -504,7 +716,7 @@ sInput.oninput=()=>{
       it.marker.openPopup();
       applyCompare();
     };
-    sBox.appendChild(d);
+    sBox.appendChild(div);
   });
   sBox.style.display = hits.length ? "block" : "none";
 };
@@ -514,29 +726,44 @@ function getParam(n){ return new URLSearchParams(location.search).get(n); }
 
 function tryCenterFromParams(){
   const latp=getParam('lat'), lngp=getParam('lng');
-  const vm=getParam('vm'), prod=getParam('prod');
-  const l=getParam('l'), r=getParam('r'), cloud=getParam('cloud');
+  const src=getParam('src');
+  const vm=getParam('vm');
+  const op=getParam('op');
 
+  if(src) $('source').value = src;
   if(vm) $('viewMode').value = vm;
-  if(prod) $('product').value = prod;
-  if(l) $('leftMonth').value = l;
-  if(r) $('rightMonth').value = r;
-  if(cloud) $('cloud').value = cloud;
+  if(op) $('opacity').value = op;
+
+  if($('source').value === 'sentinel'){
+    const prod=getParam('prod'), l=getParam('l'), r=getParam('r'), cloud=getParam('cloud');
+    if(prod) $('product').value = prod;
+    if(l) $('leftMonth').value = l;
+    if(r) $('rightMonth').value = r;
+    if(cloud) $('cloud').value = cloud;
+  } else {
+    const yl=getParam('yl'), yr=getParam('yr');
+    if(yl) $('wbLeft').value = yl;
+    if(yr) $('wbRight').value = yr;
+  }
+
+  syncUI();
 
   if(latp && lngp){
     const lat=parseFloat(latp), lng=parseFloat(lngp);
-    if(!isNaN(lat)&&!isNaN(lng)){
-      $('center').value=`${lat}, ${lng}`;
-      map.setView([lat,lng],13);
+    if(!isNaN(lat) && !isNaN(lng)){
+      $('center').value = `${lat}, ${lng}`;
+      map.setView([lat,lng], 13);
       applyCompare();
       return;
     }
   }
-  // default apply
+
   applyCompare();
 }
 
-updateLegend($('product').value);
+/* Init */
+syncUI();
+legendForSentinel($('product').value);
 setTimeout(tryCenterFromParams, 450);
 </script>
 
