@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <title>Si-Irwan — Dashboard DI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg:#0b1222; --panel:rgba(15,23,42,.92);
+      --text:#e5e7eb; --muted:#94a3b8; --border:rgba(255,255,255,.12);
+      --accent:#3b82f6; --accent2:#2563eb;
+      --card:#0f172a; --card2:#111827;
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;
+      background: radial-gradient(1200px 600px at 20% -10%, rgba(59,130,246,.28), transparent 55%),
+                  radial-gradient(900px 500px at 90% 0%, rgba(34,197,94,.18), transparent 60%),
+                  var(--bg);
+      color:var(--text);
+    }
+    .topbar{
+      position:sticky; top:0; z-index:20;
+      backdrop-filter: blur(8px);
+      background: rgba(11,18,34,.72);
+      border-bottom:1px solid var(--border);
+      padding:14px 18px;
+      display:flex; align-items:center; justify-content:space-between; gap:14px;
+    }
+    .brand{
+      display:flex; flex-direction:column; gap:2px;
+    }
+    .brand .t1{font-weight:800; letter-spacing:.2px; font-size:16px}
+    .brand .t2{color:var(--muted); font-weight:600; font-size:12px}
+    .pill{
+      border:1px solid var(--border);
+      background:rgba(15,23,42,.65);
+      color:var(--text);
+      padding:8px 10px;
+      border-radius:999px;
+      font-size:12px;
+      display:flex; gap:10px; align-items:center;
+    }
+    .pill input{
+      width:260px; max-width:52vw;
+      background:transparent; border:none; outline:none;
+      color:var(--text); font-size:12px;
+    }
+    .wrap{max-width:1180px; margin:0 auto; padding:18px;}
+    .hero{
+      margin-top:6px;
+      border:1px solid var(--border);
+      background:linear-gradient(180deg, rgba(15,23,42,.88), rgba(2,6,23,.65));
+      border-radius:var(--radius);
+      padding:18px 18px 14px;
+    }
+    .hero h1{margin:0; font-size:22px; font-weight:900}
+    .hero p{margin:6px 0 0; color:var(--muted); font-weight:600; font-size:13px; line-height:1.45}
+    .grid{
+      margin-top:16px;
+      display:grid; gap:14px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    @media(max-width:980px){ .grid{grid-template-columns: repeat(2, minmax(0, 1fr));} }
+    @media(max-width:640px){ .grid{grid-template-columns: 1fr;} .pill input{width:160px;} }
+
+    .card{
+      border:1px solid var(--border);
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      border-radius:20px;
+      padding:16px 16px 14px;
+      position:relative;
+      overflow:hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    }
+    .card:before{
+      content:"";
+      position:absolute; inset:-40px -40px auto auto;
+      width:160px; height:160px;
+      background: radial-gradient(circle at 30% 30%, rgba(59,130,246,.38), transparent 60%);
+      filter: blur(0px);
+      transform: rotate(14deg);
+    }
+    .card .k1{color:var(--muted); font-weight:700; font-size:12px}
+    .card .k2{margin-top:6px; font-weight:900; font-size:20px}
+    .card .k3{margin-top:10px; display:flex; align-items:center; justify-content:space-between; gap:10px}
+    .btn{
+      display:inline-flex; align-items:center; gap:8px;
+      text-decoration:none;
+      font-weight:800; font-size:12px;
+      padding:10px 12px;
+      border-radius:12px;
+      color:white;
+      background: linear-gradient(180deg, var(--accent), var(--accent2));
+      border:1px solid rgba(255,255,255,.12);
+      white-space:nowrap;
+    }
+    .btn:hover{filter:brightness(1.05)}
+    .meta{color:var(--muted); font-size:12px; font-weight:700}
+    .state{
+      margin-top:14px;
+      border:1px dashed rgba(148,163,184,.45);
+      background:rgba(2,6,23,.35);
+      border-radius:14px;
+      padding:12px;
+      color:var(--muted);
+      font-size:12px;
+      font-weight:650;
+      line-height:1.45;
+      overflow:auto;
+    }
+    .badge{
+      position:fixed; right:14px; bottom:14px;
+      background:rgba(13,71,161,.86);
+      border:1px solid rgba(255,255,255,.22);
+      color:#fff; font-size:12px; font-weight:900;
+      padding:8px 12px; border-radius:999px;
+      box-shadow:0 0 18px rgba(59,130,246,.35);
+    }
+    .err{color:#fca5a5}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">
+      <div class="t1">🔎 Dashboard DI (Drive)</div>
+      <div class="t2">Landing jenis DI (Permukaan, Tambak, Rawa)</div>
+    </div>
+    <div class="pill" title="Filter kartu">
+      <span>🔍</span>
+      <input id="q" placeholder="Cari jenis (misal: permukaan)" />
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="hero">
+      <h1>Pilih Jenis Daerah Irigasi</h1>
+      <p>Data diambil dari subfolder Google Drive (tanpa login) menggunakan Google Drive API + API key yang dibatasi domain GitHub Pages.</p>
+    </div>
+
+    <div id="grid" class="grid"></div>
+
+    <div id="state" class="state">Memuat daftar folder dari Google Drive…</div>
+  </div>
+
+  <div class="badge">Si-Irwan v1.0</div>
+
+<script>
+/* =============================
+   KONFIGURASI (WAJIB)
+============================= */
+const DRIVE_API_KEY   = "AIzaSyDlpSnNEI__Z5OWinbf24BGJ4_U6JucNMs";
+const ROOT_FOLDER_ID  = "1UO_mECvk_YUvvyaP8YRPoX7EGYfwlXAb"; // folder yang isinya: DI Permukaan / DI Tambak / DI Rawa
+
+/* =============================
+   UTIL
+============================= */
+const $grid  = document.getElementById('grid');
+const $state = document.getElementById('state');
+const $q     = document.getElementById('q');
+
+function esc(s){ return String(s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
+
+function setState(msg, isErr=false){
+  $state.innerHTML = isErr ? `<span class="err">${esc(msg)}</span>` : esc(msg);
+}
+
+function normalizeJenisName(name){
+  return String(name||"").trim();
+}
+
+function cardHTML({name, id}){
+  const jenis = normalizeJenisName(name);
+  // Link ke prov.html (nanti di prov.html kita list provinsi dari folder jenis ini)
+  const href = `prov.html?jenisId=${encodeURIComponent(id)}&jenis=${encodeURIComponent(jenis)}`;
+
+  return `
+    <div class="card" data-name="${esc(jenis.toLowerCase())}">
+      <div class="k1">Jenis DI</div>
+      <div class="k2">${esc(jenis)}</div>
+      <div class="k3">
+        <a class="btn" href="${href}">Buka daftar provinsi <span aria-hidden="true">→</span></a>
+        <div class="meta">Folder</div>
+      </div>
+    </div>
+  `;
+}
+
+async function driveListChildrenFolders(parentId){
+  const q = [
+    `'${parentId}' in parents`,
+    `trashed=false`,
+    `mimeType='application/vnd.google-apps.folder'`
+  ].join(" and ");
+
+  const url =
+    "https://www.googleapis.com/drive/v3/files" +
+    `?q=${encodeURIComponent(q)}` +
+    "&fields=files(id,name,mimeType,modifiedTime,webViewLink),nextPageToken" +
+    "&pageSize=1000" +
+    "&supportsAllDrives=true&includeItemsFromAllDrives=true" +
+    `&key=${encodeURIComponent(DRIVE_API_KEY)}`;
+
+  const res = await fetch(url);
+  const json = await res.json();
+  if(!res.ok) throw new Error(json?.error?.message || `HTTP ${res.status}`);
+  return json.files || [];
+}
+
+function applyFilter(){
+  const term = ($q.value || "").trim().toLowerCase();
+  const cards = $grid.querySelectorAll('.card');
+  cards.forEach(c=>{
+    const ok = !term || (c.dataset.name || "").includes(term);
+    c.style.display = ok ? "" : "none";
+  });
+}
+
+/* =============================
+   MAIN
+============================= */
+(async ()=>{
+  try{
+    if(!DRIVE_API_KEY || DRIVE_API_KEY.includes("PASTE_")) {
+      setState("Isi dulu DRIVE_API_KEY di kode.", true);
+      return;
+    }
+    if(!ROOT_FOLDER_ID || ROOT_FOLDER_ID.includes("PASTE_")) {
+      setState("Isi dulu ROOT_FOLDER_ID di kode (folder utama yang berisi DI Permukaan/Tambak/Rawa).", true);
+      return;
+    }
+
+    setState("Mengambil daftar folder jenis DI…");
+    const folders = await driveListChildrenFolders(ROOT_FOLDER_ID);
+
+    if(!folders.length){
+      $grid.innerHTML = "";
+      setState("Tidak ada subfolder ditemukan. Pastikan ROOT_FOLDER_ID benar dan folder dapat diakses (Anyone with the link).", true);
+      return;
+    }
+
+    // sort A-Z
+    folders.sort((a,b)=> String(a.name).localeCompare(String(b.name), "id"));
+
+    $grid.innerHTML = folders.map(f=>cardHTML(f)).join("");
+    setState(`OK. Ditemukan ${folders.length} folder jenis DI.`);
+
+    $q.addEventListener('input', applyFilter);
+  }catch(err){
+    console.error(err);
+    setState("Gagal memuat: " + (err?.message || err), true);
+  }
+})();
+</script>
+</body>
+</html>
