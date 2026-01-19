@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <title>Si-Irwan — DI Nasional (Landing)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="icon" href="../assets/LogoPUPR.png" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg:#0b1222; --panel:rgba(15,23,42,.92); --border:rgba(255,255,255,.12);
+      --text:#e5e7eb; --muted:#94a3b8; --muted2:#cbd5e1;
+      --brand:#0d47a1; --accent:#1d5fd1; --good:#22c55e; --bad:#f87171;
+      --radius:16px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial,sans-serif;background:var(--bg);color:var(--text)}
+    .wrap{max-width:1100px;margin:0 auto;padding:18px}
+    .topbar{
+      position:sticky; top:0; z-index:50;
+      background:linear-gradient(180deg, rgba(11,18,34,.92), rgba(11,18,34,.65));
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:12px 14px;
+      backdrop-filter:blur(8px);
+      -webkit-backdrop-filter:blur(8px);
+      box-shadow:0 16px 40px rgba(0,0,0,.35);
+    }
+    .toprow{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+    .brand{display:flex;gap:10px;align-items:center}
+    .logo{
+      width:42px;height:42px;border-radius:12px;
+      background:rgba(13,71,161,.25);
+      border:1px solid rgba(255,255,255,.14);
+      display:flex;align-items:center;justify-content:center;
+      font-weight:900;
+    }
+    .ttl{font-weight:900;font-size:16px;line-height:1.15}
+    .sub{color:var(--muted);font-size:12px;margin-top:2px}
+    .pill{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:8px 12px;border-radius:999px;
+      background:rgba(255,255,255,.06);
+      border:1px solid var(--border);
+      color:var(--muted2);font-size:12px;font-weight:700;
+    }
+    .statusDot{width:8px;height:8px;border-radius:99px;background:#64748b}
+    .statusDot.ok{background:var(--good)}
+    .statusDot.bad{background:var(--bad)}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
+    @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:620px){.grid{grid-template-columns:1fr}}
+    .card{
+      background:linear-gradient(180deg, rgba(15,23,42,.95), rgba(2,6,23,.8));
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:18px;
+      padding:16px;
+      box-shadow:0 18px 48px rgba(0,0,0,.35);
+      position:relative;
+      overflow:hidden;
+    }
+    .card::before{
+      content:"";
+      position:absolute; inset:-40px -60px auto auto;
+      width:160px;height:160px;
+      background:radial-gradient(circle at 30% 30%, rgba(29,95,209,.55), rgba(29,95,209,0));
+      transform:rotate(18deg);
+    }
+    .k1{color:var(--muted);font-size:12px;font-weight:700;position:relative}
+    .k2{font-size:22px;font-weight:900;margin-top:6px;position:relative}
+    .k3{display:flex;align-items:center;justify-content:space-between;margin-top:14px;gap:10px;position:relative}
+    .btn{
+      display:inline-flex;align-items:center;gap:8px;
+      background:rgba(29,95,209,.15);
+      border:1px solid rgba(29,95,209,.55);
+      color:#dbeafe;
+      padding:10px 12px;
+      border-radius:12px;
+      text-decoration:none;
+      font-weight:800;
+      font-size:12px;
+      cursor:pointer;
+    }
+    .btn:hover{background:rgba(29,95,209,.24)}
+    .meta{color:var(--muted);font-size:12px}
+    .state{margin-top:12px;color:var(--muted);font-size:12px}
+    .state .err{color:var(--bad);font-weight:800}
+    .state .ok{color:var(--good);font-weight:800}
+    .footerBadge{
+      position:fixed; right:14px; bottom:14px; z-index:99;
+      background:rgba(13,71,161,.85);
+      border:1px solid rgba(255,255,255,.22);
+      color:#fff; font-size:12px; font-weight:900;
+      padding:8px 12px;border-radius:999px;
+      box-shadow:0 0 18px rgba(13,71,161,.55);
+      backdrop-filter:blur(8px);
+      -webkit-backdrop-filter:blur(8px);
+    }
+    code{color:#93c5fd}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+
+    <div class="topbar">
+      <div class="toprow">
+        <div class="brand">
+          <div class="logo">DI</div>
+          <div>
+            <div class="ttl">Landing DI Nasional</div>
+            <div class="sub">Pilih jenis DI, lalu lanjut pilih provinsi.</div>
+          </div>
+        </div>
+
+        <div class="pill" title="Status koneksi Drive API dari GitHub Pages">
+          <span id="dot" class="statusDot"></span>
+          <span id="statusText">Memuat Drive…</span>
+        </div>
+      </div>
+
+      <div class="state" id="state"></div>
+    </div>
+
+    <div class="grid" id="grid">
+      <!-- kartu diisi dari Drive -->
+    </div>
+
+  </div>
+
+  <div class="footerBadge">Si-Irwan v1.0</div>
+
+<script>
+/* =============================
+   KONFIGURASI
+============================= */
+const API_KEY = "AIzaSyDlpSnNEI__Z5OWinbf24BGJ4_U6JucNMs";
+
+// Folder root yang kamu kasih:
+// https://drive.google.com/drive/folders/1UO_mECvk_YUvvyaP8YRPoX7EGYfwlXAb
+const ROOT_FOLDER_ID = "1UO_mECvk_YUvvyaP8YRPoX7EGYfwlXAb";
+
+// halaman provinsi (relatif dari /my-maps/DI/)
+const PROV_PAGE = "Provinsi/index_prov_dev.html";
+
+const $grid = document.getElementById("grid");
+const $state = document.getElementById("state");
+const $dot = document.getElementById("dot");
+const $statusText = document.getElementById("statusText");
+
+function esc(s){
+  return String(s ?? "").replace(/[&<>"']/g, m => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[m]));
+}
+
+function setState(msg, isErr=false){
+  $state.innerHTML = isErr ? `<span class="err">${esc(msg)}</span>` : esc(msg);
+}
+
+function setStatus(ok, text){
+  $dot.className = "statusDot " + (ok ? "ok" : "bad");
+  $statusText.textContent = text;
+}
+
+function cardHTML({name, id}){
+  const jenis = String(name || "").trim() || "Folder";
+  const href = `${PROV_PAGE}?jenisId=${encodeURIComponent(id)}&jenis=${encodeURIComponent(jenis)}`;
+
+  return `
+    <div class="card">
+      <div class="k1">Jenis DI</div>
+      <div class="k2">${esc(jenis)}</div>
+      <div class="k3">
+        <a class="btn" href="${href}">Buka daftar provinsi <span aria-hidden="true">→</span></a>
+        <div class="meta">Folder Drive</div>
+      </div>
+    </div>
+  `;
+}
+
+async function listFolders(parentId){
+  const q = `('${parentId}' in parents) and trashed=false and mimeType='application/vnd.google-apps.folder'`;
+  const url = "https://www.googleapis.com/drive/v3/files"
+    + `?q=${encodeURIComponent(q)}`
+    + "&fields=files(id,name,mimeType,modifiedTime)"
+    + "&orderBy=name"
+    + "&supportsAllDrives=true&includeItemsFromAllDrives=true"
+    + `&key=${encodeURIComponent(API_KEY)}`;
+
+  const res = await fetch(url);
+  const json = await res.json();
+  if(!res.ok){
+    const msg = json?.error?.message || `HTTP ${res.status}`;
+    throw new Error(msg);
+  }
+  return json.files || [];
+}
+
+(async ()=>{
+  try{
+    setStatus(false, "Memuat Drive…");
+    setState("Mengambil folder jenis DI dari Google Drive…");
+
+    const items = await listFolders(ROOT_FOLDER_ID);
+
+    if(!items.length){
+      setStatus(true, "HTTP 200, tapi kosong");
+      setState("Folder root terbaca, tapi tidak ada subfolder. Pastikan di dalamnya ada folder jenis (DI Permukaan/Tambak/Rawa).", true);
+      $grid.innerHTML = "";
+      return;
+    }
+
+    $grid.innerHTML = items.map(cardHTML).join("");
+    setStatus(true, `Drive OK · ${items.length} folder`);
+    setState(`Sukses. Klik salah satu kartu untuk lanjut ke daftar provinsi.`);
+  }catch(err){
+    console.error(err);
+    setStatus(false, "Drive ERROR");
+    setState("Gagal memuat Drive: " + err.message, true);
+    $grid.innerHTML = "";
+  }
+})();
+</script>
+
+</body>
+</html>
