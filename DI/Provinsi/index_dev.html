@@ -175,7 +175,7 @@ function normalizeJenisName(name){
 function cardHTML({name, id}){
   const jenis = normalizeJenisName(name);
   // Link ke prov.html (nanti di prov.html kita list provinsi dari folder jenis ini)
-  const href = `prov.html?jenisId=${encodeURIComponent(id)}&jenis=${encodeURIComponent(jenis)}`;
+  const href = `index_prov_dev.html?jenisId=${encodeURIComponent(id)}&jenis=${encodeURIComponent(jenis)}`;
 
   return `
     <div class="card" data-name="${esc(jenis.toLowerCase())}">
