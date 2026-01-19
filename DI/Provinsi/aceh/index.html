@@ -2,9 +2,15 @@
 (async()=>{
   const KEY = "AIzaSyDlpSnNEI__Z5OWinbf24BGJ4_U6JucNMs";
   const FOLDER = "1UO_mECvk_YUvvyaP8YRPoX7EGYfwlXAb";
-  const url = `https://www.googleapis.com/drive/v3/files?q='${FOLDER}'+in+parents+and+trashed=false&fields=files(id,name)&key=${KEY}`;
+  const url =
+    `https://www.googleapis.com/drive/v3/files` +
+    `?q='${FOLDER}'+in+parents+and+trashed=false` +
+    `&fields=files(id,name,mimeType,modifiedTime,webViewLink)` +
+    `&supportsAllDrives=true&includeItemsFromAllDrives=true` +
+    `&key=${KEY}`;
+
   const r = await fetch(url);
-  const t = await r.text();
-  console.log("status", r.status, t);
+  const j = await r.json();
+  console.log("Drive list:", r.status, j);
 })();
 </script>
