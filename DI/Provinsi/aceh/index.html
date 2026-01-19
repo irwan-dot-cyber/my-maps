@@ -1,16 +1,103 @@
-<script>
-(async()=>{
-  const KEY = "AIzaSyDlpSnNEI__Z5OWinbf24BGJ4_U6JucNMs";
-  const FOLDER = "1UO_mECvk_YUvvyaP8YRPoX7EGYfwlXAb";
-  const url =
-    `https://www.googleapis.com/drive/v3/files` +
-    `?q='${FOLDER}'+in+parents+and+trashed=false` +
-    `&fields=files(id,name,mimeType,modifiedTime,webViewLink)` +
-    `&supportsAllDrives=true&includeItemsFromAllDrives=true` +
-    `&key=${KEY}`;
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <title>Test Google Drive API – Si-Irwan</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body{
+      font-family: Inter, system-ui, Arial, sans-serif;
+      background:#0b1222;
+      color:#e5e7eb;
+      margin:0;
+      padding:24px;
+    }
+    h1{margin-top:0}
+    .box{
+      background:#111827;
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:12px;
+      padding:16px;
+      margin-bottom:16px;
+    }
+    pre{
+      background:#020617;
+      padding:12px;
+      border-radius:8px;
+      overflow:auto;
+      font-size:12px;
+      color:#e5e7eb;
+    }
+    .ok{color:#22c55e}
+    .err{color:#f87171}
+    .muted{color:#94a3b8}
+  </style>
+</head>
+<body>
 
-  const r = await fetch(url);
-  const j = await r.json();
-  console.log("Drive list:", r.status, j);
+<h1>🔎 Test Google Drive API (GitHub Pages)</h1>
+
+<div class="box">
+  <div><b>Halaman aktif:</b></div>
+  <div class="muted" id="loc"></div>
+</div>
+
+<div class="box">
+  <div><b>Status request:</b></div>
+  <div id="status" class="muted">Menunggu…</div>
+</div>
+
+<div class="box">
+  <div><b>Response JSON:</b></div>
+  <pre id="output">(belum ada)</pre>
+</div>
+
+<script>
+/* =============================
+   KONFIGURASI (WAJIB GANTI)
+============================= */
+const DRIVE_API_KEY   = "AIzaSyDlpSnNEI__Z5OWinbf24BGJ4_U6JucNMs"; // ⬅️ ganti
+const DRIVE_FOLDER_ID = "1UO_mECvk_YUvvyaP8YRPoX7EGYfwlXAb";
+
+/* =============================
+   INFO HALAMAN
+============================= */
+document.getElementById("loc").textContent = window.location.href;
+
+/* =============================
+   FETCH DRIVE API
+============================= */
+(async ()=>{
+  const url =
+    "https://www.googleapis.com/drive/v3/files" +
+    `?q='${DRIVE_FOLDER_ID}'+in+parents+and+trashed=false` +
+    "&fields=files(id,name,mimeType,modifiedTime,webViewLink)" +
+    "&supportsAllDrives=true" +
+    "&includeItemsFromAllDrives=true" +
+    `&key=${DRIVE_API_KEY}`;
+
+  try{
+    const res = await fetch(url);
+    const json = await res.json();
+
+    document.getElementById("status").innerHTML =
+      res.ok
+        ? `<span class="ok">HTTP ${res.status} – BERHASIL</span>`
+        : `<span class="err">HTTP ${res.status} – GAGAL</span>`;
+
+    document.getElementById("output").textContent =
+      JSON.stringify(json, null, 2);
+
+    console.log("Drive API result:", json);
+  }catch(err){
+    document.getElementById("status").innerHTML =
+      `<span class="err">ERROR FETCH</span>`;
+    document.getElementById("output").textContent = err.toString();
+    console.error(err);
+  }
 })();
 </script>
+
+</body>
+</html>
+
