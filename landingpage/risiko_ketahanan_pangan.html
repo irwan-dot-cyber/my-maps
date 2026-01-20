@@ -1,0 +1,311 @@
+
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Si-Irwan — Modul 1: Peta Risiko Ketahanan Pangan</title>
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+
+  <!-- Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg:#0f172a; --panel:#111827; --panel-2:#0b1220; --text:#e5e7eb; --muted:#94a3b8;
+      --primary:#2E86C1; --success:#27AE60; --warn:#F39C12; --danger:#C0392B;
+      --card:#0b1328; --chip:#172554; --border:#1f2937;
+      --risk-low:#27AE60; --risk-med:#F39C12; --risk-high:#C0392B;
+    }
+    *{box-sizing:border-box} html,body{height:100%}
+    body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;background:linear-gradient(180deg,#0b1020,#0f172a 40%,#0b1220);color:var(--text)}
+    header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);background:rgba(15,23,42,.7);backdrop-filter:blur(6px);position:sticky;top:0;z-index:10}
+    .brand{display:flex;gap:12px;align-items:center;font-weight:700}
+    .logo{width:36px;height:36px;border-radius:8px;background:radial-gradient(120px 120px at 20% 20%,#2E86C1,transparent 35%),radial-gradient(160px 160px at 80% 80%,#27AE60,transparent 35%),linear-gradient(135deg,#1b3b63,#0f172a);box-shadow:0 0 0 1px #1f2c46 inset,0 8px 20px rgba(46,134,193,.35)}
+    .subtitle{font-size:12px;color:var(--muted)}
+    .layout{display:grid;grid-template-columns:300px 1fr;gap:16px;padding:16px;align-items:start}
+    aside{background:linear-gradient(180deg,#0b1328,#0a1020 60%,#0a0f1e);border:1px solid var(--border);border-radius:14px;padding:14px;position:sticky;top:74px}
+    main{display:grid;gap:16px}
+    .section{background:linear-gradient(180deg,#0b1328,#0a1020);border:1px solid var(--border);border-radius:14px}
+    .head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border)}
+    .body{padding:12px}
+    .chips{display:flex;flex-wrap:wrap;gap:8px}
+    .chip{background:var(--chip);color:#c7d2fe;border:1px solid #1f2a55;border-radius:999px;padding:6px 10px;font-size:12px;cursor:pointer}
+    .chip.active{outline:1px solid #3b82f6;background:#0b1c43}
+    #map{height:440px;border-bottom-left-radius:14px;border-bottom-right-radius:14px}
+    .legend{display:flex;gap:10px;font-size:12px;color:var(--muted)}
+    .legend .dot{width:10px;height:10px;border-radius:2px;display:inline-block}
+    .dot.low{background:var(--risk-low)} .dot.med{background:var(--risk-med)} .dot.high{background:var(--risk-high)}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th,td{padding:8px 10px;border-bottom:1px solid var(--border)}
+    th{color:var(--muted);text-align:left}
+    tr:hover{background:#0c1a33}
+    .grid-2{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}
+    @media (max-width:1100px){.layout{grid-template-columns:1fr}}
+    .small{font-size:12px;color:var(--muted)}
+  </style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo"></div>
+    <div>
+      <div>Si‑Irwan <span class="subtitle">— Modul 1: Peta Risiko Ketahanan Pangan</span></div>
+      <div class="subtitle">“Defisit air × fase tanam × hujan × infrastruktur.”</div>
+    </div>
+  </div>
+  <div class="subtitle" id="now"></div>
+</header>
+
+<div class="layout">
+  <aside>
+    <div class="section">
+      <div class="head"><strong>Filter</strong></div>
+      <div class="body">
+        <div class="small" style="margin-bottom:6px;">Provinsi</div>
+        <div id="chip-prov" class="chips"></div>
+
+        <div class="small" style="margin:12px 0 6px;">Status Risiko</div>
+        <div id="chip-status" class="chips">
+          <div class="chip" data-s="all">Semua</div>
+          <div class="chip" data-s="low">Rendah</div>
+          <div class="chip" data-s="med">Sedang</div>
+          <div class="chip" data-s="high">Tinggi</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section" style="margin-top:12px;">
+      <div class="head"><strong>Metodologi Ringkas</strong></div>
+      <div class="body small">
+        Risk Index = 0.4×Defisit + 0.3×Fase + 0.2×Hujan + 0.1×(100‑Health)<br>
+        - Defisit dari IAR mingguan (demand vs supply) <br>
+        - Fase: Vegetatif (0.6), Generatif (1.0), Pematangan (0.3) → skala 0‑100 <br>
+        - Hujan: sangat rendah (&lt;10mm) / ekstrem (&gt;=150mm) → risiko tinggi <br>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <section class="section">
+      <div class="head">
+        <div><strong>Peta Risiko Per Daerah Irigasi</strong> <span class="small" id="scope">— Nasional</span></div>
+        <div class="legend">
+          <span class="dot low"></span> Rendah (<40)
+          <span class="dot med"></span> Sedang (40–69)
+          <span class="dot high"></span> Tinggi (≥70)
+        </div>
+      </div>
+      <div id="map"></div>
+    </section>
+
+    <section class="section">
+      <div class="head"><strong>Detail & Ranking Risiko</strong></div>
+      <div class="body grid-2">
+        <div>
+          <table id="tblRank">
+            <thead>
+              <tr>
+                <th>DI</th><th>Provinsi</th><th>Luas (ha)</th>
+                <th>Risk</th><th>IAR</th><th>Phase</th><th>Rain(mm)</th><th>Health</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <div class="small" style="margin-top:6px;">Klik baris untuk fokus peta.</div>
+        </div>
+        <div>
+          <canvas id="chartRisk" height="200"></canvas>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+  // ====== INIT UI
+  document.getElementById('now').textContent =
+    new Date().toLocaleString('id-ID',{weekday:'long', day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit'});
+
+  // ====== MOCK DATA (ganti dengan data asli)
+  // demand/supply/rain per minggu (8 pekan), health 0..100, IAR dihitung
+  // currentPhase: 'vegetatif' | 'generatif' | 'pematangan'
+  const weeks = ['M1','M2','M3','M4','M5','M6','M7','M8'];
+  const diData = [
+    {
+      id:'DI-001', name:'DI Contoh Barat', prov:'Jawa Barat', luas:15500, health:78, currentPhase:'generatif',
+      demand:[92,110,128,140,135,120,100,95],
+      supply:[100,120,130,132,125,115,95,90],
+      rain_mm:[40,55,65,80,120,90,60,30],
+      geojson:{ "type":"Feature","properties":{},"geometry":{"type":"Polygon","coordinates":[[
+        [107.2,-6.4],[107.6,-6.4],[107.8,-6.6],[107.4,-6.8],[107.1,-6.6],[107.2,-6.4]
+      ]]}}
+    },
+    {
+      id:'DI-002', name:'DI Rawa Timur', prov:'Kalimantan Selatan', luas:21000, health:61, currentPhase:'vegetatif',
+      demand:[70,85,100,115,125,130,120,110],
+      supply:[68,80,92,96,98,100,95,90],
+      rain_mm:[15,10,8,5,12,18,9,6],
+      geojson:{ "type":"Feature","properties":{},"geometry":{"type":"Polygon","coordinates":[[
+        [114.5,-3.1],[114.9,-3.1],[115.0,-3.4],[114.7,-3.6],[114.4,-3.3],[114.5,-3.1]
+      ]]}}
+    },
+    {
+      id:'DI-003', name:'DI Delta Nusantara', prov:'Jawa Timur', luas:18200, health:85, currentPhase:'pematangan',
+      demand:[80,96,115,130,132,125,110,95],
+      supply:[90,110,120,138,140,135,115,100],
+      rain_mm:[25,30,35,45,50,40,30,20],
+      geojson:{ "type":"Feature","properties":{},"geometry":{"type":"Polygon","coordinates":[[
+        [112.4,-7.3],[112.8,-7.3],[113.0,-7.6],[112.6,-7.8],[112.3,-7.5],[112.4,-7.3]
+      ]]}}
+    }
+  ];
+
+  // ====== RISK CALC
+  function phaseScore(phase){
+    // scale 0..100
+    if(phase==='generatif') return 100;
+    if(phase==='vegetatif') return 60;
+    return 30; // pematangan
+  }
+  function rainRisk(mm){
+    // risiko tinggi bila sangat kering atau sangat basah
+    if(mm >= 150) return 85;      // banjir
+    if(mm >= 100) return 40;      // basah-tinggi
+    if(mm >= 30)  return 15;      // normal
+    if(mm >= 10)  return 40;      // kering
+    return 80;                    // sangat kering
+  }
+  function clamp(x,l=0,h=100){return Math.max(l,Math.min(h,x));}
+  function computeRisk(d){
+    const i = d.demand.length-1; // pekan terbaru
+    const IAR = d.demand[i]>0 ? (d.supply[i]/d.demand[i]) : 1;
+    const deficit = clamp((1 - Math.min(IAR,1)) * 100); // 0 (baik) .. 100 (defisit parah)
+    const pScore = phaseScore(d.currentPhase);          // 30..100
+    const rScore = rainRisk(d.rain_mm[i]);              // 15..85
+    const infra  = clamp(100 - d.health);               // 0..100 (semakin rusak semakin besar)
+    const risk = 0.4*deficit + 0.3*pScore + 0.2*rScore + 0.1*infra;
+    return Math.round(risk);
+  }
+  diData.forEach(d=> d.risk = computeRisk(d));
+
+  function riskClass(v){ return v>=70?'high':(v>=40?'med':'low'); }
+  function colorByRisk(v){
+    return v>=70 ? 'rgba(192,57,43,.75)' : (v>=40 ? 'rgba(243,156,18,.75)' : 'rgba(39,174,96,.75)');
+  }
+
+  // ====== MAP
+  const map = L.map('map',{minZoom:4,maxZoom:12,zoomControl:false}).setView([-3.5,114],5);
+  L.control.zoom({position:'topright'}).addTo(map);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
+  const layerGroup = L.geoJSON(null,{
+    style: f=>{
+      const di = diData.find(x=>x.id===f.properties.id);
+      return {color:'#1f2a44',weight:1.2,fillColor:colorByRisk(di.risk),fillOpacity:.75};
+    },
+    onEachFeature:(f,layer)=>{
+      const di = diData.find(x=>x.id===f.properties.id);
+      layer.bindTooltip(`${di.name} — Risk ${di.risk}`);
+      layer.on('click',()=> selectDI(di.id,true));
+    }
+  }).addTo(map);
+
+  function refreshMap(){
+    layerGroup.clearLayers();
+    getScopeItems().forEach(d=>{
+      const feat = JSON.parse(JSON.stringify(d.geojson));
+      feat.properties.id = d.id;
+      layerGroup.addData(feat);
+    });
+  }
+
+  // ====== FILTERS
+  const state = {prov:'Semua', status:'all', selected:null};
+  const provs = ['Semua', ...Array.from(new Set(diData.map(d=>d.prov)))];
+  const chipProvWrap = document.getElementById('chip-prov');
+  provs.forEach(p=>{
+    const el = document.createElement('div');
+    el.className='chip'+(p==='Semua'?' active':''); el.textContent=p;
+    el.onclick=()=>{
+      [...chipProvWrap.children].forEach(c=>c.classList.remove('active'));
+      el.classList.add('active'); state.prov=p; state.selected=null;
+      document.getElementById('scope').textContent = p==='Semua'?'— Nasional':`— ${p}`;
+      rerender();
+    };
+    chipProvWrap.appendChild(el);
+  });
+  const chipStatusWrap = document.getElementById('chip-status');
+  [...chipStatusWrap.children].forEach(el=>{
+    el.onclick=()=>{
+      [...chipStatusWrap.children].forEach(c=>c.classList.remove('active'));
+      el.classList.add('active'); state.status=el.dataset.s; state.selected=null; rerender();
+    };
+  });
+  chipStatusWrap.children[0].classList.add('active');
+
+  function statusMatch(d){
+    const cls = riskClass(d.risk);
+    return state.status==='all' || cls===state.status;
+  }
+  function getScopeItems(){
+    return diData.filter(d=> (state.prov==='Semua'||d.prov===state.prov) && statusMatch(d));
+  }
+
+  // ====== TABLE & CHART
+  const ctx = document.getElementById('chartRisk').getContext('2d');
+  const chartRisk = new Chart(ctx,{
+    type:'bar',
+    data:{labels:[],datasets:[{label:'Risk Index',data:[],backgroundColor:'rgba(243,156,18,.6)',borderColor:'rgba(243,156,18,1)'}]},
+    options:{plugins:{legend:{labels:{color:'#cbd5e1'}}},scales:{x:{ticks:{color:'#94a3b8'}},y:{ticks:{color:'#94a3b8'},suggestedMin:0,suggestedMax:100}}}
+  });
+
+  function refreshTable(){
+    const tbody = document.querySelector('#tblRank tbody');
+    tbody.innerHTML='';
+    const list = [...getScopeItems()].sort((a,b)=> b.risk - a.risk);
+    list.forEach(d=>{
+      const i = d.demand.length-1, IAR = d.demand[i]>0 ? d.supply[i]/d.demand[i] : 1, rain=d.rain_mm[i];
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${d.name}</td><td class="small">${d.prov}</td><td>${d.luas.toLocaleString('id-ID')}</td>
+        <td><strong>${d.risk}</strong></td><td>${IAR.toFixed(2)}</td>
+        <td>${d.currentPhase}</td><td>${rain}</td><td>${d.health}</td>
+      `;
+      tr.onclick=()=> selectDI(d.id,true);
+      tbody.appendChild(tr);
+    });
+
+    chartRisk.data.labels = list.map(d=>d.name);
+    chartRisk.data.datasets[0].data = list.map(d=>d.risk);
+    chartRisk.update();
+  }
+
+  function selectDI(id, fly=false){
+    state.selected=id;
+    layerGroup.eachLayer(l=>{
+      if(l.feature && l.feature.properties.id===id){
+        if(fly) map.fitBounds(l.getBounds(),{maxZoom:9,padding:[20,20]});
+        l.openTooltip();
+      }
+    });
+  }
+
+  function rerender(){ refreshMap(); refreshTable(); }
+  rerender();
+
+  // ====== OPTIONAL: load data risiko dari file eksternal
+  // fetch('siirwan_risk_input.json').then(r=>r.json()).then(js=>{
+  //   // Struktur: array objek dgn id,prov,luas,health,currentPhase,demand[],supply[],rain_mm[],geojson
+  //   // diData.splice(0, diData.length, ...js); diData.forEach(d=> d.risk = computeRisk(d)); rerender();
+  // });
+</script>
+</body>
+</html>
+``
