@@ -7,126 +7,74 @@
   <title>Si-Irwan — Sistem Informasi Irigasi & Rawa Nasional</title>
 
   <!-- Leaflet Map -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-    crossorigin=""
-  />
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-    crossorigin=""
-  ></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
 
-  <!-- Icons (optional) -->
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 
   <style>
     :root{
-      --bg:#0f172a;          /* slate-900 */
-      --panel:#111827;       /* gray-900 */
-      --panel-2:#0b1220;     /* darker */
-      --text:#e5e7eb;        /* gray-200 */
-      --muted:#94a3b8;       /* slate-400 */
-      --primary:#2E86C1;     /* Biru air */
-      --success:#27AE60;     /* Hijau layanan */
-      --warn:#F39C12;        /* Kuning waspada */
-      --danger:#C0392B;      /* Merah kritis */
-      --neutral:#6b7280;     /* gray-500 */
-      --card:#0b1328;
-      --chip:#172554;        /* indigo-950 */
-      --border:#1f2937;
+      --bg:#0f172a; --panel:#111827; --panel-2:#0b1220; --text:#e5e7eb; --muted:#94a3b8;
+      --primary:#2E86C1; --success:#27AE60; --warn:#F39C12; --danger:#C0392B; --neutral:#6b7280;
+      --card:#0b1328; --chip:#172554; --border:#1f2937;
     }
-
     *{box-sizing:border-box}
     html,body{height:100%}
-    body{
-      margin:0; font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;
-      background:linear-gradient(180deg,#0b1020, #0f172a 40%, #0b1220);
-      color:var(--text);
-    }
-
-    header{
-      display:flex; align-items:center; justify-content:space-between;
-      padding:14px 20px; border-bottom:1px solid var(--border);
-      background:rgba(15,23,42,0.7); backdrop-filter: blur(6px); position:sticky; top:0; z-index:10;
-    }
+    body{margin:0; font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;
+      background:linear-gradient(180deg,#0b1020, #0f172a 40%, #0b1220); color:var(--text);}
+    header{display:flex; align-items:center; justify-content:space-between; padding:14px 20px;
+      border-bottom:1px solid var(--border); background:rgba(15,23,42,0.7); backdrop-filter: blur(6px);
+      position:sticky; top:0; z-index:10;}
     .brand{display:flex; align-items:center; gap:12px; font-weight:700; letter-spacing:.2px}
-    .brand .logo{
-      width:36px; height:36px; border-radius:8px;
+    .brand .logo{width:36px; height:36px; border-radius:8px;
       background: radial-gradient(120px 120px at 20% 20%, #2E86C1, transparent 35%),
                   radial-gradient(160px 160px at 80% 80%, #27AE60, transparent 35%),
                   linear-gradient(135deg,#1b3b63,#0f172a);
-      box-shadow: 0 0 0 1px #1f2c46 inset, 0 8px 20px rgba(46,134,193,.35);
-    }
-    .brand span{font-size:18px}
+      box-shadow: 0 0 0 1px #1f2c46 inset, 0 8px 20px rgba(46,134,193,.35);}
     .subtitle{font-size:12px; color:var(--muted)}
     .toolbar{display:flex; gap:10px; align-items:center; color:var(--muted); font-size:12px}
-
-    .layout{
-      display:grid; grid-template-columns: 300px 1fr; gap:16px; padding:16px; align-items:start;
-    }
-    aside{
-      background:linear-gradient(180deg,#0b1328,#0a1020 60%,#0a0f1e);
-      border:1px solid var(--border); border-radius:14px; padding:14px; position:sticky; top:74px;
-    }
+    .layout{display:grid; grid-template-columns: 300px 1fr; gap:16px; padding:16px; align-items:start;}
+    aside{background:linear-gradient(180deg,#0b1328,#0a1020 60%,#0a0f1e); border:1px solid var(--border);
+      border-radius:14px; padding:14px; position:sticky; top:74px;}
     main{display:grid; gap:16px}
-
     .section{background:linear-gradient(180deg,#0b1328,#0a1020); border:1px solid var(--border); border-radius:14px;}
     .section .head{display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-bottom:1px solid var(--border)}
     .section .body{padding:12px}
-
     .chips{display:flex; flex-wrap:wrap; gap:8px}
-    .chip{
-      background:var(--chip); color:#c7d2fe; border:1px solid #1f2a55; border-radius:999px;
-      padding:6px 10px; font-size:12px; cursor:pointer; user-select:none;
-    }
+    .chip{background:var(--chip); color:#c7d2fe; border:1px solid #1f2a55; border-radius:999px;
+      padding:6px 10px; font-size:12px; cursor:pointer; user-select:none;}
     .chip.active{outline:1px solid #3b82f6; background:#0b1c43}
-
     .kpis{display:grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap:12px}
-    .kpi{
-      background:var(--card); border-radius:12px; border:1px solid var(--border);
-      padding:12px; display:flex; flex-direction:column; gap:6px; min-height:84px;
-    }
-    .kpi .label{font-size:12px; color:var(--muted)}
-    .kpi .value{font-size:22px; font-weight:700}
-    .kpi .trend{font-size:11px; color:var(--muted)}
-
+    .kpi{background:var(--card); border-radius:12px; border:1px solid var(--border); padding:12px; display:flex; flex-direction:column; gap:6px; min-height:84px;}
+    .kpi .label{font-size:12px; color:var(--muted)} .kpi .value{font-size:22px; font-weight:700} .kpi .trend{font-size:11px; color:var(--muted)}
     #map{height:420px; border-bottom-left-radius:14px; border-bottom-right-radius:14px}
     .legend{display:flex; gap:8px; font-size:12px; color:var(--muted)}
     .legend .dot{width:10px; height:10px; border-radius:2px; display:inline-block}
     .legend .g{background:var(--success)} .legend .y{background:var(--warn)} .legend .r{background:var(--danger)}
-
     .grid-2{display:grid; grid-template-columns: 1.3fr .7fr; gap:16px}
-    .grid-3{display:grid; grid-template-columns: 1fr 1fr 1fr; gap:16px}
-
     .alerts{display:flex; flex-direction:column; gap:8px}
     .alert{border:1px solid var(--border); background:#0c152c; padding:10px; border-radius:10px; font-size:13px}
     .alert .tag{font-size:11px; padding:2px 6px; border-radius:999px; margin-right:6px}
     .tag.red{background:#3b1111; color:#ffb4b4; border:1px solid #5a1b1b}
     .tag.yellow{background:#3b2b11; color:#ffd59e; border:1px solid #5a451b}
     .tag.blue{background:#0b2643; color:#a7d7ff; border:1px solid #1c3b5f}
-
     table{width:100%; border-collapse:collapse; font-size:13px}
     th, td{padding:8px 10px; border-bottom:1px solid var(--border)}
     th{color:var(--muted); font-weight:600; text-align:left}
     tr:hover{background:#0c1a33}
-
-    .muted{color:var(--muted)}
-    .small{font-size:12px}
-
-    .sim-wrap{display:flex; align-items:center; gap:10px}
+    .muted{color:var(--muted)} .small{font-size:12px}
+    .sim-wrap{display:flex; align-items:center; gap:10px; margin-top:6px}
     input[type="range"]{width:220px}
-
+    .row{display:flex; align-items:center; justify-content:space-between; gap:8px}
     @media (max-width:1100px){
       .layout{grid-template-columns:1fr}
       .kpis{grid-template-columns: repeat(2, minmax(0,1fr))}
-      .grid-2, .grid-3{grid-template-columns:1fr}
+      .grid-2{grid-template-columns:1fr}
       aside{position:static}
     }
   </style>
@@ -140,9 +88,7 @@
         <div class="subtitle">“10 detik paham kondisi, 1 klik aksi.”</div>
       </div>
     </div>
-    <div class="toolbar">
-      <span id="now"></span>
-    </div>
+    <div class="toolbar"><span id="now"></span></div>
   </header>
 
   <div class="layout">
@@ -167,15 +113,22 @@
             <input id="simSupply" type="range" min="-40" max="40" value="0" />
             <span class="small"><span id="simSupplyVal">0</span>%</span>
           </div>
-          <div class="small muted" style="margin-top:6px;">Geser untuk lihat dampaknya ke IAR & Alerts</div>
+
+          <div class="small muted" style="margin:12px 0 6px;">Curah Hujan → Koreksi Demand</div>
+          <div class="row">
+            <label class="small"><input id="chkRain" type="checkbox"> Gunakan hujan efektif</label>
+            <span class="small muted">β=<span id="betaVal">0.5</span></span>
+          </div>
+          <div class="sim-wrap">
+            <input id="beta" type="range" min="0" max="1" step="0.1" value="0.5" />
+          </div>
+          <div class="small muted">Hujan efektif ≈ β × hujan (mm), membatasi hingga 60% kebutuhan.</div>
         </div>
       </div>
 
       <div class="section" style="margin-top:12px;">
         <div class="head"><strong>Top Alerts</strong> <span class="small muted">otomatis</span></div>
-        <div class="body">
-          <div id="alertBox" class="alerts"></div>
-        </div>
+        <div class="body"><div id="alertBox" class="alerts"></div></div>
       </div>
     </aside>
 
@@ -230,14 +183,10 @@
 
       <!-- Charts -->
       <section class="section">
-        <div class="head"><strong>Water Balance</strong> <span class="small muted">Demand vs Supply</span></div>
+        <div class="head"><strong>Water Balance</strong> <span class="small muted">Demand vs Supply + Curah Hujan</span></div>
         <div class="body grid-2">
-          <div>
-            <canvas id="chartDemand" height="150"></canvas>
-          </div>
-          <div>
-            <canvas id="chartHS" height="150"></canvas>
-          </div>
+          <div><canvas id="chartDemand" height="150"></canvas></div>
+          <div><canvas id="chartHS" height="150"></canvas></div>
         </div>
       </section>
 
@@ -255,6 +204,7 @@
                 <th>IAR</th>
                 <th>Reliability</th>
                 <th>IP</th>
+                <th>Rain (mm) Terkini</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -271,8 +221,10 @@
     const state = {
       provFilter: 'Semua',
       statusFilter: 'all',
-      simSupplyPct: 0,  // %-change supply
-      selectedDI: null
+      simSupplyPct: 0,    // %-change supply
+      selectedDI: null,
+      useRain: false,     // koreksi hujan efektif
+      beta: 0.5           // koef. hujan efektif
     };
 
     function colorByHS(hs){
@@ -282,88 +234,68 @@
     }
     function getAlphaColor(varName, alpha=0.75){
       const tmp = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
-      // Convert HEX to rgba
       const hex = tmp.replace('#','');
       const bigint = parseInt(hex, 16);
-      const r = (bigint >> 16) & 255;
-      const g = (bigint >> 8) & 255;
-      const b = bigint & 255;
+      const r = (bigint >> 16) & 255, g = (bigint >> 8) & 255, b = bigint & 255;
       return `rgba(${r},${g},${b},${alpha})`;
     }
-
     document.getElementById('now').textContent =
       new Date().toLocaleString('id-ID',{weekday:'long', day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit'});
 
     // ============ DATA MOCKUP ============
-    // CATATAN: Ganti data ini dengan data asli dari basis data kamu.
-    // Struktur ringkas per DI.
+    // NOTE: Ganti dengan data asli. Rainfall = mm per minggu (8 minggu contoh).
     const weeks = ['M1','M2','M3','M4','M5','M6','M7','M8'];
     const diData = [
       {
         id:'DI-001', name:'DI Contoh Barat', prov:'Jawa Barat', luas: 15500,
         health: 78, IAR: 0.93, reliability: 0.86, IP: 2.6, SLA: 0.88,
-        demand: [92,110,128,140,135,120,100,95], // l/dt x 100 (skala relatif)
+        demand: [92,110,128,140,135,120,100,95],
         supply: [100,120,130,132,125,115,95,90],
+        // Curah hujan mingguan (mm)
+        rain_mm: [40,55,65,80,120,90,60,30],
         hsTrend: [76,77,78,80,79,78,78,78],
-        // polygon sederhana (sekadar mock, koordinat fiktif di sekitar Jawa Barat)
-        geojson:{
-          "type":"Feature","properties":{},"geometry":{
-            "type":"Polygon","coordinates":[[
-              [107.2,-6.4],[107.6,-6.4],[107.8,-6.6],[107.4,-6.8],[107.1,-6.6],[107.2,-6.4]
-            ]]
-          }
-        }
+        geojson:{ "type":"Feature","properties":{},"geometry":{"type":"Polygon","coordinates":[[
+          [107.2,-6.4],[107.6,-6.4],[107.8,-6.6],[107.4,-6.8],[107.1,-6.6],[107.2,-6.4]
+        ]]}}
       },
       {
         id:'DI-002', name:'DI Rawa Timur', prov:'Kalimantan Selatan', luas: 21000,
         health: 61, IAR: 0.81, reliability: 0.72, IP: 2.3, SLA: 0.74,
         demand: [70,85,100,115,125,130,120,110],
         supply: [68,80,92,96,98,100,95,90],
+        rain_mm: [15,10,8,5,12,18,9,6],
         hsTrend: [63,62,61,62,60,61,61,61],
-        geojson:{
-          "type":"Feature","properties":{},"geometry":{
-            "type":"Polygon","coordinates":[[
-              [114.5,-3.1],[114.9,-3.1],[115.0,-3.4],[114.7,-3.6],[114.4,-3.3],[114.5,-3.1]
-            ]]
-          }
-        }
+        geojson:{ "type":"Feature","properties":{},"geometry":{"type":"Polygon","coordinates":[[
+          [114.5,-3.1],[114.9,-3.1],[115.0,-3.4],[114.7,-3.6],[114.4,-3.3],[114.5,-3.1]
+        ]]}}
       },
       {
         id:'DI-003', name:'DI Delta Nusantara', prov:'Jawa Timur', luas: 18200,
         health: 85, IAR: 1.05, reliability: 0.92, IP: 2.7, SLA: 0.91,
         demand: [80,96,115,130,132,125,110,95],
         supply: [90,110,120,138,140,135,115,100],
+        rain_mm: [25,30,35,45,50,40,30,20],
         hsTrend: [82,83,84,85,86,85,85,85],
-        geojson:{
-          "type":"Feature","properties":{},"geometry":{
-            "type":"Polygon","coordinates":[[
-              [112.4,-7.3],[112.8,-7.3],[113.0,-7.6],[112.6,-7.8],[112.3,-7.5],[112.4,-7.3]
-            ]]
-          }
-        }
+        geojson:{ "type":"Feature","properties":{},"geometry":{"type":"Polygon","coordinates":[[
+          [112.4,-7.3],[112.8,-7.3],[113.0,-7.6],[112.6,-7.8],[112.3,-7.5],[112.4,-7.3]
+        ]]}}
       }
     ];
 
     // ============ MAP ============
     const map = L.map('map',{minZoom:4, maxZoom:12, zoomControl:false}).setView([-3.5, 114], 5);
     L.control.zoom({position:'topright'}).addTo(map);
-    const basemap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-      attribution:'© OpenStreetMap'
-    }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{ attribution:'© OpenStreetMap' }).addTo(map);
 
     const layerGroup = L.geoJSON(null,{
       style: feature => {
         const di = diData.find(d=>d.id===feature.properties.id);
-        return {
-          color: '#1f2a44',
-          weight: 1.2,
-          fillColor: colorByHS(di.health),
-          fillOpacity: .75
-        };
+        return { color: '#1f2a44', weight: 1.2, fillColor: colorByHS(di.health), fillOpacity: .75 };
       },
       onEachFeature: (feature, layer)=>{
         const di = diData.find(d=>d.id===feature.properties.id);
-        layer.bindTooltip(`${di.name} — HS ${di.health}`);
+        const lastRain = di.rain_mm[di.rain_mm.length-1];
+        layer.bindTooltip(`${di.name} — HS ${di.health} — Hujan terakhir ${lastRain} mm`);
         layer.on('click', ()=> selectDI(di.id, true));
       }
     }).addTo(map);
@@ -382,8 +314,7 @@
       });
     }
 
-    // ============ FILTER UI ============
-    // Provinsi chips
+    // ============ FILTER & CONTROLS ============
     const uniqProv = ['Semua', ...Array.from(new Set(diData.map(d=>d.prov)))];
     const chipProvWrap = document.getElementById('chip-prov');
     uniqProv.forEach(p=>{
@@ -396,12 +327,11 @@
         state.provFilter = p;
         state.selectedDI = null;
         document.getElementById('scopeLabel').textContent = p==='Semua'?'Nasional':p;
-        refreshMap(); refreshKPIs(); refreshCharts(); refreshTable(); refreshAlerts();
+        rerenderAll();
       };
       chipProvWrap.appendChild(el);
     });
 
-    // Status chips
     const chipStatusWrap = document.getElementById('chip-status');
     [...chipStatusWrap.children].forEach(el=>{
       el.onclick = ()=>{
@@ -409,12 +339,11 @@
         el.classList.add('active');
         state.statusFilter = el.dataset.status;
         state.selectedDI = null;
-        refreshMap(); refreshKPIs(); refreshCharts(); refreshTable(); refreshAlerts();
+        rerenderAll();
       }
     });
     chipStatusWrap.children[0].classList.add('active');
 
-    // Simulasi slider
     const simRange = document.getElementById('simSupply');
     const simVal = document.getElementById('simSupplyVal');
     simRange.addEventListener('input', ()=>{
@@ -423,18 +352,33 @@
       refreshKPIs(); refreshCharts(); refreshAlerts();
     });
 
+    const chkRain = document.getElementById('chkRain');
+    const beta = document.getElementById('beta');
+    const betaVal = document.getElementById('betaVal');
+    chkRain.addEventListener('change', ()=>{ state.useRain = chkRain.checked; refreshKPIs(); refreshCharts(); refreshAlerts(); });
+    beta.addEventListener('input', ()=>{
+      state.beta = parseFloat(beta.value);
+      betaVal.textContent = state.beta.toFixed(1);
+      if(state.useRain){ refreshKPIs(); refreshCharts(); refreshAlerts(); }
+    });
+
     // ============ CHARTS ============
     const ctxDemand = document.getElementById('chartDemand').getContext('2d');
     const ctxHS     = document.getElementById('chartHS').getContext('2d');
     const chartDemand = new Chart(ctxDemand, {
-      type:'line',
+      type:'bar',
       data:{labels:weeks, datasets:[
-        {label:'Demand', data:[], borderColor:getAlphaColor('--warn',1), backgroundColor:getAlphaColor('--warn',.15), fill:true, tension:.35},
-        {label:'Supply', data:[], borderColor:getAlphaColor('--primary',1), backgroundColor:getAlphaColor('--primary',.15), fill:true, tension:.35}
+        {type:'line', label:'Demand', data:[], borderColor:getAlphaColor('--warn',1), backgroundColor:getAlphaColor('--warn',.15), fill:true, tension:.35, yAxisID:'y'},
+        {type:'line', label:'Supply', data:[], borderColor:getAlphaColor('--success',1), backgroundColor:getAlphaColor('--success',.15), fill:true, tension:.35, yAxisID:'y'},
+        {type:'bar',  label:'Curah Hujan (mm)', data:[], backgroundColor:getAlphaColor('--primary',.35), borderColor:getAlphaColor('--primary',.9), yAxisID:'y1'}
       ]},
       options:{
         plugins:{legend:{labels:{color:'#cbd5e1'}}},
-        scales:{x:{ticks:{color:'#94a3b8'}}, y:{ticks:{color:'#94a3b8'}}}
+        scales:{
+          x:{ticks:{color:'#94a3b8'}},
+          y:{ticks:{color:'#94a3b8'}, title:{display:true, text:'Debit / Kebutuhan (skala)', color:'#94a3b8'}},
+          y1:{position:'right', grid:{drawOnChartArea:false}, ticks:{color:'#94a3b8'}, title:{display:true, text:'Curah Hujan (mm)', color:'#94a3b8'}}
+        }
       }
     });
     const chartHS = new Chart(ctxHS, {
@@ -448,33 +392,56 @@
       }
     });
 
-    // ============ KPI & TABLE ============
+    // ============ CORE LOGIC ============
+    function statusFromHS(hs){ return hs>=80?'green':(hs>=60?'yellow':'red'); }
+
+    function getScopeItems(){
+      let items = diData.filter(d=>{
+        const passProv = (state.provFilter==='Semua' || d.prov===state.provFilter);
+        const passStatus = (state.statusFilter==='all' || statusFromHS(d.health)===state.statusFilter);
+        return passProv && passStatus;
+      });
+      if(state.selectedDI){
+        const sel = diData.find(d=>d.id===state.selectedDI);
+        if(sel && !items.some(x=>x.id===sel.id)) items = [sel];
+      }
+      return items;
+    }
+
+    // Hitung demand ter-koreksi hujan efektif (opsional)
+    function adjustedDemand(d){
+      if(!state.useRain) return d.demand.slice();
+      const beta = state.beta; // 0..1
+      return d.demand.map((need,i)=>{
+        // hujan efektif ≈ beta * rain_mm, dibatasi max 60% dari kebutuhan
+        const pe = Math.min(beta * d.rain_mm[i], need * 0.6);
+        return Math.max(need - pe, need * 0.3); // minimal 30% untuk kebutuhan non-hujan
+      });
+    }
+
     function aggregate(scopeItems){
-      // Aggregate simple: sum luas, avg metric terimbangkan luas (opsional)
       const luas = scopeItems.reduce((s,d)=>s+d.luas,0);
-      // hitung IAR & reliability dengan supply simulasi
       let demandSum=0, supplySum=0, relDays=0, totalDays=0, ipSum=0, slaSum=0;
       scopeItems.forEach(d=>{
         const k = 1 + state.simSupplyPct/100;
         const supAdj = d.supply.map(v=>v*k);
-        demandSum += d.demand.reduce((a,b)=>a+b,0);
+        const demAdj = adjustedDemand(d);
+        demandSum += demAdj.reduce((a,b)=>a+b,0);
         supplySum += supAdj.reduce((a,b)=>a+b,0);
-        // reliability sederhana (hari supply >= demand)
-        for(let i=0;i<d.demand.length;i++){
+        for(let i=0;i<demAdj.length;i++){
           totalDays += 1;
-          if(supAdj[i] >= d.demand[i]) relDays += 1;
+          if(supAdj[i] >= demAdj[i]) relDays += 1;
         }
-        ipSum += d.IP;
-        slaSum += d.SLA;
+        ipSum += d.IP; slaSum += d.SLA;
       });
       const IAR = demandSum>0 ? (supplySum/demandSum) : 0;
       const Reliability = totalDays>0 ? (relDays/totalDays) : 0;
       const IP = scopeItems.length>0 ? (ipSum/scopeItems.length) : 0;
       const SLA = scopeItems.length>0 ? (slaSum/scopeItems.length) : 0;
-
       return {luas, IAR, Reliability, IP, SLA};
     }
 
+    // ============ UI RENDER ============
     function refreshKPIs(){
       const scope = getScopeItems();
       const agg = aggregate(scope);
@@ -487,44 +454,45 @@
 
     function refreshCharts(){
       const scope = getScopeItems();
-      // Untuk grafik, kalau 1 DI terpilih pakai data DI; kalau tidak, pakai agregasi rata-rata
       if(state.selectedDI){
         const d = scope.find(x=>x.id===state.selectedDI) || diData.find(x=>x.id===state.selectedDI);
         const k = 1 + state.simSupplyPct/100;
         const supAdj = d.supply.map(v=>v*k);
-        chartDemand.data.datasets[0].data = d.demand;
+        const demAdj = adjustedDemand(d);
+        chartDemand.data.datasets[0].data = demAdj;
         chartDemand.data.datasets[1].data = supAdj;
+        chartDemand.data.datasets[2].data = d.rain_mm;
         chartDemand.update();
 
         chartHS.data.datasets[0].data = d.hsTrend;
         chartHS.update();
       }else{
-        // Rerata demand/supply per minggu untuk scope
         const n = Math.max(...scope.map(d=>d.demand.length), 0);
         const avgDemand = Array(n).fill(0);
         const avgSupply = Array(n).fill(0);
+        const avgRain   = Array(n).fill(0);
         const k = 1 + state.simSupplyPct/100;
 
         scope.forEach(d=>{
-          d.demand.forEach((v,i)=> avgDemand[i] += v);
+          const demAdj = adjustedDemand(d);
+          demAdj.forEach((v,i)=> avgDemand[i] += v);
           d.supply.forEach((v,i)=> avgSupply[i] += v*k);
+          d.rain_mm.forEach((v,i)=> avgRain[i] += v);
         });
         for(let i=0;i<n;i++){
           avgDemand[i] = scope.length? +(avgDemand[i]/scope.length).toFixed(1) : 0;
           avgSupply[i] = scope.length? +(avgSupply[i]/scope.length).toFixed(1) : 0;
+          avgRain[i]   = scope.length? +(avgRain[i]/scope.length).toFixed(1) : 0;
         }
         chartDemand.data.datasets[0].data = avgDemand;
         chartDemand.data.datasets[1].data = avgSupply;
+        chartDemand.data.datasets[2].data = avgRain;
         chartDemand.update();
 
         // Health score trend rata-rata
         const avgHS = Array(n).fill(0);
-        scope.forEach(d=>{
-          d.hsTrend.forEach((v,i)=> avgHS[i] += v);
-        });
-        for(let i=0;i<n;i++){
-          avgHS[i] = scope.length? +(avgHS[i]/scope.length).toFixed(1) : 0;
-        }
+        scope.forEach(d=> d.hsTrend.forEach((v,i)=> avgHS[i] += v));
+        for(let i=0;i<n;i++) avgHS[i] = scope.length? +(avgHS[i]/scope.length).toFixed(1) : 0;
         chartHS.data.datasets[0].data = avgHS;
         chartHS.update();
       }
@@ -536,6 +504,7 @@
       const scope = getScopeItems();
       const list = [...scope].sort((a,b)=> b.health - a.health);
       list.forEach(d=>{
+        const lastRain = d.rain_mm[d.rain_mm.length-1];
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${d.name}</td>
@@ -545,13 +514,12 @@
           <td>${d.IAR.toFixed(2)}</td>
           <td>${(d.reliability*100).toFixed(0)}%</td>
           <td>${d.IP.toFixed(1)}</td>
+          <td>${lastRain}</td>
         `;
         tr.onclick = ()=> selectDI(d.id, true);
         tbody.appendChild(tr);
       });
     }
-
-    function statusFromHS(hs){ return hs>=80?'green':(hs>=60?'yellow':'red'); }
 
     function refreshAlerts(){
       const box = document.getElementById('alertBox');
@@ -561,49 +529,48 @@
       scope.forEach(d=>{
         const k = 1 + state.simSupplyPct/100;
         const supAdj = d.supply.map(v=>v*k);
+        const demAdj = adjustedDemand(d);
+
         // Defisit beruntun >=3
         let streak=0, maxStreak=0;
-        for(let i=0;i<d.demand.length;i++){
-          if(supAdj[i] < d.demand[i]){ streak++; maxStreak=Math.max(maxStreak, streak); }
+        for(let i=0;i<demAdj.length;i++){
+          if(supAdj[i] < demAdj[i]){ streak++; maxStreak=Math.max(maxStreak, streak); }
           else streak=0;
         }
-        if(maxStreak>=3) items.push({sev:'red', text:`Defisit air beruntun (${maxStreak} hari/minggu) — ${d.name}`});
+        if(maxStreak>=3) items.push({sev:'red', text:`Defisit air beruntun (${maxStreak} minggu) — ${d.name}`});
 
-        // Penurunan supply >30% vs awal
+        // Tren supply menurun >30% dari awal ke akhir
         const drop = (supAdj[0] && supAdj[0]>0) ? (supAdj[supAdj.length-1]/supAdj[0]) : 1;
         if(drop < 0.7) items.push({sev:'yellow', text:`Tren supply menurun >30% — ${d.name}`});
 
         // SLA rendah
         if(d.SLA < 0.8) items.push({sev:'blue', text:`SLA operasional rendah (${(d.SLA*100).toFixed(0)}%) — ${d.name}`});
+
+        // ===== ALERT BERBASIS HUJAN =====
+        const lastRain = d.rain_mm[d.rain_mm.length-1];
+        const last2Avg = d.rain_mm.slice(-2).reduce((a,b)=>a+b,0)/2;
+        const last3Avg = d.rain_mm.slice(-3).reduce((a,b)=>a+b,0)/3;
+
+        if(lastRain >= 150){
+          items.push({sev:'red', text:`Hujan ekstrem ${lastRain} mm (minggu terakhir) — ${d.name}`});
+        } else if(last2Avg < 10){
+          items.push({sev:'yellow', text:`Kekeringan meteorologis (rata2 <10 mm/pekan) — ${d.name}`});
+        } else if(last3Avg > 100){
+          items.push({sev:'yellow', text:`Hujan tinggi beruntun (3 pekan) — ${d.name}`});
+        }
       });
 
-      // Ambil top 5
       items.slice(0,5).forEach(a=>{
         const div = document.createElement('div');
-        div.className='alert';
         const tagClass = a.sev==='red'?'red':(a.sev==='yellow'?'yellow':'blue');
-        div.innerHTML = `<span class="tag ${tagClass}">${a.sev.toUpperCase()}</span> ${a.text}`;
+        div.className='alert'; div.innerHTML = `<span class="tag ${tagClass}">${a.sev.toUpperCase()}</span> ${a.text}`;
         box.appendChild(div);
       });
       if(items.length===0){
         const div = document.createElement('div');
-        div.className='alert';
-        div.innerHTML = `<span class="tag blue">INFO</span> Tidak ada alert kritis pada scope saat ini.`;
+        div.className='alert'; div.innerHTML = `<span class="tag blue">INFO</span> Tidak ada alert kritis pada scope saat ini.`;
         box.appendChild(div);
       }
-    }
-
-    function getScopeItems(){
-      let items = diData.filter(d=>{
-        const passProv = (state.provFilter==='Semua' || d.prov===state.provFilter);
-        const passStatus = (state.statusFilter==='all' || statusFromHS(d.health)===state.statusFilter);
-        return passProv && passStatus;
-      });
-      if(state.selectedDI){
-        const sel = diData.find(d=>d.id===state.selectedDI);
-        if(sel && !items.some(x=>x.id===sel.id)) items = [sel]; // jika DI selected di luar filter, tetap tampilkan
-      }
-      return items;
     }
 
     function selectDI(id, fly=false){
@@ -611,7 +578,6 @@
       const d = diData.find(x=>x.id===id);
       document.getElementById('scopeLabel').textContent = d.name;
       refreshKPIs(); refreshCharts(); refreshAlerts();
-      // zoom to polygon
       layerGroup.eachLayer(layer=>{
         if(layer.feature && layer.feature.properties.id===id){
           if(fly) map.fitBounds(layer.getBounds(), {maxZoom:9, padding:[20,20]});
@@ -620,10 +586,29 @@
       });
     }
 
-    // ============ INIT ============
-    // Set chips default
-    refreshMap(); refreshKPIs(); refreshCharts(); refreshTable(); refreshAlerts();
+    function rerenderAll(){
+      refreshMap(); refreshKPIs(); refreshCharts(); refreshTable(); refreshAlerts();
+    }
 
+    // INIT
+    rerenderAll();
+
+    // ============ OPSIONAL: Load hujan dari file eksternal ============
+    // Contoh struktur file `rainfall_di_weekly.json`:
+    // {
+    //   "DI-001":[40,55,65,80,120,90,60,30],
+    //   "DI-002":[15,10,8,5,12,18,9,6],
+    //   "DI-003":[25,30,35,45,50,40,30,20]
+    // }
+    // Aktifkan jika sudah punya file di folder yang sama:
+    // fetch('rainfall_di_weekly.json')
+    //   .then(r=>r.json())
+    //   .then(rain=>{
+    //     diData.forEach(d=>{ if(rain[d.id]) d.rain_mm = rain[d.id]; });
+    //     rerenderAll();
+    //   })
+    //   .catch(()=>console.warn('File rainfall_di_weekly.json tidak ditemukan — pakai data mock.'));
   </script>
 </body>
 </html>
+``
