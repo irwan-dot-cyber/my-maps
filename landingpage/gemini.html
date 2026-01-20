@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriFlow - Food Security Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: white; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-emerald-400 flex items-center gap-2">
+                <i data-lucide="droplets"></i> AgriFlow
+            </h1>
+            <p class="text-gray-400">Monitoring Irigasi & Ketahanan Pangan Rawa</p>
+        </div>
+        <div class="flex gap-3">
+            <button onclick="sendWA()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition">
+                <i data-lucide="message-circle"></i> Blast WhatsApp Bot
+            </button>
+        </div>
+    </header>
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="glass p-6 rounded-2xl">
+            <p class="text-gray-400 text-sm">Kapasitas Air</p>
+            <h2 id="water-val" class="text-3xl font-bold text-blue-400">85%</h2>
+            <div class="w-full bg-gray-700 h-2 rounded-full mt-2">
+                <div id="water-bar" class="bg-blue-500 h-2 rounded-full" style="width: 85%"></div>
+            </div>
+        </div>
+        <div class="glass p-6 rounded-2xl">
+            <p class="text-gray-400 text-sm">Rata-rata pH Lahan</p>
+            <h2 class="text-3xl font-bold text-yellow-400">6.2</h2>
+            <p class="text-xs text-emerald-400 mt-2 italic font-semibold">Kondisi Optimal</p>
+        </div>
+        <div class="glass p-6 rounded-2xl border-l-4 border-emerald-500">
+            <p class="text-gray-400 text-sm">Estimasi Panen Padi</p>
+            <h2 id="harvest-val" class="text-3xl font-bold text-white">1,250 <span class="text-sm font-normal">Ton</span></h2>
+            <p class="text-xs text-gray-500 mt-2">Berdasarkan ketersediaan air</p>
+        </div>
+        <div class="glass p-6 rounded-2xl border-l-4 border-red-500">
+            <p class="text-gray-400 text-sm">Status Kerawanan</p>
+            <h2 id="status-val" class="text-xl font-bold text-emerald-400">AMAN</h2>
+            <p class="text-xs text-gray-500 mt-2">Update: Baru saja</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-2 glass p-6 rounded-2xl">
+            <h3 class="text-xl font-semibold mb-6 flex items-center gap-2">
+                <i data-lucide="bar-chart-3"></i> Analisis & Prediksi Dampak Kekeringan
+            </h3>
+            <canvas id="myChart" height="150"></canvas>
+            
+            <div class="mt-8 p-6 bg-slate-800/50 rounded-xl border border-slate-700">
+                <label class="block text-sm font-medium mb-4 flex justify-between">
+                    <span>Simulasi Curah Hujan (30 Hari ke Depan)</span>
+                    <span id="slider-val" class="text-emerald-400 font-bold">Normal</span>
+                </label>
+                <input id="predict-slider" type="range" min="0" max="100" value="80" 
+                       class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+                <p class="text-xs text-gray-400 mt-4 italic">
+                    *Geser slider ke kiri untuk melihat risiko kegagalan panen jika curah hujan rendah.
+                </p>
+            </div>
+        </div>
+
+        <div class="glass p-6 rounded-2xl flex flex-col">
+            <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                <i data-lucide="map"></i> Mapping Wilayah Rawa
+            </h3>
+            <div class="flex-grow bg-slate-700 rounded-xl relative overflow-hidden flex items-center justify-center border border-slate-600">
+                <i data-lucide="map-pin" class="absolute top-1/4 left-1/3 text-red-500"></i>
+                <i data-lucide="map-pin" class="absolute bottom-1/3 right-1/4 text-emerald-500"></i>
+                <p class="text-gray-500 text-sm">Interactive Map Loaded (Simulated)</p>
+                
+            </div>
+            <div class="mt-4 space-y-2">
+                <div class="flex justify-between text-sm">
+                    <span>Blok A-1 (Rawa Dalam)</span>
+                    <span class="text-emerald-400 font-bold">Terairi</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span>Blok B-4 (Tepi Saluran)</span>
+                    <span class="text-red-400 font-bold">Kritis</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+
+        // Chart.js Config
+        const ctx = document.getElementById('myChart').getContext('2d');
+        const myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Minggu 1', 'Minggu 2', 'Minggu 3', 'Minggu 4'],
+                datasets: [{
+                    label: 'Level Air (m)',
+                    data: [1.2, 1.5, 1.4, 1.45],
+                    borderColor: '#10b981',
+                    tension: 0.4,
+                    fill: true,
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)'
+                }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: { 
+                    y: { grid: { color: '#334155' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        // Prediction Logic
+        const slider = document.getElementById('predict-slider');
+        const waterVal = document.getElementById('water-val');
+        const waterBar = document.getElementById('water-bar');
+        const harvestVal = document.getElementById('harvest-val');
+        const statusVal = document.getElementById('status-val');
+        const sliderLabel = document.getElementById('slider-val');
+
+        slider.oninput = function() {
+            let val = this.value;
+            waterVal.innerText = val + "%";
+            waterBar.style.width = val + "%";
+            
+            // Logika sederhana simulasi ketahanan pangan
+            let harvestBase = (val / 100) * 1500;
+            harvestVal.innerHTML = Math.round(harvestBase).toLocaleString() + ' <span class="text-sm font-normal">Ton</span>';
+
+            if (val < 30) {
+                statusVal.innerText = "KRITIS";
+                statusVal.className = "text-xl font-bold text-red-500";
+                sliderLabel.innerText = "Sangat Kering";
+            } else if (val < 60) {
+                statusVal.innerText = "WASPADA";
+                statusVal.className = "text-xl font-bold text-yellow-500";
+                sliderLabel.innerText = "Rendah";
+            } else {
+                statusVal.innerText = "AMAN";
+                statusVal.className = "text-xl font-bold text-emerald-400";
+                sliderLabel.innerText = "Normal";
+            }
+        };
+
+        // WhatsApp Bot Simulation
+        function sendWA() {
+            const phoneNumber = "628123456789"; // Ganti dengan nomor tujuan
+            const message = `🚨 *LAPORAN AGRIFLOW* 🚨%0A%0AStatus Irigasi saat ini:%0A- Kapasitas Air: ${waterVal.innerText}%0A- Estimasi Panen: ${harvestVal.innerText.split(' ')[0]} Ton%0A- Kondisi: ${statusVal.innerText}%0A%0A_Mohon segera cek pintu air Blok B-4._`;
+            window.open(`https://wa.me/${phoneNumber}?text=${message}`, '_blank');
+        }
+    </script>
+</body>
+</html>
