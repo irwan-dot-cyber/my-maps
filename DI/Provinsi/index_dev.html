@@ -2,226 +2,495 @@
 <html lang="id">
 <head>
   <meta charset="utf-8" />
-  <title>Si-Irwan — DI Nasional (Landing)</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <link rel="icon" href="../assets/LogoPUPR.png" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>DI - Landing Jenis & Provinsi | Si-Irwan v1.0</title>
+  <link rel="icon" href="../../assets/favicon.ico" />
   <style>
     :root{
-      --bg:#0b1222; --panel:rgba(15,23,42,.92); --border:rgba(255,255,255,.12);
-      --text:#e5e7eb; --muted:#94a3b8; --muted2:#cbd5e1;
-      --brand:#0d47a1; --accent:#1d5fd1; --good:#22c55e; --bad:#f87171;
-      --radius:16px;
+      --bg0:#070b14; --bg1:#0a1022; --card:#0b162f; --card2:#0b1736;
+      --txt:#e7eefc; --muted:#9db0d7; --line:rgba(255,255,255,.10);
+      --glow:rgba(104,159,255,.18); --btn:rgba(255,255,255,.08);
+      --good:#2dd4bf; --bad:#ff5b6e; --warn:#fbbf24;
+      --radius:18px;
     }
     *{box-sizing:border-box}
-    html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial,sans-serif;background:var(--bg);color:var(--text)}
-    .wrap{max-width:1100px;margin:0 auto;padding:18px}
+    body{
+      margin:0; color:var(--txt);
+      font-family: ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial;
+      background:
+        radial-gradient(900px 600px at 20% 10%, rgba(95,140,255,.25), transparent 55%),
+        radial-gradient(900px 600px at 80% 30%, rgba(45,212,191,.13), transparent 55%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      min-height:100vh;
+    }
+    .wrap{max-width:1180px; margin:0 auto; padding:28px 18px 70px;}
     .topbar{
-      position:sticky; top:0; z-index:50;
-      background:linear-gradient(180deg, rgba(11,18,34,.92), rgba(11,18,34,.65));
-      border:1px solid var(--border);
-      border-radius:18px;
-      padding:12px 14px;
-      backdrop-filter:blur(8px);
-      -webkit-backdrop-filter:blur(8px);
-      box-shadow:0 16px 40px rgba(0,0,0,.35);
+      display:flex; gap:14px; align-items:center; justify-content:space-between;
+      padding:16px 18px; border:1px solid var(--line); border-radius:22px;
+      background:rgba(255,255,255,.04);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-shadow: 0 20px 80px rgba(0,0,0,.35);
     }
-    .toprow{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-    .brand{display:flex;gap:10px;align-items:center}
+    .brand{
+      display:flex; gap:12px; align-items:center;
+    }
     .logo{
-      width:42px;height:42px;border-radius:12px;
-      background:rgba(13,71,161,.25);
-      border:1px solid rgba(255,255,255,.14);
-      display:flex;align-items:center;justify-content:center;
-      font-weight:900;
+      width:40px; height:40px; border-radius:14px;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.35), transparent 45%),
+                  linear-gradient(135deg, rgba(95,140,255,.9), rgba(45,212,191,.75));
+      box-shadow: 0 18px 40px rgba(95,140,255,.18);
     }
-    .ttl{font-weight:900;font-size:16px;line-height:1.15}
-    .sub{color:var(--muted);font-size:12px;margin-top:2px}
+    .title{
+      display:flex; flex-direction:column;
+      line-height:1.15;
+    }
+    .title b{font-size:18px}
+    .title span{font-size:12px; color:var(--muted)}
     .pill{
-      display:inline-flex;align-items:center;gap:8px;
-      padding:8px 12px;border-radius:999px;
-      background:rgba(255,255,255,.06);
-      border:1px solid var(--border);
-      color:var(--muted2);font-size:12px;font-weight:700;
+      padding:8px 12px; border:1px solid var(--line);
+      border-radius:999px; background:rgba(255,255,255,.04);
+      color:var(--muted); font-size:12px;
+      white-space:nowrap;
     }
-    .statusDot{width:8px;height:8px;border-radius:99px;background:#64748b}
-    .statusDot.ok{background:var(--good)}
-    .statusDot.bad{background:var(--bad)}
-    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
-    @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}
-    @media(max-width:620px){.grid{grid-template-columns:1fr}}
-    .card{
-      background:linear-gradient(180deg, rgba(15,23,42,.95), rgba(2,6,23,.8));
-      border:1px solid rgba(255,255,255,.12);
-      border-radius:18px;
-      padding:16px;
-      box-shadow:0 18px 48px rgba(0,0,0,.35);
-      position:relative;
+    .row{
+      margin-top:18px;
+      display:flex; gap:14px; align-items:stretch; flex-wrap:wrap;
+    }
+    .panel{
+      flex:1 1 420px;
+      border:1px solid var(--line); border-radius:var(--radius);
+      background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      box-shadow: 0 28px 90px rgba(0,0,0,.35);
       overflow:hidden;
     }
-    .card::before{
-      content:"";
-      position:absolute; inset:-40px -60px auto auto;
-      width:160px;height:160px;
-      background:radial-gradient(circle at 30% 30%, rgba(29,95,209,.55), rgba(29,95,209,0));
-      transform:rotate(18deg);
+    .panel .hd{
+      padding:16px 18px;
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      border-bottom:1px solid var(--line);
     }
-    .k1{color:var(--muted);font-size:12px;font-weight:700;position:relative}
-    .k2{font-size:22px;font-weight:900;margin-top:6px;position:relative}
-    .k3{display:flex;align-items:center;justify-content:space-between;margin-top:14px;gap:10px;position:relative}
+    .panel .hd h2{margin:0; font-size:16px}
+    .panel .bd{padding:16px 18px;}
+    .muted{color:var(--muted)}
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap:14px;
+      margin-top:14px;
+    }
+    @media (max-width: 980px){
+      .grid{grid-template-columns: repeat(2, minmax(0,1fr));}
+    }
+    @media (max-width: 620px){
+      .grid{grid-template-columns: 1fr;}
+    }
+    .card{
+      position:relative;
+      padding:18px;
+      border:1px solid var(--line);
+      border-radius:22px;
+      background:
+        radial-gradient(500px 220px at 20% 0%, var(--glow), transparent 60%),
+        linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      min-height:118px;
+      transition: transform .12s ease, border-color .12s ease, background .12s ease;
+    }
+    .card:hover{
+      transform: translateY(-2px);
+      border-color: rgba(255,255,255,.18);
+      background:
+        radial-gradient(600px 260px at 20% 0%, rgba(95,140,255,.25), transparent 60%),
+        linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+    }
+    .k1{font-size:12px; color:var(--muted)}
+    .k2{font-size:22px; font-weight:800; margin-top:6px;}
+    .k3{
+      margin-top:12px; display:flex; align-items:center; justify-content:space-between;
+      gap:12px;
+    }
     .btn{
-      display:inline-flex;align-items:center;gap:8px;
-      background:rgba(29,95,209,.15);
-      border:1px solid rgba(29,95,209,.55);
-      color:#dbeafe;
-      padding:10px 12px;
-      border-radius:12px;
+      display:inline-flex; align-items:center; gap:8px;
+      padding:10px 12px; border-radius:14px;
+      background:rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.12);
+      color:var(--txt);
       text-decoration:none;
-      font-weight:800;
-      font-size:12px;
-      cursor:pointer;
+      font-weight:700;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
     }
-    .btn:hover{background:rgba(29,95,209,.24)}
-    .meta{color:var(--muted);font-size:12px}
-    .state{margin-top:12px;color:var(--muted);font-size:12px}
-    .state .err{color:var(--bad);font-weight:800}
-    .state .ok{color:var(--good);font-weight:800}
-    .footerBadge{
-      position:fixed; right:14px; bottom:14px; z-index:99;
-      background:rgba(13,71,161,.85);
-      border:1px solid rgba(255,255,255,.22);
-      color:#fff; font-size:12px; font-weight:900;
-      padding:8px 12px;border-radius:999px;
-      box-shadow:0 0 18px rgba(13,71,161,.55);
-      backdrop-filter:blur(8px);
-      -webkit-backdrop-filter:blur(8px);
+    .btn:hover{transform: translateY(-1px); background:rgba(255,255,255,.11); border-color:rgba(255,255,255,.18)}
+    .meta{font-size:12px; color:var(--muted)}
+    .search{
+      display:flex; gap:10px; align-items:center;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.04);
+      border-radius:999px;
+      padding:10px 12px;
+      min-width: 260px;
     }
-    code{color:#93c5fd}
+    .search input{
+      flex:1; border:none; outline:none;
+      background:transparent; color:var(--txt);
+      font-size:14px;
+    }
+    .status{
+      padding:10px 12px; border-radius:14px;
+      border:1px dashed rgba(255,255,255,.16);
+      background: rgba(0,0,0,.15);
+      font-size:13px;
+      margin-top:12px;
+    }
+    .err{color:var(--bad); font-weight:700}
+    .ok{color:var(--good); font-weight:800}
+    .warn{color:var(--warn); font-weight:800}
+    pre{
+      margin:12px 0 0; padding:12px;
+      border-radius:14px;
+      background: rgba(0,0,0,.25);
+      border:1px solid rgba(255,255,255,.10);
+      overflow:auto;
+      max-height:260px;
+      color:#dbe7ff;
+    }
+    .float{
+      position:fixed; right:18px; bottom:18px;
+      padding:10px 14px;
+      border-radius:999px;
+      background: rgba(95,140,255,.18);
+      border:1px solid rgba(95,140,255,.35);
+      box-shadow: 0 16px 60px rgba(0,0,0,.45);
+      font-weight:900;
+    }
+    .float span{opacity:.9}
+    .small{font-size:12px}
   </style>
 </head>
 <body>
   <div class="wrap">
-
     <div class="topbar">
-      <div class="toprow">
-        <div class="brand">
-          <div class="logo">DI</div>
-          <div>
-            <div class="ttl">Landing DI Nasional</div>
-            <div class="sub">Pilih jenis DI, lalu lanjut pilih provinsi.</div>
-          </div>
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div class="title">
+          <b>Dashboard GeoJSON Drive</b>
+          <span>Landing jenis DI → kartu Provinsi (dibentuk dari nama file)</span>
         </div>
+      </div>
+      <div class="pill" id="pillInfo">Siap.</div>
+    </div>
 
-        <div class="pill" title="Status koneksi Drive API dari GitHub Pages">
-          <span id="dot" class="statusDot"></span>
-          <span id="statusText">Memuat Drive…</span>
+    <div class="row">
+      <div class="panel">
+        <div class="hd">
+          <h2>1) Landing Jenis DI</h2>
+          <div class="pill small" id="countJenis">0 jenis</div>
+        </div>
+        <div class="bd">
+          <div class="muted">Klik salah satu <b>Jenis DI</b> untuk membuka daftar provinsi.</div>
+          <div class="grid" id="jenisGrid"></div>
+
+          <div class="status" id="landingStatus">
+            Status: <span class="warn">belum memuat</span>
+          </div>
+          <pre id="debugLanding" style="display:none"></pre>
         </div>
       </div>
 
-      <div class="state" id="state"></div>
+      <div class="panel">
+        <div class="hd">
+          <h2>2) Daftar Provinsi</h2>
+          <div class="search">
+            🔎 <input id="qProv" placeholder="Cari provinsi (misal: Aceh)" />
+          </div>
+        </div>
+        <div class="bd">
+          <div class="muted">
+            Provinsi dibentuk dari <b>token pertama</b> nama file: <code>Aceh_Kabupaten__Simeulue_POTS.geojson</code> → provinsi <b>Aceh</b>.
+          </div>
+
+          <div class="status" id="provStatus">
+            Buka dari Landing dulu ya (nanti ada <b>?jenisId=...</b>).
+          </div>
+
+          <div class="grid" id="provGrid"></div>
+          <pre id="debugProv" style="display:none"></pre>
+        </div>
+      </div>
     </div>
 
-    <div class="grid" id="grid">
-      <!-- kartu diisi dari Drive -->
-    </div>
-
+    <div class="float"><span>Si-Irwan v1.0</span></div>
   </div>
 
-  <div class="footerBadge">Si-Irwan v1.0</div>
-
 <script>
-/* =============================
-   KONFIGURASI
-============================= */
-const API_KEY = "AIzaSyDlpSnNEI__Z5OWinbf24BGJ4_U6JucNMs";
+/** =========================
+ *  KONFIG
+ *  ========================= */
+const CONFIG = {
+  // isi API key kamu di sini (lebih aman kalau nanti kamu pindah ke worker/proxy)
+  API_KEY: "AIzaSyDlpSnNEI__Z5OWinbf24BGJ4_U6JucNMs",
+  // Folder ROOT yang berisi folder jenis (contoh: IGT_PER_KEW_GEOJS... / DI Permukaan / DI Tambak / DI Rawa / dst)
+  // Dari screenshot kamu: id folder "IGT_PER_KEW_GEOJS..." atau folder jenis tertentu.
+  // Untuk landing jenis, ini harus ID folder yang berisi folder-folder jenis.
+  ROOT_FOLDER_ID: "1UO_mECvk_YUvvyaP8YRPoX7EGYfwlXAb",
+  // Nama file yang dianggap GeoJSON
+  EXT: ".geojson",
+  // Jenis DI yang valid (di ujung nama)
+  JENIS_SUFFIX: ["BAKU","FUNG","POTS"],
+  // Level yang valid (token kedua)
+  LEVELS: ["Kabupaten","Kota","Provinsi","Pusat"]
+};
 
-// Folder root yang kamu kasih:
-// https://drive.google.com/drive/folders/1UO_mECvk_YUvvyaP8YRPoX7EGYfwlXAb
-const ROOT_FOLDER_ID = "1UO_mECvk_YUvvyaP8YRPoX7EGYfwlXAb";
+/** =========================
+ *  UTIL
+ *  ========================= */
+const $ = (sel) => document.querySelector(sel);
+function esc(s){ return String(s ?? "").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;" }[m])); }
+function setPill(msg){ $("#pillInfo").textContent = msg; }
 
-// halaman provinsi (relatif dari /my-maps/DI/)
-const PROV_PAGE = "index_prov_dev.html";
+function getParam(name){
+  const u = new URL(location.href);
+  return u.searchParams.get(name);
+}
+function setStatus(el, html){ el.innerHTML = html; }
 
-const $grid = document.getElementById("grid");
-const $state = document.getElementById("state");
-const $dot = document.getElementById("dot");
-const $statusText = document.getElementById("statusText");
-
-function esc(s){
-  return String(s ?? "").replace(/[&<>"']/g, m => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-  }[m]));
+/** Normalisasi nama file:
+ * - buang .geojson
+ * - ganti "__" jadi "_"
+ * - ganti "_-_" jadi "_"
+ */
+function normalizeBaseName(filename){
+  let base = String(filename||"");
+  if (base.toLowerCase().endsWith(CONFIG.EXT)) base = base.slice(0, -CONFIG.EXT.length);
+  base = base.replaceAll("__","_").replaceAll("_-_","_");
+  return base.trim();
 }
 
-function setState(msg, isErr=false){
-  $state.innerHTML = isErr ? `<span class="err">${esc(msg)}</span>` : esc(msg);
+/** Parse format:
+ * [provinsi]_[level]_[...wilayah...]_[jenis]
+ */
+function parseGeojsonName(filename){
+  const base = normalizeBaseName(filename);
+  const parts = base.split("_").filter(Boolean);
+
+  if (parts.length < 3) return null;
+
+  const provinsi = parts[0];
+  const level = parts[1];
+  const jenis = parts[parts.length-1];
+
+  if (!CONFIG.LEVELS.includes(level)) {
+    // masih boleh lewat, tapi kita tandai
+  }
+  if (!CONFIG.JENIS_SUFFIX.includes(jenis)) {
+    // bukan file DI yang kita mau
+    return null;
+  }
+
+  const wilayahParts = parts.slice(2, -1);
+  const wilayah = wilayahParts.join(" ").replace(/\s+/g," ").trim();
+
+  return { provinsi, level, wilayah, jenis, base };
 }
 
-function setStatus(ok, text){
-  $dot.className = "statusDot " + (ok ? "ok" : "bad");
-  $statusText.textContent = text;
+/** =========================
+ *  GOOGLE DRIVE API (public list files)
+ *  ========================= */
+async function driveListFiles(parentId, pageToken=null){
+  const q = `'${parentId}' in parents and trashed=false`;
+  const fields = "nextPageToken,files(id,name,mimeType,modifiedTime,webViewLink,size)";
+  const url = new URL("https://www.googleapis.com/drive/v3/files");
+  url.searchParams.set("q", q);
+  url.searchParams.set("fields", fields);
+  url.searchParams.set("pageSize", "1000");
+  url.searchParams.set("includeItemsFromAllDrives", "true");
+  url.searchParams.set("supportsAllDrives", "true");
+  url.searchParams.set("key", CONFIG.API_KEY);
+  if (pageToken) url.searchParams.set("pageToken", pageToken);
+
+  const res = await fetch(url.toString(), { method:"GET" });
+  const text = await res.text();
+  let json;
+  try{ json = JSON.parse(text); }catch(e){
+    throw new Error("Respon bukan JSON: " + text.slice(0,120));
+  }
+  if (!res.ok){
+    const msg = json?.error?.message || ("HTTP " + res.status);
+    throw new Error(msg);
+  }
+  return json;
 }
 
-function cardHTML({name, id}){
-  const jenis = String(name || "").trim() || "Folder";
-  const href = `${PROV_PAGE}?jenisId=${encodeURIComponent(id)}&jenis=${encodeURIComponent(jenis)}`;
+async function driveListAll(parentId){
+  const all = [];
+  let token = null;
+  do{
+    const js = await driveListFiles(parentId, token);
+    (js.files || []).forEach(f => all.push(f));
+    token = js.nextPageToken || null;
+  }while(token);
+  return all;
+}
 
+/** =========================
+ *  UI: Landing (list folder jenis)
+ *  ========================= */
+function jenisCardHTML({id, name}){
+  const href = `${location.pathname}?jenisId=${encodeURIComponent(id)}&jenis=${encodeURIComponent(name)}`;
   return `
-    <div class="card">
+    <div class="card" data-name="${esc(String(name).toLowerCase())}">
       <div class="k1">Jenis DI</div>
-      <div class="k2">${esc(jenis)}</div>
+      <div class="k2">${esc(name)}</div>
       <div class="k3">
         <a class="btn" href="${href}">Buka daftar provinsi <span aria-hidden="true">→</span></a>
-        <div class="meta">Folder Drive</div>
+        <div class="meta">Folder</div>
       </div>
     </div>
   `;
 }
 
-async function listFolders(parentId){
-  const q = `('${parentId}' in parents) and trashed=false and mimeType='application/vnd.google-apps.folder'`;
-  const url = "https://www.googleapis.com/drive/v3/files"
-    + `?q=${encodeURIComponent(q)}`
-    + "&fields=files(id,name,mimeType,modifiedTime)"
-    + "&orderBy=name"
-    + "&supportsAllDrives=true&includeItemsFromAllDrives=true"
-    + `&key=${encodeURIComponent(API_KEY)}`;
+async function loadLandingJenis(){
+  const $grid = $("#jenisGrid");
+  const $st = $("#landingStatus");
+  $grid.innerHTML = "";
+  setStatus($st, `Status: <span class="warn">memuat folder jenis…</span>`);
 
-  const res = await fetch(url);
-  const json = await res.json();
-  if(!res.ok){
-    const msg = json?.error?.message || `HTTP ${res.status}`;
-    throw new Error(msg);
+  try{
+    const files = await driveListAll(CONFIG.ROOT_FOLDER_ID);
+    const folders = files.filter(f => f.mimeType === "application/vnd.google-apps.folder")
+      .sort((a,b)=> (a.name||"").localeCompare(b.name||"", "id"));
+
+    $("#countJenis").textContent = `${folders.length} jenis`;
+    $grid.innerHTML = folders.map(jenisCardHTML).join("");
+
+    setStatus($st, `Status: <span class="ok">OK</span> • Folder jenis ditemukan: <b>${folders.length}</b>`);
+    setPill(`Landing OK • ${folders.length} jenis`);
+  }catch(err){
+    setStatus($st, `Status: <span class="err">GAGAL</span> • ${esc(err.message)}`);
+    setPill("Landing gagal");
+    $("#debugLanding").style.display = "block";
+    $("#debugLanding").textContent = String(err?.stack || err);
   }
-  return json.files || [];
 }
 
-(async ()=>{
+/** =========================
+ *  UI: Provinsi (dibentuk dari nama file)
+ *  ========================= */
+function provCardHTML({provinsi, jenisName, jenisId, countFile, countKab, countKota, hrefKab}){
+  return `
+    <div class="card" data-name="${esc(String(provinsi).toLowerCase())}">
+      <div class="k1">${esc(jenisName)}</div>
+      <div class="k2">${esc(provinsi)}</div>
+      <div class="k3">
+        <a class="btn" href="${esc(hrefKab)}">Buka peta DI Kabupaten <span aria-hidden="true">→</span></a>
+        <div class="meta">${countKab} kab • ${countKota} kota • ${countFile} file</div>
+      </div>
+    </div>
+  `;
+}
+
+/** Catatan:
+ *  Halaman kabupaten/peta nanti bisa kita bikin berikutnya.
+ *  Untuk sekarang, tombol diarahkan ke placeholder kab.html (belum dibuat) biar alurnya kebaca.
+ */
+function buildKabupatenHref({provinsi, jenisId, jenisName}){
+  // Kamu nanti bikin file: kab_dev.html di folder yang sama, atau ganti path sesuai strukturmu
+  // Misal: ../Kabupaten/index_kab_dev.html
+  const base = location.href.split("?")[0];
+  const dir = base.substring(0, base.lastIndexOf("/") + 1);
+  const target = dir + "kab_dev.html";
+  return `${target}?jenisId=${encodeURIComponent(jenisId)}&jenis=${encodeURIComponent(jenisName)}&prov=${encodeURIComponent(provinsi)}`;
+}
+
+async function loadProvinsiFromJenis(){
+  const jenisId = getParam("jenisId");
+  const jenisName = getParam("jenis") || "Jenis (unknown)";
+  const $st = $("#provStatus");
+  const $grid = $("#provGrid");
+
+  $grid.innerHTML = "";
+
+  if (!jenisId){
+    setStatus($st, `<span class="warn">Parameter <b>jenisId</b> kosong.</span> Buka halaman ini dari Landing (klik kartu Jenis DI).`);
+    return;
+  }
+
+  setStatus($st, `Status: <span class="warn">memuat daftar file GeoJSON…</span><br><span class="muted small">jenisId=${esc(jenisId)} | jenis=${esc(jenisName)}</span>`);
+
   try{
-    setStatus(false, "Memuat Drive…");
-    setState("Mengambil folder jenis DI dari Google Drive…");
+    const files = await driveListAll(jenisId);
 
-    const items = await listFolders(ROOT_FOLDER_ID);
+    // Ambil hanya file geojson yang ujungnya BAKU/FUNG/POTS
+    const parsed = files
+      .filter(f => (f.name||"").toLowerCase().endsWith(CONFIG.EXT))
+      .map(f => ({ f, p: parseGeojsonName(f.name) }))
+      .filter(x => x.p);
 
-    if(!items.length){
-      setStatus(true, "HTTP 200, tapi kosong");
-      setState("Folder root terbaca, tapi tidak ada subfolder. Pastikan di dalamnya ada folder jenis (DI Permukaan/Tambak/Rawa).", true);
-      $grid.innerHTML = "";
-      return;
+    // Group per provinsi
+    const map = new Map();
+    for (const item of parsed){
+      const { provinsi, level } = item.p;
+      const key = provinsi;
+      if (!map.has(key)){
+        map.set(key, { provinsi:key, countFile:0, countKab:0, countKota:0 });
+      }
+      const agg = map.get(key);
+      agg.countFile++;
+      if (level === "Kabupaten") agg.countKab++;
+      if (level === "Kota") agg.countKota++;
     }
 
-    $grid.innerHTML = items.map(cardHTML).join("");
-    setStatus(true, `Drive OK · ${items.length} folder`);
-    setState(`Sukses. Klik salah satu kartu untuk lanjut ke daftar provinsi.`);
+    const list = Array.from(map.values()).sort((a,b)=>a.provinsi.localeCompare(b.provinsi,"id"));
+
+    // render
+    const cards = list.map(x => {
+      const hrefKab = buildKabupatenHref({ provinsi:x.provinsi, jenisId, jenisName });
+      return provCardHTML({ ...x, jenisName, jenisId, hrefKab });
+    });
+
+    $grid.innerHTML = cards.join("");
+    setStatus($st, `Status: <span class="ok">OK</span> • Provinsi: <b>${list.length}</b> • File geojson terbaca: <b>${parsed.length}</b>`);
+
+    // search filter
+    const input = $("#qProv");
+    input.value = "";
+    input.oninput = () => {
+      const q = input.value.trim().toLowerCase();
+      document.querySelectorAll("#provGrid .card").forEach(card=>{
+        const name = card.getAttribute("data-name") || "";
+        card.style.display = (!q || name.includes(q)) ? "" : "none";
+      });
+    };
+
+    $("#debugProv").style.display = "block";
+    $("#debugProv").textContent = JSON.stringify({
+      jenisId, jenisName,
+      totalFilesInFolder: files.length,
+      geojsonParsed: parsed.length,
+      provinsiCount: list.length,
+      sampleParsed: parsed.slice(0,5).map(x=>x.p)
+    }, null, 2);
+
+    setPill(`Provinsi OK • ${list.length} provinsi`);
   }catch(err){
-    console.error(err);
-    setStatus(false, "Drive ERROR");
-    setState("Gagal memuat Drive: " + err.message, true);
-    $grid.innerHTML = "";
+    setStatus($st, `Status: <span class="err">GAGAL</span> • ${esc(err.message)}<br><span class="muted small">Kalau ini 403 referer blocked, cek restriction key.</span>`);
+    $("#debugProv").style.display = "block";
+    $("#debugProv").textContent = String(err?.stack || err);
+    setPill("Provinsi gagal");
   }
+}
+
+/** =========================
+ *  INIT
+ *  ========================= */
+(async function init(){
+  // info kecil biar gampang ngecek kamu lagi ada di mana
+  setPill("Inisialisasi…");
+
+  // Load landing jenis selalu
+  await loadLandingJenis();
+
+  // Load provinsi kalau ada jenisId
+  await loadProvinsiFromJenis();
 })();
 </script>
-
 </body>
 </html>
