@@ -2,169 +2,166 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <title>Dashboard DI — BWS/BBWS (BAKU · FUNG · POTS)</title>
+  <title>Dashboard DI — BWS/BBWS (BAKU · FUNG · POTS) dari Drive</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <link rel="icon" href="../assets/LogoPUPR.png" />
+  <link rel="icon" href="../../assets/LogoPUPR.png" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
   <style>
     :root{
-      --bg:#0b1222; --text:#e5e7eb; --muted:#cbd5e1; --muted-2:#94a3b8;
-      --survey:#0d47a1; --accent:#1d5fd1; --panel:rgba(11,18,34,.92);
-      --border:rgba(255,255,255,.12); --hdrH:80px; --radius:12px;
-      --baku:#22c55e; --fung:#3b82f6; --pots:#f59e0b;
+      --bg:#0b1222; --text:#e5e7eb; --muted:#cbd5e1; --muted2:#94a3b8;
+      --pu:#0d47a1; --accent:#2563eb; --panel:rgba(11,18,34,.92);
+      --border:rgba(255,255,255,.12); --hdrH:78px; --radius:12px;
     }
-    html, body {height:100%; margin:0; font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--text)}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
     .header{
-      position:fixed; top:0; left:0; right:0; z-index:900;
-      background:var(--survey); border-bottom:1px solid rgba(255,255,255,.18);
-      padding:8px 12px; display:flex; align-items:center; gap:10px;
+      position:fixed;top:0;left:0;right:0;z-index:900;
+      background:var(--pu);border-bottom:1px solid rgba(255,255,255,.18);
+      padding:8px 12px;display:flex;align-items:center;gap:10px;
       box-shadow:0 6px 18px rgba(13,71,161,.25)
     }
     .header img{height:44px}
-    .header .text{flex:1; color:#fff}
-    .header .title{font-weight:800; font-size:13px; line-height:1.3}
-    .header .subtitle{font-weight:600; font-size:11px; color:rgba(255,255,255,.92); margin-top:2px}
+    .header .text{flex:1;color:#fff}
+    .header .title{font-weight:800;font-size:13px;line-height:1.2}
+    .header .subtitle{font-weight:600;font-size:11px;color:rgba(255,255,255,.9);margin-top:2px}
     .btn-home{
-      background:#fff; color:var(--survey); font-weight:800; padding:6px 12px;
-      border-radius:10px; text-decoration:none; font-size:11px; white-space:nowrap;
+      background:#fff;color:var(--pu);font-weight:800;padding:6px 12px;border-radius:10px;
+      text-decoration:none;font-size:11px;white-space:nowrap
     }
     .btn-home:hover{background:#f1f5f9}
     .spacer{height:var(--hdrH)}
-    #map{height:calc(100vh - var(--hdrH)); position:relative; z-index:1}
+    #map{height:calc(100vh - var(--hdrH));position:relative;z-index:1}
 
     /* Dock */
     .dock{
-      position:fixed; left:0; right:0; bottom:0; z-index:950;
-      background:var(--panel); border-top:1px solid var(--border);
-      max-height:42vh; padding:8px 12px; backdrop-filter:blur(6px);
+      position:fixed;left:0;right:0;bottom:0;z-index:950;
+      background:var(--panel);border-top:1px solid var(--border);
+      max-height:40vh;padding:10px 12px;backdrop-filter:blur(6px);
       box-shadow:0 -10px 22px rgba(0,0,0,.28);
-      display:flex; flex-direction:column; gap:6px;
-      transition:max-height .2s ease, padding .2s ease;
+      display:flex;flex-direction:column;gap:8px;
+      transition:max-height .2s ease,padding .2s ease;
     }
-    .dock-header{display:flex; align-items:center; justify-content:space-between;}
-    .dock-header h2{font-size:14px; margin:0; font-weight:900; color:#fff}
+    .dock-header{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .dock-title{font-size:14px;margin:0;font-weight:800;color:#fff}
     .dock-toggle{
-      background:rgba(15,23,42,.9);
-      border:1px solid var(--border);
-      border-radius:999px;
-      color:#e5e7eb;
-      font-size:11px;
-      padding:2px 10px;
-      cursor:pointer;
+      background:rgba(15,23,42,.9);border:1px solid var(--border);border-radius:999px;
+      color:#e5e7eb;font-size:11px;padding:2px 10px;cursor:pointer
     }
     .dock-toggle:hover{background:#111827}
-    .dock-body{font-size:12px}
-    .dock.collapsed{max-height:40px; padding-top:6px; padding-bottom:6px}
+    .dock.collapsed{max-height:42px;padding-top:6px;padding-bottom:6px}
     .dock.collapsed .dock-body{display:none}
 
-    .grid{display:grid; grid-template-columns:1fr 1fr; gap:8px}
-    label{font-size:11px; color:var(--muted)}
-    input[type="text"]{
-      width:100%; padding:10px 12px; font-size:13px;
-      background:rgba(255,255,255,.06); color:#fff;
-      border:1px solid var(--border); border-radius:999px; outline:none;
+    .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:10px;align-items:start}
+    .box{
+      border:1px solid var(--border);border-radius:14px;background:rgba(15,23,42,.7);
+      padding:10px 12px
     }
-    .hint{font-size:11px; color:var(--muted-2); margin-top:4px}
-    .err{color:#fca5a5; font-size:11px; margin-top:6px}
-    .ok{color:#4ade80; font-size:11px; margin-top:6px}
+    .kv{display:grid;grid-template-columns:140px 1fr;gap:6px;font-size:12px;color:var(--muted)}
+    .kv b{color:#fff}
+    .rowbtn{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .btn{
+      background:rgba(255,255,255,.06);border:1px solid var(--border);color:#fff;
+      border-radius:999px;padding:8px 12px;font-size:12px;font-weight:800;cursor:pointer
+    }
+    .btn:hover{background:rgba(255,255,255,.10)}
+    .btn.primary{background:var(--accent);border-color:transparent}
+    .btn.primary:hover{background:#1d4ed8}
+    .msg{font-size:12px;color:#cbd5e1;margin-top:8px;white-space:pre-wrap}
+    .msg.err{color:#fca5a5}
+    .msg.ok{color:#4ade80}
+    .hint{font-size:11px;color:#94a3b8;margin-top:8px}
 
-    .row{
-      display:grid; grid-template-columns:1fr auto 1fr auto 1fr auto;
-      gap:8px; font-size:12px; color:var(--muted)
+    /* Legend */
+    .legend{
+      background:rgba(15,23,42,.92);color:#e5e7eb;padding:8px 10px;border-radius:12px;
+      border:1px solid rgba(148,163,184,.5);min-width:180px
     }
-    .row b{color:#fff}
+    .legend .top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+    .legend .ttl{font-weight:900;font-size:12px}
+    .legend button{
+      background:transparent;border:1px solid rgba(148,163,184,.7);color:#e5e7eb;
+      border-radius:999px;font-size:10px;padding:1px 8px;cursor:pointer
+    }
+    .legend .item{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:12px}
+    .sw{width:14px;height:14px;border-radius:4px;border:1px solid rgba(255,255,255,.7)}
+    .sw-baku{background:#22c55e}
+    .sw-fung{background:#3b82f6}
+    .sw-pots{background:#f59e0b}
+    .legend.collapsed .body{display:none}
 
     /* Badge */
     .badge-irwan{
-      position:fixed; right:12px; bottom:92px; z-index:1200;
-      background:rgba(13,71,161,.85);
-      border:1px solid rgba(255,255,255,.25);
-      color:#fff; font-size:11px; font-weight:800;
-      padding:5px 10px; border-radius:10px;
-      box-shadow:0 0 10px rgba(13,71,161,.6);
-      backdrop-filter:blur(6px);
-      animation:glow 2.8s ease-in-out infinite
+      position:fixed;right:12px;bottom:92px;z-index:1200;
+      background:rgba(13,71,161,.85);border:1px solid rgba(255,255,255,.25);
+      color:#fff;font-size:11px;font-weight:800;padding:6px 10px;border-radius:10px;
+      box-shadow:0 0 10px rgba(13,71,161,.6);backdrop-filter:blur(6px)
     }
     .badge-irwan span{color:#FFD700}
-    @keyframes glow{0%,100%{box-shadow:0 0 8px rgba(13,71,161,.6)}50%{box-shadow:0 0 18px rgba(255,215,0,.8)}}
 
-    /* Leaflet legend (custom) */
-    .layer-legend{
-      background:rgba(15,23,42,.95);
-      color:#f9fafb;
-      padding:8px 10px;
-      border-radius:10px;
-      border:1px solid rgba(148,163,184,.55);
-      font-size:11px;
-      min-width:170px;
-    }
-    .layer-legend-header{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px}
-    .layer-legend-title{font-weight:900}
-    .layer-toggle-btn{
-      background:transparent; border:1px solid rgba(148,163,184,.8);
-      color:#e5e7eb; border-radius:999px; font-size:10px; padding:0 8px; cursor:pointer;
-    }
-    .layer-legend-body .item{display:flex; align-items:center; gap:6px; margin:4px 0}
-    .layer-legend .swatch{width:12px; height:12px; border-radius:4px; border:1px solid rgba(255,255,255,.65)}
-    .swatch-baku{background:var(--baku)}
-    .swatch-fung{background:var(--fung)}
-    .swatch-pots{background:var(--pots)}
-    .swatch-basemap{background:#111827}
-    .layer-legend.collapsed .layer-legend-body{display:none}
-
-    @media(max-width:680px){
-      .grid{grid-template-columns:1fr}
+    @media(max-width:720px){
       :root{--hdrH:88px}
+      .grid{grid-template-columns:1fr}
+      .kv{grid-template-columns:120px 1fr}
     }
   </style>
 </head>
+
 <body>
+  <!-- HEADER -->
   <div class="header">
-    <img src="../assets/LogoPUPR.png" alt="Logo PU"/>
+    <img src="../../assets/LogoPUPR.png" alt="Logo PU"/>
     <div class="text">
       <div class="title">Kementerian PU</div>
       <div class="subtitle">Ditjen SDA · Dit. Irigasi &amp; Rawa</div>
-      <div class="subtitle">Dashboard DI (BAKU · FUNG · POTS) dari Google Drive</div>
+      <div class="subtitle"><b>Dashboard DI (BAKU · FUNG · POTS)</b> dari Google Drive</div>
     </div>
-    <a href="../si-irwan.html" class="btn-home">Beranda</a>
+    <a href="../../si-irwan.html" class="btn-home">Beranda</a>
   </div>
   <div class="spacer"></div>
+
+  <!-- MAP -->
   <div id="map"></div>
 
+  <!-- DOCK -->
   <div class="dock" id="dock">
     <div class="dock-header">
-      <h2 id="pageTitle">Dashboard BWS/BBWS</h2>
-      <button id="dockToggle" class="dock-toggle">Ciutkan</button>
+      <h2 class="dock-title" id="dockTitle">Dashboard BWS/BBWS</h2>
+      <button class="dock-toggle" id="dockToggle">Ciutkan</button>
     </div>
 
     <div class="dock-body">
       <div class="grid">
-        <div>
-          <label>Folder Drive (jenisId)</label>
-          <input id="jenisIdInput" type="text" placeholder="Contoh: 1tt-ITiWsqh54OaJgZOKaqqIElf6lI1kc" />
-          <div class="hint">Ini ID folder “DI Permukaan / DI Tambak / ...” tempat file GeoJSON berada.</div>
+        <div class="box">
+          <div class="kv">
+            <div>Folder Drive (jenisId)</div><div><b id="jenisIdView">-</b></div>
+            <div>Key BWS</div><div><b id="bwsView">-</b></div>
+            <div>Deteksi file</div><div><b id="foundView">-</b></div>
+          </div>
+
+          <div class="rowbtn">
+            <button class="btn primary" id="btnLoad">Muat dari Drive</button>
+            <button class="btn" id="btnFit">Fit ke Layer</button>
+            <button class="btn" id="btnClear">Clear Layer</button>
+          </div>
+
+          <div class="msg" id="msg"></div>
+          <div class="hint">
+            Tips: `jenisId` = ID folder “DI Permukaan/DI Rawa/DI Tambak”.<br/>
+            `bws` dipakai buat nyari file: <i>..._BWS_Sumatera_VII_BAKU/FUNG/POTS.geojson</i>
+          </div>
         </div>
-        <div>
-          <label>Key BWS</label>
-          <input id="bwsInput" type="text" placeholder="Contoh: BWS_Sumatera_VII" />
-          <div class="hint">Dipakai untuk cari file: ..._BWS_Sumatera_VII_BAKU/FUNG/POTS.geojson</div>
+
+        <div class="box">
+          <div class="kv">
+            <div>Jumlah fitur BAKU</div><div><b id="cntBaku">0</b></div>
+            <div>Jumlah fitur FUNG</div><div><b id="cntFung">0</b></div>
+            <div>Jumlah fitur POTS</div><div><b id="cntPots">0</b></div>
+          </div>
+          <div class="hint" style="margin-top:10px">
+            Popup otomatis tampil saat klik polygon/line/point.
+          </div>
         </div>
-      </div>
-
-      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px">
-        <button id="btnLoad" style="background:var(--accent);color:#fff;border:none;border-radius:999px;padding:8px 12px;font-size:12px;font-weight:900;cursor:pointer">Muat dari Drive</button>
-        <button id="btnFit" style="background:#111827;color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:8px 12px;font-size:12px;font-weight:900;cursor:pointer">Fit ke Layer</button>
-      </div>
-
-      <div id="status" class="hint" style="margin-top:8px"></div>
-      <div id="msg" class="err"></div>
-
-      <hr style="border:none;border-top:1px solid var(--border);margin:10px 0"/>
-      <div id="stats" class="row"></div>
-      <div class="hint" style="margin-top:6px">
-        Tips: kalau layer tidak muncul, 99% karena file Drive belum “Anyone with the link can view”, atau API key belum benar/referrer belum diizinkan.
       </div>
     </div>
   </div>
@@ -175,396 +172,316 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-  document.addEventListener('DOMContentLoaded', () => {
+  (function(){
+    // ====== WAJIB: URL GAS PROXY kamu ======
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbySxkY9zUGZZGNhkpzsbY6WrF7YClIriaDfdkw2b6Zen6y0J-wTPv8Mtv8oOz_3gX_-/exec";
 
-    /* ==============================
-      KONFIG WAJIB
-      1) DRIVE_API_KEY: API key Google Cloud (Drive API enabled)
-      2) Referrer restriction: tambahin domain GitHub Pages kamu
-         contoh: https://irwan-dot-cyber.github.io/*
-      ============================== */
-    const DRIVE_API_KEY = "AIzaSyDlpSnNEI__Z5OWinbf24BGJ4_U6JucNMs";
+    // ====== Query param ======
+    const qs = new URLSearchParams(location.search);
+    const jenisId = (qs.get("jenisId") || "").trim();
+    const bwsKey  = (qs.get("bws") || "").trim();
 
-    /* OPSIONAL (kalau Drive private): pakai Apps Script kamu sebagai proxy.
-       - endpoint harus bisa: ?action=listDrive&parent=... dan ?action=media&id=...
-       - kalau belum ada, biarin kosong, sistem pakai Drive API langsung.
-    */
-    const DRIVE_PROXY_URL = ""; // contoh: "https://script.google.com/macros/s/XXXX/exec"
+    // ====== UI ======
+    const $ = (id)=>document.getElementById(id);
+    const msgEl = $("msg");
+    const jenisIdView = $("jenisIdView");
+    const bwsView = $("bwsView");
+    const foundView = $("foundView");
+    const dockTitle = $("dockTitle");
+    const cntBaku = $("cntBaku");
+    const cntFung = $("cntFung");
+    const cntPots = $("cntPots");
 
-    /* ==============================
-      UTIL
-    ============================== */
-    const $ = (id) => document.getElementById(id);
-
-    function qparam(name){
-      const u = new URL(location.href);
-      return u.searchParams.get(name);
+    function setMsg(text, kind){
+      msgEl.className = "msg" + (kind ? " " + kind : "");
+      msgEl.textContent = text || "";
     }
 
-    function normKey(s){
-      return String(s||"")
-        .trim()
-        .replace(/\s+/g,"_")
-        .replace(/-+/g,"_")
-        .replace(/[^\w]/g,"_")
-        .replace(/_+/g,"_")
-        .toLowerCase();
-    }
+    jenisIdView.textContent = jenisId || "(kosong)";
+    bwsView.textContent = bwsKey || "(kosong)";
+    dockTitle.textContent = bwsKey ? ("Dashboard " + bwsKey) : "Dashboard BWS/BBWS";
 
-    function isGeoName(name){
-      const n = String(name||"").toLowerCase();
-      return n.endsWith(".geojson") || n.endsWith(".json");
-    }
-
-    function pickByBws(files, bwsKey, type){
-      const t = String(type).toUpperCase(); // BAKU/FUNG/POTS
-      const k = normKey(bwsKey);            // bws_sumatera_vii
-      // contoh name: Bengkulu_Pusat_-_BWS_Sumatera_VII_BAKU.geojson
-      const want1 = k + "_" + t.toLowerCase();
-      const want2 = k + "_" + t.toLowerCase() + ".geojson";
-      const want3 = k + "_" + t.toLowerCase() + ".json";
-
-      // scoring supaya paling "pas"
-      let best = null;
-      let bestScore = -1;
-
-      for (const f of (files||[])){
-        const nmRaw = f.name || "";
-        if (!isGeoName(nmRaw)) continue;
-        const nm = normKey(nmRaw);
-
-        let score = 0;
-        if (nm.includes(want1)) score += 5;
-        if (nm.endsWith(want2) || nm.endsWith(want3)) score += 3;
-        // bonus kalau ada kata "pusat" (buat file BWS pusat biasanya), tapi tidak wajib
-        if (nm.includes("pusat")) score += 1;
-
-        if (score > bestScore){
-          bestScore = score;
-          best = f;
-        }
-      }
-      return (bestScore >= 5) ? best : null; // minimal harus ketemu bws + tipe
-    }
-
-    function setMsg(text, isErr=false){
-      $("msg").textContent = text || "";
-      $("msg").className = isErr ? "err" : "ok";
-    }
-
-    function setStatus(text){
-      $("status").textContent = text || "";
-    }
-
-    /* ==============================
-      MAP
-    ============================== */
-    const map = L.map('map').setView([-2.5, 118.0], 5);
+    // ====== Map ======
+    const map = L.map("map").setView([-2.5,118.0],5);
 
     const imagery = L.tileLayer(
-      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      { attribution:'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics' }
+      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      { attribution:"Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics" }
     ).addTo(map);
 
-    const osm = L.tileLayer(
-      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      { attribution:'© OpenStreetMap contributors' }
-    );
+    // ====== Layer groups ======
+    const gBaku = L.layerGroup().addTo(map);
+    const gFung = L.layerGroup().addTo(map);
+    const gPots = L.layerGroup().addTo(map);
 
-    const baseLayers = {"Imagery": imagery, "OSM": osm};
-    const layerCtl = L.control.layers(baseLayers, null, { collapsed:true, position:'topright' }).addTo(map);
+    const state = {
+      files: { BAKU:null, FUNG:null, POTS:null },
+      layers: { BAKU:gBaku, FUNG:gFung, POTS:gPots },
+      loaded: { BAKU:false, FUNG:false, POTS:false },
+    };
 
-    // panes
-    map.createPane('bakuPane'); map.getPane('bakuPane').style.zIndex = 410;
-    map.createPane('fungPane'); map.getPane('fungPane').style.zIndex = 420;
-    map.createPane('potsPane'); map.getPane('potsPane').style.zIndex = 430;
+    function clearAll(){
+      gBaku.clearLayers(); gFung.clearLayers(); gPots.clearLayers();
+      state.loaded = { BAKU:false, FUNG:false, POTS:false };
+      state.files = { BAKU:null, FUNG:null, POTS:null };
+      updateCounts();
+      foundView.textContent = "-";
+      setMsg("Layer dibersihkan.", "");
+    }
 
-    let layerBAKU = null, layerFUNG = null, layerPOTS = null;
+    function updateCounts(){
+      cntBaku.textContent = countFeaturesInGroup(gBaku);
+      cntFung.textContent = countFeaturesInGroup(gFung);
+      cntPots.textContent = countFeaturesInGroup(gPots);
+    }
+    function countFeaturesInGroup(group){
+      let n = 0;
+      group.eachLayer(l=>{
+        if (l && l.getLayers) n += l.getLayers().length;
+        else n += 1;
+      });
+      return n;
+    }
 
-    function popupHtmlFromFeature(f, label){
-      const p = f.properties || {};
-      const title = p["Nama DI"] || p["Nama_DI"] || p["Nama Aset"] || p["NAMA_ASET"] || p.nama || p.Name || label;
-      const keys = Object.keys(p).slice(0, 18);
-      const rows = keys.map(k=>{
+    function styleByType(type){
+      if(type==="BAKU") return { color:"#22c55e", weight:2, fillOpacity:0.18 };
+      if(type==="FUNG") return { color:"#3b82f6", weight:2, fillOpacity:0.18 };
+      return { color:"#f59e0b", weight:2, fillOpacity:0.18 }; // POTS
+    }
+
+    function bindPopup(feature, layer){
+      const p = feature.properties || {};
+      const title =
+        p["Nama DI"] || p["Nama_DI"] || p["Nama Aset"] || p["NAMA_ASET"] ||
+        p.nama || p.Name || p.NAMOBJ || "Fitur";
+
+      // Cari koordinat sederhana (untuk link maps)
+      let lat=null,lng=null;
+      if(feature.geometry && feature.geometry.type==="Point" && Array.isArray(feature.geometry.coordinates)){
+        lng = feature.geometry.coordinates[0];
+        lat = feature.geometry.coordinates[1];
+      }
+
+      const rows = Object.keys(p).slice(0,18).map(k=>{
         const v = p[k];
-        if (v === undefined || v === null || v === "") return "";
-        return `<tr><td style="padding:2px 6px;color:#64748b">${k}</td><td style="padding:2px 6px">${String(v)}</td></tr>`;
+        if(v==null || v==="") return "";
+        return `<tr><td style="padding:2px 4px;color:#64748b">${k}</td><td style="padding:2px 4px">${String(v)}</td></tr>`;
       }).join("");
-      return `
+
+      let links = "";
+      if(lat!=null && lng!=null && !isNaN(lat) && !isNaN(lng)){
+        const la = Number(lat).toFixed(6), lo = Number(lng).toFixed(6);
+        const gmaps = `https://www.google.com/maps/search/?api=1&query=${la},${lo}`;
+        links = `<div style="margin-top:8px">
+          <a href="${gmaps}" target="_blank" rel="noopener"
+             style="background:#111827;color:#fff;padding:6px 10px;border-radius:8px;text-decoration:none;font-weight:800;font-size:12px">
+            Buka di Google Maps
+          </a>
+        </div>`;
+      }
+
+      layer.bindPopup(`
         <div style="min-width:240px">
           <div style="font-weight:900;margin-bottom:6px">${title}</div>
-          <div style="font-size:11px;color:#94a3b8;margin-bottom:6px">Layer: <b style="color:#fff">${label}</b></div>
-          <table style="border-collapse:collapse;font-size:12px">${rows || `<tr><td style="color:#94a3b8">(atribut kosong)</td></tr>`}</table>
+          <table style="border-collapse:collapse;font-size:12px">${rows || "<tr><td style='color:#94a3b8'>(atribut kosong)</td></tr>"}</table>
+          ${links}
         </div>
-      `;
+      `);
     }
 
-    function makeLayer(gj, type){
-      const typeU = String(type).toUpperCase();
-      const pane = (typeU === "BAKU") ? "bakuPane" : (typeU === "FUNG" ? "fungPane" : "potsPane");
-      const color = (typeU === "BAKU") ? getComputedStyle(document.documentElement).getPropertyValue('--baku').trim()
-                    : (typeU === "FUNG") ? getComputedStyle(document.documentElement).getPropertyValue('--fung').trim()
-                    : getComputedStyle(document.documentElement).getPropertyValue('--pots').trim();
-
-      return L.geoJSON(gj, {
-        pane,
-        interactive:true,
-        style: () => ({ color, weight: 2, fillColor: color, fillOpacity: 0.18, opacity: 0.95 }),
-        pointToLayer: (f, latlng) => L.circleMarker(latlng, {
-          radius: 5, weight: 2, color, fillColor: color, fillOpacity: 0.85
+    function addGeoJSONToGroup(gj, type){
+      const group = state.layers[type];
+      const layer = L.geoJSON(gj,{
+        style: ()=>styleByType(type),
+        pointToLayer:(f,latlng)=>L.circleMarker(latlng,{
+          radius:5, weight:2, opacity:1,
+          color: styleByType(type).color,
+          fillColor: styleByType(type).color,
+          fillOpacity: 0.85
         }),
-        onEachFeature: (f, layer) => {
-          layer.bindPopup(popupHtmlFromFeature(f, typeU));
-        }
+        onEachFeature: bindPopup
       });
+      layer.addTo(group);
+      state.loaded[type] = true;
     }
 
-    function updateStats(){
-      const cB = layerBAKU ? layerBAKU.getLayers().length : 0;
-      const cF = layerFUNG ? layerFUNG.getLayers().length : 0;
-      const cP = layerPOTS ? layerPOTS.getLayers().length : 0;
-      $("stats").innerHTML = `
-        <span>BAKU</span><b>${cB}</b>
-        <span>FUNG</span><b>${cF}</b>
-        <span>POTS</span><b>${cP}</b>
-      `;
+    function fitToLoaded(){
+      const fg = L.featureGroup();
+      [gBaku,gFung,gPots].forEach(g=>g.eachLayer(l=>fg.addLayer(l)));
+      if(fg.getLayers().length){
+        try{ map.fitBounds(fg.getBounds(), { padding:[20,20] }); }catch(e){}
+      }
     }
 
-    function fitAll(){
-      const layers = [layerBAKU, layerFUNG, layerPOTS].filter(Boolean);
-      if (!layers.length) return;
-      let bounds = null;
-      for (const ly of layers){
+    // ====== GAS calls ======
+    async function gasList(jenisId, bws){
+      const url = `${GAS_URL}?action=list&jenisId=${encodeURIComponent(jenisId)}&bws=${encodeURIComponent(bws)}&t=${Date.now()}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      return data; // {ok, items:[{id,name,type}]}
+    }
+    async function gasGet(fileId){
+      const url = `${GAS_URL}?action=get&fileId=${encodeURIComponent(fileId)}&t=${Date.now()}`;
+      const res = await fetch(url);
+      return await res.json(); // GeoJSON
+    }
+
+    async function loadFromDrive(){
+      if(!jenisId || !bwsKey){
+        setMsg("Param kosong.\nBuka URL dengan:\n?jenisId=ID_FOLDER_JENIS&bws=BWS_Sumatera_VII", "err");
+        return;
+      }
+
+      setMsg("Listing file di Drive...\n" + bwsKey, "");
+      let list;
+      try{
+        list = await gasList(jenisId, bwsKey);
+      }catch(e){
+        setMsg("Gagal list dari GAS proxy:\_attach error_\n" + e, "err");
+        return;
+      }
+
+      if(!list || !list.ok){
+        setMsg("List gagal: " + (list && list.error ? list.error : "unknown"), "err");
+        return;
+      }
+
+      // deteksi file
+      const items = Array.isArray(list.items) ? list.items : [];
+      const pick = { BAKU:null, FUNG:null, POTS:null };
+
+      for(const it of items){
+        if(it.type === "BAKU") pick.BAKU = it;
+        if(it.type === "FUNG") pick.FUNG = it;
+        if(it.type === "POTS") pick.POTS = it;
+      }
+
+      state.files = pick;
+
+      const found = [
+        pick.BAKU ? "BAKU✅" : "BAKU❌",
+        pick.FUNG ? "FUNG✅" : "FUNG❌",
+        pick.POTS ? "POTS✅" : "POTS❌",
+      ].join("  ");
+      foundView.textContent = found;
+
+      const missing = Object.keys(pick).filter(k=>!pick[k]);
+      if(missing.length){
+        setMsg(
+          "List OK, tapi ada file yang belum ketemu:\n- " + missing.join(", ") +
+          "\n\nPastikan nama file mengandung:\n_" + bwsKey + "_BAKU / _FUNG / _POTS\n(dan ext .geojson)",
+          "err"
+        );
+        // tetap lanjut load yang ada
+      } else {
+        setMsg("List OK. Mengambil GeoJSON (BAKU/FUNG/POTS)...", "");
+      }
+
+      // clear dulu biar gak dobel
+      gBaku.clearLayers(); gFung.clearLayers(); gPots.clearLayers();
+      state.loaded = {BAKU:false,FUNG:false,POTS:false};
+      updateCounts();
+
+      // load satu-satu
+      for(const type of ["BAKU","FUNG","POTS"]){
+        const meta = pick[type];
+        if(!meta) continue;
+
+        setMsg(`Mengambil ${type}: ${meta.name}`, "");
         try{
-          const b = ly.getBounds();
-          if (!b || !b.isValid()) continue;
-          bounds = bounds ? bounds.extend(b) : b;
-        }catch(e){}
+          const gj = await gasGet(meta.id);
+          addGeoJSONToGroup(gj, type);
+        }catch(e){
+          setMsg(`Gagal get ${type}:\n${e}`, "err");
+        }
       }
-      if (bounds && bounds.isValid()){
-        map.fitBounds(bounds, { padding:[20,20] });
+
+      updateCounts();
+      fitToLoaded();
+
+      // status akhir
+      const okTypes = ["BAKU","FUNG","POTS"].filter(t=>state.loaded[t]);
+      if(okTypes.length){
+        setMsg("Selesai ✅\nLayer aktif: " + okTypes.join(", "), "ok");
+      }else{
+        setMsg("Tidak ada layer yang berhasil dimuat.", "err");
       }
     }
 
-    /* ==============================
-      DRIVE FETCH
-    ============================== */
-
-    async function listFilesInFolder(parentId){
-      // pakai proxy jika ada
-      if (DRIVE_PROXY_URL){
-        const u = DRIVE_PROXY_URL + "?action=listDrive&parent=" + encodeURIComponent(parentId) + "&t=" + Date.now();
-        const r = await fetch(u);
-        if (!r.ok) throw new Error("Proxy list HTTP " + r.status);
-        const j = await r.json();
-        if (!j.ok) throw new Error(j.error || "Proxy list error");
-        return j.files || j.items || [];
-      }
-
-      // Drive API langsung
-      const q = `'${parentId}' in parents and trashed=false`;
-      const fields = "files(id,name,mimeType,modifiedTime,webViewLink)";
-      const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=${encodeURIComponent(fields)}&key=${encodeURIComponent(DRIVE_API_KEY)}`;
-      const r = await fetch(url);
-      if (!r.ok) {
-        const t = await r.text().catch(()=> "");
-        throw new Error("Drive list HTTP " + r.status + " " + t.slice(0,120));
-      }
-      const j = await r.json();
-      return j.files || [];
-    }
-
-    async function downloadGeoJSON(fileId){
-      // pakai proxy jika ada
-      if (DRIVE_PROXY_URL){
-        const u = DRIVE_PROXY_URL + "?action=media&id=" + encodeURIComponent(fileId) + "&t=" + Date.now();
-        const r = await fetch(u);
-        if (!r.ok) throw new Error("Proxy media HTTP " + r.status);
-        return r.json();
-      }
-
-      const url = `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&key=${encodeURIComponent(DRIVE_API_KEY)}`;
-      const r = await fetch(url);
-      if (!r.ok) {
-        const t = await r.text().catch(()=> "");
-        throw new Error("Drive media HTTP " + r.status + " " + t.slice(0,120));
-      }
-      return r.json();
-    }
-
-    /* ==============================
-      UI + LOAD
-    ============================== */
-
-    // Dock toggle
-    let dockCollapsed = false;
-    $("dockToggle").addEventListener('click',()=>{
-      dockCollapsed = !dockCollapsed;
-      $("dock").classList.toggle('collapsed', dockCollapsed);
-      $("dockToggle").textContent = dockCollapsed ? 'Tampilkan' : 'Ciutkan';
-    });
-
-    // Legend control: ON/OFF per layer
+    // ====== Legend control (checkbox on/off) ======
     const LegendControl = L.Control.extend({
-      position:'topright',
-      onAdd:function(map){
-        const c = L.DomUtil.create('div','layer-legend');
-        c.innerHTML = `
-          <div class="layer-legend-header">
-            <span class="layer-legend-title">Legenda</span>
-            <button type="button" class="layer-toggle-btn" id="legBtn">Ciut</button>
+      options: { position:"topright" },
+      onAdd: function(){
+        const div = L.DomUtil.create("div","legend");
+        div.innerHTML = `
+          <div class="top">
+            <div class="ttl">Legenda</div>
+            <button type="button" id="legBtn">Ciut</button>
           </div>
-          <div class="layer-legend-body" id="legBody">
+          <div class="body">
             <div class="item">
-              <input type="checkbox" id="chk-baku" checked>
-              <span class="swatch swatch-baku"></span>
-              <label for="chk-baku">BAKU</label>
+              <input type="checkbox" id="chkBAKU" checked />
+              <span class="sw sw-baku"></span>
+              <label for="chkBAKU">BAKU</label>
             </div>
             <div class="item">
-              <input type="checkbox" id="chk-fung" checked>
-              <span class="swatch swatch-fung"></span>
-              <label for="chk-fung">Fungsional</label>
+              <input type="checkbox" id="chkFUNG" checked />
+              <span class="sw sw-fung"></span>
+              <label for="chkFUNG">Fungsional</label>
             </div>
             <div class="item">
-              <input type="checkbox" id="chk-pots" checked>
-              <span class="swatch swatch-pots"></span>
-              <label for="chk-pots">Potensial</label>
+              <input type="checkbox" id="chkPOTS" checked />
+              <span class="sw sw-pots"></span>
+              <label for="chkPOTS">Potensial</label>
             </div>
           </div>
         `;
-        L.DomEvent.disableClickPropagation(c);
+        L.DomEvent.disableClickPropagation(div);
 
-        const chkB = c.querySelector("#chk-baku");
-        const chkF = c.querySelector("#chk-fung");
-        const chkP = c.querySelector("#chk-pots");
-        const btn  = c.querySelector("#legBtn");
+        const chkBAKU = div.querySelector("#chkBAKU");
+        const chkFUNG = div.querySelector("#chkFUNG");
+        const chkPOTS = div.querySelector("#chkPOTS");
+        const legBtn  = div.querySelector("#legBtn");
+
+        chkBAKU.addEventListener("change", ()=> chkBAKU.checked ? map.addLayer(gBaku) : map.removeLayer(gBaku));
+        chkFUNG.addEventListener("change", ()=> chkFUNG.checked ? map.addLayer(gFung) : map.removeLayer(gFung));
+        chkPOTS.addEventListener("change", ()=> chkPOTS.checked ? map.addLayer(gPots) : map.removeLayer(gPots));
+
         let collapsed = false;
-
-        chkB.addEventListener("change",()=>{
-          if (!layerBAKU) return;
-          if (chkB.checked) map.addLayer(layerBAKU);
-          else map.removeLayer(layerBAKU);
-          updateStats();
-        });
-        chkF.addEventListener("change",()=>{
-          if (!layerFUNG) return;
-          if (chkF.checked) map.addLayer(layerFUNG);
-          else map.removeLayer(layerFUNG);
-          updateStats();
-        });
-        chkP.addEventListener("change",()=>{
-          if (!layerPOTS) return;
-          if (chkP.checked) map.addLayer(layerPOTS);
-          else map.removeLayer(layerPOTS);
-          updateStats();
-        });
-
-        btn.addEventListener("click",()=>{
+        legBtn.addEventListener("click", ()=>{
           collapsed = !collapsed;
-          if (collapsed){
-            c.classList.add("collapsed");
-            btn.textContent = "Tampil";
-          } else {
-            c.classList.remove("collapsed");
-            btn.textContent = "Ciut";
-          }
+          div.classList.toggle("collapsed", collapsed);
+          legBtn.textContent = collapsed ? "Tampil" : "Ciut";
         });
 
-        return c;
+        return div;
       }
     });
     map.addControl(new LegendControl());
 
-    $("btnFit").addEventListener("click", fitAll);
-
-    async function loadBwsFromDrive(parentId, bwsKey){
-      setMsg("", false);
-      setStatus("Listing file di folder Drive...");
-
-      const files = await listFilesInFolder(parentId);
-
-      // ambil 3 file by name pattern
-      const fBaku = pickByBws(files, bwsKey, "BAKU");
-      const fFung = pickByBws(files, bwsKey, "FUNG");
-      const fPots = pickByBws(files, bwsKey, "POTS");
-
-      if (!fBaku && !fFung && !fPots){
-        setStatus("");
-        setMsg("Gak ketemu file BAKU/FUNG/POTS untuk key: " + bwsKey + " di folder ini. Cek nama file & folder.", true);
-        return;
-      }
-
-      const foundNames = [
-        fBaku ? ("BAKU: " + fBaku.name) : "BAKU: (tidak ada)",
-        fFung ? ("FUNG: " + fFung.name) : "FUNG: (tidak ada)",
-        fPots ? ("POTS: " + fPots.name) : "POTS: (tidak ada)",
-      ].join(" | ");
-      setStatus("Ditemukan → " + foundNames);
-
-      // hapus layer lama
-      if (layerBAKU){ map.removeLayer(layerBAKU); layerCtl.removeLayer(layerBAKU); layerBAKU = null; }
-      if (layerFUNG){ map.removeLayer(layerFUNG); layerCtl.removeLayer(layerFUNG); layerFUNG = null; }
-      if (layerPOTS){ map.removeLayer(layerPOTS); layerCtl.removeLayer(layerPOTS); layerPOTS = null; }
-
-      // download + render
-      const tasks = [];
-      if (fBaku) tasks.push(downloadGeoJSON(fBaku.id).then(gj=>{
-        layerBAKU = makeLayer(gj, "BAKU").addTo(map);
-        layerCtl.addOverlay(layerBAKU, "DI BAKU");
-      }));
-      if (fFung) tasks.push(downloadGeoJSON(fFung.id).then(gj=>{
-        layerFUNG = makeLayer(gj, "FUNG").addTo(map);
-        layerCtl.addOverlay(layerFUNG, "DI Fungsional");
-      }));
-      if (fPots) tasks.push(downloadGeoJSON(fPots.id).then(gj=>{
-        layerPOTS = makeLayer(gj, "POTS").addTo(map);
-        layerCtl.addOverlay(layerPOTS, "DI Potensial");
-      }));
-
-      setStatus("Mengunduh GeoJSON dari Drive...");
-      await Promise.all(tasks);
-
-      updateStats();
-      fitAll();
-      setStatus("Selesai. Klik poligon untuk popup.");
-      setMsg("Mantap ✅ Layer tampil. Legenda kanan atas bisa ON/OFF.", false);
-    }
-
-    $("btnLoad").addEventListener("click", async ()=>{
-      try{
-        const jenisId = $("jenisIdInput").value.trim();
-        const bwsKey  = $("bwsInput").value.trim();
-        if (!jenisId || !bwsKey){
-          setMsg("Isi dulu: jenisId (folder) + Key BWS (misal BWS_Sumatera_VII).", true);
-          return;
-        }
-        $("pageTitle").textContent = "Dashboard " + bwsKey.replace(/_/g," ");
-        await loadBwsFromDrive(jenisId, bwsKey);
-      }catch(err){
-        console.error(err);
-        setStatus("");
-        setMsg("Gagal: " + (err.message || err), true);
-      }
+    // ====== Dock collapse ======
+    const dock = $("dock");
+    const dockToggle = $("dockToggle");
+    let dockCollapsed = false;
+    dockToggle.addEventListener("click", ()=>{
+      dockCollapsed = !dockCollapsed;
+      dock.classList.toggle("collapsed", dockCollapsed);
+      dockToggle.textContent = dockCollapsed ? "Tampilkan" : "Ciutkan";
     });
 
-    // Prefill dari URL params:
-    // ?jenisId=...&bws=BWS_Sumatera_VII
-    const jenisFromUrl = qparam("jenisId") || "";
-    const bwsFromUrl   = qparam("bws") || "";
-    if (jenisFromUrl) $("jenisIdInput").value = jenisFromUrl;
-    if (bwsFromUrl)   $("bwsInput").value = bwsFromUrl;
-    if (jenisFromUrl && bwsFromUrl){
-      $("pageTitle").textContent = "Dashboard " + bwsFromUrl.replace(/_/g," ");
-      // auto load
-      (async ()=>{
-        try{ await loadBwsFromDrive(jenisFromUrl, bwsFromUrl); }
-        catch(e){ setMsg("Auto-load gagal: " + (e.message||e), true); }
-      })();
-    } else {
-      setStatus("Isi jenisId + Key BWS, lalu klik “Muat dari Drive”.");
-      updateStats();
+    // ====== Buttons ======
+    $("btnLoad").addEventListener("click", loadFromDrive);
+    $("btnFit").addEventListener("click", fitToLoaded);
+    $("btnClear").addEventListener("click", clearAll);
+
+    // ====== Auto load kalau param ada ======
+    if(jenisId && bwsKey){
+      setMsg("Auto-load aktif...\nMemuat data dari Drive.", "");
+      loadFromDrive();
+    }else{
+      setMsg("Siap.\nTambahkan query param:\n?jenisId=ID_FOLDER_JENIS&bws=BWS_Sumatera_VII", "");
     }
-  });
+  })();
   </script>
 </body>
 </html>
