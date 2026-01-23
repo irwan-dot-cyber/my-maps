@@ -1,166 +1,299 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
 <head>
-<meta charset="utf-8"/>
-<title>Dashboard DI – Aceh Barat (PMTiles)</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>DI Aceh Barat (PMTiles)</title>
 
-<!-- Leaflet -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<!-- Leaflet.VectorGrid (WAJIB untuk vector tiles) -->
-<script src="https://unpkg.com/leaflet.vectorgrid@1.3.0/dist/Leaflet.VectorGrid.bundled.js"></script>
+  <!-- VectorGrid (for protobuf vector tiles) -->
+  <script src="https://unpkg.com/leaflet.vectorgrid@1.3.0/dist/Leaflet.VectorGrid.bundled.js"></script>
 
-<!-- PMTiles (PAKAI UMD biar ga ada error "export") -->
-<script src="https://unpkg.com/pmtiles@3.0.6/dist/pmtiles.js"></script>
+  <style>
+    :root{
+      --bg:#0b1220; --panel:rgba(10,18,35,.82); --line:rgba(255,255,255,.10);
+      --text:#e7eefc; --muted:#a9b7d3;
+      --baku:#22c55e; --fung:#3b82f6; --pots:#f59e0b;
+    }
+    html,body{height:100%;margin:0;background:#050a14;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+    #map{height:100%;width:100%}
 
-<style>
-  html, body { height: 100%; margin: 0; background: #0b1220; color: #e5e7eb; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-  #map { height: 100vh; width: 100%; }
-
-  .panel{
-    position:absolute; bottom:16px; left:16px;
-    background: rgba(15,23,42,0.92);
-    backdrop-filter: blur(6px);
-    border-radius: 14px;
-    padding: 14px 16px;
-    width: 300px;
-    box-shadow: 0 20px 40px rgba(0,0,0,.35);
-    z-index: 1000;
-  }
-  .panel h3{ margin:0 0 10px 0; font-size:14px; font-weight:700; color:#93c5fd; }
-  .row{ display:flex; align-items:center; margin-bottom:8px; font-size:13px; }
-  .row input{ margin-right:8px; }
-  .badge{ display:inline-block; padding:3px 8px; border-radius:999px; font-size:11px; margin-left:auto; color:#fff; }
-  .baku{ background:#16a34a; } .fung{ background:#2563eb; } .pots{ background:#f59e0b; }
-
-  .btn{
-    margin-top: 10px; width: 100%;
-    padding: 10px 10px;
-    border-radius: 10px; border:none; cursor:pointer;
-    background:#1d4ed8; color:#fff; font-weight:700;
-  }
-  .btn:hover{ background:#2563eb; }
-</style>
+    /* Panel */
+    .panel{
+      position:absolute; left:18px; bottom:18px;
+      width:min(360px, calc(100% - 36px));
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:18px;
+      padding:14px 14px 12px;
+      color:var(--text);
+      box-shadow:0 16px 50px rgba(0,0,0,.45);
+      backdrop-filter: blur(10px);
+      z-index: 9999;
+    }
+    .title{font-weight:800;font-size:18px;letter-spacing:.2px;margin:2px 2px 10px}
+    .row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 2px}
+    .left{display:flex;align-items:center;gap:10px}
+    .badge{font-weight:800;font-size:12px;padding:3px 10px;border-radius:999px;color:#06101f}
+    .badge.baku{background:var(--baku)}
+    .badge.fung{background:var(--fung)}
+    .badge.pots{background:var(--pots)}
+    .chk{width:18px;height:18px;accent-color:#4f8cff}
+    .name{font-size:14px;color:var(--text)}
+    .btn{
+      margin-top:10px; width:100%;
+      background:linear-gradient(135deg,#2b6fff,#1d4ed8);
+      color:white; border:none; padding:12px 14px;
+      border-radius:12px; font-weight:800;
+      cursor:pointer;
+    }
+    .btn:active{transform: translateY(1px);}
+    .note{margin-top:8px;font-size:12px;color:var(--muted);line-height:1.35}
+    .status{margin-top:10px;font-size:12px;color:var(--muted)}
+    .status b{color:var(--text)}
+    .topbar{
+      position:absolute; left:18px; top:18px;
+      background:rgba(10,18,35,.65);
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:10px 12px;
+      color:var(--text);
+      z-index: 9999;
+      backdrop-filter: blur(10px);
+      max-width:min(520px, calc(100% - 36px));
+    }
+    .topbar .small{font-size:12px;color:var(--muted)}
+    .leaflet-control-attribution{opacity:.85}
+  </style>
 </head>
 
 <body>
-<div id="map"></div>
+  <div id="map"></div>
 
-<div class="panel">
-  <h3>DI Aceh Barat</h3>
-
-  <div class="row">
-    <input type="checkbox" id="chkBaku" checked />
-    <label for="chkBaku">BAKU</label>
-    <span class="badge baku">Baku</span>
+  <div class="topbar">
+    <div style="font-weight:800">DI Aceh Barat</div>
+    <div class="small">PMTiles vector tiles (zoom max 14). Basemap: Esri World Imagery.</div>
   </div>
 
-  <div class="row">
-    <input type="checkbox" id="chkFung" checked />
-    <label for="chkFung">Fungsional</label>
-    <span class="badge fung">FUNG</span>
+  <div class="panel">
+    <div class="title">DI Aceh Barat</div>
+
+    <div class="row">
+      <div class="left">
+        <input id="chkBAKU" class="chk" type="checkbox" checked>
+        <div class="name">BAKU</div>
+      </div>
+      <span class="badge baku">Baku</span>
+    </div>
+
+    <div class="row">
+      <div class="left">
+        <input id="chkFUNG" class="chk" type="checkbox" checked>
+        <div class="name">Fungsional</div>
+      </div>
+      <span class="badge fung">FUNG</span>
+    </div>
+
+    <div class="row">
+      <div class="left">
+        <input id="chkPOTS" class="chk" type="checkbox" checked>
+        <div class="name">Potensial</div>
+      </div>
+      <span class="badge pots">POTS</span>
+    </div>
+
+    <button id="btnFit" class="btn">Fit ke Layer</button>
+
+    <div class="note">
+      Pastikan file ada 1 folder dengan HTML ini:
+      <b>aceh_barat_baku.pmtiles</b>, <b>aceh_barat_fung.pmtiles</b>, <b>aceh_barat_pots.pmtiles</b>
+    </div>
+
+    <div id="status" class="status">Status: <b>siap</b></div>
   </div>
 
-  <div class="row">
-    <input type="checkbox" id="chkPots" checked />
-    <label for="chkPots">Potensial</label>
-    <span class="badge pots">POTS</span>
-  </div>
+  <!-- IMPORTANT: use type="module" to avoid "Unexpected token export" -->
+  <script type="module">
+    import { Protocol } from "https://unpkg.com/pmtiles@3.0.6/dist/index.js";
 
-  <button class="btn" id="btnFit">Fit ke Layer</button>
-</div>
+    // ---- 1) Map
+    const map = L.map("map", { zoomControl: true, preferCanvas: true })
+      .setView([4.45, 96.05], 9);
 
-<script>
-/* ===============================
-   BASE URL (AUTO)
-================================ */
-const BASE = location.href.replace(/index\.html.*$/, '');
+    L.tileLayer(
+      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      { maxZoom: 19, attribution: "Leaflet | © Esri" }
+    ).addTo(map);
 
-/* ===============================
-   PMTiles URL (FILE SEFOLDER)
-================================ */
-const URL_BAKU = BASE + "aceh_barat_baku.pmtiles";
-const URL_FUNG = BASE + "aceh_barat_fung.pmtiles";
-const URL_POTS = BASE + "aceh_barat_pots.pmtiles";
+    // ---- 2) PMTiles protocol => we convert pmtiles:// URL into tile endpoint for VectorGrid
+    // pmtiles Protocol exposes a tile handler; easiest approach: create a small local tile URL wrapper.
+    const protocol = new Protocol();
 
-/* ===============================
-   MAP
-================================ */
-const map = L.map('map', { maxZoom: 14, minZoom: 5 }).setView([4.3, 96.1], 8);
+    // A tiny "virtual" tile URL endpoint: VectorGrid will call this URL,
+    // we intercept via fetch override. We'll just build a URL that we can recognize.
+    const PMT_PREFIX = "pmt://";
 
-L.tileLayer(
-  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-  { attribution: '© Esri' }
-).addTo(map);
+    const statusEl = document.getElementById("status");
+    function setStatus(msg){ statusEl.innerHTML = "Status: <b>" + msg + "</b>"; }
 
-/* ===============================
-   PMTiles protocol
-================================ */
-if (!window.pmtiles) {
-  console.error("pmtiles global tidak kebaca. Pastikan script pmtiles UMD ke-load.");
-}
-const protocol = new pmtiles.Protocol();
-// penting: register protocol ke Leaflet.VectorGrid
-protocol.addTo(map);
+    // Intercept fetch so leaflet-vectorgrid can request "pmt://..." URLs
+    // and we answer them with pmtiles bytes.
+    const realFetch = window.fetch.bind(window);
+    window.fetch = async (input, init) => {
+      const url = (typeof input === "string") ? input : input.url;
 
-/* ===============================
-   STYLE
-================================ */
-function polyStyle(color){
-  return { weight: 1, color, fill: true, fillColor: color, fillOpacity: 0.55 };
-}
+      if (url.startsWith(PMT_PREFIX)) {
+        // format: pmt://<pmtiles-file>|<z>/<x>/<y>.pbf
+        // example: pmt://./aceh_barat_baku.pmtiles|12/3456/2345.pbf
+        try {
+          const [pmtUrl, zxy] = url.slice(PMT_PREFIX.length).split("|");
+          const parts = zxy.replace(".pbf","").split("/");
+          const z = parseInt(parts[0],10), x = parseInt(parts[1],10), y = parseInt(parts[2],10);
 
-/* ===============================
-   VECTOR TILE LAYERS
-   CATATAN: nama source layer di PMTiles kamu
-   harus sama dengan -l waktu tippecanoe.
-   tadi kamu pakai -l baku / fung / pots.
-================================ */
-const layerBaku = L.vectorGrid.protobuf(protocol.tileURL(URL_BAKU), {
-  maxZoom: 14,
-  vectorTileLayerStyles: {
-    baku: polyStyle("#16a34a")
-  }
-}).addTo(map);
+          const resp = await protocol.tile(pmtUrl, z, x, y);
+          // protocol.tile returns a Response already in recent versions
+          // but if it returns bytes, wrap it.
+          if (resp instanceof Response) return resp;
 
-const layerFung = L.vectorGrid.protobuf(protocol.tileURL(URL_FUNG), {
-  maxZoom: 14,
-  vectorTileLayerStyles: {
-    fung: polyStyle("#2563eb")
-  }
-}).addTo(map);
+          return new Response(resp.data || resp, {
+            status: 200,
+            headers: { "Content-Type":"application/x-protobuf" }
+          });
+        } catch (e) {
+          return new Response("tile error", { status: 404 });
+        }
+      }
 
-const layerPots = L.vectorGrid.protobuf(protocol.tileURL(URL_POTS), {
-  maxZoom: 14,
-  vectorTileLayerStyles: {
-    pots: polyStyle("#f59e0b")
-  }
-}).addTo(map);
+      return realFetch(input, init);
+    };
 
-/* ===============================
-   FIT (fallback bbox Aceh Barat)
-================================ */
-function fitAll(){
-  map.fitBounds([[4.0, 95.4],[4.8, 96.9]]);
-}
-document.getElementById("btnFit").onclick = fitAll;
+    // helper: build tile URL for a given pmtiles file
+    function pmtTileUrl(pmtilesFile){
+      // leaflet-vectorgrid will replace {z}/{x}/{y}
+      return `${PMT_PREFIX}${pmtilesFile}|{z}/{x}/{y}.pbf`;
+    }
 
-/* ===============================
-   TOGGLE
-================================ */
-document.getElementById("chkBaku").onchange = e =>
-  e.target.checked ? map.addLayer(layerBaku) : map.removeLayer(layerBaku);
+    // ---- 3) Build VectorGrid layers
+    function makeLayer({pmtilesFile, layerName, style}){
+      return L.vectorGrid.protobuf(pmtTileUrl(pmtilesFile), {
+        maxNativeZoom: 14,   // your request
+        maxZoom: 19,
+        interactive: true,
+        vectorTileLayerStyles: {
+          [layerName]: style
+        },
+        getFeatureId: f => {
+          // stable id (optional)
+          return f.properties?.ID || f.properties?.id || JSON.stringify(f.properties);
+        }
+      });
+    }
 
-document.getElementById("chkFung").onchange = e =>
-  e.target.checked ? map.addLayer(layerFung) : map.removeLayer(layerFung);
+    // Styles (poligon only)
+    const styleBAKU = { weight: 1, color: "#22c55e", fill: true, fillOpacity: 0.45 };
+    const styleFUNG = { weight: 1, color: "#3b82f6", fill: true, fillOpacity: 0.45 };
+    const stylePOTS = { weight: 1, color: "#f59e0b", fill: true, fillOpacity: 0.45 };
 
-document.getElementById("chkPots").onchange = e =>
-  e.target.checked ? map.addLayer(layerPots) : map.removeLayer(layerPots);
+    // IMPORTANT: layerName MUST match tippecanoe -l value
+    // If you built with -l baku / -l fung / -l pots, keep these exactly.
+    const lyrBAKU = makeLayer({
+      pmtilesFile: "./aceh_barat_baku.pmtiles",
+      layerName: "baku",
+      style: styleBAKU
+    });
+    const lyrFUNG = makeLayer({
+      pmtilesFile: "./aceh_barat_fung.pmtiles",
+      layerName: "fung",
+      style: styleFUNG
+    });
+    const lyrPOTS = makeLayer({
+      pmtilesFile: "./aceh_barat_pots.pmtiles",
+      layerName: "pots",
+      style: stylePOTS
+    });
 
-/* auto fit once */
-setTimeout(fitAll, 400);
-</script>
+    // Popup on click
+    function bindPopup(layer, label){
+      layer.on("click", (e) => {
+        const p = e.layer?.properties || {};
+        const title = p.Nm_Inf || p.Nama_DI || p.NAMA || label;
+        const rows = Object.keys(p).slice(0, 20).map(k => `<tr><td style="padding:4px 8px;color:#9fb0d0">${k}</td><td style="padding:4px 8px;color:#e7eefc">${String(p[k])}</td></tr>`).join("");
+        const html = `
+          <div style="min-width:260px">
+            <div style="font-weight:800;margin:0 0 6px">${title}</div>
+            <div style="font-size:12px;color:#9fb0d0;margin-bottom:8px">${label}</div>
+            <div style="max-height:220px;overflow:auto;border:1px solid rgba(0,0,0,.12);border-radius:10px">
+              <table style="border-collapse:collapse;width:100%">${rows}</table>
+            </div>
+          </div>
+        `;
+        L.popup({ maxWidth: 520 }).setLatLng(e.latlng).setContent(html).openOn(map);
+      });
+    }
+    bindPopup(lyrBAKU, "BAKU");
+    bindPopup(lyrFUNG, "FUNG");
+    bindPopup(lyrPOTS, "POTS");
+
+    // ---- 4) Toggle UI
+    const chkBAKU = document.getElementById("chkBAKU");
+    const chkFUNG = document.getElementById("chkFUNG");
+    const chkPOTS = document.getElementById("chkPOTS");
+    const btnFit  = document.getElementById("btnFit");
+
+    function applyToggles(){
+      const wantBAKU = chkBAKU.checked;
+      const wantFUNG = chkFUNG.checked;
+      const wantPOTS = chkPOTS.checked;
+
+      if (wantBAKU && !map.hasLayer(lyrBAKU)) lyrBAKU.addTo(map);
+      if (!wantBAKU && map.hasLayer(lyrBAKU)) map.removeLayer(lyrBAKU);
+
+      if (wantFUNG && !map.hasLayer(lyrFUNG)) lyrFUNG.addTo(map);
+      if (!wantFUNG && map.hasLayer(lyrFUNG)) map.removeLayer(lyrFUNG);
+
+      if (wantPOTS && !map.hasLayer(lyrPOTS)) lyrPOTS.addTo(map);
+      if (!wantPOTS && map.hasLayer(lyrPOTS)) map.removeLayer(lyrPOTS);
+    }
+
+    chkBAKU.addEventListener("change", applyToggles);
+    chkFUNG.addEventListener("change", applyToggles);
+    chkPOTS.addEventListener("change", applyToggles);
+
+    // default on
+    applyToggles();
+
+    // ---- 5) Fit Bounds (when tiles already loaded, bounds estimation is tricky)
+    // We'll fit to an approximate area by listening for first tile load and then use bounds from clicked features.
+    // Better: store bbox in a small JSON file or hardcode for the region.
+    // For now, we use a safe initial bbox around Aceh Barat.
+    const fallbackBounds = L.latLngBounds(
+      L.latLng(4.00, 95.40),
+      L.latLng(4.85, 96.55)
+    );
+
+    btnFit.addEventListener("click", () => {
+      setStatus("fit bounds");
+      map.fitBounds(fallbackBounds, { padding: [30, 30] });
+      setTimeout(()=>setStatus("siap"), 600);
+    });
+
+    // Quick sanity check: try fetch a single tile (won't crash if 404 at some zoom)
+    (async () => {
+      try {
+        setStatus("cek file PMTiles...");
+        // request one likely tile at current view
+        const z = Math.min(12, map.getZoom());
+        const c = map.getCenter();
+        // fake request just to ensure fetch interception works
+        await fetch(`${PMT_PREFIX}./aceh_barat_baku.pmtiles|${z}/0/0.pbf`);
+        setStatus("siap (PMTiles OK)");
+      } catch (e) {
+        setStatus("PMTiles belum kebaca (cek nama file / lokasi)");
+      }
+    })();
+  </script>
 </body>
 </html>
