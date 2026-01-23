@@ -1,1 +1,222 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8"/>
+<title>Dashboard DI – Aceh Barat (PMTiles)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<!-- Leaflet -->
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- PMTiles -->
+<script src="https://unpkg.com/pmtiles@3.0.6/dist/index.js"></script>
+
+<style>
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: #0b1220;
+    color: #e5e7eb;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  }
+
+  #map {
+    height: 100vh;
+    width: 100%;
+  }
+
+  .panel {
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    background: rgba(15,23,42,0.92);
+    backdrop-filter: blur(6px);
+    border-radius: 14px;
+    padding: 14px 16px;
+    width: 300px;
+    box-shadow: 0 20px 40px rgba(0,0,0,.35);
+    z-index: 1000;
+  }
+
+  .panel h3 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: #93c5fd;
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+
+  .row input {
+    margin-right: 8px;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    margin-left: auto;
+  }
+
+  .baku { background:#16a34a; }
+  .fung { background:#2563eb; }
+  .pots { background:#f59e0b; }
+
+  .btn {
+    margin-top: 10px;
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    background: #1d4ed8;
+    color: #fff;
+    font-weight: 600;
+  }
+
+  .btn:hover {
+    background: #2563eb;
+  }
+</style>
+</head>
+
+<body>
+<div id="map"></div>
+
+<div class="panel">
+  <h3>DI Aceh Barat</h3>
+
+  <div class="row">
+    <input type="checkbox" id="chkBaku" checked />
+    <label>BAKU</label>
+    <span class="badge baku">Baku</span>
+  </div>
+
+  <div class="row">
+    <input type="checkbox" id="chkFung" checked />
+    <label>Fungsional</label>
+    <span class="badge fung">FUNG</span>
+  </div>
+
+  <div class="row">
+    <input type="checkbox" id="chkPots" checked />
+    <label>Potensial</label>
+    <span class="badge pots">POTS</span>
+  </div>
+
+  <button class="btn" onclick="fitAll()">Fit ke Layer</button>
+</div>
+
+<script>
+/* ===============================
+   BASE URL (AUTO)
+================================ */
+const BASE = location.href.replace(/index\.html.*$/, '');
+
+/* ===============================
+   PMTILES URL
+================================ */
+const URL_BAKU = BASE + "aceh_barat_baku.pmtiles";
+const URL_FUNG = BASE + "aceh_barat_fung.pmtiles";
+const URL_POTS = BASE + "aceh_barat_pots.pmtiles";
+
+/* ===============================
+   MAP
+================================ */
+const map = L.map('map', {
+  maxZoom: 14,
+  minZoom: 5
+}).setView([4.3, 96.1], 8);
+
+L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  { attribution: '© Esri' }
+).addTo(map);
+
+/* ===============================
+   PMTiles protocol
+================================ */
+const protocol = new pmtiles.Protocol();
+map.pmtiles = protocol;
+
+/* ===============================
+   STYLE
+================================ */
+function polygonStyle(color) {
+  return {
+    color,
+    weight: 1,
+    fillColor: color,
+    fillOpacity: 0.55
+  };
+}
+
+/* ===============================
+   VECTOR TILE LAYERS
+================================ */
+const layerBaku = L.vectorGrid.protobuf(
+  protocol.tileURL(URL_BAKU),
+  {
+    maxZoom: 14,
+    vectorTileLayerStyles: {
+      baku: polygonStyle("#16a34a")
+    }
+  }
+).addTo(map);
+
+const layerFung = L.vectorGrid.protobuf(
+  protocol.tileURL(URL_FUNG),
+  {
+    maxZoom: 14,
+    vectorTileLayerStyles: {
+      fung: polygonStyle("#2563eb")
+    }
+  }
+).addTo(map);
+
+const layerPots = L.vectorGrid.protobuf(
+  protocol.tileURL(URL_POTS),
+  {
+    maxZoom: 14,
+    vectorTileLayerStyles: {
+      pots: polygonStyle("#f59e0b")
+    }
+  }
+).addTo(map);
+
+/* ===============================
+   TOGGLE
+================================ */
+document.getElementById("chkBaku").onchange = e =>
+  e.target.checked ? map.addLayer(layerBaku) : map.removeLayer(layerBaku);
+
+document.getElementById("chkFung").onchange = e =>
+  e.target.checked ? map.addLayer(layerFung) : map.removeLayer(layerFung);
+
+document.getElementById("chkPots").onchange = e =>
+  e.target.checked ? map.addLayer(layerPots) : map.removeLayer(layerPots);
+
+/* ===============================
+   FIT BOUNDS
+   (fallback: Aceh Barat)
+================================ */
+function fitAll() {
+  map.fitBounds([
+    [4.0, 95.4],
+    [4.8, 96.9]
+  ]);
+}
+</script>
+</body>
+</html>
 
