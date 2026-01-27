@@ -2,19 +2,20 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <title>Dashboard DI — PMTiles</title>
+  <title>Dashboard DI — PMTiles (Pusat)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <link rel="icon" href="/my-maps/assets/LogoPUPR.png" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" href="../../../../assets/LogoPUPR.png" />
+
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
   <style>
     :root{
       --bg:#0b1222; --text:#e5e7eb; --muted:#cbd5e1; --muted-2:#94a3b8;
       --survey:#0d47a1; --accent:#1d5fd1; --panel:rgba(11,18,34,.92);
-      --border:rgba(255,255,255,.12); --hdrH:80px;
+      --border:rgba(255,255,255,.12); --hdrH:80px; --radius:12px;
     }
-    html, body { height:100%; margin:0; font-family:'Inter',system-ui,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--text) }
+    html, body { height:100%; margin:0; font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--text) }
+
     .header{
       position:fixed; top:0; left:0; right:0; z-index:900;
       background:var(--survey);
@@ -29,261 +30,292 @@
     .header .subtitle{font-weight:600; font-size:11px; color:rgba(255,255,255,.9); margin-top:2px}
     .btn-home{
       background:#fff; color:var(--survey);
-      font-weight:700; padding:6px 12px;
+      font-weight:800; padding:6px 12px;
       border-radius:10px; text-decoration:none; font-size:11px;
       white-space:nowrap;
     }
+    .btn-home:hover{background:#f1f5f9}
     .spacer{height:var(--hdrH)}
-    #map{ height:calc(100vh - var(--hdrH)); }
+    #map{ height:calc(100vh - var(--hdrH)); position:relative; z-index:1; }
 
     .dock{
       position:fixed; left:0; right:0; bottom:0;
       background:var(--panel); border-top:1px solid var(--border);
-      max-height:40vh; padding:10px 12px;
+      max-height:46vh; padding:8px 12px;
       box-shadow:0 -10px 22px rgba(0,0,0,.28);
       z-index:950; backdrop-filter:blur(6px);
+      display:flex; flex-direction:column; gap:6px;
+      transition:max-height .2s ease, padding .2s ease;
     }
-    .top{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; }
-    .dock h2{ margin:0; font-size:14px; font-weight:800; color:#fff }
-    .pill{
-      font-size:11px; padding:4px 10px; border-radius:999px;
-      border:1px solid var(--border); color:#e5e7eb; background:rgba(15,23,42,.85);
+    .dock-header{ display:flex; align-items:center; justify-content:space-between; }
+    .dock-header h2{ font-size:14px; margin:0; font-weight:900; color:#fff; }
+    .dock-toggle{
+      background:rgba(15,23,42,.9);
+      border:1px solid var(--border);
+      border-radius:999px;
+      color:#e5e7eb;
+      font-size:11px;
+      padding:2px 10px;
+      cursor:pointer;
     }
-    .err{ color:#fca5a5; font-size:12px; margin-top:6px; }
-    .ok{ color:#4ade80; font-size:12px; margin-top:6px; }
-    .list{
-      margin-top:8px; max-height:22vh; overflow:auto;
-      border:1px solid var(--border); border-radius:12px;
-      padding:8px 10px; background:rgba(15,23,42,.88); font-size:12px;
+    .dock-toggle:hover{background:#111827}
+    .dock-body{font-size:12px;}
+    .dock.collapsed{ max-height:40px; padding-top:6px; padding-bottom:6px; }
+    .dock.collapsed .dock-body{display:none;}
+
+    .row{
+      display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+      font-size:12px; color:var(--muted);
     }
-    .item{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 0; border-bottom:1px dashed rgba(148,163,184,.35); }
-    .item:last-child{border-bottom:none}
-    .name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#e5e7eb; flex:1; }
     .btn{
-      background:var(--accent); border:none; color:#fff; font-weight:800; font-size:11px;
-      padding:4px 10px; border-radius:999px; cursor:pointer;
+      background:rgba(255,255,255,.08);
+      border:1px solid var(--border);
+      color:#fff;
+      border-radius:999px;
+      padding:6px 10px;
+      font-size:12px;
+      font-weight:800;
+      cursor:pointer;
     }
-    .btn:hover{background:#2563eb}
-    .btn.secondary{ background:#111827; border:1px solid rgba(148,163,184,.35); }
-    .btn.secondary:hover{background:#0f172a}
+    .btn.primary{ background:var(--accent); border-color:rgba(255,255,255,.2); }
+    .btn:hover{ filter:brightness(1.08); }
+
+    .status{
+      margin-left:auto;
+      font-size:11px;
+      padding:2px 8px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.18);
+      background:rgba(0,0,0,.15);
+    }
+    .status.ok{ color:#4ade80; }
+    .status.err{ color:#f87171; }
+
+    .list{
+      margin-top:6px;
+      border:1px solid var(--border);
+      border-radius:10px;
+      overflow:hidden;
+      background:rgba(15,23,42,.55);
+    }
+    .item{
+      display:flex; align-items:center; gap:8px;
+      padding:8px 10px;
+      border-bottom:1px dashed rgba(148,163,184,.35);
+      font-size:12px;
+    }
+    . ОС item:last-child{border-bottom:none;}
+    .swatch{ width:12px; height:12px; border-radius:4px; border:1px solid rgba(255,255,255,.65); }
+    .name{ flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .hint{ font-size:11px; color:var(--muted-2); margin-top:6px; }
+
+    @media(max-width:680px){
+      :root{--hdrH:88px}
+    }
   </style>
 </head>
+
 <body>
   <div class="header">
-    <img src="/my-maps/assets/LogoPUPR.png" alt="Logo PU"/>
+    <img src="../../../../assets/LogoPUPR.png" alt="Logo PU"/>
     <div class="text">
       <div class="title">Kementerian PU</div>
       <div class="subtitle">Ditjen SDA · Dit. Irigasi &amp; Rawa</div>
       <div class="subtitle">Dashboard PMTiles (Auto tampil semua)</div>
     </div>
-    <a href="/my-maps/si-irwan.html" class="btn-home">Beranda</a>
+    <a href="../../../../si-irwan.html" class="btn-home">Beranda</a>
   </div>
   <div class="spacer"></div>
 
   <div id="map"></div>
 
-  <div class="dock">
-    <div class="top">
-      <h2>Layer PMTiles</h2>
-      <span id="statusPill" class="pill">Loading…</span>
+  <div class="dock" id="dock">
+    <div class="dock-header">
+      <h2>Layer PMTiles (Pusat)</h2>
+      <button id="dockToggle" class="dock-toggle">Ciutkan</button>
     </div>
+    <div class="dock-body">
+      <div class="row">
+        <button class="btn primary" id="btnFitID">Fit Indonesia</button>
+        <button class="btn" id="btnOnAll">ON semua</button>
+        <button class="btn" id="btnOffAll">OFF semua</button>
+        <span id="status" class="status">Memuat manifest.json…</span>
+      </div>
 
-    <div style="display:flex; gap:10px; flex-wrap:wrap">
-      <button id="btnFitAll" class="btn">Fit Indonesia</button>
-      <button id="btnOnAll" class="btn secondary">ON semua</button>
-      <button id="btnOffAll" class="btn secondary">OFF semua</button>
-    </div>
+      <div class="list" id="layerList">
+        <div class="item" style="color:#94a3b8">Menunggu manifest.json…</div>
+      </div>
 
-    <div id="msg" class="err"></div>
-    <div id="list" class="list">
-      <div style="color:#94a3b8">Memuat manifest.json…</div>
+      <div class="hint">
+        Catatan: <b>manifest.json harus 1 folder</b> dengan file HTML ini dan semua <code>.pmtiles</code>.
+      </div>
     </div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- WAJIB -->
-  <script src="https://unpkg.com/pmtiles@3.0.6/dist/pmtiles.js"></script>
-  <script src="https://unpkg.com/protomaps-leaflet@4.0.1/dist/protomaps-leaflet.js"></script>
+  <!-- PMTiles + Protomaps Leaflet -->
+  <script src="https://unpkg.com/pmtiles@latest/dist/index.js"></script>
+  <script src="https://unpkg.com/protomaps-leaflet@latest/dist/protomaps-leaflet.min.js"></script>
 
   <script>
   (function(){
-    // ======== SET LOKASI PMTILES LU DI SINI ========
-    // manifest + pmtiles ada di folder pusat:
-    // /my-maps/DI/Permukaan/pusat/
-    const PMTILES_BASE = "./Permukaan/pusat/";          // prefix file pmtiles
-    const MANIFEST_URL = PMTILES_BASE + "manifest.json"; // lokasi manifest
+    const MANIFEST = "./manifest.json"; // wajib sefolder
 
-    const msgEl  = document.getElementById("msg");
-    const listEl = document.getElementById("list");
-    const pill   = document.getElementById("statusPill");
-
-    function setMsg(text, ok=false){
-      msgEl.className = ok ? "ok" : "err";
-      msgEl.textContent = text || "";
-    }
-    function setPill(text){ pill.textContent = text; }
-
-    const map = L.map("map").setView([-2.3,118.0],5);
+    // === Map init
+    const map = L.map('map', { zoomControl:true }).setView([-2.5, 118], 5);
 
     const imagery = L.tileLayer(
-      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-      { attribution:"Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics" }
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      { attribution:'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics' }
     ).addTo(map);
 
     const osm = L.tileLayer(
-      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-      { attribution:"© OpenStreetMap contributors" }
+      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      { attribution:'© OpenStreetMap contributors' }
     );
 
-    L.control.layers({Imagery:imagery, OSM:osm}, null, {collapsed:true, position:"topright"}).addTo(map);
+    L.control.layers({ "Imagery": imagery, "OSM": osm }, null, { collapsed:true, position:'topright' }).addTo(map);
 
-    // ======= FIX UTAMA: addProtocol lewat protomapsL =======
-    const protocol = new pmtiles.Protocol();
+    // panes biar urutan rapi
+    map.createPane('paneBAKU'); map.getPane('paneBAKU').style.zIndex = 420;
+    map.createPane('paneFUNG'); map.getPane('paneFUNG').style.zIndex = 430;
+    map.createPane('panePOTS'); map.getPane('panePOTS').style.zIndex = 440;
+    map.createPane('paneETC');  map.getPane('paneETC').style.zIndex = 410;
 
-    if (!window.protomapsL) {
-      setPill("Error");
-      setMsg("protomapsL tidak kebaca. Cek CDN protomaps-leaflet.", false);
-      return;
+    const $status = document.getElementById('status');
+    const $list   = document.getElementById('layerList');
+    const $dock   = document.getElementById('dock');
+    const $dockToggle = document.getElementById('dockToggle');
+
+    let dockCollapsed = false;
+    $dockToggle.addEventListener('click',()=>{
+      dockCollapsed = !dockCollapsed;
+      $dock.classList.toggle('collapsed', dockCollapsed);
+      $dockToggle.textContent = dockCollapsed ? 'Tampilkan' : 'Ciutkan';
+    });
+
+    function setStatusOk(msg){
+      $status.className = 'status ok';
+      $status.textContent = msg;
+    }
+    function setStatusErr(msg){
+      $status.className = 'status err';
+      $status.textContent = msg;
     }
 
-    // INI YANG BENER (bukan pmtiles.registerProtocol)
-    if (typeof protomapsL.addProtocol === "function") {
-      protomapsL.addProtocol("pmtiles", protocol.tile);
-    } else {
-      setPill("Error");
-      setMsg("protomapsL.addProtocol tidak ada. Versi library gak cocok.", false);
-      return;
+    // simpan layer
+    const layers = []; // {meta, leafletLayer, checkbox}
+
+    function typeColor(type){
+      const t = String(type||'').toUpperCase();
+      if(t==='BAKU') return '#22c55e';
+      if(t==='FUNG') return '#60a5fa';
+      if(t==='POTS') return '#f59e0b';
+      return '#a78bfa';
     }
 
-    const layers = []; // {meta, layer, visible}
-
-    function colorByType(type){
-      const t = (type||"").toUpperCase();
-      if (t.includes("BAKU")) return "#22c55e";
-      if (t.includes("FUNG")) return "#60a5fa";
-      if (t.includes("POTS")) return "#f59e0b";
-      return "#a855f7";
+    function paneFor(type){
+      const t = String(type||'').toUpperCase();
+      if(t==='BAKU') return 'paneBAKU';
+      if(t==='FUNG') return 'paneFUNG';
+      if(t==='POTS') return 'panePOTS';
+      return 'paneETC';
     }
 
-    function makePmtilesLayer(pmtilesFile, color){
-      return protomapsL.leafletLayer({
-        url: "pmtiles://" + (PMTILES_BASE + pmtilesFile),
-        // style sederhana: polygon + line
-        paint_rules: [
-          { dataLayer: "*", symbolizer: new protomapsL.PolygonSymbolizer({ fill: color, opacity: 0.35 }) },
-          { dataLayer: "*", symbolizer: new protomapsL.LineSymbolizer({ color: color, width: 1.2, opacity: 0.9 }) },
-          { dataLayer: "*", symbolizer: new protomapsL.CircleSymbolizer({ fill: color, radius: 4, opacity: 0.9 }) }
-        ]
+    function paintRulesFor(color){
+      // Protomaps: aturan render untuk polygon/line/point sekaligus
+      return [
+        { symbolizer: new protomapsL.PolygonSymbolizer({ fill: color, opacity: 0.22 }) },
+        { symbolizer: new protomapsL.LineSymbolizer({ color: color, width: 2 }) },
+        { symbolizer: new protomapsL.CircleSymbolizer({ fill: color, radius: 4, opacity: 0.9 }) }
+      ];
+    }
+
+    function addOne(item){
+      const title = item.title || item.file || 'PMTiles';
+      const color = typeColor(item.type);
+      const pane  = paneFor(item.type);
+
+      // Leaflet layer dari PMTiles (tanpa addProtocol)
+      const lyr = protomapsL.leafletLayer({
+        url: "./" + item.file,
+        pane: pane,
+        paintRules: paintRulesFor(color)
       });
-    }
 
-    function flattenManifest(man){
-      const out = [];
-      if (Array.isArray(man?.packages)) {
-        man.packages.forEach(pkg=>{
-          (pkg.layers||[]).forEach(l=>{
-            out.push({
-              group: pkg.title || pkg.id || "Paket",
-              name:  l.name  || l.id  || l.file,
-              file:  l.file,
-              type:  l.type || l.id  || l.name || ""
-            });
-          });
-        });
-      } else if (Array.isArray(man?.items)) {
-        man.items.forEach(it=>{
-          out.push({
-            group: it.group || it.package || "Paket",
-            name:  it.name  || it.id || it.file,
-            file:  it.file,
-            type:  it.type  || it.id || it.name || ""
-          });
-        });
-      } else {
-        throw new Error("Format manifest tidak dikenali. Pakai {packages:[...]} atau {items:[...]}");
-      }
-      return out.filter(x=>x.file);
-    }
+      lyr.addTo(map);
 
-    function renderList(){
-      listEl.innerHTML = "";
-      if(!layers.length){
-        listEl.innerHTML = '<div style="color:#94a3b8">Tidak ada layer.</div>';
-        return;
-      }
-      layers.forEach(o=>{
-        const row = document.createElement("div");
-        row.className = "item";
+      // UI row
+      const row = document.createElement('div');
+      row.className = 'item';
 
-        const left = document.createElement("div");
-        left.className = "name";
-        left.title = o.meta.file;
-        left.innerHTML = `<b style="color:${o.meta.color}">●</b> ${o.meta.group} · ${o.meta.name}`;
-        row.appendChild(left);
+      const sw = document.createElement('span');
+      sw.className = 'swatch';
+      sw.style.background = color;
 
-        const btnToggle = document.createElement("button");
-        btnToggle.className = "btn secondary";
-        btnToggle.textContent = o.visible ? "OFF" : "ON";
-        btnToggle.addEventListener("click", ()=>{
-          if (o.visible){ map.removeLayer(o.layer); o.visible=false; }
-          else { o.layer.addTo(map); o.visible=true; }
-          btnToggle.textContent = o.visible ? "OFF" : "ON";
-        });
-        row.appendChild(btnToggle);
+      const name = document.createElement('div');
+      name.className = 'name';
+      name.textContent = title;
 
-        listEl.appendChild(row);
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = true;
+      cb.title = 'ON/OFF layer';
+      cb.addEventListener('change', ()=>{
+        if(cb.checked) map.addLayer(lyr);
+        else map.removeLayer(lyr);
       });
+
+      row.appendChild(sw);
+      row.appendChild(name);
+      row.appendChild(cb);
+      $list.appendChild(row);
+
+      layers.push({ meta:item, leafletLayer:lyr, checkbox:cb });
     }
 
-    async function main(){
+    function fitIndonesia(){
+      // bounding box kasar Indonesia
+      const bounds = L.latLngBounds(
+        L.latLng(-11.2, 94.5),
+        L.latLng(  6.5, 141.5)
+      );
+      map.fitBounds(bounds);
+    }
+
+    document.getElementById('btnFitID').addEventListener('click', fitIndonesia);
+    document.getElementById('btnOnAll').addEventListener('click', ()=>{
+      layers.forEach(o=>{ o.checkbox.checked = true; map.addLayer(o.leafletLayer); });
+    });
+    document.getElementById('btnOffAll').addEventListener('click', ()=>{
+      layers.forEach(o=>{ o.checkbox.checked = false; map.removeLayer(o.leafletLayer); });
+    });
+
+    // load manifest + auto tampil semua
+    async function boot(){
       try{
-        setPill("Loading…");
-        setMsg("");
+        $list.innerHTML = '';
+        const res = await fetch(MANIFEST, { cache:'no-store' });
+        if(!res.ok) throw new Error('manifest.json tidak terbaca (HTTP ' + res.status + ')');
 
-        const res = await fetch(MANIFEST_URL + "?ts=" + Date.now(), { cache:"no-store" });
-        if(!res.ok) throw new Error("manifest.json tidak ketemu: " + res.status);
+        const mf = await res.json();
+        const items = mf.items || [];
+        if(!items.length) throw new Error('manifest.json kosong (items=[])');
 
-        const man = await res.json();
-        const items = flattenManifest(man);
+        items.forEach(addOne);
+        setStatusOk('PMTiles OK · ' + items.length + ' layer tampil');
 
-        layers.length = 0;
-
-        // Langsung tampil semua
-        items.forEach(it=>{
-          const color = it.color || colorByType(it.type || it.name);
-          const layer = makePmtilesLayer(it.file, color);
-          layer.addTo(map);
-          layers.push({ meta:{...it, color}, layer, visible:true });
-        });
-
-        renderList();
-        setPill("PMTiles OK");
-        setMsg("Berhasil load " + layers.length + " layer (semua ON).", true);
-
-      } catch(err){
+        // start view
+        fitIndonesia();
+      }catch(err){
         console.error(err);
-        setPill("Error");
-        setMsg("Gagal: " + err.message, false);
-        listEl.innerHTML = `<div style="color:#fca5a5">
-          manifest.json tidak kebaca. Pastikan file ada di: <b>${MANIFEST_URL}</b>
-        </div>`;
+        setStatusErr(String(err.message || err));
+        $list.innerHTML = '<div class="item" style="color:#fca5a5">Gagal load manifest.json. Pastikan file ada di folder yang sama & JSON valid.</div>';
       }
     }
 
-    document.getElementById("btnOnAll").addEventListener("click", ()=>{
-      layers.forEach(o=>{ if(!o.visible){ o.layer.addTo(map); o.visible=true; } });
-      renderList();
-    });
-    document.getElementById("btnOffAll").addEventListener("click", ()=>{
-      layers.forEach(o=>{ if(o.visible){ map.removeLayer(o.layer); o.visible=false; } });
-      renderList();
-    });
-    document.getElementById("btnFitAll").addEventListener("click", ()=>{
-      map.setView([-2.3,118.0],5);
-    });
-
-    main();
+    boot();
   })();
   </script>
 </body>
