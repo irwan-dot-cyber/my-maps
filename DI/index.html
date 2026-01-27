@@ -1,227 +1,565 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="utf-8" />
-  <title>Si-Irwan — DI Nasional (Landing)</title>
+  <meta charset="UTF-8" />
+  <title>Dashboard DI — PMTiles (Template)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <link rel="icon" href="../assets/LogoPUPR.png" />
+  <link rel="icon" href="../../assets/LogoPUPR.png" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
   <style>
     :root{
-      --bg:#0b1222; --panel:rgba(15,23,42,.92); --border:rgba(255,255,255,.12);
-      --text:#e5e7eb; --muted:#94a3b8; --muted2:#cbd5e1;
-      --brand:#0d47a1; --accent:#1d5fd1; --good:#22c55e; --bad:#f87171;
-      --radius:16px;
+      --bg:#0b1222; --text:#e5e7eb; --muted:#cbd5e1; --muted-2:#94a3b8;
+      --survey:#0d47a1; --accent:#1d5fd1; --panel:rgba(11,18,34,.92);
+      --border:rgba(255,255,255,.12); --hdrH:80px; --radius:12px;
     }
-    *{box-sizing:border-box}
-    html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial,sans-serif;background:var(--bg);color:var(--text)}
-    .wrap{max-width:1100px;margin:0 auto;padding:18px}
-    .topbar{
-      position:sticky; top:0; z-index:50;
-      background:linear-gradient(180deg, rgba(11,18,34,.92), rgba(11,18,34,.65));
-      border:1px solid var(--border);
-      border-radius:18px;
-      padding:12px 14px;
-      backdrop-filter:blur(8px);
-      -webkit-backdrop-filter:blur(8px);
-      box-shadow:0 16px 40px rgba(0,0,0,.35);
+    html, body {
+      height:100%; margin:0;
+      font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:var(--bg); color:var(--text)
     }
-    .toprow{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-    .brand{display:flex;gap:10px;align-items:center}
-    .logo{
-      width:42px;height:42px;border-radius:12px;
-      background:rgba(13,71,161,.25);
-      border:1px solid rgba(255,255,255,.14);
-      display:flex;align-items:center;justify-content:center;
-      font-weight:900;
+
+    .header{
+      position:fixed; top:0; left:0; right:0; z-index:900;
+      background:var(--survey);
+      border-bottom:1px solid rgba(255,255,255,.18);
+      padding:8px 12px;
+      display:flex; align-items:center; gap:10px;
+      box-shadow:0 6px 18px rgba(13,71,161,.25)
     }
-    .ttl{font-weight:900;font-size:16px;line-height:1.15}
-    .sub{color:var(--muted);font-size:12px;margin-top:2px}
-    .pill{
-      display:inline-flex;align-items:center;gap:8px;
-      padding:8px 12px;border-radius:999px;
-      background:rgba(255,255,255,.06);
-      border:1px solid var(--border);
-      color:var(--muted2);font-size:12px;font-weight:700;
+    .header img{height:44px}
+    .header .text{flex:1; color:#fff}
+    .header .title{font-weight:800; font-size:13px; line-height:1.3}
+    .header .subtitle{font-weight:600; font-size:11px; color:rgba(255,255,255,.9); margin-top:2px}
+    .btn-home{
+      background:#fff; color:var(--survey);
+      font-weight:700; padding:6px 12px;
+      border-radius:10px; text-decoration:none; font-size:11px;
+      white-space:nowrap;
     }
-    .statusDot{width:8px;height:8px;border-radius:99px;background:#64748b}
-    .statusDot.ok{background:var(--good)}
-    .statusDot.bad{background:var(--bad)}
-    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
-    @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}
-    @media(max-width:620px){.grid{grid-template-columns:1fr}}
-    .card{
-      background:linear-gradient(180deg, rgba(15,23,42,.95), rgba(2,6,23,.8));
-      border:1px solid rgba(255,255,255,.12);
-      border-radius:18px;
-      padding:16px;
-      box-shadow:0 18px 48px rgba(0,0,0,.35);
+    .btn-home:hover{background:#f1f5f9}
+    .spacer{height:var(--hdrH)}
+    #map{
+      height:calc(100vh - var(--hdrH));
       position:relative;
-      overflow:hidden;
+      z-index:1;
     }
-    .card::before{
-      content:"";
-      position:absolute; inset:-40px -60px auto auto;
-      width:160px;height:160px;
-      background:radial-gradient(circle at 30% 30%, rgba(29,95,209,.55), rgba(29,95,209,0));
-      transform:rotate(18deg);
+
+    .dock{
+      position:fixed; left:0; right:0; bottom:0;
+      background:var(--panel); border-top:1px solid var(--border);
+      max-height:46vh; padding:8px 12px;
+      box-shadow:0 -10px 22px rgba(0,0,0,.28);
+      z-index:950; backdrop-filter:blur(6px);
+      display:flex; flex-direction:column; gap:6px;
+      transition:max-height .2s ease, padding .2s ease;
     }
-    .k1{color:var(--muted);font-size:12px;font-weight:700;position:relative}
-    .k2{font-size:22px;font-weight:900;margin-top:6px;position:relative}
-    .k3{display:flex;align-items:center;justify-content:space-between;margin-top:14px;gap:10px;position:relative}
-    .btn{
-      display:inline-flex;align-items:center;gap:8px;
-      background:rgba(29,95,209,.15);
-      border:1px solid rgba(29,95,209,.55);
-      color:#dbeafe;
-      padding:10px 12px;
-      border-radius:12px;
-      text-decoration:none;
-      font-weight:800;
-      font-size:12px;
+    .dock-header{
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .dock-header h2{
+      font-size:14px; margin:0; font-weight:800; color:#fff;
+    }
+    .dock-toggle{
+      background:rgba(15,23,42,.9);
+      border:1px solid var(--border);
+      border-radius:999px;
+      color:#e5e7eb;
+      font-size:11px;
+      padding:2px 10px;
       cursor:pointer;
     }
-    .btn:hover{background:rgba(29,95,209,.24)}
-    .meta{color:var(--muted);font-size:12px}
-    .state{margin-top:12px;color:var(--muted);font-size:12px}
-    .state .err{color:var(--bad);font-weight:800}
-    .state .ok{color:var(--good);font-weight:800}
-    .footerBadge{
-      position:fixed; right:14px; bottom:14px; z-index:99;
-      background:rgba(13,71,161,.85);
-      border:1px solid rgba(255,255,255,.22);
-      color:#fff; font-size:12px; font-weight:900;
-      padding:8px 12px;border-radius:999px;
-      box-shadow:0 0 18px rgba(13,71,161,.55);
-      backdrop-filter:blur(8px);
-      -webkit-backdrop-filter:blur(8px);
+    .dock-toggle:hover{background:#111827}
+    .dock-body{font-size:12px;}
+    .dock.collapsed{
+      max-height:40px;
+      padding-top:6px;
+      padding-bottom:6px;
     }
-    code{color:#93c5fd}
+    .dock.collapsed .dock-body{display:none;}
+
+    .grid{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+    label{font-size:11px; color:var(--muted)}
+    select{
+      width:100%; padding:8px 10px; font-size:13px;
+      background:rgba(255,255,255,.06); color:#fff;
+      border:1px solid var(--border); border-radius:var(--radius);
+      outline:none; appearance:none
+    }
+    option{color:#000; background:#fff}
+    .meta{font-size:12px; border-collapse:collapse; width:100%; color:var(--text)}
+    .meta td{border-bottom:1px dashed rgba(255,255,255,.08); padding:4px 2px}
+    .key{color:var(--muted-2); width:42%}
+    .row{
+      display:grid; grid-template-columns:1fr auto 1fr auto;
+      gap:8px; font-size:12px; color:var(--muted)
+    }
+    .row b{color:#fff}
+    .err{color:#fca5a5; font-size:11px; margin-top:4px}
+
+    @media(max-width:680px){
+      .grid{grid-template-columns:1fr}
+      :root{--hdrH:88px}
+    }
+
+    .badge-irwan{
+      position:fixed; right:12px; bottom:92px; z-index:1200;
+      background:rgba(13,71,161,.85);
+      border:1px solid rgba(255,255,255,.25);
+      color:#fff; font-size:11px; font-weight:700;
+      padding:5px 10px; border-radius:10px;
+      box-shadow:0 0 10px rgba(13,71,161,.6);
+      backdrop-filter:blur(6px);
+      animation:glow 2.8s ease-in-out infinite
+    }
+    .badge-irwan span{color:#FFD700}
+    .badge-irwan:hover{transform:scale(1.03); transition:transform .2s ease}
+    @keyframes glow{
+      0%,100%{box-shadow:0 0 8px rgba(13,71,161,.6)}
+      50%{box-shadow:0 0 18px rgba(255,215,0,.8)}
+    }
+
+    .myloc-btn{
+      width:32px;
+      height:32px;
+      border:none;
+      background:rgba(15,23,42,.96);
+      color:#e5e7eb;
+      font-size:16px;
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:4px;
+    }
+    .myloc-btn:hover{background:#111827}
+
+    .layer-legend{
+      background:rgba(15,23,42,.95);
+      color:#f9fafb;
+      padding:6px 8px;
+      border-radius:6px;
+      border:1px solid rgba(148,163,184,.6);
+      font-size:11px;
+      min-width:160px;
+    }
+    .layer-legend-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:2px;
+    }
+    .layer-legend-title{font-weight:800;}
+    .layer-toggle-btn{
+      background:transparent;
+      border:1px solid rgba(148,163,184,.8);
+      color:#e5e7eb;
+      border-radius:999px;
+      font-size:10px;
+      padding:0 6px;
+      cursor:pointer;
+    }
+    .layer-legend-body .item{
+      display:flex;
+      align-items:center;
+      gap:6px;
+      margin:4px 0;
+    }
+    .layer-legend .swatch{
+      width:12px; height:12px;
+      border-radius:3px;
+      border:1px solid rgba(255,255,255,.7);
+    }
+    .swatch-baku{background:#22c55e}
+    .swatch-fung{background:#60a5fa}
+    .swatch-pots{background:#fbbf24}
+    .swatch-di{background:#a855f7}
+    .layer-legend input[type="checkbox"]{
+      margin:0;
+      width:12px;
+      height:12px;
+    }
+    .layer-legend.collapsed .layer-legend-body{display:none;}
+
+    .pill{
+      display:inline-block;
+      padding:2px 8px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.06);
+      font-size:11px;
+      color:#e5e7eb;
+      margin-left:6px;
+    }
+    .btn-primary{
+      background:var(--accent);
+      color:#fff;
+      border:none;
+      border-radius:999px;
+      padding:7px 12px;
+      font-size:12px;
+      font-weight:800;
+      cursor:pointer;
+    }
+    .btn-primary:hover{background:#2563eb}
   </style>
 </head>
+
 <body>
-  <div class="wrap">
+  <!-- HEADER -->
+  <div class="header">
+    <img src="../../assets/LogoPUPR.png" alt="Logo PU"/>
+    <div class="text">
+      <div class="title">Kementerian PU</div>
+      <div class="subtitle">Ditjen SDA · Dit. Irigasi &amp; Rawa</div>
+      <div class="subtitle">Dashboard PMTiles <b>(1 Template)</b></div>
+    </div>
+    <a href="../../si-irwan.html" class="btn-home">Beranda</a>
+  </div>
+  <div class="spacer"></div>
 
-    <div class="topbar">
-      <div class="toprow">
-        <div class="brand">
-          <div class="logo">DI</div>
-          <div>
-            <div class="ttl">Landing DI Nasional</div>
-            <div class="sub">Pilih jenis DI, lalu lanjut pilih provinsi.</div>
-          </div>
+  <!-- MAP -->
+  <div id="map"></div>
+
+  <!-- DOCK -->
+  <div class="dock" id="dock">
+    <div class="dock-header">
+      <h2>Dashboard Daerah Irigasi <span class="pill" id="pillStatus">PMTiles</span></h2>
+      <button id="dockToggle" class="dock-toggle">Ciutkan</button>
+    </div>
+
+    <div class="dock-body" id="dockBody">
+      <div class="grid">
+        <div>
+          <label for="diSel">Pilih Paket / Area (group dari manifest)</label>
+          <select id="diSel">
+            <option value="">Memuat manifest…</option>
+          </select>
         </div>
-
-        <div class="pill" title="Status koneksi Drive API dari GitHub Pages">
-          <span id="dot" class="statusDot"></span>
-          <span id="statusText">Memuat Drive…</span>
+        <div>
+          <label for="clusterSel">Filter Type</label>
+          <select id="clusterSel">
+            <option value="__ALL__">— Semua —</option>
+            <option value="BAKU">BAKU</option>
+            <option value="FUNG">Fungsional</option>
+            <option value="POTS">Potensial</option>
+          </select>
         </div>
       </div>
 
-      <div class="state" id="state"></div>
-    </div>
+      <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap">
+        <button class="btn-primary" id="btnShow">Tampilkan</button>
+        <button class="btn-primary" id="btnFit" style="background:#0ea5e9">Fit to Layer</button>
+      </div>
 
-    <div class="grid" id="grid">
-      <!-- kartu diisi dari Drive -->
-    </div>
+      <div id="msg" class="err"></div>
 
+      <hr style="border:none;border-top:1px solid var(--border);margin:8px 0"/>
+
+      <div id="stats" class="row"></div>
+      <div id="detail" style="margin-top:6px;font-size:12px"></div>
+    </div>
   </div>
 
-  <div class="footerBadge">Si-Irwan v1.0</div>
+  <!-- BADGE -->
+  <div class="badge-irwan" title="Sistem Informasi Irigasi & Rawa Nasional">
+    <span>Si-Irwan v1.0</span>
+  </div>
 
-<script>
-/* =============================
-   KONFIGURASI
-============================= */
-const API_KEY = "AIzaSyDlpSnNEI__Z5OWinbf24BGJ4_U6JucNMs";
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/protomaps@latest/dist/protomaps.min.js"></script>
 
-// Folder root yang kamu kasih:
-// https://drive.google.com/drive/folders/1UO_mECvk_YUvvyaP8YRPoX7EGYfwlXAb
-const ROOT_FOLDER_ID = "1UO_mECvk_YUvvyaP8YRPoX7EGYfwlXAb";
+  <script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    // ====== KONFIG ======
+    const MANIFEST_URL = "./manifest.json";   // harus satu folder dengan HTML ini
+    const DEFAULT_VIEW = { lat: -2.5, lng: 118, zoom: 5 };
 
-// halaman provinsi (relatif dari /my-maps/DI/)
-const PROV_PAGE = "Provinsi/index_prov_dev.html";
+    // ====== ELEMEN UI ======
+    const diSel      = document.getElementById('diSel');
+    const clusterSel = document.getElementById('clusterSel');
+    const statsEl    = document.getElementById('stats');
+    const detailEl   = document.getElementById('detail');
+    const msgEl      = document.getElementById('msg');
+    const pillStatus = document.getElementById('pillStatus');
+    const btnShow    = document.getElementById('btnShow');
+    const btnFit     = document.getElementById('btnFit');
 
-const $grid = document.getElementById("grid");
-const $state = document.getElementById("state");
-const $dot = document.getElementById("dot");
-const $statusText = document.getElementById("statusText");
+    const dock        = document.getElementById('dock');
+    const dockToggle  = document.getElementById('dockToggle');
 
-function esc(s){
-  return String(s ?? "").replace(/[&<>"']/g, m => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-  }[m]));
-}
+    const note = (m)=>{ msgEl.textContent = m || ""; };
 
-function setState(msg, isErr=false){
-  $state.innerHTML = isErr ? `<span class="err">${esc(msg)}</span>` : esc(msg);
-}
+    // ====== MAP ======
+    const map = L.map('map').setView([DEFAULT_VIEW.lat, DEFAULT_VIEW.lng], DEFAULT_VIEW.zoom);
 
-function setStatus(ok, text){
-  $dot.className = "statusDot " + (ok ? "ok" : "bad");
-  $statusText.textContent = text;
-}
+    const imagery = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      { attribution:'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics' }
+    ).addTo(map);
 
-function cardHTML({name, id}){
-  const jenis = String(name || "").trim() || "Folder";
-  const href = `${PROV_PAGE}?jenisId=${encodeURIComponent(id)}&jenis=${encodeURIComponent(jenis)}`;
+    const osm = L.tileLayer(
+      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      { attribution:'© OpenStreetMap contributors' }
+    );
 
-  return `
-    <div class="card">
-      <div class="k1">Jenis DI</div>
-      <div class="k2">${esc(jenis)}</div>
-      <div class="k3">
-        <a class="btn" href="${href}">Buka daftar provinsi <span aria-hidden="true">→</span></a>
-        <div class="meta">Folder Drive</div>
-      </div>
-    </div>
-  `;
-}
+    L.control.layers({"Imagery": imagery, "OSM": osm}, null, { collapsed:true, position:'topright' }).addTo(map);
 
-async function listFolders(parentId){
-  const q = `('${parentId}' in parents) and trashed=false and mimeType='application/vnd.google-apps.folder'`;
-  const url = "https://www.googleapis.com/drive/v3/files"
-    + `?q=${encodeURIComponent(q)}`
-    + "&fields=files(id,name,mimeType,modifiedTime)"
-    + "&orderBy=name"
-    + "&supportsAllDrives=true&includeItemsFromAllDrives=true"
-    + `&key=${encodeURIComponent(API_KEY)}`;
+    // ====== DOCK TOGGLE ======
+    let dockCollapsed = false;
+    dockToggle.addEventListener('click', () => {
+      dockCollapsed = !dockCollapsed;
+      dock.classList.toggle('collapsed', dockCollapsed);
+      dockToggle.textContent = dockCollapsed ? 'Tampilkan' : 'Ciutkan';
+    });
 
-  const res = await fetch(url);
-  const json = await res.json();
-  if(!res.ok){
-    const msg = json?.error?.message || `HTTP ${res.status}`;
-    throw new Error(msg);
-  }
-  return json.files || [];
-}
+    // ====== MY LOCATION CONTROL ======
+    let myLocMarker = null;
+    let myLocCircle = null;
 
-(async ()=>{
-  try{
-    setStatus(false, "Memuat Drive…");
-    setState("Mengambil folder jenis DI dari Google Drive…");
+    const MyLocationControl = L.Control.extend({
+      position: 'topright',
+      onAdd: function(map){
+        const container = L.DomUtil.create('div','leaflet-bar');
+        const btn = L.DomUtil.create('button','myloc-btn',container);
+        btn.type='button';
+        btn.innerHTML='📍';
+        btn.title='Lokasi saya';
+        L.DomEvent.disableClickPropagation(container);
+        L.DomEvent.on(btn,'click',function(){
+          if (!navigator.geolocation) {
+            note('Browser tidak mendukung geolokasi.');
+            return;
+          }
+          note('Mencari lokasi Anda...');
+          navigator.geolocation.getCurrentPosition(
+            (pos)=>{
+              const lat = pos.coords.latitude;
+              const lng = pos.coords.longitude;
+              const acc = pos.coords.accuracy || 0;
+              const latlng=[lat,lng];
 
-    const items = await listFolders(ROOT_FOLDER_ID);
+              if (!myLocMarker) myLocMarker = L.marker(latlng).addTo(map).bindPopup('Lokasi saya');
+              else myLocMarker.setLatLng(latlng);
 
-    if(!items.length){
-      setStatus(true, "HTTP 200, tapi kosong");
-      setState("Folder root terbaca, tapi tidak ada subfolder. Pastikan di dalamnya ada folder jenis (DI Permukaan/Tambak/Rawa).", true);
-      $grid.innerHTML = "";
+              if (acc && !isNaN(acc)) {
+                if (!myLocCircle) {
+                  myLocCircle = L.circle(latlng,{ radius:acc, color:'#38bdf8', weight:1, fillOpacity:0.15 }).addTo(map);
+                } else {
+                  myLocCircle.setLatLng(latlng);
+                  myLocCircle.setRadius(acc);
+                }
+              }
+
+              map.setView(latlng, Math.max(map.getZoom(), 15));
+              note('');
+              myLocMarker.openPopup();
+            },
+            (err)=> note('Gagal mendapatkan lokasi: ' + err.message),
+            { enableHighAccuracy:true, timeout:10000, maximumAge:0 }
+          );
+        });
+        return container;
+      }
+    });
+    map.addControl(new MyLocationControl());
+
+    // ====== PMTILES LAYER MANAGER ======
+    const activeLayers = [];
+    let lastBounds = null;
+
+    function clearLayers(){
+      lastBounds = null;
+      while(activeLayers.length){
+        const lyr = activeLayers.pop();
+        map.removeLayer(lyr);
+      }
+    }
+
+    // style per type (warna beda)
+    function paintRulesForType(type){
+      // protomaps style: symbolizer polygon untuk beberapa kemungkinan dataLayer
+      // dataLayer default tippecanoe = layer name (-l). Kalau kamu pakai -l baku/fung/pots (lowercase) ini aman.
+      // Kalau layer name beda, tetap kebaca tapi styling bisa default. Jadi konsistenin layer name waktu konversi.
+      let fill = "#a855f7", stroke = "#c084fc"; // fallback (ungu)
+      if (type === "BAKU") { fill = "#22c55e"; stroke = "#16a34a"; }
+      if (type === "FUNG") { fill = "#60a5fa"; stroke = "#2563eb"; }
+      if (type === "POTS") { fill = "#fbbf24"; stroke = "#f59e0b"; }
+
+      return [
+        { dataLayer: "baku", symbolizer: new protomaps.PolygonSymbolizer({ fill, opacity: 0.35, stroke, width: 1 }) },
+        { dataLayer: "fung", symbolizer: new protomaps.PolygonSymbolizer({ fill, opacity: 0.35, stroke, width: 1 }) },
+        { dataLayer: "pots", symbolizer: new protomaps.PolygonSymbolizer({ fill, opacity: 0.35, stroke, width: 1 }) },
+
+        // fallback layer name kalau ternyata layer bukan baku/fung/pots
+        { dataLayer: "di",   symbolizer: new protomaps.PolygonSymbolizer({ fill, opacity: 0.35, stroke, width: 1 }) },
+      ];
+    }
+
+    function addPmtilesLayer(fileUrl, type, label){
+      const layer = protomaps.leafletLayer({
+        url: fileUrl,
+        paint_rules: paintRulesForType(type)
+      });
+
+      // simpan bounds saat tile pertama load (biar Fit to Layer enak)
+      layer.on("tileload", (e) => {
+        // protomaps leaflet layer expose bounds internal? nggak standar.
+        // kita ambil bounds dari map view + tile, jadi pendekatan praktis: set lastBounds = map.getBounds() setelah load awal.
+        if (!lastBounds) lastBounds = map.getBounds();
+      });
+
+      layer.addTo(map);
+      activeLayers.push(layer);
+
+      detailEl.innerHTML = `
+        <div style="font-weight:800; margin-bottom:4px; color:#fff">${label}</div>
+        <div style="font-size:12px; color:#cbd5e1">
+          Sumber: <b>PMTiles</b> · File: <code style="color:#93c5fd">${fileUrl}</code> · Type: <b>${type}</b>
+        </div>
+        <div style="font-size:11px; color:#94a3b8; margin-top:6px">
+          Tips: kalau warna belum kena, pastikan waktu konversi kamu pakai layer name <b>-l baku / fung / pots</b> (lowercase).
+        </div>
+      `;
+    }
+
+    function updateStats(){
+      statsEl.innerHTML = `
+        <span>Aktif layer</span><b>${activeLayers.length}</b>
+        <span>Mode</span><b>PMTiles</b>
+      `;
+    }
+
+    // ====== LEGEND CONTROL ======
+    const LayerLegendControl = L.Control.extend({
+      position:'topright',
+      onAdd:function(map){
+        const container = L.DomUtil.create('div','layer-legend');
+        container.innerHTML = `
+          <div class="layer-legend-header">
+            <span class="layer-legend-title">Legend</span>
+            <button type="button" class="layer-toggle-btn">Ciut</button>
+          </div>
+          <div class="layer-legend-body">
+            <div class="item">
+              <span class="swatch swatch-baku"></span><span>BAKU</span>
+            </div>
+            <div class="item">
+              <span class="swatch swatch-fung"></span><span>Fungsional</span>
+            </div>
+            <div class="item">
+              <span class="swatch swatch-pots"></span><span>Potensial</span>
+            </div>
+            <div class="item" style="margin-top:6px; opacity:.9">
+              <span class="swatch swatch-di"></span><span>Fallback</span>
+            </div>
+          </div>
+        `;
+        L.DomEvent.disableClickPropagation(container);
+
+        const toggleBtn = container.querySelector('.layer-toggle-btn');
+        let collapsed=false;
+        toggleBtn.addEventListener('click',()=>{
+          collapsed=!collapsed;
+          if(collapsed){
+            container.classList.add('collapsed');
+            toggleBtn.textContent='Tampil';
+          }else{
+            container.classList.remove('collapsed');
+            toggleBtn.textContent='Ciut';
+          }
+        });
+
+        return container;
+      }
+    });
+    map.addControl(new LayerLegendControl());
+
+    // ====== LOAD MANIFEST ======
+    let items = [];
+    try{
+      pillStatus.textContent = "Load manifest…";
+      const res = await fetch(MANIFEST_URL, { cache: "no-store" });
+      if(!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      items = (data && data.items) ? data.items : [];
+      if(!items.length) throw new Error("manifest kosong");
+      pillStatus.textContent = "PMTiles OK";
+    }catch(e){
+      pillStatus.textContent = "Error";
+      note("Gagal load manifest.json. Pastikan manifest.json ada di folder yang sama dan valid JSON.");
+      diSel.innerHTML = `<option value="">(manifest.json tidak terbaca)</option>`;
+      detailEl.innerHTML = `<i style="color:#cbd5e1">Taruh <b>manifest.json</b> di folder yang sama dengan HTML ini.</i>`;
+      updateStats();
       return;
     }
 
-    $grid.innerHTML = items.map(cardHTML).join("");
-    setStatus(true, `Drive OK · ${items.length} folder`);
-    setState(`Sukses. Klik salah satu kartu untuk lanjut ke daftar provinsi.`);
-  }catch(err){
-    console.error(err);
-    setStatus(false, "Drive ERROR");
-    setState("Gagal memuat Drive: " + err.message, true);
-    $grid.innerHTML = "";
-  }
-})();
-</script>
+    // isi dropdown group
+    const groups = [...new Set(items.map(x => x.group).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+    diSel.innerHTML = `<option value="">— Pilih Paket —</option>` + groups
+      .map(g => `<option value="${g}">${g.replaceAll("_"," ")}</option>`)
+      .join("");
 
+    // ====== RENDER FUNCTION ======
+    function render(){
+      note("");
+      clearLayers();
+
+      const group = diSel.value;
+      const type  = clusterSel.value;
+
+      if(!group){
+        detailEl.innerHTML = `<i style="color:#cbd5e1">Pilih paket/area dulu (dropdown kiri).</i>`;
+        updateStats();
+        return;
+      }
+
+      const selected = items.filter(x =>
+        x.group === group && (type === "__ALL__" || x.type === type)
+      );
+
+      if(!selected.length){
+        note("Tidak ada PMTiles yang cocok untuk pilihan ini.");
+        detailEl.innerHTML = `<i style="color:#cbd5e1">Coba ganti filter type atau cek manifest.json.</i>`;
+        updateStats();
+        return;
+      }
+
+      // tampilkan semua file yang match (mis. BAKU+FUNG+POTS)
+      selected.forEach(it => {
+        const fileUrl = "./" + it.file; // karena satu folder
+        const label = it.title || it.file;
+        addPmtilesLayer(fileUrl, it.type || "OTHER", label);
+      });
+
+      updateStats();
+    }
+
+    // Fit to Layer (best-effort)
+    btnFit.addEventListener('click', () => {
+      if (lastBounds) {
+        map.fitBounds(lastBounds);
+        note("");
+        return;
+      }
+      // fallback kalau bounds belum kebaca
+      note("Belum ada bounds. Coba zoom/geser dulu setelah layer tampil.");
+    });
+
+    btnShow.addEventListener('click', render);
+    diSel.addEventListener('change', render);
+    clusterSel.addEventListener('change', render);
+
+    // initial
+    detailEl.innerHTML = `
+      <i style="color:#cbd5e1">
+        Pilih paket/area untuk menampilkan PMTiles.
+        <br/>Sumber data diambil dari <b>manifest.json</b> (folder yang sama).
+      </i>
+    `;
+    updateStats();
+  });
+  </script>
 </body>
 </html>
