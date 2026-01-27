@@ -4,21 +4,17 @@
   <meta charset="UTF-8" />
   <title>Dashboard DI — PMTiles</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-
-  <!-- Pakai path absolut biar logo gak 404 -->
   <link rel="icon" href="/my-maps/assets/LogoPUPR.png" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
   <style>
     :root{
       --bg:#0b1222; --text:#e5e7eb; --muted:#cbd5e1; --muted-2:#94a3b8;
       --survey:#0d47a1; --accent:#1d5fd1; --panel:rgba(11,18,34,.92);
-      --border:rgba(255,255,255,.12); --hdrH:80px; --radius:12px;
+      --border:rgba(255,255,255,.12); --hdrH:80px;
     }
     html, body { height:100%; margin:0; font-family:'Inter',system-ui,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--text) }
-
     .header{
       position:fixed; top:0; left:0; right:0; z-index:900;
       background:var(--survey);
@@ -37,21 +33,17 @@
       border-radius:10px; text-decoration:none; font-size:11px;
       white-space:nowrap;
     }
-    .btn-home:hover{background:#f1f5f9}
     .spacer{height:var(--hdrH)}
     #map{ height:calc(100vh - var(--hdrH)); }
 
     .dock{
       position:fixed; left:0; right:0; bottom:0;
       background:var(--panel); border-top:1px solid var(--border);
-      max-height:44vh; padding:10px 12px;
+      max-height:40vh; padding:10px 12px;
       box-shadow:0 -10px 22px rgba(0,0,0,.28);
       z-index:950; backdrop-filter:blur(6px);
     }
-    .dock .top{
-      display:flex; align-items:center; justify-content:space-between; gap:10px;
-      margin-bottom:8px;
-    }
+    .top{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; }
     .dock h2{ margin:0; font-size:14px; font-weight:800; color:#fff }
     .pill{
       font-size:11px; padding:4px 10px; border-radius:999px;
@@ -60,34 +52,19 @@
     .err{ color:#fca5a5; font-size:12px; margin-top:6px; }
     .ok{ color:#4ade80; font-size:12px; margin-top:6px; }
     .list{
-      margin-top:8px;
-      max-height:26vh;
-      overflow:auto;
-      border:1px solid var(--border);
-      border-radius:12px;
-      padding:8px 10px;
-      background:rgba(15,23,42,.88);
-      font-size:12px;
+      margin-top:8px; max-height:22vh; overflow:auto;
+      border:1px solid var(--border); border-radius:12px;
+      padding:8px 10px; background:rgba(15,23,42,.88); font-size:12px;
     }
-    .item{
-      display:flex; align-items:center; justify-content:space-between; gap:8px;
-      padding:6px 0;
-      border-bottom:1px dashed rgba(148,163,184,.35);
-    }
+    .item{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 0; border-bottom:1px dashed rgba(148,163,184,.35); }
     .item:last-child{border-bottom:none}
-    .name{
-      overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-      color:#e5e7eb; flex:1;
-    }
+    .name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#e5e7eb; flex:1; }
     .btn{
-      background:var(--accent); border:none; color:#fff;
-      font-weight:800; font-size:11px;
+      background:var(--accent); border:none; color:#fff; font-weight:800; font-size:11px;
       padding:4px 10px; border-radius:999px; cursor:pointer;
     }
     .btn:hover{background:#2563eb}
-    .btn.secondary{
-      background:#111827; border:1px solid rgba(148,163,184,.35);
-    }
+    .btn.secondary{ background:#111827; border:1px solid rgba(148,163,184,.35); }
     .btn.secondary:hover{background:#0f172a}
   </style>
 </head>
@@ -112,7 +89,7 @@
     </div>
 
     <div style="display:flex; gap:10px; flex-wrap:wrap">
-      <button id="btnFitAll" class="btn">Fit semua</button>
+      <button id="btnFitAll" class="btn">Fit Indonesia</button>
       <button id="btnOnAll" class="btn secondary">ON semua</button>
       <button id="btnOffAll" class="btn secondary">OFF semua</button>
     </div>
@@ -123,28 +100,32 @@
     </div>
   </div>
 
-  <!-- Leaflet -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- PMTiles + Protomaps Leaflet (WAJIB biar protomaps/pmtiles defined) -->
+  <!-- WAJIB -->
   <script src="https://unpkg.com/pmtiles@3.0.6/dist/pmtiles.js"></script>
   <script src="https://unpkg.com/protomaps-leaflet@4.0.1/dist/protomaps-leaflet.js"></script>
 
   <script>
   (function(){
-    const msgEl = document.getElementById("msg");
+    // ======== SET LOKASI PMTILES LU DI SINI ========
+    // manifest + pmtiles ada di folder pusat:
+    // /my-maps/DI/Permukaan/pusat/
+    const PMTILES_BASE = "./Permukaan/pusat/";          // prefix file pmtiles
+    const MANIFEST_URL = PMTILES_BASE + "manifest.json"; // lokasi manifest
+
+    const msgEl  = document.getElementById("msg");
     const listEl = document.getElementById("list");
-    const pill = document.getElementById("statusPill");
+    const pill   = document.getElementById("statusPill");
 
     function setMsg(text, ok=false){
       msgEl.className = ok ? "ok" : "err";
       msgEl.textContent = text || "";
     }
+    function setPill(text){ pill.textContent = text; }
 
-    // Map
-    const map = L.map("map", { zoomControl:true }).setView([-2.3, 118.0], 5);
+    const map = L.map("map").setView([-2.3,118.0],5);
 
-    // Basemap
     const imagery = L.tileLayer(
       "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
       { attribution:"Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics" }
@@ -157,15 +138,25 @@
 
     L.control.layers({Imagery:imagery, OSM:osm}, null, {collapsed:true, position:"topright"}).addTo(map);
 
-    // PMTiles protocol
+    // ======= FIX UTAMA: addProtocol lewat protomapsL =======
     const protocol = new pmtiles.Protocol();
-    // supaya protomaps bisa fetch pmtiles://
-    if (window.protomaps && window.protomapsL) {
-      // protomaps-leaflet exports protomapsL usually; but keep safe
-    }
-    pmtiles.registerProtocol("pmtiles", protocol.tile);
 
-    const layers = []; // {meta, leafletLayer, visible}
+    if (!window.protomapsL) {
+      setPill("Error");
+      setMsg("protomapsL tidak kebaca. Cek CDN protomaps-leaflet.", false);
+      return;
+    }
+
+    // INI YANG BENER (bukan pmtiles.registerProtocol)
+    if (typeof protomapsL.addProtocol === "function") {
+      protomapsL.addProtocol("pmtiles", protocol.tile);
+    } else {
+      setPill("Error");
+      setMsg("protomapsL.addProtocol tidak ada. Versi library gak cocok.", false);
+      return;
+    }
+
+    const layers = []; // {meta, layer, visible}
 
     function colorByType(type){
       const t = (type||"").toUpperCase();
@@ -175,65 +166,28 @@
       return "#a855f7";
     }
 
-    // Build one vector layer from a PMTiles file
-    function makePmtilesLayer(fileUrl, styleColor){
-      // protomaps-leaflet layer (vector tiles)
-      // note: this is NOT leaflet tileLayer, but protomaps leaflet layer object
-      const lyr = protomapsL.leafletLayer({
-        url: "pmtiles://" + fileUrl,
-        // style function for features
+    function makePmtilesLayer(pmtilesFile, color){
+      return protomapsL.leafletLayer({
+        url: "pmtiles://" + (PMTILES_BASE + pmtilesFile),
+        // style sederhana: polygon + line
         paint_rules: [
-          {
-            dataLayer: "*",
-            symbolizer: new protomapsL.PolygonSymbolizer({
-              fill: styleColor,
-              opacity: 0.35
-            })
-          },
-          {
-            dataLayer: "*",
-            symbolizer: new protomapsL.LineSymbolizer({
-              color: styleColor,
-              width: 1.2,
-              opacity: 0.9
-            })
-          },
-          {
-            dataLayer: "*",
-            symbolizer: new protomapsL.CircleSymbolizer({
-              fill: styleColor,
-              radius: 4,
-              opacity: 0.9
-            })
-          }
+          { dataLayer: "*", symbolizer: new protomapsL.PolygonSymbolizer({ fill: color, opacity: 0.35 }) },
+          { dataLayer: "*", symbolizer: new protomapsL.LineSymbolizer({ color: color, width: 1.2, opacity: 0.9 }) },
+          { dataLayer: "*", symbolizer: new protomapsL.CircleSymbolizer({ fill: color, radius: 4, opacity: 0.9 }) }
         ]
       });
-      return lyr;
-    }
-
-    async function loadManifest(){
-      // manifest.json harus berada di folder yang sama dengan HTML ini
-      const url = "./manifest.json?ts=" + Date.now();
-      const res = await fetch(url, { cache:"no-store" });
-      if(!res.ok) throw new Error("manifest.json tidak ketemu ("+res.status+")");
-      const json = await res.json();
-      return json;
     }
 
     function flattenManifest(man){
-      // Support beberapa bentuk:
-      // A) { packages: [ {title, layers:[{name,file,type}]} ] }
-      // B) { items: [ {name,file,type,group} ] }
       const out = [];
-
       if (Array.isArray(man?.packages)) {
         man.packages.forEach(pkg=>{
           (pkg.layers||[]).forEach(l=>{
             out.push({
               group: pkg.title || pkg.id || "Paket",
-              name: l.name || l.id || l.file,
-              file: l.file,
-              type: l.type || l.id || l.name || ""
+              name:  l.name  || l.id  || l.file,
+              file:  l.file,
+              type:  l.type || l.id  || l.name || ""
             });
           });
         });
@@ -241,16 +195,14 @@
         man.items.forEach(it=>{
           out.push({
             group: it.group || it.package || "Paket",
-            name: it.name || it.id || it.file,
-            file: it.file,
-            type: it.type || it.id || it.name || ""
+            name:  it.name  || it.id || it.file,
+            file:  it.file,
+            type:  it.type  || it.id || it.name || ""
           });
         });
       } else {
-        throw new Error("Format manifest tidak dikenali. Pakai {packages:[...]} atau {items:[...] }");
+        throw new Error("Format manifest tidak dikenali. Pakai {packages:[...]} atau {items:[...]}");
       }
-
-      // filter valid
       return out.filter(x=>x.file);
     }
 
@@ -260,8 +212,7 @@
         listEl.innerHTML = '<div style="color:#94a3b8">Tidak ada layer.</div>';
         return;
       }
-
-      layers.forEach((o, idx)=>{
+      layers.forEach(o=>{
         const row = document.createElement("div");
         row.className = "item";
 
@@ -275,102 +226,61 @@
         btnToggle.className = "btn secondary";
         btnToggle.textContent = o.visible ? "OFF" : "ON";
         btnToggle.addEventListener("click", ()=>{
-          if (o.visible){
-            map.removeLayer(o.layer);
-            o.visible = false;
-          } else {
-            o.layer.addTo(map);
-            o.visible = true;
-          }
+          if (o.visible){ map.removeLayer(o.layer); o.visible=false; }
+          else { o.layer.addTo(map); o.visible=true; }
           btnToggle.textContent = o.visible ? "OFF" : "ON";
         });
         row.appendChild(btnToggle);
-
-        const btnFit = document.createElement("button");
-        btnFit.className = "btn";
-        btnFit.textContent = "Fit";
-        btnFit.addEventListener("click", ()=>{
-          // protomaps layer doesn't always expose bounds instantly.
-          // trick: zoom to Indonesia if not ready
-          try{
-            if (o.layer?.getBounds) {
-              const b = o.layer.getBounds();
-              if (b && b.isValid && b.isValid()) map.fitBounds(b, {padding:[20,20]});
-              else map.setView([-2.3,118],5);
-            } else {
-              map.setView([-2.3,118],5);
-            }
-          }catch(e){
-            map.setView([-2.3,118],5);
-          }
-        });
-        row.appendChild(btnFit);
 
         listEl.appendChild(row);
       });
     }
 
-    function setPill(text){
-      pill.textContent = text;
-    }
-
     async function main(){
-      // pastikan lib ke-load
-      if (typeof pmtiles === "undefined" || typeof protomapsL === "undefined") {
-        setPill("Error");
-        setMsg("Library PMTiles/Protomaps belum ke-load. Cek koneksi/CDN.", false);
-        return;
-      }
-
       try{
         setPill("Loading…");
         setMsg("");
 
-        const man = await loadManifest();
+        const res = await fetch(MANIFEST_URL + "?ts=" + Date.now(), { cache:"no-store" });
+        if(!res.ok) throw new Error("manifest.json tidak ketemu: " + res.status);
+
+        const man = await res.json();
         const items = flattenManifest(man);
 
-        // build layers, langsung ON semua
         layers.length = 0;
+
+        // Langsung tampil semua
         items.forEach(it=>{
           const color = it.color || colorByType(it.type || it.name);
           const layer = makePmtilesLayer(it.file, color);
           layer.addTo(map);
-
-          layers.push({
-            meta: {...it, color},
-            layer,
-            visible: true
-          });
+          layers.push({ meta:{...it, color}, layer, visible:true });
         });
 
         renderList();
-
         setPill("PMTiles OK");
-        setMsg("Berhasil load " + layers.length + " layer. Semua ditampilkan.", true);
+        setMsg("Berhasil load " + layers.length + " layer (semua ON).", true);
 
-      }catch(err){
+      } catch(err){
         console.error(err);
         setPill("Error");
-        setMsg("Gagal load manifest/layer: " + err.message, false);
-        listEl.innerHTML = '<div style="color:#fca5a5">manifest.json tidak terbaca. Pastikan file ada di folder yang sama dengan HTML ini dan JSON valid.</div>';
+        setMsg("Gagal: " + err.message, false);
+        listEl.innerHTML = `<div style="color:#fca5a5">
+          manifest.json tidak kebaca. Pastikan file ada di: <b>${MANIFEST_URL}</b>
+        </div>`;
       }
     }
 
     document.getElementById("btnOnAll").addEventListener("click", ()=>{
-      layers.forEach(o=>{
-        if(!o.visible){ o.layer.addTo(map); o.visible=true; }
-      });
+      layers.forEach(o=>{ if(!o.visible){ o.layer.addTo(map); o.visible=true; } });
       renderList();
     });
     document.getElementById("btnOffAll").addEventListener("click", ()=>{
-      layers.forEach(o=>{
-        if(o.visible){ map.removeLayer(o.layer); o.visible=false; }
-      });
+      layers.forEach(o=>{ if(o.visible){ map.removeLayer(o.layer); o.visible=false; } });
       renderList();
     });
     document.getElementById("btnFitAll").addEventListener("click", ()=>{
-      // best-effort: fit ke indonesia (protomaps bounds bisa lambat)
-      map.setView([-2.3,118],5);
+      map.setView([-2.3,118.0],5);
     });
 
     main();
