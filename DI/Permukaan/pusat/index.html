@@ -5,10 +5,8 @@
   <title>Dashboard PMTiles — DI Permukaan (Pusat)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-  <!-- Font -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 
-  <!-- MapLibre -->
   <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet"/>
 
   <style>
@@ -48,10 +46,7 @@
     }
     .home:hover{background:#f1f5f9}
 
-    #map{
-      position:absolute;
-      top:var(--hdrH); left:0; right:0; bottom:0;
-    }
+    #map{ position:absolute; top:var(--hdrH); left:0; right:0; bottom:0; }
 
     .legend{
       position:absolute; right:14px; top:14px; z-index:1000;
@@ -95,6 +90,7 @@
     .pill.ok{border-color:rgba(16,185,129,.45);background:rgba(16,185,129,.14);color:#bbf7d0}
     .pill.err{border-color:rgba(239,68,68,.45);background:rgba(239,68,68,.14);color:#fecaca}
     .pill.warn{border-color:rgba(245,158,11,.55);background:rgba(245,158,11,.14);color:#fde68a}
+
     .btnRow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .btn{
       border:1px solid rgba(255,255,255,.14);
@@ -142,6 +138,7 @@
     .tag.pots{border-color:rgba(245,158,11,.6)}
     .tag.fallback{border-color:rgba(168,85,247,.6)}
     input[type="checkbox"]{width:16px;height:16px;margin:0}
+
     .note{font-size:11px;color:var(--muted);line-height:1.35}
     .errline{font-size:12px;color:#fca5a5;font-weight:800}
     .warnline{font-size:12px;color:#fde68a;font-weight:800}
@@ -151,8 +148,9 @@
 <body>
   <div class="header">
     <div class="logo">
-      <!-- kalau kamu punya logo di folder lain, ubah path-nya -->
-      <img src="LogoPUPR.png" alt="Logo" onerror="this.remove(); this.parentNode.textContent='PU';">
+      <!-- Kalau file logonya gak ada, otomatis fallback ke "PU" tanpa error JS -->
+      <img src="LogoPUPR.png" alt="Logo"
+        onerror="const p=this.parentNode; this.remove(); if(p){p.textContent='PU';}">
     </div>
     <div class="hdrText">
       <div class="t1">Kementerian PU</div>
@@ -181,6 +179,7 @@
         <button class="btn" id="btnFitID" type="button">Fit Indonesia</button>
         <button class="btn" id="btnOnAll" type="button">ON semua</button>
         <button class="btn" id="btnOffAll" type="button">OFF semua</button>
+        <button class="btn" id="btnZoomMin" type="button">Zoom min data</button>
         <span class="pill ok" id="pillAll" style="display:none">Semua layer ON</span>
       </div>
 
@@ -192,13 +191,12 @@
       </div>
 
       <div class="note">
-        Wajib: <b>manifest.json</b> 1 folder dengan <b>index.html</b> ini dan semua <b>.pmtiles</b> juga di folder yang sama.
-        PMTiles butuh server support <b>HTTP Range</b>. Kalau Range gagal, layer “OK” tapi data tidak akan muncul.
+        PMTiles butuh <b>HTTP Range</b> (status 206). Kalau tile mulai dari zoom tertentu (contoh <b>-Z 5</b>),
+        maka di zoom 4 memang kosong. Tombol <b>Zoom min data</b> bakal ngangkat zoom ke level minimal data.
       </div>
     </div>
   </div>
 
-  <!-- Libs -->
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
   <script src="https://unpkg.com/pmtiles@3.0.6/dist/pmtiles.js"></script>
 
@@ -212,7 +210,7 @@
       DEFAULT: '#a855f7'
     };
 
-    const IND_BOUNDS = [[94.0,-11.5],[141.0,6.5]]; // [ [W,S], [E,N] ] in lng/lat for maplibre fitBounds
+    const IND_BOUNDS = [[94.0,-11.5],[141.0,6.5]];
 
     const pillStatus = document.getElementById('pillStatus');
     const pillRange  = document.getElementById('pillRange');
@@ -225,6 +223,7 @@
     const btnFitID   = document.getElementById('btnFitID');
     const btnOnAll   = document.getElementById('btnOnAll');
     const btnOffAll  = document.getElementById('btnOffAll');
+    const btnZoomMin = document.getElementById('btnZoomMin');
 
     function setPill(el, kind, text){
       el.className = 'pill ' + (kind||'');
@@ -241,7 +240,7 @@
       warnLine.textContent = msg || '';
     }
     function setOK(){
-      errLine.style.display='none'; errLine.textContent='';
+      errLine.style.display='none';
       setPill(pillStatus, 'ok', 'PMTiles OK');
     }
 
@@ -254,7 +253,6 @@
     }
     function safeId(s){ return String(s).replace(/[^a-zA-Z0-9_-]/g,'_'); }
 
-    // ===== MapLibre init (raster basemap + vector overlays) =====
     const protocol = new pmtiles.Protocol();
     maplibregl.addProtocol('pmtiles', protocol.tile);
 
@@ -282,9 +280,8 @@
 
     map.addControl(new maplibregl.NavigationControl({ visualizePitch:true }), 'top-left');
 
-    // ===== Helpers: read PMTiles metadata bounds + vector layer name =====
+    // ===== bounds helpers
     function unionBounds(a, b){
-      // a/b: [minLon, minLat, maxLon, maxLat]
       if(!a) return b;
       if(!b) return a;
       return [
@@ -310,27 +307,32 @@
       return (vls[0] && vls[0].id) ? vls[0].id : null;
     }
 
-    // ===== Range test (PMTiles needs HTTP Range) =====
     async function rangeTest(url){
       try{
         const r = await fetch(url, { headers: { 'Range': 'bytes=0-31' }});
-        // OK is 206 Partial Content. Some servers return 200 and still allow full, but pmtiles REALLY expects range.
         return { ok: (r.status===206), status: r.status };
       }catch(e){
         return { ok:false, status: 0, err: String(e) };
       }
     }
 
-    // ===== Layer registry =====
-    const layersMeta = []; // {item, visible, sourceId, fillId, lineId}
+    const layersMeta = []; // {item, visible, sourceId, fillId, lineId, minzoom, maxzoom}
     let boundsAll = null;
+    let globalMinZoom = 0;
 
     function setVisible(meta, visible){
       meta.visible = visible;
       const v = visible ? 'visible' : 'none';
       if(map.getLayer(meta.fillId)) map.setLayoutProperty(meta.fillId,'visibility',v);
       if(map.getLayer(meta.lineId)) map.setLayoutProperty(meta.lineId,'visibility',v);
+
+      // Kalau user nyalain layer tapi zoom belum sampai minzoom, kasih warning
+      if(visible && meta.minzoom != null && map.getZoom() < meta.minzoom){
+        setWarn(`Layer "${meta.item.title||meta.item.file}" baru ada mulai zoom ${meta.minzoom}. Sekarang zoom ${map.getZoom().toFixed(1)} → coba tekan "Zoom min data" atau zoom-in (+).`);
+      }
+      updateAllPill();
     }
+
     function updateAllPill(){
       const allOn = layersMeta.length && layersMeta.every(m=>m.visible);
       pillAll.style.display = allOn ? 'inline-block' : 'none';
@@ -355,17 +357,15 @@
         const cb = document.createElement('input');
         cb.type='checkbox';
         cb.checked=meta.visible;
-        cb.addEventListener('change', ()=>{
-          setVisible(meta, cb.checked);
-          updateAllPill();
-        });
+        cb.addEventListener('change', ()=> setVisible(meta, cb.checked));
 
         const sw = document.createElement('span');
         sw.className='sw '+tagClass(item.type);
 
         const nm = document.createElement('div');
         nm.className='nm';
-        nm.textContent = item.title || item.file;
+        const mz = (meta.minzoom!=null) ? ` (min z${meta.minzoom})` : '';
+        nm.textContent = (item.title || item.file) + mz;
 
         left.appendChild(cb);
         left.appendChild(sw);
@@ -386,22 +386,37 @@
     btnOnAll.addEventListener('click', ()=>{
       layersMeta.forEach(m=>setVisible(m,true));
       renderList();
-      updateAllPill();
     });
     btnOffAll.addEventListener('click', ()=>{
       layersMeta.forEach(m=>setVisible(m,false));
       renderList();
-      updateAllPill();
+      setWarn('');
     });
 
     btnFitID.addEventListener('click', ()=>{
       map.fitBounds(IND_BOUNDS, { padding: 40, duration: 900 });
+      setWarn('');
+    });
+
+    function ensureMinZoom(){
+      if(globalMinZoom && map.getZoom() < globalMinZoom){
+        map.easeTo({ zoom: globalMinZoom + 0.3, duration: 600 });
+      }
+    }
+
+    btnZoomMin.addEventListener('click', ()=>{
+      if(globalMinZoom){
+        map.easeTo({ zoom: globalMinZoom + 0.3, duration: 600 });
+      }else{
+        setWarn('Min zoom data belum terbaca.');
+      }
     });
 
     btnFitData.addEventListener('click', ()=>{
       if(validBounds(boundsAll)){
         const b = [[boundsAll[0], boundsAll[1]],[boundsAll[2], boundsAll[3]]];
         map.fitBounds(b, { padding: 60, duration: 900, maxZoom: 10 });
+        map.once('moveend', ()=> ensureMinZoom());
       }else{
         map.fitBounds(IND_BOUNDS, { padding: 40, duration: 900 });
       }
@@ -421,10 +436,18 @@
       const pm = new pmtiles.PMTiles(url);
       protocol.add(pm);
 
-      // metadata bounds (buat fit data)
       const md = await pm.getMetadata();
+
+      // simpan bounds
       if(md && Array.isArray(md.bounds) && validBounds(md.bounds)){
         boundsAll = unionBounds(boundsAll, md.bounds);
+      }
+
+      // simpan min/max zoom (ini kunci kalau kamu pakai -Z 5)
+      const minz = (md && Number.isFinite(md.minzoom)) ? md.minzoom : null;
+      const maxz = (md && Number.isFinite(md.maxzoom)) ? md.maxzoom : null;
+      if(minz != null){
+        globalMinZoom = (globalMinZoom===0) ? minz : Math.min(globalMinZoom, minz);
       }
 
       const srcLayer = await firstVectorLayerId(pm) || 'layer0';
@@ -436,33 +459,25 @@
       const fillId = 'fill_'+idBase;
       const lineId = 'line_'+idBase;
 
-      // Fill
       map.addLayer({
         id: fillId,
         type: 'fill',
         source: srcId,
         'source-layer': srcLayer,
-        paint: {
-          'fill-color': color,
-          'fill-opacity': 0.30
-        }
+        paint: { 'fill-color': color, 'fill-opacity': 0.30 }
       });
 
-      // Outline
       map.addLayer({
         id: lineId,
         type: 'line',
         source: srcId,
         'source-layer': srcLayer,
-        paint: {
-          'line-color': color,
-          'line-width': 1.4,
-          'line-opacity': 0.95
-        }
+        paint: { 'line-color': color, 'line-width': 1.4, 'line-opacity': 0.95 }
       });
 
-      const meta = { item, visible:true, sourceId:srcId, fillId, lineId };
-      layersMeta.push(meta);
+      layersMeta.push({
+        item, visible:true, sourceId:srcId, fillId, lineId, minzoom:minz, maxzoom:maxz
+      });
     }
 
     map.on('load', async ()=>{
@@ -475,18 +490,15 @@
           return;
         }
 
-        // Range test 1 file saja (paling pertama) untuk indikator cepat
         const firstUrl = new URL(items[0].file, window.location.href).toString();
         const rt = await rangeTest(firstUrl);
         if(rt.ok){
           setPill(pillRange, 'ok', 'Range OK (206)');
-          setWarn('');
         }else{
           setPill(pillRange, 'warn', 'Range GAGAL ('+(rt.status||'?')+')');
-          setWarn('Server tidak support HTTP Range. PMTiles bisa “OK” tapi data tidak tampil. (GitHub Pages biasanya OK, tapi kalau lewat proxy/redirect bisa gagal.)');
+          setWarn('Server tidak support HTTP Range. PMTiles bisa “OK” tapi data tidak tampil.');
         }
 
-        // Add all layers
         for(const item of items){
           await addPMTilesLayer(item);
         }
@@ -495,23 +507,22 @@
         renderList();
         updateAllPill();
 
-        // Auto fit to data bounds
+        // Auto-fit to data, lalu paksa zoom ke minzoom data kalau perlu
         if(validBounds(boundsAll)){
           btnFitData.click();
         }else{
           btnFitID.click();
+          ensureMinZoom();
+        }
+
+        // Kalau min zoom > zoom sekarang, kasih hint
+        if(globalMinZoom && map.getZoom() < globalMinZoom){
+          setWarn(`Data PMTiles kamu mulai dari zoom ${globalMinZoom}. Tekan "Zoom min data" atau zoom-in (+).`);
         }
 
       }catch(e){
         console.error(e);
         setError(e.message || String(e));
-      }
-    });
-
-    // Debug capture: kalau ada error tile/vector, tampilkan singkat
-    map.on('error', (ev)=>{
-      if(ev && ev.error){
-        console.warn('Map error:', ev.error);
       }
     });
   </script>
