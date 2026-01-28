@@ -1,392 +1,517 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <title>Dashboard PMTiles — DI Permukaan (Pusat)</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PMTiles Viewer (Manifest)</title>
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
   <style>
     :root{
-      --bg:#0b1222; --panel:rgba(11,18,34,.92); --text:#e5e7eb; --muted:#94a3b8;
-      --brand:#0d47a1; --accent:#2563eb; --border:rgba(255,255,255,.12);
-      --ok:#10b981; --err:#ef4444; --warn:#f59e0b; --hdrH:72px;
+      --bg:#0b1220; --panel:#0f1a31; --panel2:#0d1730;
+      --text:#e6eefc; --muted:#a9b6d1; --line:rgba(255,255,255,.12);
+      --accent:#64b5f6;
     }
-    html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text)}
-    .header{
-      position:fixed;top:0;left:0;right:0;z-index:999;
-      background:var(--brand);
-      border-bottom:1px solid rgba(255,255,255,.18);
-      height:var(--hdrH);
-      display:flex;align-items:center;gap:12px;
-      padding:0 14px;
-      box-shadow:0 10px 24px rgba(0,0,0,.18);
-    }
-    .logo{
-      width:44px;height:44px;border-radius:10px;
-      background:rgba(255,255,255,.12);
-      display:flex;align-items:center;justify-content:center;
-      font-weight:900;color:#fff; overflow:hidden;
-    }
-    .logo img{width:44px;height:44px;object-fit:contain}
-    .hdrText{flex:1;min-width:0}
-    .hdrText .t1{font-weight:900;font-size:14px;line-height:1.2;color:#fff}
-    .hdrText .t2{font-weight:700;font-size:12px;color:rgba(255,255,255,.9)}
-    .hdrText .t3{font-weight:700;font-size:11px;color:rgba(255,255,255,.8)}
-    .home{
-      background:#fff;color:var(--brand);
-      font-weight:900;text-decoration:none;
-      padding:8px 14px;border-radius:12px;font-size:12px;white-space:nowrap;
-    }
-    #map{ position:absolute; top:var(--hdrH); left:0; right:0; bottom:0; }
+    html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;}
+    #map { height: 100%; width: 100%; }
 
-    .dock{
-      position:absolute; left:12px; right:12px; bottom:12px; z-index:1001;
-      background:var(--panel);
-      border:1px solid var(--border);
-      border-radius:16px;
-      box-shadow:0 18px 42px rgba(0,0,0,.35);
-      backdrop-filter:blur(8px);
-      padding:10px 12px;
-      max-height:46vh;
-      display:flex; flex-direction:column; gap:8px;
-    }
-    .dockTop{display:flex;align-items:center;justify-content:space-between;gap:10px}
-    .dockTop h2{margin:0;font-size:14px;font-weight:900;display:flex;align-items:center;gap:8px}
-    .pill{
-      display:inline-block;font-size:11px;font-weight:900;
-      padding:2px 10px;border-radius:999px;
-      border:1px solid rgba(255,255,255,.18);
-      background:rgba(15,23,42,.75);
-      color:#e5e7eb; white-space:nowrap;
-    }
-    .pill.ok{border-color:rgba(16,185,129,.45);background:rgba(16,185,129,.14);color:#bbf7d0}
-    .pill.err{border-color:rgba(239,68,68,.45);background:rgba(239,68,68,.14);color:#fecaca}
-    .pill.warn{border-color:rgba(245,158,11,.55);background:rgba(245,158,11,.14);color:#fde68a}
-
-    .btnRow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-    .btn{
-      border:1px solid rgba(255,255,255,.14);
-      background:rgba(255,255,255,.10);
-      color:#fff; font-weight:900;
-      padding:8px 12px; border-radius:999px;
-      cursor:pointer; font-size:12px;
-    }
-    .btn.primary{background:var(--accent);border-color:rgba(37,99,235,.35)}
-    .btn:hover{background:rgba(255,255,255,.14)}
-    .btn.primary:hover{background:#1d4ed8}
-
-    .list{
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(15,23,42,.82);
+    .panel{
+      position:absolute; top:12px; left:12px; z-index:9999;
+      width:min(420px, calc(100vw - 24px));
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid var(--line);
       border-radius:14px;
-      overflow:auto; max-height:240px;
+      overflow:hidden;
+      box-shadow: 0 12px 30px rgba(0,0,0,.35);
+      backdrop-filter: blur(8px);
     }
+    .panel header{
+      padding:12px 14px;
+      display:flex; gap:10px; align-items:center; justify-content:space-between;
+      background: rgba(0,0,0,.18);
+      border-bottom:1px solid var(--line);
+    }
+    .panel header .title{
+      font-weight:700; letter-spacing:.2px; font-size:14px;
+      display:flex; align-items:center; gap:10px;
+    }
+    .badge{
+      font-size:12px; color: var(--muted);
+      border:1px solid var(--line); padding:2px 8px; border-radius:999px;
+      background: rgba(0,0,0,.12);
+    }
+    .panel .controls{ padding:10px 14px; border-bottom:1px solid var(--line); background: rgba(0,0,0,.10); }
+    .row{ display:flex; gap:8px; align-items:center; }
+    input[type="search"]{
+      width:100%; padding:10px 10px; border-radius:10px; border:1px solid var(--line);
+      outline:none; background: rgba(255,255,255,.06); color: var(--text);
+    }
+    .btn{
+      cursor:pointer; border-radius:10px; border:1px solid var(--line);
+      background: rgba(255,255,255,.06); color: var(--text);
+      padding:10px 10px; font-weight:600;
+      transition: transform .05s ease;
+      user-select:none;
+    }
+    .btn:active{ transform: scale(.98); }
+
+    .list{ max-height: 56vh; overflow:auto; }
+    .group{
+      border-bottom:1px solid var(--line);
+      background: rgba(0,0,0,.06);
+    }
+    .group h3{
+      margin:0; padding:10px 14px;
+      font-size:12px; text-transform:uppercase; letter-spacing:.12em;
+      color: var(--muted);
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .items{ padding: 2px 0 10px; }
     .item{
-      display:flex;align-items:center;justify-content:space-between;gap:10px;
-      padding:9px 10px;border-bottom:1px dashed rgba(148,163,184,.22);
-      font-size:12px;
+      margin:8px 10px 0; padding:10px 10px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background: rgba(15,26,49,.55);
     }
-    .item:last-child{border-bottom:none}
-    .left{display:flex;align-items:center;gap:10px;min-width:0}
-    .nm{font-weight:800;color:#e5e7eb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:62vw}
-    .errline{font-size:12px;color:#fca5a5;font-weight:800}
-    input[type="checkbox"]{width:16px;height:16px;margin:0}
-    .note{font-size:11px;color:var(--muted);line-height:1.35}
+    .item-top{
+      display:flex; justify-content:space-between; align-items:flex-start; gap:10px;
+    }
+    .name{
+      font-weight:700; font-size:13px; line-height:1.2;
+      word-break: break-word;
+    }
+    .meta{ font-size:12px; color: var(--muted); margin-top:4px; word-break: break-word;}
+    .toggles{ display:flex; gap:10px; align-items:center; }
+    .small{
+      font-size:12px; color: var(--muted);
+    }
+    .opacity{
+      display:flex; gap:10px; align-items:center; margin-top:10px;
+    }
+    input[type="range"]{ width:100%; }
+    .status{
+      padding:10px 14px; font-size:12px; color: var(--muted);
+      border-top:1px solid var(--line);
+      background: rgba(0,0,0,.12);
+    }
+    .hint{ color: var(--muted); font-size:12px; margin-top:8px; line-height:1.35; }
+    a{ color: var(--accent); }
   </style>
 </head>
 
 <body>
-  <div class="header">
-    <div class="logo">
-      <img src="LogoPUPR.png" alt="Logo"
-        onerror="const p=this.parentNode; this.remove(); if(p){p.textContent='PU';}">
+  <div id="map"></div>
+
+  <div class="panel" id="panel">
+    <header>
+      <div class="title">🧩 PMTiles Viewer <span class="badge" id="countBadge">0 layer</span></div>
+      <div class="row">
+        <button class="btn" id="fitAllBtn" title="Zoom ke semua layer">Fit</button>
+        <button class="btn" id="togglePanelBtn" title="Sembunyikan panel">Hide</button>
+      </div>
+    </header>
+
+    <div class="controls">
+      <div class="row">
+        <input id="search" type="search" placeholder="Cari layer… (contoh: Aceh / Bali / BAKU / FUNG / POTS)" />
+        <button class="btn" id="allOnBtn" title="Nyalakan semua">All ON</button>
+        <button class="btn" id="allOffBtn" title="Matikan semua">All OFF</button>
+      </div>
+      <div class="hint">
+        • Sumber layer dari <b>manifest.json</b> di folder ini.<br/>
+        • File <b>.pmtiles</b> juga harus di folder yang sama (atau path relatif sesuai di manifest).
+      </div>
     </div>
-    <div class="hdrText">
-      <div class="t1">Kementerian PU</div>
-      <div class="t2">Ditjen SDA · Dit. Irigasi & Rawa</div>
-      <div class="t3">Dashboard PMTiles (Auto tampil semua)</div>
-    </div>
-    <a class="home" href="../../../../index.html">Beranda</a>
+
+    <div class="list" id="layerList"></div>
+    <div class="status" id="status">Memuat manifest…</div>
   </div>
 
-  <div id="map">
-    <div class="dock">
-      <div class="dockTop">
-        <h2>Layer PMTiles (Pusat) <span class="pill" id="pillStatus">Memuat…</span></h2>
-        <span class="pill" id="pillBackend" style="display:none"></span>
-      </div>
+  <!-- Leaflet -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-      <div class="btnRow">
-        <button class="btn primary" id="btnFitData" type="button">Fit ke Data</button>
-        <button class="btn" id="btnFitID" type="button">Fit Indonesia</button>
-        <button class="btn" id="btnOnAll" type="button">ON semua</button>
-        <button class="btn" id="btnOffAll" type="button">OFF semua</button>
-      </div>
-
-      <div class="errline" id="errLine" style="display:none"></div>
-
-      <div class="list" id="layerList">
-        <div style="padding:10px;color:#94a3b8;font-size:12px">Memuat manifest.json…</div>
-      </div>
-
-      <div class="note">
-        Jika muncul error <b>Content-Length / Byte Serving</b>, berarti server tidak mengirim header yang diperlukan untuk PMTiles.
-        Pada GitHub Pages normalnya aman, tapi bisa gagal jika URL file kena redirect/proxy atau file tidak tersaji sebagai file statis murni.
-      </div>
-    </div>
-  </div>
-
-  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <!-- Protomaps / PMTiles -->
   <script src="https://unpkg.com/pmtiles@3.0.6/dist/pmtiles.js"></script>
+  <script src="https://unpkg.com/protomaps@1.23.1/dist/protomaps.min.js"></script>
 
   <script>
-    const IND_BOUNDS = [[94.0,-11.5],[141.0,6.5]];
-
-    const pillStatus = document.getElementById('pillStatus');
-    const pillBackend= document.getElementById('pillBackend');
-    const errLine    = document.getElementById('errLine');
-    const layerListEl= document.getElementById('layerList');
-
-    const btnFitData = document.getElementById('btnFitData');
-    const btnFitID   = document.getElementById('btnFitID');
-    const btnOnAll   = document.getElementById('btnOnAll');
-    const btnOffAll  = document.getElementById('btnOffAll');
-
-    function setPill(el, kind, text){
-      el.className = 'pill ' + (kind||'');
-      el.textContent = text;
-      el.style.display = 'inline-block';
+    // ========= Helpers =========
+    function safeText(s){ return (s ?? "").toString(); }
+    function extless(name){ return safeText(name).replace(/\.pmtiles$/i,""); }
+    function guessGroupFromName(name){
+      const n = safeText(name);
+      if (/baku/i.test(n)) return "BAKU";
+      if (/fung/i.test(n)) return "FUNG";
+      if (/pots/i.test(n)) return "POTS";
+      return "Lainnya";
     }
-    function setError(msg){
-      errLine.style.display = msg ? 'block' : 'none';
-      errLine.textContent = msg || '';
-      setPill(pillStatus, 'err', 'Error');
-    }
-    function setOK(){
-      errLine.style.display='none';
-      setPill(pillStatus, 'ok', 'PMTiles OK');
+    function guessTitleFromFile(file){
+      // Contoh: "Aceh_Pusat_-_BWS_Sumatera_I_BAKU.pmtiles"
+      const base = extless(file).replace(/_/g," ").replace(/\s+-\s+/g," - ");
+      return base;
     }
 
-    // PMTiles protocol
+    // ========= Base Map =========
+    const map = L.map("map", { zoomControl: true }).setView([-2.5, 118], 5);
+
+    // Basemap (gratis, ringan). Bisa ganti ke Esri kalau mau.
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 20,
+      attribution: "&copy; OpenStreetMap"
+    }).addTo(map);
+
+    // ========= PMTiles Plumbing =========
+    // Register PMTiles protocol so protomaps can fetch `pmtiles://...`
     const protocol = new pmtiles.Protocol();
-    maplibregl.addProtocol('pmtiles', protocol.tile);
+    // `protomaps` uses fetch; we patch the global fetch handler by adding protocol handler.
+    // pmtiles.js provides a URL scheme handler via `protocol.tile`.
+    // Protomaps has `pmtiles://` integration: we pass `url: "pmtiles://..."` to layer.
 
-    const map = new maplibregl.Map({
-      container: 'map',
-      style: {
-        version: 8,
-        sources: {
-          esri: {
-            type: 'raster',
-            tiles: [
-              'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-            ],
-            tileSize: 256,
-            attribution: 'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics'
-          }
-        },
-        layers: [{ id:'basemap', type:'raster', source:'esri' }]
-      },
-      center: [118.0, -2.2],
-      zoom: 4
-    });
+    // ========= State =========
+    const state = {
+      items: [],         // normalized manifest items
+      layers: new Map(), // id -> { layer, item, opacity }
+      boundsUnion: null
+    };
 
-    map.addControl(new maplibregl.NavigationControl({ visualizePitch:true }), 'top-left');
+    const elList = document.getElementById("layerList");
+    const elStatus = document.getElementById("status");
+    const elSearch = document.getElementById("search");
+    const elCount  = document.getElementById("countBadge");
 
-    const layersMeta = [];
-    let boundsAll = null;
+    function setStatus(msg){ elStatus.textContent = msg; }
 
-    function unionBounds(a, b){
-      if(!a) return b;
-      if(!b) return a;
-      return [
-        Math.min(a[0], b[0]),
-        Math.min(a[1], b[1]),
-        Math.max(a[2], b[2]),
-        Math.max(a[3], b[3]),
-      ];
-    }
-    function validBounds(b){
-      if(!b || b.length!==4) return false;
-      const [w,s,e,n]=b;
-      if(!isFinite(w)||!isFinite(s)||!isFinite(e)||!isFinite(n)) return false;
-      if(e<=w || n<=s) return false;
-      return true;
-    }
-    function safeId(s){ return String(s).replace(/[^a-zA-Z0-9_-]/g,'_'); }
+    // ========= Normalize Manifest =========
+    // Supports:
+    // 1) Array: [ {file, title, group, ...}, ... ]
+    // 2) Object: { layers: [...] } or { items: [...] }
+    function normalizeManifest(json){
+      let arr = [];
+      if (Array.isArray(json)) arr = json;
+      else if (json && Array.isArray(json.layers)) arr = json.layers;
+      else if (json && Array.isArray(json.items)) arr = json.items;
 
-    async function headCheck(url){
-      const r = await fetch(url, { method:'HEAD', cache:'no-store' });
-      const cl = r.headers.get('content-length');
-      const ar = r.headers.get('accept-ranges'); // biasanya "bytes"
-      return { ok:r.ok, status:r.status, contentLength:cl, acceptRanges:ar };
+      return arr
+        .map((raw, idx) => {
+          const file = raw.file || raw.path || raw.pmtiles || raw.url || "";
+          const title = raw.title || raw.name || guessTitleFromFile(file);
+          const group = raw.group || raw.category || guessGroupFromName(title || file);
+          const id = raw.id || `${idx}:${file}`;
+          // Optional: bounds [minLng, minLat, maxLng, maxLat]
+          const bounds = raw.bounds || null;
+          // Optional: style (protomaps style JSON object) or leave default
+          const style = raw.style || null;
+          return { id, file, title, group, bounds, style };
+        })
+        .filter(x => x.file && /\.pmtiles$/i.test(x.file));
     }
 
-    async function loadManifest(){
-      const res = await fetch('./manifest.json?v=' + Date.now(), { cache:'no-store' });
-      if(!res.ok) throw new Error('manifest.json tidak ditemukan (HTTP '+res.status+')');
-      const json = await res.json();
-      return (json.items || []);
-    }
+    // ========= Create a Protomaps Layer from PMTiles =========
+    function makePmtilesLayer(item){
+      // URL scheme: pmtiles://<relative-path>
+      // Note: protocol handles scheme in fetch pipeline
+      const url = "pmtiles://" + item.file;
 
-    async function firstVectorLayerId(pm){
-      const md = await pm.getMetadata();
-      const j = md && md.json ? md.json : null;
-      const vls = j && Array.isArray(j.vector_layers) ? j.vector_layers : [];
-      return (vls[0] && vls[0].id) ? vls[0].id : null;
-    }
+      const layer = protomaps.leafletLayer({
+        url,
+        // A decent default style (if you have your own style JSON, put it in manifest per-layer)
+        // Protomaps will auto style if `paint_rules` present; otherwise use default theme:
+        // We'll use a minimalist, readable theme.
+        paint_rules: protomaps.paintRules({
+          // leave default rules; protomaps gives a base theme
+        }),
+        label_rules: protomaps.labelRules({
+          // default label rules
+        })
+      });
 
-    function renderList(){
-      layerListEl.innerHTML='';
-      if(!layersMeta.length){
-        layerListEl.innerHTML='<div style="padding:10px;color:#94a3b8;font-size:12px">Tidak ada item di manifest.</div>';
-        return;
+      // Opacity control: protomaps layer supports setOpacity
+      layer.setOpacity(1);
+
+      // Track bounds if provided
+      if (item.bounds && Array.isArray(item.bounds) && item.bounds.length === 4){
+        const b = L.latLngBounds(
+          [item.bounds[1], item.bounds[0]],
+          [item.bounds[3], item.bounds[2]]
+        );
+        state.boundsUnion = state.boundsUnion ? state.boundsUnion.extend(b) : b;
       }
 
-      for(const meta of layersMeta){
-        const row = document.createElement('div');
-        row.className='item';
+      return layer;
+    }
 
-        const left = document.createElement('div');
-        left.className='left';
+    // ========= UI Rendering =========
+    function buildUI(){
+      // Group items
+      const query = safeText(elSearch.value).trim().toLowerCase();
+      const filtered = state.items.filter(it => {
+        if (!query) return true;
+        return (it.title + " " + it.file + " " + it.group).toLowerCase().includes(query);
+      });
 
-        const cb = document.createElement('input');
-        cb.type='checkbox';
-        cb.checked=meta.visible;
-        cb.addEventListener('change', ()=>{
-          meta.visible = cb.checked;
-          const v = meta.visible ? 'visible' : 'none';
-          map.setLayoutProperty(meta.fillId,'visibility',v);
-          map.setLayoutProperty(meta.lineId,'visibility',v);
+      elCount.textContent = `${state.items.length} layer`;
+
+      const groups = new Map();
+      for (const it of filtered){
+        if (!groups.has(it.group)) groups.set(it.group, []);
+        groups.get(it.group).push(it);
+      }
+
+      // Sort groups and items
+      const sortedGroupNames = Array.from(groups.keys()).sort((a,b)=>a.localeCompare(b));
+      elList.innerHTML = "";
+
+      for (const g of sortedGroupNames){
+        const wrap = document.createElement("div");
+        wrap.className = "group";
+
+        const h = document.createElement("h3");
+        const total = groups.get(g).length;
+        h.innerHTML = `<span>${safeText(g)}</span><span class="small">${total}</span>`;
+        wrap.appendChild(h);
+
+        const itemsDiv = document.createElement("div");
+        itemsDiv.className = "items";
+
+        const arr = groups.get(g).slice().sort((a,b)=>a.title.localeCompare(b.title));
+        for (const it of arr){
+          itemsDiv.appendChild(renderItem(it));
+        }
+
+        wrap.appendChild(itemsDiv);
+        elList.appendChild(wrap);
+      }
+
+      setStatus(filtered.length ? `Menampilkan ${filtered.length} layer (filter aktif).` : `Tidak ada layer yang cocok filter.`);
+    }
+
+    function renderItem(item){
+      const card = document.createElement("div");
+      card.className = "item";
+
+      const isOn = state.layers.has(item.id);
+
+      const top = document.createElement("div");
+      top.className = "item-top";
+
+      const left = document.createElement("div");
+      const title = document.createElement("div");
+      title.className = "name";
+      title.textContent = item.title;
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      meta.textContent = item.file;
+
+      left.appendChild(title);
+      left.appendChild(meta);
+
+      const right = document.createElement("div");
+      right.className = "toggles";
+
+      const chk = document.createElement("input");
+      chk.type = "checkbox";
+      chk.checked = isOn;
+      chk.title = "On/Off layer";
+      chk.addEventListener("change", () => {
+        if (chk.checked) addLayer(item);
+        else removeLayer(item);
+        // rerender just this card for correct opacity slider
+        buildUI();
+      });
+
+      const zoomBtn = document.createElement("button");
+      zoomBtn.className = "btn";
+      zoomBtn.textContent = "Zoom";
+      zoomBtn.title = "Zoom ke bounds layer (kalau ada di manifest)";
+      zoomBtn.addEventListener("click", () => zoomToItem(item));
+
+      right.appendChild(chk);
+      right.appendChild(zoomBtn);
+
+      top.appendChild(left);
+      top.appendChild(right);
+      card.appendChild(top);
+
+      // opacity slider (only if layer ON)
+      if (isOn){
+        const entry = state.layers.get(item.id);
+        const opacityWrap = document.createElement("div");
+        opacityWrap.className = "opacity";
+
+        const label = document.createElement("div");
+        label.className = "small";
+        label.style.minWidth = "64px";
+        label.textContent = Math.round((entry.opacity ?? 1) * 100) + "%";
+
+        const rng = document.createElement("input");
+        rng.type = "range";
+        rng.min = "0";
+        rng.max = "100";
+        rng.value = Math.round((entry.opacity ?? 1) * 100);
+
+        rng.addEventListener("input", () => {
+          const v = Math.max(0, Math.min(100, Number(rng.value))) / 100;
+          label.textContent = Math.round(v * 100) + "%";
+          entry.opacity = v;
+          entry.layer.setOpacity(v);
         });
 
-        const nm = document.createElement('div');
-        nm.className='nm';
-        nm.textContent = meta.item.title || meta.item.file;
+        opacityWrap.appendChild(label);
+        opacityWrap.appendChild(rng);
+        card.appendChild(opacityWrap);
+      }
 
-        left.appendChild(cb);
-        left.appendChild(nm);
+      return card;
+    }
 
-        row.appendChild(left);
-        layerListEl.appendChild(row);
+    // ========= Layer Ops =========
+    function addLayer(item){
+      if (state.layers.has(item.id)) return;
+
+      const layer = makePmtilesLayer(item);
+
+      // Hook protocol into fetch:
+      // pmtiles Protocol exposes tile handler used by protomaps automatically when using pmtiles://
+      // We need to register protocol handler for 'pmtiles' scheme:
+      // pmtiles v3 sets `pmtiles.Protocol` for maplibre; for fetch-based libs, it works by overriding `fetch` via protocol.add.
+      // We implement minimal scheme resolver:
+      const oldFetch = window.fetch;
+      if (!window.__pmtiles_fetch_patched){
+        window.fetch = async (input, init) => {
+          const url = (typeof input === "string") ? input : input.url;
+          if (url && url.startsWith("pmtiles://")){
+            const httpUrl = url.replace("pmtiles://", "");
+            // Protomaps requests bytes via Range. pmtiles Protocol can serve it.
+            // We'll delegate to protocol.tile which returns a Response-like object when given a Request.
+            const req = new Request(httpUrl, init);
+            const res = await protocol.tile(req);
+            if (res) return res;
+          }
+          return oldFetch(input, init);
+        };
+        window.__pmtiles_fetch_patched = true;
+      }
+
+      layer.addTo(map);
+      state.layers.set(item.id, { layer, item, opacity: 1 });
+
+      // If bounds not in manifest, we still can "fit all" only if other layers have bounds.
+      setStatus(`Layer ON: ${item.title}`);
+    }
+
+    function removeLayer(item){
+      const entry = state.layers.get(item.id);
+      if (!entry) return;
+      map.removeLayer(entry.layer);
+      state.layers.delete(item.id);
+      setStatus(`Layer OFF: ${item.title}`);
+    }
+
+    function zoomToItem(item){
+      // Only works if bounds exists in manifest
+      if (item.bounds && Array.isArray(item.bounds) && item.bounds.length === 4){
+        const b = L.latLngBounds(
+          [item.bounds[1], item.bounds[0]],
+          [item.bounds[3], item.bounds[2]]
+        );
+        map.fitBounds(b, { padding: [30,30] });
+      } else {
+        setStatus("Bounds layer belum ada di manifest.json (tambahkan 'bounds' kalau mau tombol Zoom akurat).");
       }
     }
 
-    btnOnAll.addEventListener('click', ()=>{
-      layersMeta.forEach(m=>{
-        m.visible = true;
-        map.setLayoutProperty(m.fillId,'visibility','visible');
-        map.setLayoutProperty(m.lineId,'visibility','visible');
-      });
-      renderList();
-    });
-    btnOffAll.addEventListener('click', ()=>{
-      layersMeta.forEach(m=>{
-        m.visible = false;
-        map.setLayoutProperty(m.fillId,'visibility','none');
-        map.setLayoutProperty(m.lineId,'visibility','none');
-      });
-      renderList();
-    });
-
-    btnFitID.addEventListener('click', ()=>{
-      map.fitBounds(IND_BOUNDS, { padding: 40, duration: 900 });
-    });
-
-    btnFitData.addEventListener('click', ()=>{
-      if(validBounds(boundsAll)){
-        const b = [[boundsAll[0], boundsAll[1]],[boundsAll[2], boundsAll[3]]];
-        map.fitBounds(b, { padding: 60, duration: 900, maxZoom: 10 });
-      }else{
-        btnFitID.click();
+    function fitAll(){
+      if (state.boundsUnion){
+        map.fitBounds(state.boundsUnion, { padding: [30,30] });
+      } else {
+        setStatus("Belum ada bounds global. Tips: tambahin 'bounds' per layer di manifest.json biar fitur Fit bisa nendang.");
       }
-    });
-
-    async function addPM(item){
-      const url = new URL(item.file, window.location.href).toString();
-      const idBase = safeId(item.file);
-
-      const pm = new pmtiles.PMTiles(url);
-      protocol.add(pm);
-
-      const md = await pm.getMetadata();
-      if(md && Array.isArray(md.bounds) && validBounds(md.bounds)){
-        boundsAll = unionBounds(boundsAll, md.bounds);
-      }
-
-      const srcLayer = await firstVectorLayerId(pm) || 'layer0';
-      const srcId = 'src_'+idBase;
-
-      map.addSource(srcId, { type:'vector', url:'pmtiles://'+url });
-
-      const fillId = 'fill_'+idBase;
-      const lineId = 'line_'+idBase;
-
-      map.addLayer({
-        id: fillId,
-        type: 'fill',
-        source: srcId,
-        'source-layer': srcLayer,
-        layout: { visibility:'visible' },
-        paint: { 'fill-color': '#22c55e', 'fill-opacity': 0.25 }
-      });
-
-      map.addLayer({
-        id: lineId,
-        type: 'line',
-        source: srcId,
-        'source-layer': srcLayer,
-        layout: { visibility:'visible' },
-        paint: { 'line-color': '#22c55e', 'line-width': 1.3, 'line-opacity': 0.95 }
-      });
-
-      layersMeta.push({ item, visible:true, fillId, lineId });
     }
 
-    map.on('load', async ()=>{
+    function allOn(){
+      for (const it of state.items) addLayer(it);
+      buildUI();
+      setStatus("Semua layer dinyalakan.");
+    }
+
+    function allOff(){
+      for (const it of state.items) removeLayer(it);
+      buildUI();
+      setStatus("Semua layer dimatikan.");
+    }
+
+    // ========= Load Manifest =========
+    async function loadManifest(){
       try{
-        setPill(pillStatus, '', 'Memuat…');
+        // Cache bust biar GitHub Pages ga ngeyel
+        const res = await fetch("manifest.json?v=" + Date.now(), { cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const json = await res.json();
 
-        const items = await loadManifest();
-        if(!items.length){
-          setError('manifest.json terbaca, tapi items kosong.');
+        state.items = normalizeManifest(json);
+
+        if (!state.items.length){
+          setStatus("manifest.json kebaca, tapi gak ada entry .pmtiles. Cek format manifest.json lo ya bro.");
+          elCount.textContent = "0 layer";
           return;
         }
 
-        // cek HEAD content-length + accept-ranges dari file pertama
-        const firstUrl = new URL(items[0].file, window.location.href).toString();
-        const h = await headCheck(firstUrl);
+        // Nyalain semua by default? (bisa lo ubah jadi none)
+        // allOn();
 
-        const hasCL = !!h.contentLength;
-        const hasAR = (h.acceptRanges || '').toLowerCase().includes('bytes');
+        buildUI();
+        setStatus(`Manifest OK. Ketemu ${state.items.length} file .pmtiles. Pilih layer yang mau ditampilkan.`);
+      } catch(err){
+        console.error(err);
+        setStatus("Gagal baca manifest.json. Pastikan file ada & valid JSON, dan berada di folder yang sama dengan index.html.");
+      }
+    }
 
-        if(!hasCL || !hasAR){
-          setPill(pillBackend, 'err', 'Byte Serving Gagal');
-          setError(
-            'Server tidak mengirim header yang dibutuhkan PMTiles (butuh Content-Length + Accept-Ranges: bytes). ' +
-            'Ini penyebab data tidak bisa tampil. Pastikan URL PMTiles benar-benar file statis GitHub Pages (bukan redirect).'
-          );
-          return;
-        } else {
-          setPill(pillBackend, 'ok', 'Byte Serving OK');
-        }
+    // ========= Events =========
+    elSearch.addEventListener("input", () => buildUI());
+    document.getElementById("fitAllBtn").addEventListener("click", fitAll);
+    document.getElementById("allOnBtn").addEventListener("click", allOn);
+    document.getElementById("allOffBtn").addEventListener("click", allOff);
 
-        // load semua
-        for(const it of items){
-          await addPM(it);
-        }
-
-        setOK();
-        renderList();
-        btnFitData.click();
-
-      }catch(e){
-        console.error(e);
-        setError(e.message || String(e));
+    // Hide/Show Panel
+    document.getElementById("togglePanelBtn").addEventListener("click", () => {
+      const p = document.getElementById("panel");
+      const btn = document.getElementById("togglePanelBtn");
+      const isHidden = p.dataset.hidden === "1";
+      if (isHidden){
+        p.style.transform = "translateY(0)";
+        p.style.opacity = "1";
+        p.dataset.hidden = "0";
+        btn.textContent = "Hide";
+      } else {
+        p.style.transform = "translateY(calc(-100% + 52px))";
+        p.style.opacity = "0.98";
+        p.dataset.hidden = "1";
+        btn.textContent = "Show";
       }
     });
+
+    loadManifest();
   </script>
+
+  <!--
+    CATATAN MANIFEST (biar auto-rapih):
+    manifest.json bisa format salah satu:
+
+    1) Array langsung:
+    [
+      { "file":"Aceh_Pusat_-_BWS_Sumatera_I_BAKU.pmtiles", "title":"Aceh Pusat - BAKU", "group":"Aceh" },
+      { "file":"Aceh_Pusat_-_BWS_Sumatera_I_FUNG.pmtiles", "title":"Aceh Pusat - FUNG", "group":"Aceh" }
+    ]
+
+    2) Object:
+    { "layers":[ ... ] }
+
+    OPTIONAL: bounds per layer (minLng,minLat,maxLng,maxLat):
+    { "file":"...", "bounds":[95.2, 4.8, 96.1, 5.6] }
+  -->
 </body>
 </html>
