@@ -4,17 +4,14 @@
   <meta charset="UTF-8" />
   <title>Dashboard PMTiles — DI Permukaan (Pusat)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-
   <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet"/>
 
   <style>
     :root{
       --bg:#0b1222; --panel:rgba(11,18,34,.92); --text:#e5e7eb; --muted:#94a3b8;
       --brand:#0d47a1; --accent:#2563eb; --border:rgba(255,255,255,.12);
-      --ok:#10b981; --err:#ef4444; --warn:#f59e0b;
-      --hdrH:72px;
+      --ok:#10b981; --err:#ef4444; --warn:#f59e0b; --hdrH:72px;
     }
     html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text)}
     .header{
@@ -30,8 +27,7 @@
       width:44px;height:44px;border-radius:10px;
       background:rgba(255,255,255,.12);
       display:flex;align-items:center;justify-content:center;
-      font-weight:900;color:#fff;
-      overflow:hidden;
+      font-weight:900;color:#fff; overflow:hidden;
     }
     .logo img{width:44px;height:44px;object-fit:contain}
     .hdrText{flex:1;min-width:0}
@@ -41,29 +37,9 @@
     .home{
       background:#fff;color:var(--brand);
       font-weight:900;text-decoration:none;
-      padding:8px 14px;border-radius:12px;font-size:12px;
-      white-space:nowrap;
+      padding:8px 14px;border-radius:12px;font-size:12px;white-space:nowrap;
     }
-    .home:hover{background:#f1f5f9}
-
     #map{ position:absolute; top:var(--hdrH); left:0; right:0; bottom:0; }
-
-    .legend{
-      position:absolute; right:14px; top:14px; z-index:1000;
-      background:rgba(15,23,42,.92);
-      border:1px solid rgba(255,255,255,.18);
-      border-radius:14px;
-      padding:10px 12px;
-      box-shadow:0 14px 30px rgba(0,0,0,.25);
-      backdrop-filter:blur(6px);
-      min-width:160px;
-    }
-    .legend .row{display:flex;align-items:center;gap:8px;font-size:12px;margin:6px 0}
-    .sw{width:12px;height:12px;border-radius:4px;border:1px solid rgba(255,255,255,.6)}
-    .sw.baku{background:#22c55e}
-    .sw.fung{background:#3b82f6}
-    .sw.pots{background:#f59e0b}
-    .sw.fallback{background:#a855f7}
 
     .dock{
       position:absolute; left:12px; right:12px; bottom:12px; z-index:1001;
@@ -79,13 +55,11 @@
     .dockTop{display:flex;align-items:center;justify-content:space-between;gap:10px}
     .dockTop h2{margin:0;font-size:14px;font-weight:900;display:flex;align-items:center;gap:8px}
     .pill{
-      display:inline-block;
-      font-size:11px;font-weight:900;
+      display:inline-block;font-size:11px;font-weight:900;
       padding:2px 10px;border-radius:999px;
       border:1px solid rgba(255,255,255,.18);
       background:rgba(15,23,42,.75);
-      color:#e5e7eb;
-      white-space:nowrap;
+      color:#e5e7eb; white-space:nowrap;
     }
     .pill.ok{border-color:rgba(16,185,129,.45);background:rgba(16,185,129,.14);color:#bbf7d0}
     .pill.err{border-color:rgba(239,68,68,.45);background:rgba(239,68,68,.14);color:#fecaca}
@@ -95,60 +69,37 @@
     .btn{
       border:1px solid rgba(255,255,255,.14);
       background:rgba(255,255,255,.10);
-      color:#fff;
-      font-weight:900;
-      padding:8px 12px;
-      border-radius:999px;
-      cursor:pointer;
-      font-size:12px;
+      color:#fff; font-weight:900;
+      padding:8px 12px; border-radius:999px;
+      cursor:pointer; font-size:12px;
     }
-    .btn:hover{background:rgba(255,255,255,.14)}
     .btn.primary{background:var(--accent);border-color:rgba(37,99,235,.35)}
+    .btn:hover{background:rgba(255,255,255,.14)}
     .btn.primary:hover{background:#1d4ed8}
 
     .list{
       border:1px solid rgba(255,255,255,.12);
       background:rgba(15,23,42,.82);
       border-radius:14px;
-      overflow:auto;
-      max-height:240px;
+      overflow:auto; max-height:240px;
     }
     .item{
       display:flex;align-items:center;justify-content:space-between;gap:10px;
-      padding:9px 10px;
-      border-bottom:1px dashed rgba(148,163,184,.22);
+      padding:9px 10px;border-bottom:1px dashed rgba(148,163,184,.22);
       font-size:12px;
     }
     .item:last-child{border-bottom:none}
     .left{display:flex;align-items:center;gap:10px;min-width:0}
-    .nm{
-      font-weight:800;color:#e5e7eb;
-      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-      max-width:62vw;
-    }
-    .tag{
-      font-size:11px;font-weight:900;
-      padding:2px 10px;border-radius:999px;
-      border:1px solid rgba(255,255,255,.14);
-      background:rgba(255,255,255,.06);
-      white-space:nowrap;
-    }
-    .tag.baku{border-color:rgba(34,197,94,.55)}
-    .tag.fung{border-color:rgba(59,130,246,.55)}
-    .tag.pots{border-color:rgba(245,158,11,.6)}
-    .tag.fallback{border-color:rgba(168,85,247,.6)}
-    input[type="checkbox"]{width:16px;height:16px;margin:0}
-
-    .note{font-size:11px;color:var(--muted);line-height:1.35}
+    .nm{font-weight:800;color:#e5e7eb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:62vw}
     .errline{font-size:12px;color:#fca5a5;font-weight:800}
-    .warnline{font-size:12px;color:#fde68a;font-weight:800}
+    input[type="checkbox"]{width:16px;height:16px;margin:0}
+    .note{font-size:11px;color:var(--muted);line-height:1.35}
   </style>
 </head>
 
 <body>
   <div class="header">
     <div class="logo">
-      <!-- Kalau file logonya gak ada, otomatis fallback ke "PU" tanpa error JS -->
       <img src="LogoPUPR.png" alt="Logo"
         onerror="const p=this.parentNode; this.remove(); if(p){p.textContent='PU';}">
     </div>
@@ -161,17 +112,10 @@
   </div>
 
   <div id="map">
-    <div class="legend">
-      <div class="row"><span class="sw baku"></span> BAKU</div>
-      <div class="row"><span class="sw fung"></span> Fungsional</div>
-      <div class="row"><span class="sw pots"></span> Potensial</div>
-      <div class="row"><span class="sw fallback"></span> Fallback</div>
-    </div>
-
     <div class="dock">
       <div class="dockTop">
         <h2>Layer PMTiles (Pusat) <span class="pill" id="pillStatus">Memuat…</span></h2>
-        <span class="pill" id="pillRange" style="display:none"></span>
+        <span class="pill" id="pillBackend" style="display:none"></span>
       </div>
 
       <div class="btnRow">
@@ -179,20 +123,17 @@
         <button class="btn" id="btnFitID" type="button">Fit Indonesia</button>
         <button class="btn" id="btnOnAll" type="button">ON semua</button>
         <button class="btn" id="btnOffAll" type="button">OFF semua</button>
-        <button class="btn" id="btnZoomMin" type="button">Zoom min data</button>
-        <span class="pill ok" id="pillAll" style="display:none">Semua layer ON</span>
       </div>
 
       <div class="errline" id="errLine" style="display:none"></div>
-      <div class="warnline" id="warnLine" style="display:none"></div>
 
       <div class="list" id="layerList">
         <div style="padding:10px;color:#94a3b8;font-size:12px">Memuat manifest.json…</div>
       </div>
 
       <div class="note">
-        PMTiles butuh <b>HTTP Range</b> (status 206). Kalau tile mulai dari zoom tertentu (contoh <b>-Z 5</b>),
-        maka di zoom 4 memang kosong. Tombol <b>Zoom min data</b> bakal ngangkat zoom ke level minimal data.
+        Jika muncul error <b>Content-Length / Byte Serving</b>, berarti server tidak mengirim header yang diperlukan untuk PMTiles.
+        Pada GitHub Pages normalnya aman, tapi bisa gagal jika URL file kena redirect/proxy atau file tidak tersaji sebagai file statis murni.
       </div>
     </div>
   </div>
@@ -201,29 +142,17 @@
   <script src="https://unpkg.com/pmtiles@3.0.6/dist/pmtiles.js"></script>
 
   <script>
-    const TYPE_COLOR = {
-      BAKU: '#22c55e',
-      FUNG: '#3b82f6',
-      FUNGSIONAL: '#3b82f6',
-      POTS: '#f59e0b',
-      POTENSIAL: '#f59e0b',
-      DEFAULT: '#a855f7'
-    };
-
     const IND_BOUNDS = [[94.0,-11.5],[141.0,6.5]];
 
     const pillStatus = document.getElementById('pillStatus');
-    const pillRange  = document.getElementById('pillRange');
-    const pillAll    = document.getElementById('pillAll');
+    const pillBackend= document.getElementById('pillBackend');
     const errLine    = document.getElementById('errLine');
-    const warnLine   = document.getElementById('warnLine');
     const layerListEl= document.getElementById('layerList');
 
     const btnFitData = document.getElementById('btnFitData');
     const btnFitID   = document.getElementById('btnFitID');
     const btnOnAll   = document.getElementById('btnOnAll');
     const btnOffAll  = document.getElementById('btnOffAll');
-    const btnZoomMin = document.getElementById('btnZoomMin');
 
     function setPill(el, kind, text){
       el.className = 'pill ' + (kind||'');
@@ -235,24 +164,12 @@
       errLine.textContent = msg || '';
       setPill(pillStatus, 'err', 'Error');
     }
-    function setWarn(msg){
-      warnLine.style.display = msg ? 'block' : 'none';
-      warnLine.textContent = msg || '';
-    }
     function setOK(){
       errLine.style.display='none';
       setPill(pillStatus, 'ok', 'PMTiles OK');
     }
 
-    function tagClass(type){
-      const t=(type||'').toUpperCase();
-      if(t==='BAKU') return 'baku';
-      if(t==='FUNG' || t==='FUNGSIONAL') return 'fung';
-      if(t==='POTS' || t==='POTENSIAL') return 'pots';
-      return 'fallback';
-    }
-    function safeId(s){ return String(s).replace(/[^a-zA-Z0-9_-]/g,'_'); }
-
+    // PMTiles protocol
     const protocol = new pmtiles.Protocol();
     maplibregl.addProtocol('pmtiles', protocol.tile);
 
@@ -270,9 +187,7 @@
             attribution: 'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics'
           }
         },
-        layers: [
-          { id:'basemap', type:'raster', source:'esri' }
-        ]
+        layers: [{ id:'basemap', type:'raster', source:'esri' }]
       },
       center: [118.0, -2.2],
       zoom: 4
@@ -280,7 +195,9 @@
 
     map.addControl(new maplibregl.NavigationControl({ visualizePitch:true }), 'top-left');
 
-    // ===== bounds helpers
+    const layersMeta = [];
+    let boundsAll = null;
+
     function unionBounds(a, b){
       if(!a) return b;
       if(!b) return a;
@@ -295,9 +212,23 @@
       if(!b || b.length!==4) return false;
       const [w,s,e,n]=b;
       if(!isFinite(w)||!isFinite(s)||!isFinite(e)||!isFinite(n)) return false;
-      if(w===0 && s===0 && e===0 && n===0) return false;
       if(e<=w || n<=s) return false;
       return true;
+    }
+    function safeId(s){ return String(s).replace(/[^a-zA-Z0-9_-]/g,'_'); }
+
+    async function headCheck(url){
+      const r = await fetch(url, { method:'HEAD', cache:'no-store' });
+      const cl = r.headers.get('content-length');
+      const ar = r.headers.get('accept-ranges'); // biasanya "bytes"
+      return { ok:r.ok, status:r.status, contentLength:cl, acceptRanges:ar };
+    }
+
+    async function loadManifest(){
+      const res = await fetch('./manifest.json?v=' + Date.now(), { cache:'no-store' });
+      if(!res.ok) throw new Error('manifest.json tidak ditemukan (HTTP '+res.status+')');
+      const json = await res.json();
+      return (json.items || []);
     }
 
     async function firstVectorLayerId(pm){
@@ -305,37 +236,6 @@
       const j = md && md.json ? md.json : null;
       const vls = j && Array.isArray(j.vector_layers) ? j.vector_layers : [];
       return (vls[0] && vls[0].id) ? vls[0].id : null;
-    }
-
-    async function rangeTest(url){
-      try{
-        const r = await fetch(url, { headers: { 'Range': 'bytes=0-31' }});
-        return { ok: (r.status===206), status: r.status };
-      }catch(e){
-        return { ok:false, status: 0, err: String(e) };
-      }
-    }
-
-    const layersMeta = []; // {item, visible, sourceId, fillId, lineId, minzoom, maxzoom}
-    let boundsAll = null;
-    let globalMinZoom = 0;
-
-    function setVisible(meta, visible){
-      meta.visible = visible;
-      const v = visible ? 'visible' : 'none';
-      if(map.getLayer(meta.fillId)) map.setLayoutProperty(meta.fillId,'visibility',v);
-      if(map.getLayer(meta.lineId)) map.setLayoutProperty(meta.lineId,'visibility',v);
-
-      // Kalau user nyalain layer tapi zoom belum sampai minzoom, kasih warning
-      if(visible && meta.minzoom != null && map.getZoom() < meta.minzoom){
-        setWarn(`Layer "${meta.item.title||meta.item.file}" baru ada mulai zoom ${meta.minzoom}. Sekarang zoom ${map.getZoom().toFixed(1)} → coba tekan "Zoom min data" atau zoom-in (+).`);
-      }
-      updateAllPill();
-    }
-
-    function updateAllPill(){
-      const allOn = layersMeta.length && layersMeta.every(m=>m.visible);
-      pillAll.style.display = allOn ? 'inline-block' : 'none';
     }
 
     function renderList(){
@@ -346,8 +246,6 @@
       }
 
       for(const meta of layersMeta){
-        const item = meta.item;
-
         const row = document.createElement('div');
         row.className='item';
 
@@ -357,79 +255,56 @@
         const cb = document.createElement('input');
         cb.type='checkbox';
         cb.checked=meta.visible;
-        cb.addEventListener('change', ()=> setVisible(meta, cb.checked));
-
-        const sw = document.createElement('span');
-        sw.className='sw '+tagClass(item.type);
+        cb.addEventListener('change', ()=>{
+          meta.visible = cb.checked;
+          const v = meta.visible ? 'visible' : 'none';
+          map.setLayoutProperty(meta.fillId,'visibility',v);
+          map.setLayoutProperty(meta.lineId,'visibility',v);
+        });
 
         const nm = document.createElement('div');
         nm.className='nm';
-        const mz = (meta.minzoom!=null) ? ` (min z${meta.minzoom})` : '';
-        nm.textContent = (item.title || item.file) + mz;
+        nm.textContent = meta.item.title || meta.item.file;
 
         left.appendChild(cb);
-        left.appendChild(sw);
         left.appendChild(nm);
 
-        const right = document.createElement('div');
-        const tag = document.createElement('span');
-        tag.className='tag '+tagClass(item.type);
-        tag.textContent = (item.type||'Fallback').toUpperCase();
-        right.appendChild(tag);
-
         row.appendChild(left);
-        row.appendChild(right);
         layerListEl.appendChild(row);
       }
     }
 
     btnOnAll.addEventListener('click', ()=>{
-      layersMeta.forEach(m=>setVisible(m,true));
+      layersMeta.forEach(m=>{
+        m.visible = true;
+        map.setLayoutProperty(m.fillId,'visibility','visible');
+        map.setLayoutProperty(m.lineId,'visibility','visible');
+      });
       renderList();
     });
     btnOffAll.addEventListener('click', ()=>{
-      layersMeta.forEach(m=>setVisible(m,false));
+      layersMeta.forEach(m=>{
+        m.visible = false;
+        map.setLayoutProperty(m.fillId,'visibility','none');
+        map.setLayoutProperty(m.lineId,'visibility','none');
+      });
       renderList();
-      setWarn('');
     });
 
     btnFitID.addEventListener('click', ()=>{
       map.fitBounds(IND_BOUNDS, { padding: 40, duration: 900 });
-      setWarn('');
-    });
-
-    function ensureMinZoom(){
-      if(globalMinZoom && map.getZoom() < globalMinZoom){
-        map.easeTo({ zoom: globalMinZoom + 0.3, duration: 600 });
-      }
-    }
-
-    btnZoomMin.addEventListener('click', ()=>{
-      if(globalMinZoom){
-        map.easeTo({ zoom: globalMinZoom + 0.3, duration: 600 });
-      }else{
-        setWarn('Min zoom data belum terbaca.');
-      }
     });
 
     btnFitData.addEventListener('click', ()=>{
       if(validBounds(boundsAll)){
         const b = [[boundsAll[0], boundsAll[1]],[boundsAll[2], boundsAll[3]]];
         map.fitBounds(b, { padding: 60, duration: 900, maxZoom: 10 });
-        map.once('moveend', ()=> ensureMinZoom());
       }else{
-        map.fitBounds(IND_BOUNDS, { padding: 40, duration: 900 });
+        btnFitID.click();
       }
     });
 
-    async function loadManifest(){
-      const res = await fetch('./manifest.json?v=' + Date.now());
-      if(!res.ok) throw new Error('manifest.json tidak ditemukan (HTTP '+res.status+')');
-      const json = await res.json();
-      return (json.items || []);
-    }
-
-    async function addPMTilesLayer(item){
+    async function addPM(item){
       const url = new URL(item.file, window.location.href).toString();
       const idBase = safeId(item.file);
 
@@ -437,17 +312,8 @@
       protocol.add(pm);
 
       const md = await pm.getMetadata();
-
-      // simpan bounds
       if(md && Array.isArray(md.bounds) && validBounds(md.bounds)){
         boundsAll = unionBounds(boundsAll, md.bounds);
-      }
-
-      // simpan min/max zoom (ini kunci kalau kamu pakai -Z 5)
-      const minz = (md && Number.isFinite(md.minzoom)) ? md.minzoom : null;
-      const maxz = (md && Number.isFinite(md.maxzoom)) ? md.maxzoom : null;
-      if(minz != null){
-        globalMinZoom = (globalMinZoom===0) ? minz : Math.min(globalMinZoom, minz);
       }
 
       const srcLayer = await firstVectorLayerId(pm) || 'layer0';
@@ -455,7 +321,6 @@
 
       map.addSource(srcId, { type:'vector', url:'pmtiles://'+url });
 
-      const color = TYPE_COLOR[(item.type||'').toUpperCase()] || TYPE_COLOR.DEFAULT;
       const fillId = 'fill_'+idBase;
       const lineId = 'line_'+idBase;
 
@@ -464,7 +329,8 @@
         type: 'fill',
         source: srcId,
         'source-layer': srcLayer,
-        paint: { 'fill-color': color, 'fill-opacity': 0.30 }
+        layout: { visibility:'visible' },
+        paint: { 'fill-color': '#22c55e', 'fill-opacity': 0.25 }
       });
 
       map.addLayer({
@@ -472,12 +338,11 @@
         type: 'line',
         source: srcId,
         'source-layer': srcLayer,
-        paint: { 'line-color': color, 'line-width': 1.4, 'line-opacity': 0.95 }
+        layout: { visibility:'visible' },
+        paint: { 'line-color': '#22c55e', 'line-width': 1.3, 'line-opacity': 0.95 }
       });
 
-      layersMeta.push({
-        item, visible:true, sourceId:srcId, fillId, lineId, minzoom:minz, maxzoom:maxz
-      });
+      layersMeta.push({ item, visible:true, fillId, lineId });
     }
 
     map.on('load', async ()=>{
@@ -490,35 +355,32 @@
           return;
         }
 
+        // cek HEAD content-length + accept-ranges dari file pertama
         const firstUrl = new URL(items[0].file, window.location.href).toString();
-        const rt = await rangeTest(firstUrl);
-        if(rt.ok){
-          setPill(pillRange, 'ok', 'Range OK (206)');
-        }else{
-          setPill(pillRange, 'warn', 'Range GAGAL ('+(rt.status||'?')+')');
-          setWarn('Server tidak support HTTP Range. PMTiles bisa “OK” tapi data tidak tampil.');
+        const h = await headCheck(firstUrl);
+
+        const hasCL = !!h.contentLength;
+        const hasAR = (h.acceptRanges || '').toLowerCase().includes('bytes');
+
+        if(!hasCL || !hasAR){
+          setPill(pillBackend, 'err', 'Byte Serving Gagal');
+          setError(
+            'Server tidak mengirim header yang dibutuhkan PMTiles (butuh Content-Length + Accept-Ranges: bytes). ' +
+            'Ini penyebab data tidak bisa tampil. Pastikan URL PMTiles benar-benar file statis GitHub Pages (bukan redirect).'
+          );
+          return;
+        } else {
+          setPill(pillBackend, 'ok', 'Byte Serving OK');
         }
 
-        for(const item of items){
-          await addPMTilesLayer(item);
+        // load semua
+        for(const it of items){
+          await addPM(it);
         }
 
         setOK();
         renderList();
-        updateAllPill();
-
-        // Auto-fit to data, lalu paksa zoom ke minzoom data kalau perlu
-        if(validBounds(boundsAll)){
-          btnFitData.click();
-        }else{
-          btnFitID.click();
-          ensureMinZoom();
-        }
-
-        // Kalau min zoom > zoom sekarang, kasih hint
-        if(globalMinZoom && map.getZoom() < globalMinZoom){
-          setWarn(`Data PMTiles kamu mulai dari zoom ${globalMinZoom}. Tekan "Zoom min data" atau zoom-in (+).`);
-        }
+        btnFitData.click();
 
       }catch(e){
         console.error(e);
