@@ -2,428 +2,445 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <title>Dashboard DI — PMTiles (Auto tampil semua)</title>
+  <title>Dashboard PMTiles — DI Permukaan (Pusat)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <link rel="icon" href="../../../assets/LogoPUPR.png" />
+
+  <!-- Font -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 
-  <!-- Leaflet (basemap UI) -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-
-  <!-- MapLibre GL (render vector tiles/PMTiles) -->
+  <!-- MapLibre -->
   <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet"/>
 
   <style>
     :root{
-      --bg:#0b1222; --text:#e5e7eb; --muted:#cbd5e1; --muted-2:#94a3b8;
-      --survey:#0d47a1; --accent:#1d5fd1; --panel:rgba(11,18,34,.92);
-      --border:rgba(255,255,255,.12); --hdrH:80px; --radius:12px;
+      --bg:#0b1222; --panel:rgba(11,18,34,.92); --text:#e5e7eb; --muted:#94a3b8;
+      --brand:#0d47a1; --accent:#2563eb; --border:rgba(255,255,255,.12);
+      --ok:#10b981; --err:#ef4444; --warn:#f59e0b;
+      --hdrH:72px;
     }
-    html, body { height:100%; margin:0; font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--text) }
-
-    /* Header ringkas */
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text)}
     .header{
-      position:fixed; top:0; left:0; right:0; z-index:900;
-      background:var(--survey);
+      position:fixed;top:0;left:0;right:0;z-index:999;
+      background:var(--brand);
       border-bottom:1px solid rgba(255,255,255,.18);
-      padding:8px 12px;
-      display:flex; align-items:center; gap:10px;
-      box-shadow:0 6px 18px rgba(13,71,161,.25)
+      height:var(--hdrH);
+      display:flex;align-items:center;gap:12px;
+      padding:0 14px;
+      box-shadow:0 10px 24px rgba(0,0,0,.18);
     }
-    .header img{height:44px}
-    .header .text{flex:1; color:#fff}
-    .header .title{font-weight:800; font-size:13px; line-height:1.3}
-    .header .subtitle{font-weight:600; font-size:11px; color:rgba(255,255,255,.9); margin-top:2px}
-    .btn-home{
-      background:#fff; color:var(--survey);
-      font-weight:700; padding:6px 12px;
-      border-radius:10px; text-decoration:none; font-size:11px;
+    .logo{
+      width:44px;height:44px;border-radius:10px;
+      background:rgba(255,255,255,.12);
+      display:flex;align-items:center;justify-content:center;
+      font-weight:900;color:#fff;
+      overflow:hidden;
+    }
+    .logo img{width:44px;height:44px;object-fit:contain}
+    .hdrText{flex:1;min-width:0}
+    .hdrText .t1{font-weight:900;font-size:14px;line-height:1.2;color:#fff}
+    .hdrText .t2{font-weight:700;font-size:12px;color:rgba(255,255,255,.9)}
+    .hdrText .t3{font-weight:700;font-size:11px;color:rgba(255,255,255,.8)}
+    .home{
+      background:#fff;color:var(--brand);
+      font-weight:900;text-decoration:none;
+      padding:8px 14px;border-radius:12px;font-size:12px;
       white-space:nowrap;
     }
-    .btn-home:hover{background:#f1f5f9}
-    .spacer{height:var(--hdrH)}
+    .home:hover{background:#f1f5f9}
 
-    /* Leaflet map container */
     #map{
-      height:calc(100vh - var(--hdrH));
-      position:relative;
-      z-index:1;
-    }
-
-    /* MapLibre canvas overlay (di atas Leaflet) */
-    #mlMap{
       position:absolute;
-      inset:0;
-      z-index:500; /* above leaflet tiles */
-      pointer-events:auto;
+      top:var(--hdrH); left:0; right:0; bottom:0;
     }
 
-    /* Dock + collapsible */
-    .dock{
-      position:fixed; left:0; right:0; bottom:0;
-      background:var(--panel); border-top:1px solid var(--border);
-      max-height:46vh; padding:10px 12px;
-      box-shadow:0 -10px 22px rgba(0,0,0,.28);
-      z-index:950; backdrop-filter:blur(6px);
-      display:flex; flex-direction:column; gap:8px;
-      transition:max-height .2s ease, padding .2s ease;
-    }
-    .dock-header{
-      display:flex; align-items:center; justify-content:space-between;
-      gap:10px;
-    }
-    .dock-header h2{
-      font-size:14px; margin:0; font-weight:800; color:#fff;
-      display:flex; align-items:center; gap:8px;
-    }
-    .pill{
-      font-size:11px; font-weight:800;
-      padding:2px 8px; border-radius:999px;
+    .legend{
+      position:absolute; right:14px; top:14px; z-index:1000;
+      background:rgba(15,23,42,.92);
       border:1px solid rgba(255,255,255,.18);
-      background:rgba(15,23,42,.65);
-      color:#e5e7eb;
-      white-space:nowrap;
+      border-radius:14px;
+      padding:10px 12px;
+      box-shadow:0 14px 30px rgba(0,0,0,.25);
+      backdrop-filter:blur(6px);
+      min-width:160px;
     }
-    .pill.ok{ background:rgba(16,185,129,.15); border-color:rgba(16,185,129,.35); color:#bbf7d0;}
-    .pill.err{ background:rgba(239,68,68,.15); border-color:rgba(239,68,68,.35); color:#fecaca;}
-    .dock-toggle{
-      background:rgba(15,23,42,.9);
-      border:1px solid var(--border);
-      border-radius:999px;
-      color:#e5e7eb;
-      font-size:11px;
-      padding:2px 10px;
-      cursor:pointer;
-      white-space:nowrap;
-    }
-    .dock-toggle:hover{background:#111827}
-    .dock.collapsed{ max-height:44px; padding-top:8px; padding-bottom:8px; }
-    .dock.collapsed .dock-body{display:none;}
-
-    .btn-row{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
-    .btn{
-      border:none; cursor:pointer;
-      border-radius:999px;
-      padding:7px 12px;
-      font-weight:800;
-      font-size:12px;
-      color:#fff;
-      background:rgba(255,255,255,.10);
-      border:1px solid rgba(255,255,255,.14);
-    }
-    .btn:hover{background:rgba(255,255,255,.14)}
-    .btn.primary{background:var(--accent); border-color:rgba(29,95,209,.35)}
-    .btn.primary:hover{background:#2563eb}
-    .note{
-      font-size:11px; color:var(--muted-2);
-      margin-top:4px;
-    }
-    .errline{font-size:12px; color:#fca5a5; font-weight:700; margin-top:6px}
-
-    /* list */
-    .list{
-      margin-top:8px;
-      max-height:210px;
-      overflow:auto;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,.12);
-      background:rgba(15,23,42,.82);
-    }
-    .item{
-      display:flex; align-items:center; justify-content:space-between;
-      gap:10px;
-      padding:8px 10px;
-      border-bottom:1px dashed rgba(148,163,184,.22);
-      font-size:12px;
-    }
-    .item:last-child{border-bottom:none}
-    .left{display:flex; align-items:center; gap:10px; min-width:0}
-    .nm{
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-      max-width:62vw;
-      color:#e5e7eb;
-      font-weight:700;
-    }
-    .tag{
-      font-size:11px; font-weight:900;
-      padding:2px 8px; border-radius:999px;
-      border:1px solid rgba(255,255,255,.14);
-      background:rgba(255,255,255,.06);
-      color:#e5e7eb;
-    }
-    .tag.baku{border-color:rgba(34,197,94,.5)}
-    .tag.fung{border-color:rgba(59,130,246,.5)}
-    .tag.pots{border-color:rgba(245,158,11,.55)}
-    .tag.fallback{border-color:rgba(168,85,247,.55)}
-    .sw{ width:12px; height:12px; border-radius:3px; border:1px solid rgba(255,255,255,.6); flex:0 0 auto;}
+    .legend .row{display:flex;align-items:center;gap:8px;font-size:12px;margin:6px 0}
+    .sw{width:12px;height:12px;border-radius:4px;border:1px solid rgba(255,255,255,.6)}
     .sw.baku{background:#22c55e}
     .sw.fung{background:#3b82f6}
     .sw.pots{background:#f59e0b}
     .sw.fallback{background:#a855f7}
-    .right{display:flex; align-items:center; gap:8px; flex:0 0 auto}
-    input[type="checkbox"]{ width:16px; height:16px; margin:0; }
 
-    /* Legend top-right */
-    .legend{
-      position:absolute; right:14px; top:14px;
-      z-index:960;
-      background:rgba(15,23,42,.92);
-      border:1px solid rgba(148,163,184,.55);
-      border-radius:12px;
+    .dock{
+      position:absolute; left:12px; right:12px; bottom:12px; z-index:1001;
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:16px;
+      box-shadow:0 18px 42px rgba(0,0,0,.35);
+      backdrop-filter:blur(8px);
       padding:10px 12px;
-      min-width:150px;
-      box-shadow:0 10px 22px rgba(0,0,0,.25);
-      backdrop-filter:blur(6px);
+      max-height:46vh;
+      display:flex; flex-direction:column; gap:8px;
     }
-    .legend .hdr{display:flex; align-items:center; justify-content:space-between; gap:10px}
-    .legend .hdr b{font-size:12px}
-    .legend .hdr button{
-      background:transparent; border:1px solid rgba(148,163,184,.7);
-      color:#e5e7eb; border-radius:999px; font-size:10px; padding:0 8px; cursor:pointer;
+    .dockTop{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .dockTop h2{margin:0;font-size:14px;font-weight:900;display:flex;align-items:center;gap:8px}
+    .pill{
+      display:inline-block;
+      font-size:11px;font-weight:900;
+      padding:2px 10px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.18);
+      background:rgba(15,23,42,.75);
+      color:#e5e7eb;
+      white-space:nowrap;
     }
-    .legend .body{margin-top:8px}
-    .legend.collapsed .body{display:none}
-    .legend .row{display:flex; align-items:center; gap:8px; margin:6px 0; font-size:12px}
+    .pill.ok{border-color:rgba(16,185,129,.45);background:rgba(16,185,129,.14);color:#bbf7d0}
+    .pill.err{border-color:rgba(239,68,68,.45);background:rgba(239,68,68,.14);color:#fecaca}
+    .pill.warn{border-color:rgba(245,158,11,.55);background:rgba(245,158,11,.14);color:#fde68a}
+    .btnRow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .btn{
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.10);
+      color:#fff;
+      font-weight:900;
+      padding:8px 12px;
+      border-radius:999px;
+      cursor:pointer;
+      font-size:12px;
+    }
+    .btn:hover{background:rgba(255,255,255,.14)}
+    .btn.primary{background:var(--accent);border-color:rgba(37,99,235,.35)}
+    .btn.primary:hover{background:#1d4ed8}
 
-    @media(max-width:680px){
-      :root{--hdrH:88px}
-      .nm{max-width:48vw}
+    .list{
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(15,23,42,.82);
+      border-radius:14px;
+      overflow:auto;
+      max-height:240px;
     }
+    .item{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      padding:9px 10px;
+      border-bottom:1px dashed rgba(148,163,184,.22);
+      font-size:12px;
+    }
+    .item:last-child{border-bottom:none}
+    .left{display:flex;align-items:center;gap:10px;min-width:0}
+    .nm{
+      font-weight:800;color:#e5e7eb;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+      max-width:62vw;
+    }
+    .tag{
+      font-size:11px;font-weight:900;
+      padding:2px 10px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.06);
+      white-space:nowrap;
+    }
+    .tag.baku{border-color:rgba(34,197,94,.55)}
+    .tag.fung{border-color:rgba(59,130,246,.55)}
+    .tag.pots{border-color:rgba(245,158,11,.6)}
+    .tag.fallback{border-color:rgba(168,85,247,.6)}
+    input[type="checkbox"]{width:16px;height:16px;margin:0}
+    .note{font-size:11px;color:var(--muted);line-height:1.35}
+    .errline{font-size:12px;color:#fca5a5;font-weight:800}
+    .warnline{font-size:12px;color:#fde68a;font-weight:800}
   </style>
 </head>
 
 <body>
-  <!-- HEADER -->
   <div class="header">
-    <img src="../../../assets/LogoPUPR.png" alt="Logo PU" onerror="this.src='../../../assets/LogoPUPR.png'"/>
-    <div class="text">
-      <div class="title">Kementerian PU</div>
-      <div class="subtitle">Ditjen SDA · Dit. Irigasi &amp; Rawa</div>
-      <div class="subtitle">Dashboard PMTiles (Auto tampil semua)</div>
+    <div class="logo">
+      <!-- kalau kamu punya logo di folder lain, ubah path-nya -->
+      <img src="LogoPUPR.png" alt="Logo" onerror="this.remove(); this.parentNode.textContent='PU';">
     </div>
-    <a href="../../../si-irwan.html" class="btn-home">Beranda</a>
+    <div class="hdrText">
+      <div class="t1">Kementerian PU</div>
+      <div class="t2">Ditjen SDA · Dit. Irigasi & Rawa</div>
+      <div class="t3">Dashboard PMTiles (Auto tampil semua)</div>
+    </div>
+    <a class="home" href="../../../../index.html">Beranda</a>
   </div>
-  <div class="spacer"></div>
 
-  <!-- MAP -->
   <div id="map">
-    <!-- MapLibre overlay -->
-    <div id="mlMap"></div>
-
-    <!-- Legend -->
-    <div class="legend" id="legend">
-      <div class="hdr">
-        <b>Legend</b>
-        <button id="legendToggle" type="button">Ciut</button>
-      </div>
-      <div class="body">
-        <div class="row"><span class="sw baku"></span> BAKU</div>
-        <div class="row"><span class="sw fung"></span> Fungsional</div>
-        <div class="row"><span class="sw pots"></span> Potensial</div>
-        <div class="row"><span class="sw fallback"></span> Fallback</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- DOCK -->
-  <div class="dock" id="dock">
-    <div class="dock-header">
-      <h2>
-        Layer PMTiles (Pusat)
-        <span class="pill" id="pillStatus">Memuat…</span>
-      </h2>
-      <button id="dockToggle" class="dock-toggle" type="button">Ciutkan</button>
+    <div class="legend">
+      <div class="row"><span class="sw baku"></span> BAKU</div>
+      <div class="row"><span class="sw fung"></span> Fungsional</div>
+      <div class="row"><span class="sw pots"></span> Potensial</div>
+      <div class="row"><span class="sw fallback"></span> Fallback</div>
     </div>
 
-    <div class="dock-body">
-      <div class="btn-row">
-        <button class="btn primary" id="btnFit" type="button">Fit Indonesia</button>
+    <div class="dock">
+      <div class="dockTop">
+        <h2>Layer PMTiles (Pusat) <span class="pill" id="pillStatus">Memuat…</span></h2>
+        <span class="pill" id="pillRange" style="display:none"></span>
+      </div>
+
+      <div class="btnRow">
+        <button class="btn primary" id="btnFitData" type="button">Fit ke Data</button>
+        <button class="btn" id="btnFitID" type="button">Fit Indonesia</button>
         <button class="btn" id="btnOnAll" type="button">ON semua</button>
         <button class="btn" id="btnOffAll" type="button">OFF semua</button>
         <span class="pill ok" id="pillAll" style="display:none">Semua layer ON</span>
       </div>
 
       <div class="errline" id="errLine" style="display:none"></div>
+      <div class="warnline" id="warnLine" style="display:none"></div>
+
       <div class="list" id="layerList">
         <div style="padding:10px;color:#94a3b8;font-size:12px">Memuat manifest.json…</div>
       </div>
 
       <div class="note">
-        Catatan: <b>manifest.json</b> wajib 1 folder dengan file <b>index.html</b> ini, dan semua <b>.pmtiles</b> juga di folder yang sama.
-        Kalau data tidak terlihat saat “Fit Indonesia”, biasanya karena PMTiles dibuat mulai zoom tertentu (contoh: <code>-Z 5</code>). Zoom-in sedikit sampai level 5–6.
+        Wajib: <b>manifest.json</b> 1 folder dengan <b>index.html</b> ini dan semua <b>.pmtiles</b> juga di folder yang sama.
+        PMTiles butuh server support <b>HTTP Range</b>. Kalau Range gagal, layer “OK” tapi data tidak akan muncul.
       </div>
     </div>
   </div>
 
-  <!-- libs -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Libs -->
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
   <script src="https://unpkg.com/pmtiles@3.0.6/dist/pmtiles.js"></script>
 
   <script>
-  document.addEventListener('DOMContentLoaded', async () => {
-    /* ========= UI elements ========= */
-    const dock       = document.getElementById('dock');
-    const dockToggle = document.getElementById('dockToggle');
-    const legend     = document.getElementById('legend');
-    const legendToggle = document.getElementById('legendToggle');
-    const layerListEl= document.getElementById('layerList');
-    const pillStatus = document.getElementById('pillStatus');
-    const pillAll    = document.getElementById('pillAll');
-    const errLine    = document.getElementById('errLine');
-
-    const btnFit  = document.getElementById('btnFit');
-    const btnOnAll  = document.getElementById('btnOnAll');
-    const btnOffAll = document.getElementById('btnOffAll');
-
-    let dockCollapsed=false;
-    dockToggle.addEventListener('click', ()=>{
-      dockCollapsed=!dockCollapsed;
-      dock.classList.toggle('collapsed', dockCollapsed);
-      dockToggle.textContent = dockCollapsed ? 'Tampilkan' : 'Ciutkan';
-    });
-
-    let legendCollapsed=false;
-    legendToggle.addEventListener('click', ()=>{
-      legendCollapsed=!legendCollapsed;
-      legend.classList.toggle('collapsed', legendCollapsed);
-      legendToggle.textContent = legendCollapsed ? 'Tampil' : 'Ciut';
-    });
-
-    function setError(msg){
-      errLine.style.display = msg ? 'block' : 'none';
-      errLine.textContent = msg || '';
-      pillStatus.className = 'pill err';
-      pillStatus.textContent = msg ? 'Error' : 'OK';
-    }
-    function setOK(msg){
-      errLine.style.display = 'none';
-      errLine.textContent = '';
-      pillStatus.className = 'pill ok';
-      pillStatus.textContent = msg || 'PMTiles OK';
-    }
-
-    /* ========= Leaflet basemap ========= */
-    const map = L.map('map', { zoomControl:true }).setView([-2.2, 118.0], 4);
-
-    const imagery = L.tileLayer(
-      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      { attribution:'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics' }
-    ).addTo(map);
-
-    /* ========= MapLibre overlay ========= */
-    // PMTiles protocol
-    const protocol = new pmtiles.Protocol();
-    // MapLibre 4.x pakai addProtocol
-    maplibregl.addProtocol('pmtiles', protocol.tile);
-
-    // MapLibre map (sinkron ke Leaflet)
-    const ml = new maplibregl.Map({
-      container: 'mlMap',
-      style: {
-        version: 8,
-        sources: {},
-        layers: []
-      },
-      center: [118.0, -2.2],
-      zoom: 4,
-      interactive: true,
-      attributionControl: false
-    });
-
-    // Sync Leaflet -> MapLibre
-    function syncToML(){
-      const c = map.getCenter();
-      const z = map.getZoom();
-      ml.jumpTo({ center: [c.lng, c.lat], zoom: z });
-    }
-    map.on('move', syncToML);
-    map.on('zoom', syncToML);
-
-    // Sync MapLibre -> Leaflet (drag/zoom on overlay)
-    function syncToLeaflet(){
-      const c = ml.getCenter();
-      const z = Math.round(ml.getZoom()*100)/100;
-      map.setView([c.lat, c.lng], z, { animate:false });
-    }
-    ml.on('moveend', syncToLeaflet);
-    ml.on('zoomend', syncToLeaflet);
-
-    // Clamp minimal zoom to avoid kosong (kalau PMTiles dibuat -Z 5)
-    function clampToMinZoom(minZ=5){
-      if (map.getZoom() < minZ) map.setZoom(minZ);
-    }
-
-    // bounds Indonesia
-    const IND_BOUNDS = L.latLngBounds(
-      L.latLng(-11.5, 94.0),
-      L.latLng(  6.5, 141.0)
-    );
-
-    btnFit.addEventListener('click', ()=>{
-      map.fitBounds(IND_BOUNDS, { padding:[30,30], animate:true, duration:0.6 });
-      // banyak PMTiles kamu dibuat mulai zoom 5 -> paksa naik
-      setTimeout(()=>clampToMinZoom(5), 700);
-    });
-
-    /* ========= Manifest + Layers ========= */
     const TYPE_COLOR = {
       BAKU: '#22c55e',
       FUNG: '#3b82f6',
+      FUNGSIONAL: '#3b82f6',
       POTS: '#f59e0b',
+      POTENSIAL: '#f59e0b',
       DEFAULT: '#a855f7'
     };
-    function safeId(s){ return String(s).replace(/[^a-zA-Z0-9_-]/g,'_'); }
-    function tagClass(type){
-      const t = (type||'').toUpperCase();
-      if (t==='BAKU') return 'baku';
-      if (t==='FUNG' || t==='FUNGSIONAL') return 'fung';
-      if (t==='POTS' || t==='POTENSIAL') return 'pots';
-      return 'fallback';
+
+    const IND_BOUNDS = [[94.0,-11.5],[141.0,6.5]]; // [ [W,S], [E,N] ] in lng/lat for maplibre fitBounds
+
+    const pillStatus = document.getElementById('pillStatus');
+    const pillRange  = document.getElementById('pillRange');
+    const pillAll    = document.getElementById('pillAll');
+    const errLine    = document.getElementById('errLine');
+    const warnLine   = document.getElementById('warnLine');
+    const layerListEl= document.getElementById('layerList');
+
+    const btnFitData = document.getElementById('btnFitData');
+    const btnFitID   = document.getElementById('btnFitID');
+    const btnOnAll   = document.getElementById('btnOnAll');
+    const btnOffAll  = document.getElementById('btnOffAll');
+
+    function setPill(el, kind, text){
+      el.className = 'pill ' + (kind||'');
+      el.textContent = text;
+      el.style.display = 'inline-block';
     }
-    function guessSourceLayerName(item){
-      const t = (item.type||'').toUpperCase();
-      if (t==='BAKU') return 'baku';
-      if (t==='FUNG' || t==='FUNGSIONAL') return 'fung';
-      if (t==='POTS' || t==='POTENSIAL') return 'pots';
-      // fallback umum tippecanoe
-      return 'layer0';
+    function setError(msg){
+      errLine.style.display = msg ? 'block' : 'none';
+      errLine.textContent = msg || '';
+      setPill(pillStatus, 'err', 'Error');
+    }
+    function setWarn(msg){
+      warnLine.style.display = msg ? 'block' : 'none';
+      warnLine.textContent = msg || '';
+    }
+    function setOK(){
+      errLine.style.display='none'; errLine.textContent='';
+      setPill(pillStatus, 'ok', 'PMTiles OK');
     }
 
-    async function getFirstVectorLayerId(pm){
+    function tagClass(type){
+      const t=(type||'').toUpperCase();
+      if(t==='BAKU') return 'baku';
+      if(t==='FUNG' || t==='FUNGSIONAL') return 'fung';
+      if(t==='POTS' || t==='POTENSIAL') return 'pots';
+      return 'fallback';
+    }
+    function safeId(s){ return String(s).replace(/[^a-zA-Z0-9_-]/g,'_'); }
+
+    // ===== MapLibre init (raster basemap + vector overlays) =====
+    const protocol = new pmtiles.Protocol();
+    maplibregl.addProtocol('pmtiles', protocol.tile);
+
+    const map = new maplibregl.Map({
+      container: 'map',
+      style: {
+        version: 8,
+        sources: {
+          esri: {
+            type: 'raster',
+            tiles: [
+              'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+            ],
+            tileSize: 256,
+            attribution: 'Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics'
+          }
+        },
+        layers: [
+          { id:'basemap', type:'raster', source:'esri' }
+        ]
+      },
+      center: [118.0, -2.2],
+      zoom: 4
+    });
+
+    map.addControl(new maplibregl.NavigationControl({ visualizePitch:true }), 'top-left');
+
+    // ===== Helpers: read PMTiles metadata bounds + vector layer name =====
+    function unionBounds(a, b){
+      // a/b: [minLon, minLat, maxLon, maxLat]
+      if(!a) return b;
+      if(!b) return a;
+      return [
+        Math.min(a[0], b[0]),
+        Math.min(a[1], b[1]),
+        Math.max(a[2], b[2]),
+        Math.max(a[3], b[3]),
+      ];
+    }
+    function validBounds(b){
+      if(!b || b.length!==4) return false;
+      const [w,s,e,n]=b;
+      if(!isFinite(w)||!isFinite(s)||!isFinite(e)||!isFinite(n)) return false;
+      if(w===0 && s===0 && e===0 && n===0) return false;
+      if(e<=w || n<=s) return false;
+      return true;
+    }
+
+    async function firstVectorLayerId(pm){
       const md = await pm.getMetadata();
       const j = md && md.json ? md.json : null;
       const vls = j && Array.isArray(j.vector_layers) ? j.vector_layers : [];
-      if (vls.length && vls[0].id) return vls[0].id;
-      return null;
+      return (vls[0] && vls[0].id) ? vls[0].id : null;
     }
 
-    // daftar layer terpasang
-    const layersMeta = []; // {id,item,visible,sourceId,fillId,lineId,pm,srcLayer}
+    // ===== Range test (PMTiles needs HTTP Range) =====
+    async function rangeTest(url){
+      try{
+        const r = await fetch(url, { headers: { 'Range': 'bytes=0-31' }});
+        // OK is 206 Partial Content. Some servers return 200 and still allow full, but pmtiles REALLY expects range.
+        return { ok: (r.status===206), status: r.status };
+      }catch(e){
+        return { ok:false, status: 0, err: String(e) };
+      }
+    }
 
-    async function addVectorLayerFromPMTiles(item){
-      const urlAbs = new URL(item.file, window.location.href).toString();
+    // ===== Layer registry =====
+    const layersMeta = []; // {item, visible, sourceId, fillId, lineId}
+    let boundsAll = null;
+
+    function setVisible(meta, visible){
+      meta.visible = visible;
+      const v = visible ? 'visible' : 'none';
+      if(map.getLayer(meta.fillId)) map.setLayoutProperty(meta.fillId,'visibility',v);
+      if(map.getLayer(meta.lineId)) map.setLayoutProperty(meta.lineId,'visibility',v);
+    }
+    function updateAllPill(){
+      const allOn = layersMeta.length && layersMeta.every(m=>m.visible);
+      pillAll.style.display = allOn ? 'inline-block' : 'none';
+    }
+
+    function renderList(){
+      layerListEl.innerHTML='';
+      if(!layersMeta.length){
+        layerListEl.innerHTML='<div style="padding:10px;color:#94a3b8;font-size:12px">Tidak ada item di manifest.</div>';
+        return;
+      }
+
+      for(const meta of layersMeta){
+        const item = meta.item;
+
+        const row = document.createElement('div');
+        row.className='item';
+
+        const left = document.createElement('div');
+        left.className='left';
+
+        const cb = document.createElement('input');
+        cb.type='checkbox';
+        cb.checked=meta.visible;
+        cb.addEventListener('change', ()=>{
+          setVisible(meta, cb.checked);
+          updateAllPill();
+        });
+
+        const sw = document.createElement('span');
+        sw.className='sw '+tagClass(item.type);
+
+        const nm = document.createElement('div');
+        nm.className='nm';
+        nm.textContent = item.title || item.file;
+
+        left.appendChild(cb);
+        left.appendChild(sw);
+        left.appendChild(nm);
+
+        const right = document.createElement('div');
+        const tag = document.createElement('span');
+        tag.className='tag '+tagClass(item.type);
+        tag.textContent = (item.type||'Fallback').toUpperCase();
+        right.appendChild(tag);
+
+        row.appendChild(left);
+        row.appendChild(right);
+        layerListEl.appendChild(row);
+      }
+    }
+
+    btnOnAll.addEventListener('click', ()=>{
+      layersMeta.forEach(m=>setVisible(m,true));
+      renderList();
+      updateAllPill();
+    });
+    btnOffAll.addEventListener('click', ()=>{
+      layersMeta.forEach(m=>setVisible(m,false));
+      renderList();
+      updateAllPill();
+    });
+
+    btnFitID.addEventListener('click', ()=>{
+      map.fitBounds(IND_BOUNDS, { padding: 40, duration: 900 });
+    });
+
+    btnFitData.addEventListener('click', ()=>{
+      if(validBounds(boundsAll)){
+        const b = [[boundsAll[0], boundsAll[1]],[boundsAll[2], boundsAll[3]]];
+        map.fitBounds(b, { padding: 60, duration: 900, maxZoom: 10 });
+      }else{
+        map.fitBounds(IND_BOUNDS, { padding: 40, duration: 900 });
+      }
+    });
+
+    async function loadManifest(){
+      const res = await fetch('./manifest.json?v=' + Date.now());
+      if(!res.ok) throw new Error('manifest.json tidak ditemukan (HTTP '+res.status+')');
+      const json = await res.json();
+      return (json.items || []);
+    }
+
+    async function addPMTilesLayer(item){
+      const url = new URL(item.file, window.location.href).toString();
       const idBase = safeId(item.file);
-      const sourceId = 'src_' + idBase;
 
-      const pm = new pmtiles.PMTiles(urlAbs);
+      const pm = new pmtiles.PMTiles(url);
       protocol.add(pm);
 
-      const srcLayer = await getFirstVectorLayerId(pm) || guessSourceLayerName(item);
+      // metadata bounds (buat fit data)
+      const md = await pm.getMetadata();
+      if(md && Array.isArray(md.bounds) && validBounds(md.bounds)){
+        boundsAll = unionBounds(boundsAll, md.bounds);
+      }
 
-      // source
-      ml.addSource(sourceId, { type:'vector', url: 'pmtiles://' + urlAbs });
+      const srcLayer = await firstVectorLayerId(pm) || 'layer0';
+      const srcId = 'src_'+idBase;
+
+      map.addSource(srcId, { type:'vector', url:'pmtiles://'+url });
 
       const color = TYPE_COLOR[(item.type||'').toUpperCase()] || TYPE_COLOR.DEFAULT;
+      const fillId = 'fill_'+idBase;
+      const lineId = 'line_'+idBase;
 
-      const fillId = 'fill_' + idBase;
-      const lineId = 'line_' + idBase;
-
-      // fill polygon layer (kalau geometry line/point, fill ga akan render tapi aman)
-      ml.addLayer({
+      // Fill
+      map.addLayer({
         id: fillId,
         type: 'fill',
-        source: sourceId,
+        source: srcId,
         'source-layer': srcLayer,
         paint: {
           'fill-color': color,
@@ -431,152 +448,72 @@
         }
       });
 
-      // outline
-      ml.addLayer({
+      // Outline
+      map.addLayer({
         id: lineId,
         type: 'line',
-        source: sourceId,
+        source: srcId,
         'source-layer': srcLayer,
         paint: {
           'line-color': color,
-          'line-width': 1.2,
-          'line-opacity': 0.9
+          'line-width': 1.4,
+          'line-opacity': 0.95
         }
       });
 
-      return { sourceId, fillId, lineId, pm, srcLayer };
+      const meta = { item, visible:true, sourceId:srcId, fillId, lineId };
+      layersMeta.push(meta);
     }
 
-    function setLayerVisible(meta, visible){
-      meta.visible = visible;
-      const v = visible ? 'visible' : 'none';
-      if (ml.getLayer(meta.fillId)) ml.setLayoutProperty(meta.fillId, 'visibility', v);
-      if (ml.getLayer(meta.lineId)) ml.setLayoutProperty(meta.lineId, 'visibility', v);
-    }
-
-    function renderList(items){
-      layerListEl.innerHTML = '';
-      if (!items || !items.length){
-        layerListEl.innerHTML = '<div style="padding:10px;color:#94a3b8;font-size:12px">manifest.json kosong.</div>';
-        return;
-      }
-
-      items.forEach((meta, idx)=>{
-        const item = meta.item;
-        const row = document.createElement('div');
-        row.className = 'item';
-
-        const left = document.createElement('div');
-        left.className = 'left';
-
-        const cb = document.createElement('input');
-        cb.type = 'checkbox';
-        cb.checked = meta.visible;
-        cb.addEventListener('change', ()=>{
-          setLayerVisible(meta, cb.checked);
-          updateAllPill();
-        });
-
-        const sw = document.createElement('span');
-        sw.className = 'sw ' + tagClass(item.type);
-
-        const nm = document.createElement('div');
-        nm.className = 'nm';
-        nm.textContent = item.title || item.file;
-
-        const tag = document.createElement('span');
-        tag.className = 'tag ' + tagClass(item.type);
-        tag.textContent = (item.type || 'Fallback').toUpperCase();
-
-        left.appendChild(cb);
-        left.appendChild(sw);
-        left.appendChild(nm);
-
-        const right = document.createElement('div');
-        right.className = 'right';
-        right.appendChild(tag);
-
-        row.appendChild(left);
-        row.appendChild(right);
-
-        layerListEl.appendChild(row);
-      });
-    }
-
-    function updateAllPill(){
-      const allOn = layersMeta.length && layersMeta.every(m=>m.visible);
-      pillAll.style.display = allOn ? 'inline-block' : 'none';
-    }
-
-    btnOnAll.addEventListener('click', ()=>{
-      layersMeta.forEach(m=>setLayerVisible(m,true));
-      renderList(layersMeta);
-      updateAllPill();
-    });
-    btnOffAll.addEventListener('click', ()=>{
-      layersMeta.forEach(m=>setLayerVisible(m,false));
-      renderList(layersMeta);
-      updateAllPill();
-    });
-
-    async function loadManifest(){
+    map.on('load', async ()=>{
       try{
-        const res = await fetch('./manifest.json?v=' + Date.now());
-        if(!res.ok) throw new Error('manifest.json tidak ditemukan (HTTP ' + res.status + ')');
-        const json = await res.json();
-        const items = json.items || [];
-        return items;
-      }catch(e){
-        throw e;
-      }
-    }
-
-    async function boot(){
-      try{
-        setError('');
-        pillStatus.className = 'pill';
-        pillStatus.textContent = 'Memuat…';
-
-        // tunggu maplibre siap
-        await new Promise((resolve)=> {
-          if (ml.isStyleLoaded()) return resolve();
-          ml.once('load', resolve);
-        });
+        setPill(pillStatus, '', 'Memuat…');
 
         const items = await loadManifest();
-
-        // auto-add semua layer
-        for (const item of items){
-          const added = await addVectorLayerFromPMTiles(item);
-          layersMeta.push({
-            id: safeId(item.file),
-            item,
-            visible: true,
-            sourceId: added.sourceId,
-            fillId: added.fillId,
-            lineId: added.lineId,
-            pm: added.pm,
-            srcLayer: added.srcLayer
-          });
+        if(!items.length){
+          setError('manifest.json terbaca, tapi items kosong.');
+          return;
         }
 
-        setOK('PMTiles OK');
-        renderList(layersMeta);
+        // Range test 1 file saja (paling pertama) untuk indikator cepat
+        const firstUrl = new URL(items[0].file, window.location.href).toString();
+        const rt = await rangeTest(firstUrl);
+        if(rt.ok){
+          setPill(pillRange, 'ok', 'Range OK (206)');
+          setWarn('');
+        }else{
+          setPill(pillRange, 'warn', 'Range GAGAL ('+(rt.status||'?')+')');
+          setWarn('Server tidak support HTTP Range. PMTiles bisa “OK” tapi data tidak tampil. (GitHub Pages biasanya OK, tapi kalau lewat proxy/redirect bisa gagal.)');
+        }
+
+        // Add all layers
+        for(const item of items){
+          await addPMTilesLayer(item);
+        }
+
+        setOK();
+        renderList();
         updateAllPill();
 
-        // Fit Indonesia lalu clamp min zoom 5 (karena banyak PMTiles dibuat -Z 5)
-        map.fitBounds(IND_BOUNDS, { padding:[30,30] });
-        setTimeout(()=>clampToMinZoom(5), 700);
+        // Auto fit to data bounds
+        if(validBounds(boundsAll)){
+          btnFitData.click();
+        }else{
+          btnFitID.click();
+        }
 
-      }catch(err){
-        console.error(err);
-        setError(err.message || String(err));
-        layerListEl.innerHTML = '<div style="padding:10px;color:#fecaca;font-size:12px">Gagal memuat layer. Cek console.</div>';
+      }catch(e){
+        console.error(e);
+        setError(e.message || String(e));
       }
-    }
+    });
 
-    boot();
-  });
+    // Debug capture: kalau ada error tile/vector, tampilkan singkat
+    map.on('error', (ev)=>{
+      if(ev && ev.error){
+        console.warn('Map error:', ev.error);
+      }
+    });
   </script>
 </body>
 </html>
