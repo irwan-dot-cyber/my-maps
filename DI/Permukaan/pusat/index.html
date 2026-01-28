@@ -3,403 +3,171 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>PMTiles Viewer (Manifest)</title>
+  <title>PMTiles (Manifest) - Leaflet</title>
 
-  <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
   <style>
-    :root{
-      --bg:#0b1220; --panel:#0f1a31; --panel2:#0d1730;
-      --text:#e6eefc; --muted:#a9b6d1; --line:rgba(255,255,255,.12);
-      --accent:#64b5f6;
-    }
-    html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;}
-    #map { height: 100%; width: 100%; }
-
+    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+    #map{height:100%;width:100%}
     .panel{
-      position:absolute; top:12px; left:12px; z-index:9999;
-      width:min(420px, calc(100vw - 24px));
-      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-      border:1px solid var(--line);
-      border-radius:14px;
-      overflow:hidden;
-      box-shadow: 0 12px 30px rgba(0,0,0,.35);
-      backdrop-filter: blur(8px);
+      position:absolute;z-index:9999;top:12px;left:12px;
+      width:min(420px,calc(100vw - 24px));
+      background:#0f172aee;color:#e5e7eb;border:1px solid #334155;
+      border-radius:14px;overflow:hidden;box-shadow:0 10px 28px rgba(0,0,0,.35)
     }
-    .panel header{
-      padding:12px 14px;
-      display:flex; gap:10px; align-items:center; justify-content:space-between;
-      background: rgba(0,0,0,.18);
-      border-bottom:1px solid var(--line);
-    }
-    .panel header .title{
-      font-weight:700; letter-spacing:.2px; font-size:14px;
-      display:flex; align-items:center; gap:10px;
-    }
-    .badge{
-      font-size:12px; color: var(--muted);
-      border:1px solid var(--line); padding:2px 8px; border-radius:999px;
-      background: rgba(0,0,0,.12);
-    }
-    .panel .controls{ padding:10px 14px; border-bottom:1px solid var(--line); background: rgba(0,0,0,.10); }
-    .row{ display:flex; gap:8px; align-items:center; }
-    input[type="search"]{
-      width:100%; padding:10px 10px; border-radius:10px; border:1px solid var(--line);
-      outline:none; background: rgba(255,255,255,.06); color: var(--text);
-    }
-    .btn{
-      cursor:pointer; border-radius:10px; border:1px solid var(--line);
-      background: rgba(255,255,255,.06); color: var(--text);
-      padding:10px 10px; font-weight:600;
-      transition: transform .05s ease;
-      user-select:none;
-    }
-    .btn:active{ transform: scale(.98); }
-
-    .list{ max-height: 56vh; overflow:auto; }
-    .group{
-      border-bottom:1px solid var(--line);
-      background: rgba(0,0,0,.06);
-    }
-    .group h3{
-      margin:0; padding:10px 14px;
-      font-size:12px; text-transform:uppercase; letter-spacing:.12em;
-      color: var(--muted);
-      display:flex; justify-content:space-between; align-items:center;
-    }
-    .items{ padding: 2px 0 10px; }
-    .item{
-      margin:8px 10px 0; padding:10px 10px;
-      border:1px solid var(--line);
-      border-radius:12px;
-      background: rgba(15,26,49,.55);
-    }
-    .item-top{
-      display:flex; justify-content:space-between; align-items:flex-start; gap:10px;
-    }
-    .name{
-      font-weight:700; font-size:13px; line-height:1.2;
-      word-break: break-word;
-    }
-    .meta{ font-size:12px; color: var(--muted); margin-top:4px; word-break: break-word;}
-    .toggles{ display:flex; gap:10px; align-items:center; }
-    .small{
-      font-size:12px; color: var(--muted);
-    }
-    .opacity{
-      display:flex; gap:10px; align-items:center; margin-top:10px;
-    }
-    input[type="range"]{ width:100%; }
-    .status{
-      padding:10px 14px; font-size:12px; color: var(--muted);
-      border-top:1px solid var(--line);
-      background: rgba(0,0,0,.12);
-    }
-    .hint{ color: var(--muted); font-size:12px; margin-top:8px; line-height:1.35; }
-    a{ color: var(--accent); }
+    header{padding:10px 12px;border-bottom:1px solid #334155;display:flex;justify-content:space-between;align-items:center}
+    header b{font-size:14px}
+    .controls{padding:10px 12px;border-bottom:1px solid #334155;display:flex;gap:8px;align-items:center}
+    input[type="search"]{flex:1;padding:9px 10px;border-radius:10px;border:1px solid #334155;background:#0b1220;color:#e5e7eb}
+    button{padding:9px 10px;border-radius:10px;border:1px solid #334155;background:#111827;color:#e5e7eb;cursor:pointer;font-weight:600}
+    .list{max-height:60vh;overflow:auto;padding:10px 12px;display:flex;flex-direction:column;gap:10px}
+    .item{border:1px solid #334155;border-radius:12px;padding:10px;background:#0b1220}
+    .top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+    .name{font-weight:800;font-size:13px;line-height:1.2}
+    .meta{color:#94a3b8;font-size:12px;margin-top:4px;word-break:break-word}
+    .status{padding:10px 12px;border-top:1px solid #334155;color:#94a3b8;font-size:12px;background:#0b1220}
+    .small{font-size:12px;color:#94a3b8}
   </style>
 </head>
 
 <body>
   <div id="map"></div>
 
-  <div class="panel" id="panel">
+  <div class="panel">
     <header>
-      <div class="title">🧩 PMTiles Viewer <span class="badge" id="countBadge">0 layer</span></div>
-      <div class="row">
-        <button class="btn" id="fitAllBtn" title="Zoom ke semua layer">Fit</button>
-        <button class="btn" id="togglePanelBtn" title="Sembunyikan panel">Hide</button>
-      </div>
+      <b>🧩 PMTiles Viewer</b>
+      <span class="small" id="count">0 layer</span>
     </header>
 
     <div class="controls">
-      <div class="row">
-        <input id="search" type="search" placeholder="Cari layer… (contoh: Aceh / Bali / BAKU / FUNG / POTS)" />
-        <button class="btn" id="allOnBtn" title="Nyalakan semua">All ON</button>
-        <button class="btn" id="allOffBtn" title="Matikan semua">All OFF</button>
-      </div>
-      <div class="hint">
-        • Sumber layer dari <b>manifest.json</b> di folder ini.<br/>
-        • File <b>.pmtiles</b> juga harus di folder yang sama (atau path relatif sesuai di manifest).
-      </div>
+      <input id="q" type="search" placeholder="Cari: Aceh / Bali / BAKU / FUNG / POTS..." />
+      <button id="onAll">All ON</button>
+      <button id="offAll">All OFF</button>
+      <button id="fit">Fit</button>
     </div>
 
-    <div class="list" id="layerList"></div>
+    <div class="list" id="list"></div>
     <div class="status" id="status">Memuat manifest…</div>
   </div>
 
-  <!-- Leaflet -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- Protomaps / PMTiles -->
-  <script src="https://unpkg.com/pmtiles@3.0.6/dist/pmtiles.js"></script>
-  <script src="https://unpkg.com/protomaps@1.23.1/dist/protomaps.min.js"></script>
+  <!-- PMTiles reader -->
+  <script src="https://unpkg.com/pmtiles@3.0.7/dist/pmtiles.js"></script>
+
+  <!-- Protomaps Leaflet renderer (yang bener buat Leaflet + PMTiles) -->
+  <script src="https://unpkg.com/protomaps-leaflet@4.0.1/dist/protomaps-leaflet.js"></script>
 
   <script>
-    // ========= Helpers =========
-    function safeText(s){ return (s ?? "").toString(); }
-    function extless(name){ return safeText(name).replace(/\.pmtiles$/i,""); }
-    function guessGroupFromName(name){
-      const n = safeText(name);
-      if (/baku/i.test(n)) return "BAKU";
-      if (/fung/i.test(n)) return "FUNG";
-      if (/pots/i.test(n)) return "POTS";
-      return "Lainnya";
-    }
-    function guessTitleFromFile(file){
-      // Contoh: "Aceh_Pusat_-_BWS_Sumatera_I_BAKU.pmtiles"
-      const base = extless(file).replace(/_/g," ").replace(/\s+-\s+/g," - ");
-      return base;
-    }
+    const map = L.map("map").setView([-2.5, 118], 5);
 
-    // ========= Base Map =========
-    const map = L.map("map", { zoomControl: true }).setView([-2.5, 118], 5);
-
-    // Basemap (gratis, ringan). Bisa ganti ke Esri kalau mau.
+    // basemap ringan (biar ada konteks)
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 20,
       attribution: "&copy; OpenStreetMap"
     }).addTo(map);
 
-    // ========= PMTiles Plumbing =========
-    // Register PMTiles protocol so protomaps can fetch `pmtiles://...`
-    const protocol = new pmtiles.Protocol();
-    // `protomaps` uses fetch; we patch the global fetch handler by adding protocol handler.
-    // pmtiles.js provides a URL scheme handler via `protocol.tile`.
-    // Protomaps has `pmtiles://` integration: we pass `url: "pmtiles://..."` to layer.
-
-    // ========= State =========
-    const state = {
-      items: [],         // normalized manifest items
-      layers: new Map(), // id -> { layer, item, opacity }
-      boundsUnion: null
-    };
-
-    const elList = document.getElementById("layerList");
+    const elList = document.getElementById("list");
     const elStatus = document.getElementById("status");
-    const elSearch = document.getElementById("search");
-    const elCount  = document.getElementById("countBadge");
+    const elCount = document.getElementById("count");
+    const elQ = document.getElementById("q");
+
+    const state = {
+      items: [],
+      layers: new Map(), // id -> { layer, bounds }
+      unionBounds: null
+    };
 
     function setStatus(msg){ elStatus.textContent = msg; }
 
-    // ========= Normalize Manifest =========
-    // Supports:
-    // 1) Array: [ {file, title, group, ...}, ... ]
-    // 2) Object: { layers: [...] } or { items: [...] }
     function normalizeManifest(json){
       let arr = [];
       if (Array.isArray(json)) arr = json;
       else if (json && Array.isArray(json.layers)) arr = json.layers;
       else if (json && Array.isArray(json.items)) arr = json.items;
 
-      return arr
-        .map((raw, idx) => {
-          const file = raw.file || raw.path || raw.pmtiles || raw.url || "";
-          const title = raw.title || raw.name || guessTitleFromFile(file);
-          const group = raw.group || raw.category || guessGroupFromName(title || file);
-          const id = raw.id || `${idx}:${file}`;
-          // Optional: bounds [minLng, minLat, maxLng, maxLat]
-          const bounds = raw.bounds || null;
-          // Optional: style (protomaps style JSON object) or leave default
-          const style = raw.style || null;
-          return { id, file, title, group, bounds, style };
-        })
-        .filter(x => x.file && /\.pmtiles$/i.test(x.file));
+      return arr.map((raw, i) => {
+        const file = raw.file || raw.path || raw.pmtiles || raw.url || "";
+        const title = raw.title || raw.name || file.replace(/\.pmtiles$/i,"");
+        const id = raw.id || (i + ":" + file);
+        return { id, file, title };
+      }).filter(x => x.file && /\.pmtiles$/i.test(x.file));
     }
 
-    // ========= Create a Protomaps Layer from PMTiles =========
-    function makePmtilesLayer(item){
-      // URL scheme: pmtiles://<relative-path>
-      // Note: protocol handles scheme in fetch pipeline
-      const url = "pmtiles://" + item.file;
-
-      const layer = protomaps.leafletLayer({
-        url,
-        // A decent default style (if you have your own style JSON, put it in manifest per-layer)
-        // Protomaps will auto style if `paint_rules` present; otherwise use default theme:
-        // We'll use a minimalist, readable theme.
-        paint_rules: protomaps.paintRules({
-          // leave default rules; protomaps gives a base theme
-        }),
-        label_rules: protomaps.labelRules({
-          // default label rules
-        })
-      });
-
-      // Opacity control: protomaps layer supports setOpacity
-      layer.setOpacity(1);
-
-      // Track bounds if provided
-      if (item.bounds && Array.isArray(item.bounds) && item.bounds.length === 4){
-        const b = L.latLngBounds(
-          [item.bounds[1], item.bounds[0]],
-          [item.bounds[3], item.bounds[2]]
-        );
-        state.boundsUnion = state.boundsUnion ? state.boundsUnion.extend(b) : b;
-      }
-
-      return layer;
+    // ambil metadata PMTiles untuk tau layer names + bounds
+    async function readPmtilesInfo(url){
+      const p = new pmtiles.PMTiles(url);
+      // metadata berisi vector_layers (untuk MVT) + attribution dll
+      const meta = await p.getMetadata();
+      const header = await p.getHeader();
+      // bounds dari header (minLon,minLat,maxLon,maxLat)
+      const bounds = L.latLngBounds(
+        [header.minLat, header.minLon],
+        [header.maxLat, header.maxLon]
+      );
+      const vectorLayers = (meta && meta.vector_layers) ? meta.vector_layers.map(v => v.id) : [];
+      return { bounds, vectorLayers };
     }
 
-    // ========= UI Rendering =========
-    function buildUI(){
-      // Group items
-      const query = safeText(elSearch.value).trim().toLowerCase();
-      const filtered = state.items.filter(it => {
-        if (!query) return true;
-        return (it.title + " " + it.file + " " + it.group).toLowerCase().includes(query);
-      });
-
-      elCount.textContent = `${state.items.length} layer`;
-
-      const groups = new Map();
-      for (const it of filtered){
-        if (!groups.has(it.group)) groups.set(it.group, []);
-        groups.get(it.group).push(it);
-      }
-
-      // Sort groups and items
-      const sortedGroupNames = Array.from(groups.keys()).sort((a,b)=>a.localeCompare(b));
-      elList.innerHTML = "";
-
-      for (const g of sortedGroupNames){
-        const wrap = document.createElement("div");
-        wrap.className = "group";
-
-        const h = document.createElement("h3");
-        const total = groups.get(g).length;
-        h.innerHTML = `<span>${safeText(g)}</span><span class="small">${total}</span>`;
-        wrap.appendChild(h);
-
-        const itemsDiv = document.createElement("div");
-        itemsDiv.className = "items";
-
-        const arr = groups.get(g).slice().sort((a,b)=>a.title.localeCompare(b.title));
-        for (const it of arr){
-          itemsDiv.appendChild(renderItem(it));
-        }
-
-        wrap.appendChild(itemsDiv);
-        elList.appendChild(wrap);
-      }
-
-      setStatus(filtered.length ? `Menampilkan ${filtered.length} layer (filter aktif).` : `Tidak ada layer yang cocok filter.`);
-    }
-
-    function renderItem(item){
-      const card = document.createElement("div");
-      card.className = "item";
-
-      const isOn = state.layers.has(item.id);
-
-      const top = document.createElement("div");
-      top.className = "item-top";
-
-      const left = document.createElement("div");
-      const title = document.createElement("div");
-      title.className = "name";
-      title.textContent = item.title;
-
-      const meta = document.createElement("div");
-      meta.className = "meta";
-      meta.textContent = item.file;
-
-      left.appendChild(title);
-      left.appendChild(meta);
-
-      const right = document.createElement("div");
-      right.className = "toggles";
-
-      const chk = document.createElement("input");
-      chk.type = "checkbox";
-      chk.checked = isOn;
-      chk.title = "On/Off layer";
-      chk.addEventListener("change", () => {
-        if (chk.checked) addLayer(item);
-        else removeLayer(item);
-        // rerender just this card for correct opacity slider
-        buildUI();
-      });
-
-      const zoomBtn = document.createElement("button");
-      zoomBtn.className = "btn";
-      zoomBtn.textContent = "Zoom";
-      zoomBtn.title = "Zoom ke bounds layer (kalau ada di manifest)";
-      zoomBtn.addEventListener("click", () => zoomToItem(item));
-
-      right.appendChild(chk);
-      right.appendChild(zoomBtn);
-
-      top.appendChild(left);
-      top.appendChild(right);
-      card.appendChild(top);
-
-      // opacity slider (only if layer ON)
-      if (isOn){
-        const entry = state.layers.get(item.id);
-        const opacityWrap = document.createElement("div");
-        opacityWrap.className = "opacity";
-
-        const label = document.createElement("div");
-        label.className = "small";
-        label.style.minWidth = "64px";
-        label.textContent = Math.round((entry.opacity ?? 1) * 100) + "%";
-
-        const rng = document.createElement("input");
-        rng.type = "range";
-        rng.min = "0";
-        rng.max = "100";
-        rng.value = Math.round((entry.opacity ?? 1) * 100);
-
-        rng.addEventListener("input", () => {
-          const v = Math.max(0, Math.min(100, Number(rng.value))) / 100;
-          label.textContent = Math.round(v * 100) + "%";
-          entry.opacity = v;
-          entry.layer.setOpacity(v);
+    function makeGenericRules(vectorLayers){
+      // rule generik: coba render polygon/line/point dari setiap source layer
+      // Kalau layer-nya point/line/polygon campur, tetap akan "keliatan sesuatu".
+      const rules = [];
+      for (const layerName of vectorLayers){
+        // Polygon
+        rules.push({
+          dataLayer: layerName,
+          symbolizer: new protomapsL.PolygonSymbolizer({
+            fill: "rgba(0, 200, 255, 0.25)",
+            stroke: "rgba(0, 200, 255, 0.8)",
+            width: 1
+          })
         });
-
-        opacityWrap.appendChild(label);
-        opacityWrap.appendChild(rng);
-        card.appendChild(opacityWrap);
+        // Line
+        rules.push({
+          dataLayer: layerName,
+          symbolizer: new protomapsL.LineSymbolizer({
+            color: "rgba(255, 210, 0, 0.9)",
+            width: 2
+          })
+        });
+        // Point (circle)
+        rules.push({
+          dataLayer: layerName,
+          symbolizer: new protomapsL.CircleSymbolizer({
+            fill: "rgba(255, 99, 132, 0.7)",
+            stroke: "rgba(255, 255, 255, 0.9)",
+            radius: 4,
+            width: 1
+          })
+        });
       }
-
-      return card;
+      return rules;
     }
 
-    // ========= Layer Ops =========
-    function addLayer(item){
+    async function addLayer(item){
       if (state.layers.has(item.id)) return;
 
-      const layer = makePmtilesLayer(item);
+      const url = item.file; // relatif: "Aceh_....pmtiles"
+      setStatus("Baca metadata: " + item.title);
 
-      // Hook protocol into fetch:
-      // pmtiles Protocol exposes tile handler used by protomaps automatically when using pmtiles://
-      // We need to register protocol handler for 'pmtiles' scheme:
-      // pmtiles v3 sets `pmtiles.Protocol` for maplibre; for fetch-based libs, it works by overriding `fetch` via protocol.add.
-      // We implement minimal scheme resolver:
-      const oldFetch = window.fetch;
-      if (!window.__pmtiles_fetch_patched){
-        window.fetch = async (input, init) => {
-          const url = (typeof input === "string") ? input : input.url;
-          if (url && url.startsWith("pmtiles://")){
-            const httpUrl = url.replace("pmtiles://", "");
-            // Protomaps requests bytes via Range. pmtiles Protocol can serve it.
-            // We'll delegate to protocol.tile which returns a Response-like object when given a Request.
-            const req = new Request(httpUrl, init);
-            const res = await protocol.tile(req);
-            if (res) return res;
-          }
-          return oldFetch(input, init);
-        };
-        window.__pmtiles_fetch_patched = true;
-      }
+      const info = await readPmtilesInfo(url);
+
+      state.unionBounds = state.unionBounds ? state.unionBounds.extend(info.bounds) : info.bounds;
+
+      const paintRules = makeGenericRules(info.vectorLayers);
+
+      const layer = protomapsL.leafletLayer({
+        url,
+        paintRules,
+        labelRules: [] // (opsional) nanti kalau mau label
+      });
 
       layer.addTo(map);
-      state.layers.set(item.id, { layer, item, opacity: 1 });
+      state.layers.set(item.id, { layer, bounds: info.bounds });
 
-      // If bounds not in manifest, we still can "fit all" only if other layers have bounds.
-      setStatus(`Layer ON: ${item.title}`);
+      setStatus("ON: " + item.title);
     }
 
     function removeLayer(item){
@@ -407,111 +175,118 @@
       if (!entry) return;
       map.removeLayer(entry.layer);
       state.layers.delete(item.id);
-      setStatus(`Layer OFF: ${item.title}`);
-    }
-
-    function zoomToItem(item){
-      // Only works if bounds exists in manifest
-      if (item.bounds && Array.isArray(item.bounds) && item.bounds.length === 4){
-        const b = L.latLngBounds(
-          [item.bounds[1], item.bounds[0]],
-          [item.bounds[3], item.bounds[2]]
-        );
-        map.fitBounds(b, { padding: [30,30] });
-      } else {
-        setStatus("Bounds layer belum ada di manifest.json (tambahkan 'bounds' kalau mau tombol Zoom akurat).");
-      }
+      setStatus("OFF: " + item.title);
     }
 
     function fitAll(){
-      if (state.boundsUnion){
-        map.fitBounds(state.boundsUnion, { padding: [30,30] });
-      } else {
-        setStatus("Belum ada bounds global. Tips: tambahin 'bounds' per layer di manifest.json biar fitur Fit bisa nendang.");
+      if (state.unionBounds) map.fitBounds(state.unionBounds, { padding: [30,30] });
+      else setStatus("Belum ada layer ON untuk di-fit.");
+    }
+
+    function render(){
+      const q = elQ.value.trim().toLowerCase();
+      const filtered = state.items.filter(it =>
+        !q || (it.title + " " + it.file).toLowerCase().includes(q)
+      );
+
+      elCount.textContent = state.items.length + " layer";
+      elList.innerHTML = "";
+
+      for (const it of filtered){
+        const isOn = state.layers.has(it.id);
+
+        const div = document.createElement("div");
+        div.className = "item";
+
+        const top = document.createElement("div");
+        top.className = "top";
+
+        const left = document.createElement("div");
+        left.innerHTML = `
+          <div class="name">${it.title}</div>
+          <div class="meta">${it.file}</div>
+        `;
+
+        const right = document.createElement("div");
+        right.style.display = "flex";
+        right.style.gap = "8px";
+        right.style.alignItems = "center";
+
+        const chk = document.createElement("input");
+        chk.type = "checkbox";
+        chk.checked = isOn;
+        chk.addEventListener("change", async () => {
+          try{
+            if (chk.checked) await addLayer(it);
+            else removeLayer(it);
+            render();
+          }catch(e){
+            console.error(e);
+            chk.checked = false;
+            setStatus("Gagal load PMTiles: " + it.file + " (cek console)");
+          }
+        });
+
+        const zoom = document.createElement("button");
+        zoom.textContent = "Zoom";
+        zoom.addEventListener("click", () => {
+          const entry = state.layers.get(it.id);
+          if (entry?.bounds) map.fitBounds(entry.bounds, { padding:[30,30] });
+          else setStatus("Nyalakan layer dulu biar bisa zoom (butuh header bounds).");
+        });
+
+        right.appendChild(chk);
+        right.appendChild(zoom);
+
+        top.appendChild(left);
+        top.appendChild(right);
+        div.appendChild(top);
+
+        elList.appendChild(div);
       }
+
+      setStatus(filtered.length ? `Menampilkan ${filtered.length} layer.` : "Tidak ada layer sesuai filter.");
     }
 
-    function allOn(){
-      for (const it of state.items) addLayer(it);
-      buildUI();
-      setStatus("Semua layer dinyalakan.");
-    }
+    document.getElementById("onAll").addEventListener("click", async () => {
+      for (const it of state.items){
+        if (!state.layers.has(it.id)){
+          try { await addLayer(it); } catch(e){ console.error(e); }
+        }
+      }
+      render();
+      setStatus("All ON selesai.");
+    });
 
-    function allOff(){
+    document.getElementById("offAll").addEventListener("click", () => {
       for (const it of state.items) removeLayer(it);
-      buildUI();
-      setStatus("Semua layer dimatikan.");
-    }
+      render();
+      setStatus("All OFF selesai.");
+    });
 
-    // ========= Load Manifest =========
+    document.getElementById("fit").addEventListener("click", fitAll);
+    elQ.addEventListener("input", render);
+
     async function loadManifest(){
       try{
-        // Cache bust biar GitHub Pages ga ngeyel
         const res = await fetch("manifest.json?v=" + Date.now(), { cache: "no-store" });
         if (!res.ok) throw new Error("HTTP " + res.status);
         const json = await res.json();
-
         state.items = normalizeManifest(json);
 
         if (!state.items.length){
-          setStatus("manifest.json kebaca, tapi gak ada entry .pmtiles. Cek format manifest.json lo ya bro.");
-          elCount.textContent = "0 layer";
+          setStatus("manifest.json kebaca tapi entry .pmtiles kosong. Cek key file/path.");
           return;
         }
-
-        // Nyalain semua by default? (bisa lo ubah jadi none)
-        // allOn();
-
-        buildUI();
-        setStatus(`Manifest OK. Ketemu ${state.items.length} file .pmtiles. Pilih layer yang mau ditampilkan.`);
-      } catch(err){
-        console.error(err);
-        setStatus("Gagal baca manifest.json. Pastikan file ada & valid JSON, dan berada di folder yang sama dengan index.html.");
+        render();
+        setStatus("Manifest OK. Tinggal ON layer yang mau ditampilkan.");
+      }catch(e){
+        console.error(e);
+        setStatus("Gagal baca manifest.json (cek nama file & valid JSON).");
       }
     }
 
-    // ========= Events =========
-    elSearch.addEventListener("input", () => buildUI());
-    document.getElementById("fitAllBtn").addEventListener("click", fitAll);
-    document.getElementById("allOnBtn").addEventListener("click", allOn);
-    document.getElementById("allOffBtn").addEventListener("click", allOff);
-
-    // Hide/Show Panel
-    document.getElementById("togglePanelBtn").addEventListener("click", () => {
-      const p = document.getElementById("panel");
-      const btn = document.getElementById("togglePanelBtn");
-      const isHidden = p.dataset.hidden === "1";
-      if (isHidden){
-        p.style.transform = "translateY(0)";
-        p.style.opacity = "1";
-        p.dataset.hidden = "0";
-        btn.textContent = "Hide";
-      } else {
-        p.style.transform = "translateY(calc(-100% + 52px))";
-        p.style.opacity = "0.98";
-        p.dataset.hidden = "1";
-        btn.textContent = "Show";
-      }
-    });
-
     loadManifest();
   </script>
-
-  <!--
-    CATATAN MANIFEST (biar auto-rapih):
-    manifest.json bisa format salah satu:
-
-    1) Array langsung:
-    [
-      { "file":"Aceh_Pusat_-_BWS_Sumatera_I_BAKU.pmtiles", "title":"Aceh Pusat - BAKU", "group":"Aceh" },
-      { "file":"Aceh_Pusat_-_BWS_Sumatera_I_FUNG.pmtiles", "title":"Aceh Pusat - FUNG", "group":"Aceh" }
-    ]
-
-    2) Object:
-    { "layers":[ ... ] }
-
-    OPTIONAL: bounds per layer (minLng,minLat,maxLng,maxLat):
-    { "file":"...", "bounds":[95.2, 4.8, 96.1, 5.6] }
-  -->
 </body>
 </html>
