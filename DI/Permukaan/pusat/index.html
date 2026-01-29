@@ -52,22 +52,32 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-  <!-- PMTiles reader -->
   <script src="https://unpkg.com/pmtiles@3.0.7/dist/pmtiles.js"></script>
-
-  <!-- Protomaps Leaflet renderer (yang bener buat Leaflet + PMTiles) -->
   <script src="https://unpkg.com/protomaps-leaflet@4.0.1/dist/protomaps-leaflet.js"></script>
 
   <script>
-    const map = L.map("map").setView([-2.5, 118], 5);
+    // ===== Map init =====
+    const map = L.map("map", {
+      zoomControl: true,
+      preferCanvas: true
+    }).setView([-2.5, 118], 5);
 
-    // basemap ringan (biar ada konteks)
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 20,
-      attribution: "&copy; OpenStreetMap"
-    }).addTo(map);
+    // ===== Basemap: Imagery (Esri World Imagery) =====
+    const imagery = L.tileLayer(
+      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      {
+        maxZoom: 20,
+        attribution: "Tiles © Esri"
+      }
+    ).addTo(map);
 
+    // optional label overlay (kalau mau tulisan jalan/kota di atas imagery)
+    // const labels = L.tileLayer(
+    //   "https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
+    //   { maxZoom: 20, attribution: "Labels © Esri" }
+    // ).addTo(map);
+
+    // ===== UI refs =====
     const elList = document.getElementById("list");
     const elStatus = document.getElementById("status");
     const elCount = document.getElementById("count");
@@ -75,7 +85,7 @@
 
     const state = {
       items: [],
-      layers: new Map(), // id -> { layer, bounds }
+      layers: new Map(),   // id -> { layer, bounds }
       unionBounds: null
     };
 
@@ -95,13 +105,10 @@
       }).filter(x => x.file && /\.pmtiles$/i.test(x.file));
     }
 
-    // ambil metadata PMTiles untuk tau layer names + bounds
     async function readPmtilesInfo(url){
       const p = new pmtiles.PMTiles(url);
-      // metadata berisi vector_layers (untuk MVT) + attribution dll
       const meta = await p.getMetadata();
       const header = await p.getHeader();
-      // bounds dari header (minLon,minLat,maxLon,maxLat)
       const bounds = L.latLngBounds(
         [header.minLat, header.minLon],
         [header.maxLat, header.maxLon]
@@ -110,36 +117,19 @@
       return { bounds, vectorLayers };
     }
 
-    function makeGenericRules(vectorLayers){
-      // rule generik: coba render polygon/line/point dari setiap source layer
-      // Kalau layer-nya point/line/polygon campur, tetap akan "keliatan sesuatu".
+    // ===== RULES (revisi sesuai request):
+    // - HILANGKAN node merah => JANGAN render point (CircleSymbolizer dihapus)
+    // - HILANGKAN garis luar polygon => stroke dibuat transparan + width 0
+    // - HILANGKAN garis (line) biar gak muncul outline dari jaringan => line rules dihapus juga
+    function makePolygonOnlyRules(vectorLayers){
       const rules = [];
       for (const layerName of vectorLayers){
-        // Polygon
         rules.push({
           dataLayer: layerName,
           symbolizer: new protomapsL.PolygonSymbolizer({
-            fill: "rgba(0, 200, 255, 0.25)",
-            stroke: "rgba(0, 200, 255, 0.8)",
-            width: 1
-          })
-        });
-        // Line
-        rules.push({
-          dataLayer: layerName,
-          symbolizer: new protomapsL.LineSymbolizer({
-            color: "rgba(255, 210, 0, 0.9)",
-            width: 2
-          })
-        });
-        // Point (circle)
-        rules.push({
-          dataLayer: layerName,
-          symbolizer: new protomapsL.CircleSymbolizer({
-            fill: "rgba(255, 99, 132, 0.7)",
-            stroke: "rgba(255, 255, 255, 0.9)",
-            radius: 4,
-            width: 1
+            fill: "rgba(0, 200, 255, 0.30)",
+            stroke: "rgba(0,0,0,0)", // no outline
+            width: 0                 // enforce no outline
           })
         });
       }
@@ -149,19 +139,22 @@
     async function addLayer(item){
       if (state.layers.has(item.id)) return;
 
-      const url = item.file; // relatif: "Aceh_....pmtiles"
+      const url = item.file;
       setStatus("Baca metadata: " + item.title);
 
       const info = await readPmtilesInfo(url);
 
       state.unionBounds = state.unionBounds ? state.unionBounds.extend(info.bounds) : info.bounds;
 
-      const paintRules = makeGenericRules(info.vectorLayers);
+      const paintRules = makePolygonOnlyRules(info.vectorLayers);
 
       const layer = protomapsL.leafletLayer({
         url,
         paintRules,
-        labelRules: [] // (opsional) nanti kalau mau label
+        labelRules: [],
+        // trik biar “tetep keliatan” di zoom tinggi:
+        // renderer protomaps akan tetap gambar selama tile tersedia di pmtiles.
+        // jadi yang penting: pmtiles lo memang punya maxzoom tinggi + map maxZoom 20.
       });
 
       layer.addTo(map);
@@ -232,7 +225,7 @@
         zoom.addEventListener("click", () => {
           const entry = state.layers.get(it.id);
           if (entry?.bounds) map.fitBounds(entry.bounds, { padding:[30,30] });
-          else setStatus("Nyalakan layer dulu biar bisa zoom (butuh header bounds).");
+          else setStatus("Nyalakan layer dulu biar bisa zoom.");
         });
 
         right.appendChild(chk);
