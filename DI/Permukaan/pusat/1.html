@@ -1,153 +1,264 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebGIS PMTiles - DI Pusat</title>
-    
-    <script src="https://unpkg.com/maplibre-gl@3.x/dist/maplibre-gl.js"></script>
-    <link href="https://unpkg.com/maplibre-gl@3.x/dist/maplibre-gl.css" rel="stylesheet" />
-    
-    <script src="https://unpkg.com/pmtiles@2.11.0/dist/index.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>WebGIS – Pusat (Baku, Potensial, Fungsional)</title>
 
-    <style>
-        body { margin: 0; padding: 0; font-family: sans-serif; }
-        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
-        
-        /* Panel Kontrol Layer & Legenda */
-        .map-overlay {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.2);
-            z-index: 1;
-            width: 200px;
-        }
-        .map-overlay h3 { margin: 0 0 10px; font-size: 16px; }
-        .layer-item { margin-bottom: 8px; display: flex; align-items: center; cursor: pointer; }
-        .legend-key {
-            width: 20px;
-            height: 12px;
-            display: inline-block;
-            margin-right: 10px;
-            border: 1px solid #666;
-        }
-    </style>
+  <!-- MapLibre GL -->
+  <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
+  <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+
+  <!-- PMTiles -->
+  <script src="https://unpkg.com/pmtiles@3.0.6/dist/pmtiles.js"></script>
+
+  <style>
+    html, body { height: 100%; margin: 0; }
+    #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+
+    /* Panel kontrol/legenda */
+    .panel {
+      position: absolute;
+      top: 12px; left: 12px;
+      background: rgba(255,255,255,0.95);
+      border-radius: 8px;
+      padding: 12px 14px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.15);
+      max-width: 320px; font: 13px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      z-index: 10;
+    }
+    .panel h3 { margin: 0 0 8px; font-size: 15px; }
+    .subtitle { color: #555; margin: 2px 0 10px; font-size: 12px; }
+    .group-title { margin: 10px 0 6px; font-weight: 600; font-size: 13px; }
+
+    /* Legend swatches */
+    .legend-item { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+    .swatch { width: 16px; height: 16px; border-radius: 3px; border: 1px solid rgba(0,0,0,.2); }
+    .baku { background: #d7191c; }        /* merah */
+    .potensial { background: #2b83ba; }   /* biru */
+    .fungsional { background: #1a9641; }  /* hijau */
+
+    /* Toggle container */
+    .toggles label { display: flex; align-items: center; gap: 8px; margin: 4px 0; cursor: pointer; }
+    .src-note { color:#666; font-size: 11px; margin-top: 8px; }
+    .footer-btm {
+      position: absolute; right: 10px; bottom: 6px;
+      background: rgba(255,255,255,0.85); padding: 6px 8px; border-radius: 6px; font-size: 11px;
+    }
+    a { color: #0078d4; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
 </head>
+
 <body>
+  <div id="map"></div>
 
-<div id="map"></div>
+  <div class="panel">
+    <h3>WebGIS – Pusat</h3>
+    <div class="subtitle">Basemap: Imagery • Layer: Baku, Potensial, Fungsional</div>
 
-<div class="map-overlay">
-    <h3>Legenda & Layer</h3>
-    <div class="layer-item">
-        <input type="checkbox" id="layer-baku" checked>
-        <span class="legend-key" style="background-color: #00ff00;"></span>
-        <label for="layer-baku">Data Baku</label>
+    <div class="group-title">Tampilan Layer</div>
+    <div class="toggles">
+      <label><input type="checkbox" id="tgl-baku" checked> <span>Layer <b>Baku</b></span></label>
+      <label><input type="checkbox" id="tgl-potensial" checked> <span>Layer <b>Potensial</b></span></label>
+      <label><input type="checkbox" id="tgl-fungsional" checked> <span>Layer <b>Fungsional</b></span></label>
     </div>
-    <div class="layer-item">
-        <input type="checkbox" id="layer-fung" checked>
-        <span class="legend-key" style="background-color: #0000ff;"></span>
-        <label for="layer-fung">Data Fungsional</label>
-    </div>
-    <div class="layer-item">
-        <input type="checkbox" id="layer-pots" checked>
-        <span class="legend-key" style="background-color: #ffff00;"></span>
-        <label for="layer-pots">Data Potensial</label>
-    </div>
-</div>
+
+    <div class="group-title">Legenda</div>
+    <div class="legend-item"><span class="swatch baku"></span> <span>Baku</span></div>
+    <div class="legend-item"><span class="swatch potensial"></span> <span>Potensial</span></div>
+    <div class="legend-item"><span class="swatch fungsional"></span> <span>Fungsional</span></div>
+
+    <div class="src-note">Sumber PMTiles: repo GitHub kamu. Toggle = tampil/sembunyikan layer.</div>
+  </div>
+
+  <div class="footer-btm">
+    © Esri, Maxar – World Imagery • © Open source: MapLibre + PMTiles
+  </div>
 
 <script>
-    // Inisialisasi Protocol PMTiles
-    let protocol = new pmtiles.Protocol();
-    maplibregl.addProtocol("pmtiles", protocol.tile);
+(async () => {
+  // ===========================
+  // KONFIGURASI (EDIT BAGIAN INI)
+  // ===========================
 
-    // Ganti base_url ini dengan URL raw GitHub Anda jika ingin hosting langsung
-    // Contoh: https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/DI/Permukaan/pusat/
-    const base_url = "pmtiles://"; 
+  // 1) Pusatkan peta (perkiraan Jakarta). Silakan ganti ke area data kamu.
+  const mapCenter = [106.82, -6.2]; // [lng, lat]
+  const mapZoom   = 7.5;
 
-    const map = maplibregl.Map({
-        container: 'map',
-        style: {
-            version: 8,
-            sources: {
-                'osm-imagery': {
-                    'type': 'raster',
-                    // Menggunakan ESRI World Imagery sebagai Basemap Satelit
-                    'tiles': ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
-                    'tileSize': 256,
-                    'attribution': 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-                }
-            },
-            layers: [
-                {
-                    'id': 'basemap-satelit',
-                    'type': 'raster',
-                    'source': 'osm-imagery'
-                }
-            ]
-        },
-        center: [106.8, -6.2], // Default Jakarta, sesuaikan dengan area data Anda
-        zoom: 7
+  // 2) URL PMTiles dari repo kamu (gunakan raw.githubusercontent.com).
+  //    Ganti sesuai nama file yang ada di folder:
+  //    https://github.com/irwan-dot-cyber/my-maps/tree/main/DI/Permukaan/pusat
+  const PMTILES_BASE =
+    "https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/DI/Permukaan/pusat/Banten_Pusat_-_BBWS_Ciliwung_Cisadane_BAKU.pmtiles";
+
+  // Masukkan file PMTiles yang mewakili tiap kategori:
+  const SOURCES = {
+    baku: {
+      // contoh: "Banten_Pusat_-_BBWS_Ciliwung_Cisadane_BAKU.pmtiles"
+      url: PMTILES_BASE + "Banten_Pusat_-_BBWS_Ciliwung_Cisadane_BAKU.pmtiles",
+      // Nama layer vektor internal (jika tidak tahu, coba "layer" default; bisa dicek via inspect)
+      layer: "layer-baku" // fallback nanti akan diset otomatis
+    },
+    potensial: {
+      url: PMTILES_BASE + "Banten_Pusat_-_BBWS_Ciliwung_Cisadane_POTS.pmtiles",
+      layer: "layer-potensial"
+    },
+    fungsional: {
+      url: PMTILES_BASE + "Banten_Pusat_-_BBWS_Ciliwung_Cisadane_FUNG.pmtiles",
+      layer: "layer-fungsional"
+    }
+  };
+
+  // 3) Style dan ketebalan outline (jika data polygon/line). Sesuaikan sekilas.
+  const layerPaint = {
+    baku: {
+      fillColor: "#d7191c", fillOpacity: 0.25,
+      lineColor: "#b21616", lineWidth: 1.0
+    },
+    potensial: {
+      fillColor: "#2b83ba", fillOpacity: 0.25,
+      lineColor: "#226a93", lineWidth: 1.0
+    },
+    fungsional: {
+      fillColor: "#1a9641", fillOpacity: 0.25,
+      lineColor: "#147a35", lineWidth: 1.0
+    }
+  };
+
+  // =============== END KONFIG ===============
+
+  // Registrasi protokol pmtiles untuk MapLibre
+  const protocol = new pmtiles.Protocol();
+  maplibregl.addProtocol("pmtiles", protocol.tile);
+
+  // Inisialisasi map dengan basemap imagery (Esri World Imagery)
+  const map = new maplibregl.Map({
+    container: "map",
+    center: mapCenter,
+    zoom: mapZoom,
+    style: {
+      version: 8,
+      sources: {
+        "esri-imagery": {
+          type: "raster",
+          tiles: [
+            // Esri World Imagery
+            "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+          ],
+          tileSize: 256,
+          attribution:
+            "Imagery © Esri & contributors | MapLibre GL ©"
+        }
+      },
+      layers: [
+        { id: "esri-imagery", type: "raster", source: "esri-imagery" }
+      ]
+    },
+    hash: true
+  });
+
+  // Tambah kontrol navigasi
+  map.addControl(new maplibregl.NavigationControl(), "top-right");
+
+  // Helper: deteksi nama layer vektor di dalam PMTiles (jika tidak tahu)
+  async function detectVectorLayerName(pmtilesUrl) {
+    // Buka index PMTiles untuk baca metadata
+    const p = new pmtiles.PMTiles(pmtilesUrl);
+    const header = await p.getHeader();
+    const meta = await p.getMetadata();
+    // Coba dari vector_layers di metadata (PMTiles v2/v3 Mapbox format)
+    if (meta && meta.json && meta.json.vector_layers && meta.json.vector_layers.length) {
+      return meta.json.vector_layers[0].id;
+    }
+    // fallback umum
+    return "layer";
+  }
+
+  // Tambahkan sumber dan layer vektor dari setiap kategori
+  async function addVectorCategory(key, zIndex) {
+    const cfg = SOURCES[key];
+
+    // Pastikan skema URL dengan protokol pmtiles:
+    // contoh: pmtiles://https://raw.githubusercontent.com/.../file.pmtiles
+    const pmtilesSourceURL = `pmtiles://${cfg.url}`;
+
+    // Deteksi nama layer jika belum pasti
+    const vectorLayerName = await detectVectorLayerName(cfg.url).catch(() => cfg.layer || "layer");
+
+    const sourceId = `src-${key}`;
+    const fillId   = `fill-${key}`;
+    const lineId   = `line-${key}`;
+
+    // Tambah source
+    if (!map.getSource(sourceId)) {
+      map.addSource(sourceId, {
+        type: "vector",
+        url: pmtilesSourceURL
+      });
+    }
+
+    // Tambah fill (polygon). Jika datanya line/point, layer ini akan “sunyi” (tidak error).
+    if (!map.getLayer(fillId)) {
+      map.addLayer({
+        id: fillId,
+        type: "fill",
+        source: sourceId,
+        "source-layer": vectorLayerName,
+        paint: {
+          "fill-color": layerPaint[key].fillColor,
+          "fill-opacity": layerPaint[key].fillOpacity
+        }
+      });
+    }
+
+    // Tambah outline
+    if (!map.getLayer(lineId)) {
+      map.addLayer({
+        id: lineId,
+        type: "line",
+        source: sourceId,
+        "source-layer": vectorLayerName,
+        paint: {
+          "line-color": layerPaint[key].lineColor,
+          "line-width": layerPaint[key].lineWidth
+        }
+      });
+    }
+
+    // Naikkan z-index relatif (opsional)
+    map.moveLayer(fillId);
+    map.moveLayer(lineId);
+  }
+
+  map.on("load", async () => {
+    // Tambahkan ketiga kategori
+    await addVectorCategory("baku");
+    await addVectorCategory("potensial");
+    await addVectorCategory("fungsional");
+
+    // Hook toggle checkbox
+    const toggles = [
+      { id: "tgl-baku", layers: ["fill-baku", "line-baku"] },
+      { id: "tgl-potensial", layers: ["fill-potensial", "line-potensial"] },
+      { id: "tgl-fungsional", layers: ["fill-fungsional", "line-fungsional"] },
+    ];
+
+    toggles.forEach(t => {
+      const el = document.getElementById(t.id);
+      function apply() {
+        t.layers.forEach(layerId => {
+          if (map.getLayer(layerId)) {
+            map.setLayoutProperty(layerId, "visibility", el.checked ? "visible" : "none");
+          }
+        });
+      }
+      el.addEventListener("change", apply);
+      apply();
     });
+  });
 
-    map.on('load', () => {
-        // --- 1. SOURCE BAKU ---
-        map.addSource('source-baku', {
-            type: 'vector',
-            url: "pmtiles://Aceh_Pusat_-_BWS_Sumatera_I_BAKU.pmtiles" // Sesuaikan path filenya
-        });
-        map.addLayer({
-            'id': 'layer-baku-viz',
-            'type': 'fill', // atau 'line' tergantung jenis data didalam pmtiles
-            'source': 'source-baku',
-            'source-layer': 'Aceh_Pusat_-_BWS_Sumatera_I_BAKU', // Cek nama layer di dalam pmtiles
-            'paint': { 'fill-color': '#00ff00', 'fill-opacity': 0.6 }
-        });
-
-        // --- 2. SOURCE FUNGSIONAL ---
-        map.addSource('source-fung', {
-            type: 'vector',
-            url: "pmtiles://Aceh_Pusat_-_BWS_Sumatera_I_FUNG.pmtiles"
-        });
-        map.addLayer({
-            'id': 'layer-fung-viz',
-            'type': 'fill',
-            'source': 'source-fung',
-            'source-layer': 'Aceh_Pusat_-_BWS_Sumatera_I_FUNG',
-            'paint': { 'fill-color': '#0000ff', 'fill-opacity': 0.6 }
-        });
-
-        // --- 3. SOURCE POTENSIAL ---
-        map.addSource('source-pots', {
-            type: 'vector',
-            url: "pmtiles://Aceh_Pusat_-_BWS_Sumatera_I_POTS.pmtiles"
-        });
-        map.addLayer({
-            'id': 'layer-pots-viz',
-            'type': 'fill',
-            'source': 'source-pots',
-            'source-layer': 'Aceh_Pusat_-_BWS_Sumatera_I_POTS',
-            'paint': { 'fill-color': '#ffff00', 'fill-opacity': 0.6 }
-        });
-
-        // FUNGSI ON/OFF LAYER
-        const setupToggle = (id, layerId) => {
-            document.getElementById(id).addEventListener('change', (e) => {
-                map.setLayoutProperty(layerId, 'visibility', e.target.checked ? 'visible' : 'none');
-            });
-        };
-
-        setupToggle('layer-baku', 'layer-baku-viz');
-        setupToggle('layer-fung', 'layer-fung-viz');
-        setupToggle('layer-pots', 'layer-pots-viz');
-    });
-
-    map.addControl(new maplibregl.NavigationControl());
+})();
 </script>
-
 </body>
 </html>
