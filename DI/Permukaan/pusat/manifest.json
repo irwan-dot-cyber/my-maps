@@ -1,41 +1,35 @@
 {
-  "version": 1,
-  "items": [
+  "layers": [
     {
+      "name": "Aceh - BWS Sumatera I (BAKU)",
       "file": "Aceh_Pusat_-_BWS_Sumatera_I_BAKU.pmtiles",
-      "type": "BAKU",
-      "group": "Aceh_Pusat_-_BWS_Sumatera_I",
-      "title": "Aceh Pusat - BWS Sumatera I - BAKU"
+      "category": "BAKU"
     },
     {
+      "name": "Aceh - BWS Sumatera I (FUNGSIONAL)",
       "file": "Aceh_Pusat_-_BWS_Sumatera_I_FUNG.pmtiles",
-      "type": "FUNG",
-      "group": "Aceh_Pusat_-_BWS_Sumatera_I",
-      "title": "Aceh Pusat - BWS Sumatera I - FUNGSIONAL"
+      "category": "FUNGSIONAL"
     },
     {
+      "name": "Aceh - BWS Sumatera I (POTENSIAL)",
       "file": "Aceh_Pusat_-_BWS_Sumatera_I_POTS.pmtiles",
-      "type": "POTS",
-      "group": "Aceh_Pusat_-_BWS_Sumatera_I",
-      "title": "Aceh Pusat - BWS Sumatera I - POTENSIAL"
+      "category": "POTENSIAL"
+    },
+
+    {
+      "name": "Banten - BBWS Cidanau Cijung Cidurian (BAKU)",
+      "file": "Banten_Pusat_-_BBWS_Cidanau_Cijung_Cidurian_BAKU.pmtiles",
+      "category": "BAKU"
     },
     {
-      "file": "Bali_Pusat_-_BWS_Bali_Penida_BAKU.pmtiles",
-      "type": "BAKU",
-      "group": "Bali_Pusat_-_BWS_Bali_Penida",
-      "title": "Bali Pusat - BWS Bali Penida - BAKU"
+      "name": "Banten - BBWS Cidanau Cijung Cidurian (FUNGSIONAL)",
+      "file": "Banten_Pusat_-_BBWS_Cidanau_Cijung_Cidurian_FUNG.pmtiles",
+      "category": "FUNGSIONAL"
     },
     {
-      "file": "Bali_Pusat_-_BWS_Bali_Penida_FUNG.pmtiles",
-      "type": "FUNG",
-      "group": "Bali_Pusat_-_BWS_Bali_Penida",
-      "title": "Bali Pusat - BWS Bali Penida - FUNGSIONAL"
-    },
-    {
-      "file": "Bali_Pusat_-_BWS_Bali_Penida_POTS.pmtiles",
-      "type": "POTS",
-      "group": "Bali_Pusat_-_BWS_Bali_Penida",
-      "title": "Bali Pusat - BWS Bali Penida - POTENSIAL"
+      "name": "Banten - BBWS Cidanau Cijung Cidurian (POTENSIAL)",
+      "file": "Banten_Pusat_-_BBWS_Cidanau_Cijung_Cidurian_POTS.pmtiles",
+      "category": "POTENSIAL"
     }
   ]
 }
