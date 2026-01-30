@@ -3,539 +3,463 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>PMTiles Viewer (Manifest) - BWS/BBWS + Status Toggle</title>
+  <title>PMTiles Viewer (Imagery + Toggle)</title>
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <!-- MapLibre GL -->
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+
+  <!-- PMTiles -->
+  <script src="https://unpkg.com/pmtiles@3.0.6/dist/index.js"></script>
 
   <style>
-    :root{
-      --bg:#0f172aee; --bg2:#0b1220; --bd:#334155; --txt:#e5e7eb; --mut:#94a3b8;
-      --brand:#0b5ea8;
-    }
-    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
-    #map{height:100%;width:100%}
+    html, body { height: 100%; margin: 0; }
+    #map { height: 100%; width: 100%; }
 
-    /* Header bar */
-    .topbar{
-      position:absolute; z-index:9999; left:0; top:0; right:0;
-      background:var(--brand); color:white;
-      padding:14px 18px;
-      box-shadow:0 8px 22px rgba(0,0,0,.25);
-    }
-    .topbar .t1{font-weight:900; letter-spacing:.2px}
-    .topbar .t2{opacity:.95; font-weight:700}
-    .topbar .t3{opacity:.9; font-weight:600}
-
-    /* Control panel */
-    .panel{
-      position:absolute; z-index:9999; top:86px; left:12px;
-      width:min(520px,calc(100vw - 24px));
-      background:var(--bg); color:var(--txt); border:1px solid var(--bd);
-      border-radius:16px; overflow:hidden;
-      box-shadow:0 12px 34px rgba(0,0,0,.38);
-      backdrop-filter: blur(6px);
+    .panel {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 10;
+      width: 320px;
+      max-width: calc(100% - 24px);
+      background: rgba(14, 17, 22, 0.88);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+      overflow: hidden;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     }
     .panel header{
-      padding:12px 14px;
-      border-bottom:1px solid var(--bd);
-      display:flex; justify-content:space-between; align-items:center;
+      padding: 12px 14px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.10);
     }
-    .panel header b{font-size:14px}
-    .badge{
-      font-size:12px; color:var(--mut);
-      border:1px solid var(--bd); border-radius:999px;
-      padding:4px 10px; background:rgba(15,23,42,.35)
+    .panel header .title{
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: .2px;
+    }
+    .panel header .hint{
+      font-size: 12px;
+      opacity: .75;
+      white-space: nowrap;
+    }
+    .panel .content{
+      padding: 12px 14px 14px 14px;
     }
 
-    .controls{padding:12px 14px; border-bottom:1px solid var(--bd); display:flex; flex-direction:column; gap:10px}
-    .row{display:flex; gap:10px; align-items:center}
-    label.small{font-size:12px; color:var(--mut); min-width:92px}
-    select, input[type="search"]{
-      flex:1;
-      padding:10px 12px;
-      border-radius:12px;
-      border:1px solid var(--bd);
-      background:var(--bg2);
-      color:var(--txt);
-      outline:none;
+    .legend {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
     }
-    .btnrow{display:flex; gap:10px; flex-wrap:wrap}
-    button{
-      padding:10px 12px;
-      border-radius:12px;
-      border:1px solid var(--bd);
-      background:#111827;
-      color:var(--txt);
-      cursor:pointer;
-      font-weight:800;
-    }
-    button:active{transform:translateY(1px)}
-    .hint{font-size:12px; color:var(--mut); line-height:1.35}
 
-    /* Legend (bottom right) */
-    .legend{
-      position:absolute; z-index:9999; right:12px; bottom:12px;
-      width:220px;
-      background:var(--bg);
-      border:1px solid var(--bd);
-      border-radius:16px;
-      box-shadow:0 12px 34px rgba(0,0,0,.38);
+    .row {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .left {
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      box-shadow: 0 0 0 3px rgba(255,255,255,0.10) inset;
+      flex: 0 0 auto;
+    }
+    .label {
+      font-size: 13px;
+      font-weight: 650;
       overflow:hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
-    .legend .hd{
-      padding:10px 12px; border-bottom:1px solid var(--bd);
-      font-weight:900; font-size:13px; color:var(--txt);
-      display:flex; justify-content:space-between; align-items:center;
+    .sub {
+      font-size: 12px;
+      opacity: .7;
+      margin-top: 2px;
     }
-    .legend .bd{padding:10px 12px; display:flex; flex-direction:column; gap:10px}
-    .lgrow{display:flex; justify-content:space-between; align-items:center; gap:10px}
-    .lgleft{display:flex; align-items:center; gap:10px}
-    .swatch{width:14px; height:14px; border-radius:4px; border:1px solid rgba(255,255,255,.18)}
-    .toggle{
-      width:46px; height:26px; border-radius:999px;
-      background:#1f2937; border:1px solid var(--bd);
-      position:relative; cursor:pointer; flex:0 0 auto;
+    .stack { display:flex; flex-direction:column; min-width:0; }
+
+    .toggle {
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      flex: 0 0 auto;
+      font-size: 12px;
+      opacity: .9;
     }
-    .knob{
-      width:20px; height:20px; border-radius:50%;
-      background:#e5e7eb;
-      position:absolute; top:2px; left:2px;
-      transition:all .18s ease;
+
+    input[type="checkbox"]{
+      width: 18px; height: 18px;
+      accent-color: #7bdcff;
+      cursor: pointer;
     }
-    .toggle[data-on="1"]{background:#0ea5e9aa}
-    .toggle[data-on="1"] .knob{left:24px}
-    .statusbar{
-      padding:10px 12px;
-      border-top:1px solid var(--bd);
-      background:var(--bg2);
-      color:var(--mut);
-      font-size:12px;
+
+    .status {
+      font-size: 12px;
+      opacity: .75;
+      line-height: 1.35;
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.05);
+      border: 1px dashed rgba(255,255,255,0.15);
+      max-height: 140px;
+      overflow: auto;
+    }
+
+    .btnbar{
+      display:flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .btn{
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: #fff;
+      padding: 8px 10px;
+      border-radius: 12px;
+      font-weight: 650;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .btn:hover{ background: rgba(255,255,255,0.12); }
+
+    .attribution-note{
+      font-size: 11px;
+      opacity: .65;
+      margin-top: 8px;
     }
   </style>
 </head>
 
 <body>
-  <div id="map"></div>
+<div id="map"></div>
 
-  <!-- Header -->
-  <div class="topbar">
-    <div class="t1">KEMENTERIAN PEKERJAAN UMUM</div>
-    <div class="t2">Direktorat Jenderal Sumber Daya Air</div>
-    <div class="t3">Direktorat Irigasi &amp; Rawa</div>
-  </div>
+<div class="panel">
+  <header>
+    <div class="title">PMTiles Viewer</div>
+    <div class="hint">Imagery + Toggle</div>
+  </header>
 
-  <!-- Panel -->
-  <div class="panel">
-    <header>
-      <b>🧩 PMTiles Viewer</b>
-      <span class="badge" id="badge">Memuat…</span>
-    </header>
-
-    <div class="controls">
+  <div class="content">
+    <div class="legend">
       <div class="row">
-        <label class="small">BWS / BBWS</label>
-        <select id="bwsSelect"></select>
+        <div class="left">
+          <span class="swatch" style="background:#2ea8ff"></span>
+          <div class="stack">
+            <div class="label">BAKU</div>
+            <div class="sub">Layer baku</div>
+          </div>
+        </div>
+        <label class="toggle">
+          <input id="togBAKU" type="checkbox" checked />
+          ON
+        </label>
       </div>
 
       <div class="row">
-        <label class="small">Cari</label>
-        <input id="q" type="search" placeholder="ketik nama BWS/BBWS (opsional)" />
+        <div class="left">
+          <span class="swatch" style="background:#ffb020"></span>
+          <div class="stack">
+            <div class="label">POTENSIAL</div>
+            <div class="sub">Layer potensial</div>
+          </div>
+        </div>
+        <label class="toggle">
+          <input id="togPOTENSIAL" type="checkbox" checked />
+          ON
+        </label>
       </div>
 
-      <div class="btnrow">
-        <button id="zoomBws">Zoom BWS</button>
-        <button id="onAll">Semua ON</button>
-        <button id="offAll">All OFF</button>
-        <button id="fitAll">Fit</button>
+      <div class="row">
+        <div class="left">
+          <span class="swatch" style="background:#2ee59d"></span>
+          <div class="stack">
+            <div class="label">FUNGSIONAL</div>
+            <div class="sub">Layer fungsional</div>
+          </div>
+        </div>
+        <label class="toggle">
+          <input id="togFUNGSIONAL" type="checkbox" checked />
+          ON
+        </label>
       </div>
-
-      <div class="hint" id="hint">Memuat manifest…</div>
     </div>
 
-    <div class="statusbar" id="status">Siap.</div>
-  </div>
-
-  <!-- Legend -->
-  <div class="legend">
-    <div class="hd">
-      <span>ON/OFF Status</span>
-      <span style="font-size:12px;color:var(--mut)" id="onCount">0 ON</span>
+    <div class="btnbar">
+      <button class="btn" id="btnAllOn">Semua ON</button>
+      <button class="btn" id="btnAllOff">Semua OFF</button>
+      <button class="btn" id="btnReload">Reload PMTiles</button>
     </div>
-    <div class="bd">
-      <div class="lgrow">
-        <div class="lgleft">
-          <span class="swatch" style="background:#39c6d6"></span>
-          <b style="font-size:13px">BAKU</b>
-        </div>
-        <div class="toggle" id="tglBAKU" data-on="1" title="Toggle BAKU"><div class="knob"></div></div>
-      </div>
 
-      <div class="lgrow">
-        <div class="lgleft">
-          <span class="swatch" style="background:#2ecc71"></span>
-          <b style="font-size:13px">FUNGSIONAL</b>
-        </div>
-        <div class="toggle" id="tglFUNG" data-on="1" title="Toggle FUNGSIONAL"><div class="knob"></div></div>
-      </div>
+    <div class="status" id="status">Memuat…</div>
 
-      <div class="lgrow">
-        <div class="lgleft">
-          <span class="swatch" style="background:#f1c40f"></span>
-          <b style="font-size:13px">POTENSIAL</b>
-        </div>
-        <div class="toggle" id="tglPOTS" data-on="1" title="Toggle POTENSIAL"><div class="knob"></div></div>
-      </div>
+    <div class="attribution-note">
+      Basemap: Esri World Imagery. Data overlay: PMTiles (GitHub).
     </div>
   </div>
+</div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/pmtiles@3.0.7/dist/pmtiles.js"></script>
-  <script src="https://unpkg.com/protomaps-leaflet@4.0.1/dist/protomaps-leaflet.js"></script>
-
-  <script>
-    // ===== Map init =====
-    const map = L.map("map", { zoomControl:true, preferCanvas:true })
-      .setView([-2.5, 118], 5);
-
-    // Basemap: Esri World Imagery
-    L.tileLayer(
-      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-      { maxZoom: 20, attribution: "Tiles © Esri" }
-    ).addTo(map);
-
-    // ===== UI refs =====
-    const elBadge = document.getElementById("badge");
-    const elHint  = document.getElementById("hint");
-    const elStatus = document.getElementById("status");
-    const elOnCount = document.getElementById("onCount");
-    const elBwsSelect = document.getElementById("bwsSelect");
-    const elQ = document.getElementById("q");
-
-    const tglBAKU = document.getElementById("tglBAKU");
-    const tglFUNG = document.getElementById("tglFUNG");
-    const tglPOTS = document.getElementById("tglPOTS");
-
-    function setStatus(msg){ elStatus.textContent = msg; }
-    function setHint(msg){ elHint.textContent = msg; }
-    function setBadge(msg){ elBadge.textContent = msg; }
-
-    // ===== State =====
-    const state = {
-      items: [],              // normalized from manifest
-      // layersById: id -> { layer, bounds, bws, status }
-      layersById: new Map(),
-      // groups: bws -> item[]
-      groups: new Map(),
-      // boundsByBws: bws -> LatLngBounds
-      boundsByBws: new Map(),
-      unionBounds: null,
-      // toggles
-      statusOn: { BAKU:true, FUNG:true, POTS:true }
-    };
-
-    // ===== Helpers: parse BWS/BBWS & STATUS from filename/title =====
-    function parseStatus(fileOrTitle){
-      const s = (fileOrTitle || "").toUpperCase();
-      if (s.includes("_BAKU")) return "BAKU";
-      if (s.includes("_FUNG")) return "FUNG";
-      if (s.includes("_POTS")) return "POTS";
-      return "OTHER";
-    }
-    function parseBws(fileOrTitle){
-      const s = (fileOrTitle || "");
-      // target: "..._-_BBWS_Serayu_Opak_BAKU.pmtiles" -> "BBWS Serayu Opak"
-      const m = s.match(/_-_(BWS|BBWS)_([^_]+(?:_[^_]+)*)_(BAKU|FUNG|POTS)\.pmtiles$/i)
-             || s.match(/_-_(BWS|BBWS)_([^_]+(?:_[^_]+)*)/i);
-      if (!m) return "Tidak diketahui";
-      const prefix = (m[1] || "").toUpperCase();
-      const name = (m[2] || "").replace(/_/g, " ").trim();
-      return (prefix + " " + name).trim();
-    }
-
-    function normalizeManifest(json){
-      let arr = [];
-      if (Array.isArray(json)) arr = json;
-      else if (json && Array.isArray(json.layers)) arr = json.layers;
-      else if (json && Array.isArray(json.items)) arr = json.items;
-
-      return arr.map((raw, i) => {
-        const file = raw.file || raw.path || raw.pmtiles || raw.url || "";
-        const title = raw.title || raw.name || file.replace(/\.pmtiles$/i,"");
-        const id = raw.id || (i + ":" + file);
-
-        const bws = raw.bws || parseBws(file || title);
-        const status = raw.status || parseStatus(file || title);
-
-        return { id, file, title, bws, status };
-      }).filter(x => x.file && /\.pmtiles$/i.test(x.file));
-    }
-
-    async function readPmtilesInfo(file){
-      // IMPORTANT: Create PMTiles object and register protocol for THIS file
-      const p = new pmtiles.PMTiles(file);
-      pmtiles.addProtocol("pmtiles", p);
-
-      const header = await p.getHeader();
-      const meta = await p.getMetadata();
-
-      // bounds from header.bounds: [minLon,minLat,maxLon,maxLat]
-      let bounds = null;
-      const b = header?.bounds || meta?.bounds;
-      if (Array.isArray(b) && b.length === 4){
-        bounds = L.latLngBounds([b[1], b[0]], [b[3], b[2]]);
+<script>
+  // ====== Basemap (Imagery) ======
+  const style = {
+    version: 8,
+    sources: {
+      esriImagery: {
+        type: "raster",
+        tiles: [
+          "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+        ],
+        tileSize: 256,
+        attribution: "Tiles © Esri"
       }
+    },
+    layers: [
+      { id: "esriImagery", type: "raster", source: "esriImagery" }
+    ]
+  };
 
-      const vectorLayers = meta?.vector_layers?.map(v => v.id) || [];
-      const maxDataZoom = header?.maxZoom ?? 18;
+  const map = new maplibregl.Map({
+    container: "map",
+    style,
+    center: [118.0, -2.5],   // Indonesia-ish
+    zoom: 4
+  });
 
-      return { bounds, vectorLayers, maxDataZoom };
-    }
+  map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
 
-    // Polygon only, NO outline, NO points, NO lines
-    function makePolygonOnlyRules(vectorLayers, fill){
-      const rules = [];
-      for (const layerName of vectorLayers){
-        rules.push({
-          dataLayer: layerName,
-          symbolizer: new protomapsL.PolygonSymbolizer({
-            fill,
-            opacity: 0.30,
-            stroke: "rgba(0,0,0,0)",
-            width: 0
-          })
-        });
+  // ====== PMTiles protocol for MapLibre ======
+  const protocol = new pmtiles.Protocol();
+  maplibregl.addProtocol("pmtiles", protocol.tile);
+
+  // ====== UI + State ======
+  const statusEl = document.getElementById("status");
+  const toggles = {
+    BAKU: document.getElementById("togBAKU"),
+    POTENSIAL: document.getElementById("togPOTENSIAL"),
+    FUNGSIONAL: document.getElementById("togFUNGSIONAL")
+  };
+
+  // Track all created map layer IDs by category so toggle can hide/show them
+  const layersByCategory = {
+    BAKU: [],
+    POTENSIAL: [],
+    FUNGSIONAL: []
+  };
+
+  // Colors per category
+  const colorByCategory = {
+    BAKU: "#2ea8ff",
+    POTENSIAL: "#ffb020",
+    FUNGSIONAL: "#2ee59d"
+  };
+
+  function logStatus(msg) {
+    const t = new Date().toLocaleTimeString();
+    statusEl.innerHTML = `${t} • ${msg}<br/>` + statusEl.innerHTML;
+  }
+
+  function setCategoryVisibility(category, visible) {
+    const vis = visible ? "visible" : "none";
+    (layersByCategory[category] || []).forEach(layerId => {
+      if (map.getLayer(layerId)) map.setLayoutProperty(layerId, "visibility", vis);
+    });
+  }
+
+  function clearAllPMTilesLayers() {
+    // remove layers then sources (reverse order is safer)
+    for (const cat of Object.keys(layersByCategory)) {
+      for (const layerId of layersByCategory[cat]) {
+        if (map.getLayer(layerId)) map.removeLayer(layerId);
       }
-      return rules;
+      layersByCategory[cat] = [];
     }
 
-    function statusColor(status){
-      if (status === "BAKU") return "rgba(57,198,214,1)";
-      if (status === "FUNG") return "rgba(46,204,113,1)";
-      if (status === "POTS") return "rgba(241,196,15,1)";
-      return "rgba(200,200,200,1)";
-    }
-
-    async function ensureLayerOn(item){
-      if (state.layersById.has(item.id)) return;
-
-      const file = item.file;
-      setStatus("Load: " + item.title);
-
-      const info = await readPmtilesInfo(file);
-
-      // union + per-bws bounds
-      if (info.bounds){
-        state.unionBounds = state.unionBounds ? state.unionBounds.extend(info.bounds) : info.bounds;
-
-        const prevB = state.boundsByBws.get(item.bws);
-        state.boundsByBws.set(item.bws, prevB ? prevB.extend(info.bounds) : info.bounds);
-      }
-
-      const fill = statusColor(item.status);
-      const paint_rules = makePolygonOnlyRules(info.vectorLayers, fill);
-
-      if (!info.vectorLayers.length){
-        console.warn("Tidak ada vector_layers:", file);
-        throw new Error("Metadata vector_layers kosong: " + file);
-      }
-
-      const layer = protomapsL.leafletLayer({
-        url: `pmtiles://${file}`,
-        paint_rules,
-        label_rules: [],
-        maxDataZoom: info.maxDataZoom
-      });
-
-      layer.addTo(map);
-      state.layersById.set(item.id, { layer, bounds: info.bounds, bws:item.bws, status:item.status });
-    }
-
-    function turnLayerOff(item){
-      const entry = state.layersById.get(item.id);
-      if (!entry) return;
-      map.removeLayer(entry.layer);
-      state.layersById.delete(item.id);
-    }
-
-    function updateOnCount(){
-      elOnCount.textContent = `${state.layersById.size} ON`;
-    }
-
-    function currentBwsSelection(){
-      return elBwsSelect.value || "Semua BWS";
-    }
-
-    function passesSearch(item){
-      const q = elQ.value.trim().toLowerCase();
-      if (!q) return true;
-      return (item.bws + " " + item.title + " " + item.file).toLowerCase().includes(q);
-    }
-
-    function passesBws(item){
-      const sel = currentBwsSelection();
-      if (sel === "Semua BWS") return true;
-      return item.bws === sel;
-    }
-
-    function passesStatus(item){
-      return !!state.statusOn[item.status];
-    }
-
-    async function applyVisibility(){
-      // ON by default: should reflect filters + status toggles
-      const candidates = state.items.filter(it => passesBws(it) && passesSearch(it) && passesStatus(it));
-
-      // Turn OFF those that shouldn't be visible
-      for (const it of state.items){
-        const shouldBeOn = candidates.includes(it);
-        const isOn = state.layersById.has(it.id);
-        if (isOn && !shouldBeOn) turnLayerOff(it);
-      }
-
-      // Turn ON candidates
-      for (const it of candidates){
-        if (!state.layersById.has(it.id)){
-          try{ await ensureLayerOn(it); }
-          catch(e){ console.error(e); }
+    // remove sources that start with "src__"
+    const styleObj = map.getStyle();
+    if (styleObj && styleObj.sources) {
+      Object.keys(styleObj.sources).forEach(srcId => {
+        if (srcId.startsWith("src__") && map.getSource(srcId)) {
+          map.removeSource(srcId);
         }
-      }
-
-      updateOnCount();
-      setBadge(`${state.groups.size} BWS • ON ${state.layersById.size}`);
-      setHint(`Tampil: ${currentBwsSelection()} (filter status aktif).`);
-      setStatus("Selesai refresh layer.");
-    }
-
-    function fitAll(){
-      if (state.unionBounds) map.fitBounds(state.unionBounds, { padding:[30,30] });
-      else setStatus("Belum ada bounds (cek manifest / metadata).");
-    }
-
-    function zoomSelectedBws(){
-      const sel = currentBwsSelection();
-      if (sel === "Semua BWS"){
-        fitAll();
-        return;
-      }
-      const b = state.boundsByBws.get(sel);
-      if (b) map.fitBounds(b, { padding:[30,30] });
-      else setStatus("Bounds BWS belum kebaca. Pastikan layer BWS itu pernah ON.");
-    }
-
-    // ===== Toggle handlers =====
-    function setToggle(el, on){
-      el.dataset.on = on ? "1" : "0";
-    }
-    function readToggle(el){
-      return el.dataset.on === "1";
-    }
-    function attachToggle(el, key){
-      el.addEventListener("click", async () => {
-        const next = !readToggle(el);
-        setToggle(el, next);
-        state.statusOn[key] = next;
-        setStatus(`Toggle ${key}: ${next ? "ON" : "OFF"}`);
-        await applyVisibility();
       });
     }
+  }
 
-    attachToggle(tglBAKU, "BAKU");
-    attachToggle(tglFUNG, "FUNG");
-    attachToggle(tglPOTS, "POTS");
-
-    // ===== Buttons =====
-    document.getElementById("zoomBws").addEventListener("click", zoomSelectedBws);
-
-    document.getElementById("onAll").addEventListener("click", async () => {
-      // Force show all BWS + respect status toggles only
-      elBwsSelect.value = "Semua BWS";
-      elQ.value = "";
-      await applyVisibility();
-      setStatus("Semua ON (sesuai toggle status).");
-    });
-
-    document.getElementById("offAll").addEventListener("click", () => {
-      for (const it of state.items) turnLayerOff(it);
-      updateOnCount();
-      setStatus("All OFF.");
-    });
-
-    document.getElementById("fitAll").addEventListener("click", fitAll);
-
-    // Filters
-    elBwsSelect.addEventListener("change", async () => {
-      await applyVisibility();
-    });
-    elQ.addEventListener("input", async () => {
-      await applyVisibility();
-    });
-
-    // ===== Load manifest =====
-    async function loadManifest(){
-      try{
-        setBadge("Memuat…");
-        setHint("Memuat manifest.json…");
-        setStatus("Fetch manifest.json…");
-
-        const res = await fetch("manifest.json?v=" + Date.now(), { cache:"no-store" });
-        if (!res.ok) throw new Error("HTTP " + res.status);
-        const json = await res.json();
-
-        state.items = normalizeManifest(json);
-
-        if (!state.items.length){
-          setBadge("0 layer");
-          setHint("manifest.json kebaca tapi entry .pmtiles kosong.");
-          setStatus("Cek key file/path di manifest.json.");
-          return;
-        }
-
-        // Build groups
-        state.groups.clear();
-        for (const it of state.items){
-          if (!state.groups.has(it.bws)) state.groups.set(it.bws, []);
-          state.groups.get(it.bws).push(it);
-        }
-
-        // Fill dropdown
-        elBwsSelect.innerHTML = "";
-        const optAll = document.createElement("option");
-        optAll.value = "Semua BWS";
-        optAll.textContent = "Semua BWS";
-        elBwsSelect.appendChild(optAll);
-
-        const names = Array.from(state.groups.keys()).sort((a,b)=>a.localeCompare(b,"id"));
-        for (const name of names){
-          const opt = document.createElement("option");
-          opt.value = name;
-          opt.textContent = name;
-          elBwsSelect.appendChild(opt);
-        }
-
-        // Default: all status ON + show all
-        setToggle(tglBAKU, true); state.statusOn.BAKU = true;
-        setToggle(tglFUNG, true); state.statusOn.FUNG = true;
-        setToggle(tglPOTS, true); state.statusOn.POTS = true;
-
-        setBadge(`${state.groups.size} BWS • 0 ON`);
-        setHint("Default: semua status ON, tampil semua BWS.");
-        setStatus("Manifest OK. Menyalakan layer…");
-
-        // Default ON for everything (but respect status toggles)
-        await applyVisibility();
-
-        // Optional initial fit
-        if (state.unionBounds) map.fitBounds(state.unionBounds, { padding:[30,30] });
-
-      }catch(e){
-        console.error(e);
-        setBadge("Gagal");
-        setHint("Gagal baca manifest.json (cek nama file & valid JSON).");
-        setStatus("Error: " + e.message);
-      }
+  async function addOnePMTiles(item) {
+    const category = (item.category || "").toUpperCase().trim();
+    if (!colorByCategory[category]) {
+      logStatus(`Lewati: kategori tidak dikenal "${item.category}" (${item.file})`);
+      return;
     }
 
-    loadManifest();
-  </script>
+    const file = item.file;
+    const name = item.name || file;
+
+    // Register pmtiles archive (needed by protocol)
+    const p = new pmtiles.PMTiles(file);
+    protocol.add(p);
+
+    // Add as vector source
+    const srcId = "src__" + file.replace(/[^a-zA-Z0-9_]/g, "_");
+    if (map.getSource(srcId)) return;
+
+    map.addSource(srcId, {
+      type: "vector",
+      url: "pmtiles://" + file
+    });
+
+    // Read metadata to discover vector layer names
+    let meta;
+    try {
+      meta = await p.getMetadata();
+    } catch (e) {
+      logStatus(`Gagal baca metadata: ${file} (pastikan file bisa diakses)`);
+      return;
+    }
+
+    const vectorLayers = (meta && meta.vector_layers) ? meta.vector_layers : [];
+    if (!vectorLayers.length) {
+      logStatus(`Tidak ada vector_layers di metadata: ${file}`);
+      return;
+    }
+
+    const color = colorByCategory[category];
+    const baseVis = toggles[category].checked ? "visible" : "none";
+
+    // For each source-layer in the pmtiles, add 3 rendering layers (fill/line/circle) with geometry filters
+    vectorLayers.forEach(vl => {
+      const sourceLayer = vl.id;
+
+      const safeKey = (file + "__" + sourceLayer).replace(/[^a-zA-Z0-9_]/g, "_");
+      const fillId = `lyr__${category}__fill__${safeKey}`;
+      const lineId = `lyr__${category}__line__${safeKey}`;
+      const ptId   = `lyr__${category}__pt__${safeKey}`;
+
+      // Fill (polygons)
+      map.addLayer({
+        id: fillId,
+        type: "fill",
+        source: srcId,
+        "source-layer": sourceLayer,
+        filter: ["==", ["geometry-type"], "Polygon"],
+        paint: {
+          "fill-color": color,
+          "fill-opacity": 0.18
+        },
+        layout: { visibility: baseVis }
+      });
+
+      // Line (lines + polygon outlines)
+      map.addLayer({
+        id: lineId,
+        type: "line",
+        source: srcId,
+        "source-layer": sourceLayer,
+        filter: ["any",
+          ["==", ["geometry-type"], "LineString"],
+          ["==", ["geometry-type"], "Polygon"]
+        ],
+        paint: {
+          "line-color": color,
+          "line-width": 2.2,
+          "line-opacity": 0.9
+        },
+        layout: { visibility: baseVis }
+      });
+
+      // Points
+      map.addLayer({
+        id: ptId,
+        type: "circle",
+        source: srcId,
+        "source-layer": sourceLayer,
+        filter: ["==", ["geometry-type"], "Point"],
+        paint: {
+          "circle-color": color,
+          "circle-radius": 4.2,
+          "circle-opacity": 0.95,
+          "circle-stroke-width": 1.2,
+          "circle-stroke-color": "#0b0f14"
+        },
+        layout: { visibility: baseVis }
+      });
+
+      layersByCategory[category].push(fillId, lineId, ptId);
+    });
+
+    logStatus(`OK: ${name} (${category}) | source-layers: ${vectorLayers.length}`);
+  }
+
+  async function loadFromManifest() {
+    statusEl.innerHTML = "";
+    logStatus("Mulai load manifest.json…");
+
+    let manifest;
+    try {
+      const res = await fetch("manifest.json", { cache: "no-store" });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      manifest = await res.json();
+    } catch (e) {
+      logStatus("Gagal load manifest.json. Pastikan file manifest.json ada di folder yang sama.");
+      return;
+    }
+
+    const items = (manifest && manifest.layers) ? manifest.layers : [];
+    if (!items.length) {
+      logStatus("manifest.json kosong (layers: []).");
+      return;
+    }
+
+    clearAllPMTilesLayers();
+    logStatus(`Total PMTiles di manifest: ${items.length}`);
+
+    // Add sequentially to keep logs clean
+    for (const item of items) {
+      await addOnePMTiles(item);
+    }
+
+    logStatus("Selesai load semua PMTiles ✅");
+  }
+
+  // ====== Toggle Events ======
+  toggles.BAKU.addEventListener("change", e => setCategoryVisibility("BAKU", e.target.checked));
+  toggles.POTENSIAL.addEventListener("change", e => setCategoryVisibility("POTENSIAL", e.target.checked));
+  toggles.FUNGSIONAL.addEventListener("change", e => setCategoryVisibility("FUNGSIONAL", e.target.checked));
+
+  document.getElementById("btnAllOn").addEventListener("click", () => {
+    for (const k of Object.keys(toggles)) { toggles[k].checked = true; setCategoryVisibility(k, true); }
+  });
+  document.getElementById("btnAllOff").addEventListener("click", () => {
+    for (const k of Object.keys(toggles)) { toggles[k].checked = false; setCategoryVisibility(k, false); }
+  });
+  document.getElementById("btnReload").addEventListener("click", () => loadFromManifest());
+
+  // ====== Boot ======
+  map.on("load", () => {
+    logStatus("Map siap. Load PMTiles…");
+    loadFromManifest();
+  });
+</script>
 </body>
 </html>
