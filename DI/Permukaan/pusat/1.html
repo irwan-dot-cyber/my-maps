@@ -3,212 +3,188 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>PMTiles Viewer | DI Permukaan (Pusat)</title>
+  <title>PMTiles Viewer (Manifest) - BWS/BBWS + Status Toggle</title>
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
   <style>
     :root{
-      --headerH: 72px;
-      --panelW: 440px;
-      --primary: #0b4fa3;
-      --text: #e5e7eb;
-      --muted: #94a3b8;
-      --border: rgba(148, 163, 184, .18);
+      --bg:#0f172aee; --bg2:#0b1220; --bd:#334155; --txt:#e5e7eb; --mut:#94a3b8;
+      --brand:#0b5ea8;
     }
     html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
-    #map{
-      position: fixed;
-      top: var(--headerH);
-      left: 0; right: 0; bottom: 0;
-      width: 100%;
-      height: calc(100% - var(--headerH));
-    }
+    #map{height:100%;width:100%}
 
-    /* Header */
-    .app-header{
-      position: fixed; top:0; left:0; right:0;
-      height: var(--headerH);
-      background: var(--primary);
-      color:#fff;
-      z-index: 5000;
-      display:flex;
-      align-items:center;
-      padding:0 18px;
-      box-shadow: 0 6px 18px rgba(0,0,0,.25);
+    /* Header bar */
+    .topbar{
+      position:absolute; z-index:9999; left:0; top:0; right:0;
+      background:var(--brand); color:white;
+      padding:14px 18px;
+      box-shadow:0 8px 22px rgba(0,0,0,.25);
     }
-    .brand{display:flex;align-items:center;gap:14px;width:100%;}
-    .brand img{height:44px;width:auto;}
-    .brand-text .title{font-weight:700;font-size:14px;letter-spacing:.2px;}
-    .brand-text .subtitle{font-size:13px;}
-    .brand-text .subsubtitle{font-size:12px;opacity:.88;}
+    .topbar .t1{font-weight:900; letter-spacing:.2px}
+    .topbar .t2{opacity:.95; font-weight:700}
+    .topbar .t3{opacity:.9; font-weight:600}
 
-    /* Panel */
+    /* Control panel */
     .panel{
-      position: fixed;
-      top: calc(var(--headerH) + 12px);
-      left: 12px;
-      width: min(var(--panelW), calc(100vw - 24px));
-      background: rgba(15, 23, 42, .92);
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      overflow: hidden;
-      z-index: 4000;
-      box-shadow: 0 14px 36px rgba(0,0,0,.35);
-      backdrop-filter: blur(8px);
+      position:absolute; z-index:9999; top:86px; left:12px;
+      width:min(520px,calc(100vw - 24px));
+      background:var(--bg); color:var(--txt); border:1px solid var(--bd);
+      border-radius:16px; overflow:hidden;
+      box-shadow:0 12px 34px rgba(0,0,0,.38);
+      backdrop-filter: blur(6px);
     }
     .panel header{
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--border);
-      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      padding:12px 14px;
+      border-bottom:1px solid var(--bd);
+      display:flex; justify-content:space-between; align-items:center;
     }
-    .panel header b{font-size:14px;}
-    .pill{
-      font-size:12px;color:var(--muted);
-      padding:4px 10px;border-radius:999px;
-      border:1px solid var(--border);
-      background: rgba(2,6,23,.35);
-      white-space:nowrap;
+    .panel header b{font-size:14px}
+    .badge{
+      font-size:12px; color:var(--mut);
+      border:1px solid var(--bd); border-radius:999px;
+      padding:4px 10px; background:rgba(15,23,42,.35)
     }
-    .panel .content{padding:10px 12px;}
-    .row{display:flex;gap:10px;align-items:center;margin-bottom:10px;}
-    .row label{font-size:12px;color:var(--muted);min-width:92px;}
-    select, input[type="text"]{
-      width:100%;
-      background: rgba(2,6,23,.55);
-      color:#fff;
-      border:1px solid var(--border);
-      border-radius:10px;
-      padding:9px 10px;
-      font-size:13px;
+
+    .controls{padding:12px 14px; border-bottom:1px solid var(--bd); display:flex; flex-direction:column; gap:10px}
+    .row{display:flex; gap:10px; align-items:center}
+    label.small{font-size:12px; color:var(--mut); min-width:92px}
+    select, input[type="search"]{
+      flex:1;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--bd);
+      background:var(--bg2);
+      color:var(--txt);
       outline:none;
     }
+    .btnrow{display:flex; gap:10px; flex-wrap:wrap}
     button{
-      background: rgba(2,6,23,.55);
-      color:#fff;
-      border:1px solid var(--border);
-      border-radius:10px;
-      padding:9px 10px;
-      font-weight:650;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--bd);
+      background:#111827;
+      color:var(--txt);
       cursor:pointer;
-      white-space:nowrap;
+      font-weight:800;
     }
-    button:hover{border-color: rgba(148,163,184,.35);}
-    .btnbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
+    button:active{transform:translateY(1px)}
+    .hint{font-size:12px; color:var(--mut); line-height:1.35}
 
-    .status{
-      padding: 10px 12px;
-      border-top: 1px solid var(--border);
-      font-size:12px;
-      color: var(--muted);
-      background: rgba(2,6,23,.35);
-    }
-
-    /* Legend toggles */
+    /* Legend (bottom right) */
     .legend{
-      position: fixed;
-      right: 16px;
-      bottom: 16px;
-      background: rgba(15, 23, 42, .92);
-      color: #fff;
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 10px 12px;
-      z-index: 4000;
-      box-shadow: 0 12px 28px rgba(0,0,0,.28);
-      backdrop-filter: blur(8px);
-      min-width: 180px;
+      position:absolute; z-index:9999; right:12px; bottom:12px;
+      width:220px;
+      background:var(--bg);
+      border:1px solid var(--bd);
+      border-radius:16px;
+      box-shadow:0 12px 34px rgba(0,0,0,.38);
+      overflow:hidden;
     }
-    .legend .title{font-size:12px;color:var(--muted);margin-bottom:8px;}
-    .legend .item{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0;font-size:13px;}
-    .swatch{width:14px;height:14px;border-radius:4px;display:inline-block;}
-    .swatch.baku{background:#20c4d8;}
-    .swatch.fung{background:#3cb371;}
-    .swatch.pots{background:#f4c430;}
-    .left{display:flex;align-items:center;gap:8px;}
-
+    .legend .hd{
+      padding:10px 12px; border-bottom:1px solid var(--bd);
+      font-weight:900; font-size:13px; color:var(--txt);
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .legend .bd{padding:10px 12px; display:flex; flex-direction:column; gap:10px}
+    .lgrow{display:flex; justify-content:space-between; align-items:center; gap:10px}
+    .lgleft{display:flex; align-items:center; gap:10px}
+    .swatch{width:14px; height:14px; border-radius:4px; border:1px solid rgba(255,255,255,.18)}
     .toggle{
-      appearance:none;
-      width: 44px; height: 24px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.16);
-      border: 1px solid rgba(148,163,184,.25);
-      position: relative;
-      cursor: pointer;
-      outline: none;
+      width:46px; height:26px; border-radius:999px;
+      background:#1f2937; border:1px solid var(--bd);
+      position:relative; cursor:pointer; flex:0 0 auto;
     }
-    .toggle:checked{ background: rgba(59,130,246,.45); }
-    .toggle::after{
-      content:"";
-      width: 18px; height: 18px;
-      border-radius: 50%;
-      background: #fff;
-      position:absolute;
-      top: 2px; left: 2px;
-      transition: transform .18s ease;
+    .knob{
+      width:20px; height:20px; border-radius:50%;
+      background:#e5e7eb;
+      position:absolute; top:2px; left:2px;
+      transition:all .18s ease;
     }
-    .toggle:checked::after{ transform: translateX(20px); }
+    .toggle[data-on="1"]{background:#0ea5e9aa}
+    .toggle[data-on="1"] .knob{left:24px}
+    .statusbar{
+      padding:10px 12px;
+      border-top:1px solid var(--bd);
+      background:var(--bg2);
+      color:var(--mut);
+      font-size:12px;
+    }
   </style>
 </head>
 
 <body>
-  <header class="app-header">
-    <div class="brand">
-      <img src="assets/logo-pupr.png" alt="PUPR" onerror="this.style.display='none'"/>
-      <div class="brand-text">
-        <div class="title">KEMENTERIAN PEKERJAAN UMUM</div>
-        <div class="subtitle">Direktorat Jenderal Sumber Daya Air</div>
-        <div class="subsubtitle">Direktorat Irigasi & Rawa</div>
-      </div>
-    </div>
-  </header>
-
   <div id="map"></div>
 
+  <!-- Header -->
+  <div class="topbar">
+    <div class="t1">KEMENTERIAN PEKERJAAN UMUM</div>
+    <div class="t2">Direktorat Jenderal Sumber Daya Air</div>
+    <div class="t3">Direktorat Irigasi &amp; Rawa</div>
+  </div>
+
+  <!-- Panel -->
   <div class="panel">
     <header>
       <b>🧩 PMTiles Viewer</b>
-      <span class="pill" id="pillInfo">Memuat…</span>
+      <span class="badge" id="badge">Memuat…</span>
     </header>
 
-    <div class="content">
+    <div class="controls">
       <div class="row">
-        <label>BWS / BBWS</label>
-        <select id="bwsSelect">
-          <option value="ALL">Semua BWS</option>
-        </select>
+        <label class="small">BWS / BBWS</label>
+        <select id="bwsSelect"></select>
       </div>
 
       <div class="row">
-        <label>Cari</label>
-        <input id="q" type="text" placeholder="ketik nama BWS/BBWS (opsional)"/>
+        <label class="small">Cari</label>
+        <input id="q" type="search" placeholder="ketik nama BWS/BBWS (opsional)" />
       </div>
 
-      <div class="btnbar">
-        <button id="btnZoom">Zoom BWS</button>
-        <button id="btnAll">Semua ON</button>
-        <button id="btnOff">All OFF</button>
+      <div class="btnrow">
+        <button id="zoomBws">Zoom BWS</button>
+        <button id="onAll">Semua ON</button>
+        <button id="offAll">All OFF</button>
+        <button id="fitAll">Fit</button>
       </div>
+
+      <div class="hint" id="hint">Memuat manifest…</div>
     </div>
 
-    <div class="status" id="status">Inisialisasi…</div>
+    <div class="statusbar" id="status">Siap.</div>
   </div>
 
+  <!-- Legend -->
   <div class="legend">
-    <div class="title">ON/OFF Status</div>
+    <div class="hd">
+      <span>ON/OFF Status</span>
+      <span style="font-size:12px;color:var(--mut)" id="onCount">0 ON</span>
+    </div>
+    <div class="bd">
+      <div class="lgrow">
+        <div class="lgleft">
+          <span class="swatch" style="background:#39c6d6"></span>
+          <b style="font-size:13px">BAKU</b>
+        </div>
+        <div class="toggle" id="tglBAKU" data-on="1" title="Toggle BAKU"><div class="knob"></div></div>
+      </div>
 
-    <div class="item">
-      <div class="left"><span class="swatch baku"></span> BAKU</div>
-      <input id="togBAKU" class="toggle" type="checkbox" checked />
-    </div>
-    <div class="item">
-      <div class="left"><span class="swatch fung"></span> FUNGSIONAL</div>
-      <input id="togFUNG" class="toggle" type="checkbox" checked />
-    </div>
-    <div class="item">
-      <div class="left"><span class="swatch pots"></span> POTENSIAL</div>
-      <input id="togPOTS" class="toggle" type="checkbox" checked />
+      <div class="lgrow">
+        <div class="lgleft">
+          <span class="swatch" style="background:#2ecc71"></span>
+          <b style="font-size:13px">FUNGSIONAL</b>
+        </div>
+        <div class="toggle" id="tglFUNG" data-on="1" title="Toggle FUNGSIONAL"><div class="knob"></div></div>
+      </div>
+
+      <div class="lgrow">
+        <div class="lgleft">
+          <span class="swatch" style="background:#f1c40f"></span>
+          <b style="font-size:13px">POTENSIAL</b>
+        </div>
+        <div class="toggle" id="tglPOTS" data-on="1" title="Toggle POTENSIAL"><div class="knob"></div></div>
+      </div>
     </div>
   </div>
 
@@ -217,141 +193,113 @@
   <script src="https://unpkg.com/protomaps-leaflet@4.0.1/dist/protomaps-leaflet.js"></script>
 
   <script>
-    // =========================
-    // 0) ISI LIST FILE PMTILES DI SINI (nama persis seperti di folder /pusat/)
-    // =========================
-    const PMTILES_FILES = [
-      "Aceh_Pusat_-_BWS_Sumatera_I_BAKU.pmtiles",
-      "Aceh_Pusat_-_BWS_Sumatera_I_FUNG.pmtiles",
-      "Aceh_Pusat_-_BWS_Sumatera_I_POTS.pmtiles",
+    // ===== Map init =====
+    const map = L.map("map", { zoomControl:true, preferCanvas:true })
+      .setView([-2.5, 118], 5);
 
-      "Banten_Pusat_-_BBWS_Cidanau_Ciujung_Cidurian_BAKU.pmtiles",
-      "Banten_Pusat_-_BBWS_Cidanau_Ciujung_Cidurian_FUNG.pmtiles",
-      "Banten_Pusat_-_BBWS_Cidanau_Ciujung_Cidurian_POTS.pmtiles",
-
-      "Banten_Pusat_-_BBWS_Ciliwung_Cisadane_BAKU.pmtiles",
-      "Banten_Pusat_-_BBWS_Ciliwung_Cisadane_FUNG.pmtiles",
-      "Banten_Pusat_-_BBWS_Ciliwung_Cisadane_POTS.pmtiles",
-
-      "Bengkulu_Pusat_-_BWS_Sumatera_VII_BAKU.pmtiles",
-      "Bengkulu_Pusat_-_BWS_Sumatera_VII_FUNG.pmtiles",
-      "Bengkulu_Pusat_-_BWS_Sumatera_VII_POTS.pmtiles",
-
-      "Daerah_Istimewa_Yogyakarta_Pusat_-_BBWS_Serayu_Opak_BAKU.pmtiles",
-      "Daerah_Istimewa_Yogyakarta_Pusat_-_BBWS_Serayu_Opak_FUNG.pmtiles"
-      // tambah sisanya bro…
-    ];
-
-    // =========================
-    // CONFIG
-    // =========================
-    const BASE_PATH = "./";         // pmtiles ada di folder yang sama dengan HTML
-    const CACHE_BUST = "v3";        // ganti kalau update file
-    const PMTILES_MAXZOOM = 18;
-
-    // =========================
-    // UI
-    // =========================
-    const statusEl = document.getElementById("status");
-    const pillInfo = document.getElementById("pillInfo");
-    const bwsSelect = document.getElementById("bwsSelect");
-    const qEl = document.getElementById("q");
-
-    const togBAKU = document.getElementById("togBAKU");
-    const togFUNG = document.getElementById("togFUNG");
-    const togPOTS = document.getElementById("togPOTS");
-
-    function setStatus(t){ statusEl.textContent = t; }
-
-    // =========================
-    // MAP
-    // =========================
-    const map = L.map("map", {
-      zoomControl: true,
-      preferCanvas: true,
-      maxZoom: PMTILES_MAXZOOM
-    }).setView([-2.5, 118], 5);
-
+    // Basemap: Esri World Imagery
     L.tileLayer(
       "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-      { maxZoom: PMTILES_MAXZOOM, attribution: "Tiles © Esri" }
+      { maxZoom: 20, attribution: "Tiles © Esri" }
     ).addTo(map);
 
-    // =========================
-    // PARSING BWS/TYPE from filename
-    // filename example:
-    // Bengkulu_Pusat_-_BWS_Sumatera_VII_BAKU.pmtiles
-    // Banten_Pusat_-_BBWS_Ciliwung_Cisadane_POTS.pmtiles
-    // =========================
-    function getTypeFromName(name){
-      const u = name.toUpperCase();
-      if (u.includes("_BAKU")) return "BAKU";
-      if (u.includes("_FUNG")) return "FUNG";
-      if (u.includes("_POTS")) return "POTS";
+    // ===== UI refs =====
+    const elBadge = document.getElementById("badge");
+    const elHint  = document.getElementById("hint");
+    const elStatus = document.getElementById("status");
+    const elOnCount = document.getElementById("onCount");
+    const elBwsSelect = document.getElementById("bwsSelect");
+    const elQ = document.getElementById("q");
+
+    const tglBAKU = document.getElementById("tglBAKU");
+    const tglFUNG = document.getElementById("tglFUNG");
+    const tglPOTS = document.getElementById("tglPOTS");
+
+    function setStatus(msg){ elStatus.textContent = msg; }
+    function setHint(msg){ elHint.textContent = msg; }
+    function setBadge(msg){ elBadge.textContent = msg; }
+
+    // ===== State =====
+    const state = {
+      items: [],              // normalized from manifest
+      // layersById: id -> { layer, bounds, bws, status }
+      layersById: new Map(),
+      // groups: bws -> item[]
+      groups: new Map(),
+      // boundsByBws: bws -> LatLngBounds
+      boundsByBws: new Map(),
+      unionBounds: null,
+      // toggles
+      statusOn: { BAKU:true, FUNG:true, POTS:true }
+    };
+
+    // ===== Helpers: parse BWS/BBWS & STATUS from filename/title =====
+    function parseStatus(fileOrTitle){
+      const s = (fileOrTitle || "").toUpperCase();
+      if (s.includes("_BAKU")) return "BAKU";
+      if (s.includes("_FUNG")) return "FUNG";
+      if (s.includes("_POTS")) return "POTS";
       return "OTHER";
     }
-
-    function getBwsFromName(name){
-      // ambil bagian setelah "_-_" sampai sebelum "_BAKU/_FUNG/_POTS"
-      // contoh: "BWS_Sumatera_VII" atau "BBWS_Ciliwung_Cisadane"
-      const core = name.replace(/\.pmtiles$/i, "");
-      const m = core.match(/_-_([^]+?)_(BAKU|FUNG|POTS)$/i);
-      if (m && m[1]) {
-        return m[1].replace(/_/g, " ").trim(); // jadi "BWS Sumatera VII"
-      }
-      return "LAINNYA";
+    function parseBws(fileOrTitle){
+      const s = (fileOrTitle || "");
+      // target: "..._-_BBWS_Serayu_Opak_BAKU.pmtiles" -> "BBWS Serayu Opak"
+      const m = s.match(/_-_(BWS|BBWS)_([^_]+(?:_[^_]+)*)_(BAKU|FUNG|POTS)\.pmtiles$/i)
+             || s.match(/_-_(BWS|BBWS)_([^_]+(?:_[^_]+)*)/i);
+      if (!m) return "Tidak diketahui";
+      const prefix = (m[1] || "").toUpperCase();
+      const name = (m[2] || "").replace(/_/g, " ").trim();
+      return (prefix + " " + name).trim();
     }
 
-    function humanTitle(file){
-      const prov = file.split("_Pusat_-_")[0].replace(/_/g," ");
-      const bws = getBwsFromName(file);
-      const t = getTypeFromName(file);
-      const typeLabel = (t==="FUNG") ? "FUNGSIONAL" : (t==="POTS") ? "POTENSIAL" : t;
-      return `${prov} - ${bws} - ${typeLabel}`;
+    function normalizeManifest(json){
+      let arr = [];
+      if (Array.isArray(json)) arr = json;
+      else if (json && Array.isArray(json.layers)) arr = json.layers;
+      else if (json && Array.isArray(json.items)) arr = json.items;
+
+      return arr.map((raw, i) => {
+        const file = raw.file || raw.path || raw.pmtiles || raw.url || "";
+        const title = raw.title || raw.name || file.replace(/\.pmtiles$/i,"");
+        const id = raw.id || (i + ":" + file);
+
+        const bws = raw.bws || parseBws(file || title);
+        const status = raw.status || parseStatus(file || title);
+
+        return { id, file, title, bws, status };
+      }).filter(x => x.file && /\.pmtiles$/i.test(x.file));
     }
 
-    function fillByType(type){
-      if (type==="BAKU") return "rgba(32,196,216,0.45)";
-      if (type==="FUNG") return "rgba(60,179,113,0.45)";
-      if (type==="POTS") return "rgba(244,196,48,0.45)";
-      return "rgba(32,196,216,0.35)";
-    }
+    async function readPmtilesInfo(file){
+      // IMPORTANT: Create PMTiles object and register protocol for THIS file
+      const p = new pmtiles.PMTiles(file);
+      pmtiles.addProtocol("pmtiles", p);
 
-    function isTypeEnabled(type){
-      if (type==="BAKU") return togBAKU.checked;
-      if (type==="FUNG") return togFUNG.checked;
-      if (type==="POTS") return togPOTS.checked;
-      return true;
-    }
-
-    async function readPmtilesInfo(url){
-      const p = new pmtiles.PMTiles(url);
-      const meta = await p.getMetadata();
       const header = await p.getHeader();
+      const meta = await p.getMetadata();
 
-      const bounds = L.latLngBounds(
-        [header.minLat, header.minLon],
-        [header.maxLat, header.maxLon]
-      );
-
-      let vectorLayers = [];
-      if (meta) {
-        try{
-          const j = JSON.parse(new TextDecoder().decode(meta));
-          vectorLayers = (j.vector_layers || []).map(v => v.id).filter(Boolean);
-        }catch(e){ vectorLayers = []; }
+      // bounds from header.bounds: [minLon,minLat,maxLon,maxLat]
+      let bounds = null;
+      const b = header?.bounds || meta?.bounds;
+      if (Array.isArray(b) && b.length === 4){
+        bounds = L.latLngBounds([b[1], b[0]], [b[3], b[2]]);
       }
-      return { bounds, vectorLayers };
+
+      const vectorLayers = meta?.vector_layers?.map(v => v.id) || [];
+      const maxDataZoom = header?.maxZoom ?? 18;
+
+      return { bounds, vectorLayers, maxDataZoom };
     }
 
-    function polygonOnlyRules(vectorLayers, type){
-      const fill = fillByType(type);
+    // Polygon only, NO outline, NO points, NO lines
+    function makePolygonOnlyRules(vectorLayers, fill){
       const rules = [];
       for (const layerName of vectorLayers){
         rules.push({
           dataLayer: layerName,
           symbolizer: new protomapsL.PolygonSymbolizer({
             fill,
+            opacity: 0.30,
             stroke: "rgba(0,0,0,0)",
             width: 0
           })
@@ -360,161 +308,234 @@
       return rules;
     }
 
-    // =========================
-    // Build items
-    // =========================
-    const items = PMTILES_FILES.map(file => ({
-      file,
-      title: humanTitle(file),
-      bws: getBwsFromName(file),
-      type: getTypeFromName(file),
-      id: file
-    }));
-
-    // groups bws -> items
-    const groups = new Map();
-    for (const it of items){
-      if (!groups.has(it.bws)) groups.set(it.bws, []);
-      groups.get(it.bws).push(it);
+    function statusColor(status){
+      if (status === "BAKU") return "rgba(57,198,214,1)";
+      if (status === "FUNG") return "rgba(46,204,113,1)";
+      if (status === "POTS") return "rgba(241,196,15,1)";
+      return "rgba(200,200,200,1)";
     }
 
-    // =========================
-    // Layers cache
-    // =========================
-    const layers = new Map();      // id -> {layer, bounds, bws, type}
-    const groupBounds = new Map(); // bws -> bounds
-    let currentBws = "ALL";
+    async function ensureLayerOn(item){
+      if (state.layersById.has(item.id)) return;
 
-    async function ensureLayer(it){
-      if (layers.has(it.id)) return;
+      const file = item.file;
+      setStatus("Load: " + item.title);
 
-      const url = BASE_PATH + it.file + "?v=" + encodeURIComponent(CACHE_BUST);
+      const info = await readPmtilesInfo(file);
 
-      const info = await readPmtilesInfo(url);
-      const paintRules = polygonOnlyRules(info.vectorLayers, it.type);
+      // union + per-bws bounds
+      if (info.bounds){
+        state.unionBounds = state.unionBounds ? state.unionBounds.extend(info.bounds) : info.bounds;
+
+        const prevB = state.boundsByBws.get(item.bws);
+        state.boundsByBws.set(item.bws, prevB ? prevB.extend(info.bounds) : info.bounds);
+      }
+
+      const fill = statusColor(item.status);
+      const paint_rules = makePolygonOnlyRules(info.vectorLayers, fill);
+
+      if (!info.vectorLayers.length){
+        console.warn("Tidak ada vector_layers:", file);
+        throw new Error("Metadata vector_layers kosong: " + file);
+      }
 
       const layer = protomapsL.leafletLayer({
-        url,
-        paintRules,
-        labelRules: []
+        url: `pmtiles://${file}`,
+        paint_rules,
+        label_rules: [],
+        maxDataZoom: info.maxDataZoom
       });
 
-      layers.set(it.id, { layer, bounds: info.bounds, bws: it.bws, type: it.type });
-
-      const ex = groupBounds.get(it.bws);
-      groupBounds.set(it.bws, ex ? ex.extend(info.bounds) : info.bounds);
+      layer.addTo(map);
+      state.layersById.set(item.id, { layer, bounds: info.bounds, bws:item.bws, status:item.status });
     }
 
-    function clearMapLayers(){
-      for (const v of layers.values()){
-        if (map.hasLayer(v.layer)) map.removeLayer(v.layer);
+    function turnLayerOff(item){
+      const entry = state.layersById.get(item.id);
+      if (!entry) return;
+      map.removeLayer(entry.layer);
+      state.layersById.delete(item.id);
+    }
+
+    function updateOnCount(){
+      elOnCount.textContent = `${state.layersById.size} ON`;
+    }
+
+    function currentBwsSelection(){
+      return elBwsSelect.value || "Semua BWS";
+    }
+
+    function passesSearch(item){
+      const q = elQ.value.trim().toLowerCase();
+      if (!q) return true;
+      return (item.bws + " " + item.title + " " + item.file).toLowerCase().includes(q);
+    }
+
+    function passesBws(item){
+      const sel = currentBwsSelection();
+      if (sel === "Semua BWS") return true;
+      return item.bws === sel;
+    }
+
+    function passesStatus(item){
+      return !!state.statusOn[item.status];
+    }
+
+    async function applyVisibility(){
+      // ON by default: should reflect filters + status toggles
+      const candidates = state.items.filter(it => passesBws(it) && passesSearch(it) && passesStatus(it));
+
+      // Turn OFF those that shouldn't be visible
+      for (const it of state.items){
+        const shouldBeOn = candidates.includes(it);
+        const isOn = state.layersById.has(it.id);
+        if (isOn && !shouldBeOn) turnLayerOff(it);
       }
-    }
 
-    async function applyView(){
-      const q = (qEl.value || "").trim().toLowerCase();
-
-      const list = (currentBws === "ALL") ? items : (groups.get(currentBws) || []);
-
-      // optionally filter by search text (BWS)
-      const filtered = q
-        ? list.filter(x => x.bws.toLowerCase().includes(q))
-        : list;
-
-      setStatus(`Memuat… (${filtered.length} file)`);
-      // ensure layers exist
-      for (const it of filtered){
-        try{
-          await ensureLayer(it);
-        }catch(e){
-          console.error("Gagal load:", it.file, e);
+      // Turn ON candidates
+      for (const it of candidates){
+        if (!state.layersById.has(it.id)){
+          try{ await ensureLayerOn(it); }
+          catch(e){ console.error(e); }
         }
       }
 
-      // show/hide based on type toggles and bws selection + q
-      clearMapLayers();
-
-      let onCount = 0;
-      for (const it of filtered){
-        if (!isTypeEnabled(it.type)) continue;
-        const v = layers.get(it.id);
-        if (!v) continue;
-        v.layer.addTo(map);
-        onCount++;
-      }
-
-      pillInfo.textContent = `${groups.size} BWS • ON ${onCount}`;
-      setStatus(`Tampil: ${currentBws === "ALL" ? "Semua BWS" : currentBws} (ON ${onCount}).`);
+      updateOnCount();
+      setBadge(`${state.groups.size} BWS • ON ${state.layersById.size}`);
+      setHint(`Tampil: ${currentBwsSelection()} (filter status aktif).`);
+      setStatus("Selesai refresh layer.");
     }
 
-    function zoomCurrent(){
-      if (currentBws === "ALL"){
-        let b = null;
-        for (const v of layers.values()){
-          if (!isTypeEnabled(v.type)) continue;
-          b = b ? b.extend(v.bounds) : v.bounds;
-        }
-        if (b) map.fitBounds(b, { padding:[30,30] });
+    function fitAll(){
+      if (state.unionBounds) map.fitBounds(state.unionBounds, { padding:[30,30] });
+      else setStatus("Belum ada bounds (cek manifest / metadata).");
+    }
+
+    function zoomSelectedBws(){
+      const sel = currentBwsSelection();
+      if (sel === "Semua BWS"){
+        fitAll();
         return;
       }
-      const gb = groupBounds.get(currentBws);
-      if (gb) map.fitBounds(gb, { padding:[30,30] });
+      const b = state.boundsByBws.get(sel);
+      if (b) map.fitBounds(b, { padding:[30,30] });
+      else setStatus("Bounds BWS belum kebaca. Pastikan layer BWS itu pernah ON.");
     }
 
-    // =========================
-    // UI init
-    // =========================
-    function initDropdown(){
-      bwsSelect.innerHTML = "";
-      const optAll = document.createElement("option");
-      optAll.value = "ALL";
-      optAll.textContent = "Semua BWS";
-      bwsSelect.appendChild(optAll);
-
-      const bwsList = Array.from(groups.keys()).sort((a,b)=>a.localeCompare(b,"id"));
-      for (const bws of bwsList){
-        const opt = document.createElement("option");
-        opt.value = bws;
-        opt.textContent = bws;
-        bwsSelect.appendChild(opt);
-      }
-      pillInfo.textContent = `${bwsList.length} BWS`;
+    // ===== Toggle handlers =====
+    function setToggle(el, on){
+      el.dataset.on = on ? "1" : "0";
+    }
+    function readToggle(el){
+      return el.dataset.on === "1";
+    }
+    function attachToggle(el, key){
+      el.addEventListener("click", async () => {
+        const next = !readToggle(el);
+        setToggle(el, next);
+        state.statusOn[key] = next;
+        setStatus(`Toggle ${key}: ${next ? "ON" : "OFF"}`);
+        await applyVisibility();
+      });
     }
 
-    document.getElementById("btnZoom").addEventListener("click", zoomCurrent);
-    document.getElementById("btnAll").addEventListener("click", async () => {
-      currentBws = "ALL";
-      bwsSelect.value = "ALL";
-      await applyView();
-      zoomCurrent();
+    attachToggle(tglBAKU, "BAKU");
+    attachToggle(tglFUNG, "FUNG");
+    attachToggle(tglPOTS, "POTS");
+
+    // ===== Buttons =====
+    document.getElementById("zoomBws").addEventListener("click", zoomSelectedBws);
+
+    document.getElementById("onAll").addEventListener("click", async () => {
+      // Force show all BWS + respect status toggles only
+      elBwsSelect.value = "Semua BWS";
+      elQ.value = "";
+      await applyVisibility();
+      setStatus("Semua ON (sesuai toggle status).");
     });
-    document.getElementById("btnOff").addEventListener("click", () => {
-      clearMapLayers();
+
+    document.getElementById("offAll").addEventListener("click", () => {
+      for (const it of state.items) turnLayerOff(it);
+      updateOnCount();
       setStatus("All OFF.");
-      pillInfo.textContent = `${groups.size} BWS • OFF`;
     });
 
-    bwsSelect.addEventListener("change", async ()=>{
-      currentBws = bwsSelect.value;
-      await applyView();
-      zoomCurrent();
+    document.getElementById("fitAll").addEventListener("click", fitAll);
+
+    // Filters
+    elBwsSelect.addEventListener("change", async () => {
+      await applyVisibility();
+    });
+    elQ.addEventListener("input", async () => {
+      await applyVisibility();
     });
 
-    [togBAKU, togFUNG, togPOTS].forEach(t=>{
-      t.addEventListener("change", applyView);
-    });
+    // ===== Load manifest =====
+    async function loadManifest(){
+      try{
+        setBadge("Memuat…");
+        setHint("Memuat manifest.json…");
+        setStatus("Fetch manifest.json…");
 
-    qEl.addEventListener("input", () => {
-      // debounce kecil
-      clearTimeout(qEl._t);
-      qEl._t = setTimeout(applyView, 200);
-    });
+        const res = await fetch("manifest.json?v=" + Date.now(), { cache:"no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const json = await res.json();
 
-    // =========================
-    // START: default semua ON
-    // =========================
-    initDropdown();
-    applyView().then(()=>zoomCurrent());
+        state.items = normalizeManifest(json);
+
+        if (!state.items.length){
+          setBadge("0 layer");
+          setHint("manifest.json kebaca tapi entry .pmtiles kosong.");
+          setStatus("Cek key file/path di manifest.json.");
+          return;
+        }
+
+        // Build groups
+        state.groups.clear();
+        for (const it of state.items){
+          if (!state.groups.has(it.bws)) state.groups.set(it.bws, []);
+          state.groups.get(it.bws).push(it);
+        }
+
+        // Fill dropdown
+        elBwsSelect.innerHTML = "";
+        const optAll = document.createElement("option");
+        optAll.value = "Semua BWS";
+        optAll.textContent = "Semua BWS";
+        elBwsSelect.appendChild(optAll);
+
+        const names = Array.from(state.groups.keys()).sort((a,b)=>a.localeCompare(b,"id"));
+        for (const name of names){
+          const opt = document.createElement("option");
+          opt.value = name;
+          opt.textContent = name;
+          elBwsSelect.appendChild(opt);
+        }
+
+        // Default: all status ON + show all
+        setToggle(tglBAKU, true); state.statusOn.BAKU = true;
+        setToggle(tglFUNG, true); state.statusOn.FUNG = true;
+        setToggle(tglPOTS, true); state.statusOn.POTS = true;
+
+        setBadge(`${state.groups.size} BWS • 0 ON`);
+        setHint("Default: semua status ON, tampil semua BWS.");
+        setStatus("Manifest OK. Menyalakan layer…");
+
+        // Default ON for everything (but respect status toggles)
+        await applyVisibility();
+
+        // Optional initial fit
+        if (state.unionBounds) map.fitBounds(state.unionBounds, { padding:[30,30] });
+
+      }catch(e){
+        console.error(e);
+        setBadge("Gagal");
+        setHint("Gagal baca manifest.json (cek nama file & valid JSON).");
+        setStatus("Error: " + e.message);
+      }
+    }
+
+    loadManifest();
   </script>
 </body>
 </html>
