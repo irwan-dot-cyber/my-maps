@@ -10,15 +10,12 @@
   <style>
     :root{
       --headerH: 72px;
-      --panelW: 420px;
-      --bg: #0b1220;
-      --card: rgba(11, 18, 32, .92);
-      --border: #2a3b4f;
+      --panelW: 440px;
+      --primary: #0b4fa3;
       --text: #e5e7eb;
       --muted: #94a3b8;
-      --primary: #0b4fa3;
+      --border: rgba(148, 163, 184, .18);
     }
-
     html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
     #map{
       position: fixed;
@@ -30,27 +27,21 @@
 
     /* Header */
     .app-header{
-      position: fixed;
-      top: 0; left: 0; right: 0;
+      position: fixed; top:0; left:0; right:0;
       height: var(--headerH);
       background: var(--primary);
-      color: #fff;
+      color:#fff;
       z-index: 5000;
-      display: flex;
-      align-items: center;
-      padding: 0 18px;
+      display:flex;
+      align-items:center;
+      padding:0 18px;
       box-shadow: 0 6px 18px rgba(0,0,0,.25);
     }
-    .brand{
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      width: 100%;
-    }
-    .brand img{height: 44px; width:auto;}
-    .brand-text .title{font-weight: 700; font-size: 14px; letter-spacing:.2px;}
-    .brand-text .subtitle{font-size: 13px;}
-    .brand-text .subsubtitle{font-size: 12px; opacity: .88;}
+    .brand{display:flex;align-items:center;gap:14px;width:100%;}
+    .brand img{height:44px;width:auto;}
+    .brand-text .title{font-weight:700;font-size:14px;letter-spacing:.2px;}
+    .brand-text .subtitle{font-size:13px;}
+    .brand-text .subsubtitle{font-size:12px;opacity:.88;}
 
     /* Panel */
     .panel{
@@ -60,7 +51,7 @@
       width: min(var(--panelW), calc(100vw - 24px));
       background: rgba(15, 23, 42, .92);
       color: var(--text);
-      border: 1px solid rgba(148, 163, 184, .18);
+      border: 1px solid var(--border);
       border-radius: 16px;
       overflow: hidden;
       z-index: 4000;
@@ -69,86 +60,102 @@
     }
     .panel header{
       padding: 10px 12px;
-      border-bottom: 1px solid rgba(148, 163, 184, .18);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
+      border-bottom: 1px solid var(--border);
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
     }
-    .panel header b{font-size: 14px;}
+    .panel header b{font-size:14px;}
     .pill{
-      font-size: 12px;
-      color: var(--muted);
-      padding: 4px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, .18);
-      background: rgba(2, 6, 23, .35);
+      font-size:12px;color:var(--muted);
+      padding:4px 10px;border-radius:999px;
+      border:1px solid var(--border);
+      background: rgba(2,6,23,.35);
+      white-space:nowrap;
     }
-
-    .panel .content{padding: 10px 12px;}
-    .row{display:flex; gap:8px; align-items:center; margin-bottom: 10px;}
-    .row label{font-size: 12px; color: var(--muted); min-width: 80px;}
-    select{
-      width: 100%;
-      background: rgba(2, 6, 23, .55);
-      color: #fff;
-      border: 1px solid rgba(148, 163, 184, .18);
-      border-radius: 10px;
-      padding: 9px 10px;
-      font-size: 13px;
-      outline: none;
+    .panel .content{padding:10px 12px;}
+    .row{display:flex;gap:10px;align-items:center;margin-bottom:10px;}
+    .row label{font-size:12px;color:var(--muted);min-width:92px;}
+    select, input[type="text"]{
+      width:100%;
+      background: rgba(2,6,23,.55);
+      color:#fff;
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:9px 10px;
+      font-size:13px;
+      outline:none;
     }
-    .btnbar{display:flex; gap:8px; flex-wrap:wrap;}
     button{
-      background: rgba(2, 6, 23, .55);
-      color: #fff;
-      border: 1px solid rgba(148, 163, 184, .18);
-      border-radius: 10px;
-      padding: 9px 10px;
-      font-weight: 650;
-      cursor: pointer;
+      background: rgba(2,6,23,.55);
+      color:#fff;
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:9px 10px;
+      font-weight:650;
+      cursor:pointer;
+      white-space:nowrap;
     }
-    button:hover{border-color: rgba(148, 163, 184, .35);}
+    button:hover{border-color: rgba(148,163,184,.35);}
+    .btnbar{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
 
     .status{
-      margin-top: 8px;
       padding: 10px 12px;
-      border-top: 1px solid rgba(148, 163, 184, .18);
-      font-size: 12px;
+      border-top: 1px solid var(--border);
+      font-size:12px;
       color: var(--muted);
-      background: rgba(2, 6, 23, .35);
+      background: rgba(2,6,23,.35);
     }
 
-    /* Legend */
+    /* Legend toggles */
     .legend{
       position: fixed;
       right: 16px;
       bottom: 16px;
       background: rgba(15, 23, 42, .92);
       color: #fff;
-      border: 1px solid rgba(148, 163, 184, .18);
+      border: 1px solid var(--border);
       border-radius: 14px;
       padding: 10px 12px;
       z-index: 4000;
-      font-size: 12px;
       box-shadow: 0 12px 28px rgba(0,0,0,.28);
       backdrop-filter: blur(8px);
+      min-width: 180px;
     }
-    .legend .item{display:flex; align-items:center; gap:8px; margin: 5px 0;}
-    .swatch{width: 14px; height: 14px; border-radius: 4px;}
-
+    .legend .title{font-size:12px;color:var(--muted);margin-bottom:8px;}
+    .legend .item{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0;font-size:13px;}
+    .swatch{width:14px;height:14px;border-radius:4px;display:inline-block;}
     .swatch.baku{background:#20c4d8;}
     .swatch.fung{background:#3cb371;}
     .swatch.pots{background:#f4c430;}
+    .left{display:flex;align-items:center;gap:8px;}
+
+    .toggle{
+      appearance:none;
+      width: 44px; height: 24px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.16);
+      border: 1px solid rgba(148,163,184,.25);
+      position: relative;
+      cursor: pointer;
+      outline: none;
+    }
+    .toggle:checked{ background: rgba(59,130,246,.45); }
+    .toggle::after{
+      content:"";
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: #fff;
+      position:absolute;
+      top: 2px; left: 2px;
+      transition: transform .18s ease;
+    }
+    .toggle:checked::after{ transform: translateX(20px); }
   </style>
 </head>
 
 <body>
-  <!-- HEADER -->
   <header class="app-header">
     <div class="brand">
-      <!-- Ganti ke logo kamu (pastikan ada di folder assets) -->
-      <img src="assets/logo-pupr.png" alt="PUPR" />
+      <img src="assets/logo-pupr.png" alt="PUPR" onerror="this.style.display='none'"/>
       <div class="brand-text">
         <div class="title">KEMENTERIAN PEKERJAAN UMUM</div>
         <div class="subtitle">Direktorat Jenderal Sumber Daya Air</div>
@@ -159,36 +166,50 @@
 
   <div id="map"></div>
 
-  <!-- PANEL -->
   <div class="panel">
     <header>
       <b>🧩 PMTiles Viewer</b>
-      <span class="pill" id="pillInfo">0 BWS</span>
+      <span class="pill" id="pillInfo">Memuat…</span>
     </header>
 
     <div class="content">
       <div class="row">
         <label>BWS / BBWS</label>
         <select id="bwsSelect">
-          <option value="ALL">Memuat…</option>
+          <option value="ALL">Semua BWS</option>
         </select>
+      </div>
+
+      <div class="row">
+        <label>Cari</label>
+        <input id="q" type="text" placeholder="ketik nama BWS/BBWS (opsional)"/>
       </div>
 
       <div class="btnbar">
         <button id="btnZoom">Zoom BWS</button>
-        <button id="btnAll">Semua BWS ON</button>
+        <button id="btnAll">Semua ON</button>
         <button id="btnOff">All OFF</button>
       </div>
     </div>
 
-    <div class="status" id="status">Memuat manifest…</div>
+    <div class="status" id="status">Inisialisasi…</div>
   </div>
 
-  <!-- LEGEND -->
   <div class="legend">
-    <div class="item"><span class="swatch baku"></span> BAKU</div>
-    <div class="item"><span class="swatch fung"></span> FUNGSIONAL</div>
-    <div class="item"><span class="swatch pots"></span> POTENSIAL</div>
+    <div class="title">ON/OFF Status</div>
+
+    <div class="item">
+      <div class="left"><span class="swatch baku"></span> BAKU</div>
+      <input id="togBAKU" class="toggle" type="checkbox" checked />
+    </div>
+    <div class="item">
+      <div class="left"><span class="swatch fung"></span> FUNGSIONAL</div>
+      <input id="togFUNG" class="toggle" type="checkbox" checked />
+    </div>
+    <div class="item">
+      <div class="left"><span class="swatch pots"></span> POTENSIAL</div>
+      <input id="togPOTS" class="toggle" type="checkbox" checked />
+    </div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -197,22 +218,53 @@
 
   <script>
     // =========================
+    // 0) ISI LIST FILE PMTILES DI SINI (nama persis seperti di folder /pusat/)
+    // =========================
+    const PMTILES_FILES = [
+      "Aceh_Pusat_-_BWS_Sumatera_I_BAKU.pmtiles",
+      "Aceh_Pusat_-_BWS_Sumatera_I_FUNG.pmtiles",
+      "Aceh_Pusat_-_BWS_Sumatera_I_POTS.pmtiles",
+
+      "Banten_Pusat_-_BBWS_Cidanau_Ciujung_Cidurian_BAKU.pmtiles",
+      "Banten_Pusat_-_BBWS_Cidanau_Ciujung_Cidurian_FUNG.pmtiles",
+      "Banten_Pusat_-_BBWS_Cidanau_Ciujung_Cidurian_POTS.pmtiles",
+
+      "Banten_Pusat_-_BBWS_Ciliwung_Cisadane_BAKU.pmtiles",
+      "Banten_Pusat_-_BBWS_Ciliwung_Cisadane_FUNG.pmtiles",
+      "Banten_Pusat_-_BBWS_Ciliwung_Cisadane_POTS.pmtiles",
+
+      "Bengkulu_Pusat_-_BWS_Sumatera_VII_BAKU.pmtiles",
+      "Bengkulu_Pusat_-_BWS_Sumatera_VII_FUNG.pmtiles",
+      "Bengkulu_Pusat_-_BWS_Sumatera_VII_POTS.pmtiles",
+
+      "Daerah_Istimewa_Yogyakarta_Pusat_-_BBWS_Serayu_Opak_BAKU.pmtiles",
+      "Daerah_Istimewa_Yogyakarta_Pusat_-_BBWS_Serayu_Opak_FUNG.pmtiles"
+      // tambah sisanya bro…
+    ];
+
+    // =========================
     // CONFIG
     // =========================
+    const BASE_PATH = "./";         // pmtiles ada di folder yang sama dengan HTML
+    const CACHE_BUST = "v3";        // ganti kalau update file
     const PMTILES_MAXZOOM = 18;
 
-    // Cache buster: ganti nilainya tiap kamu update pmtiles di GitHub (biar ga ketahan cache)
-    // contoh: "20260129-1138"
-    const CACHE_BUST = "v1";
-
+    // =========================
+    // UI
+    // =========================
     const statusEl = document.getElementById("status");
     const pillInfo = document.getElementById("pillInfo");
     const bwsSelect = document.getElementById("bwsSelect");
+    const qEl = document.getElementById("q");
+
+    const togBAKU = document.getElementById("togBAKU");
+    const togFUNG = document.getElementById("togFUNG");
+    const togPOTS = document.getElementById("togPOTS");
 
     function setStatus(t){ statusEl.textContent = t; }
 
     // =========================
-    // MAP + IMAGERY
+    // MAP
     // =========================
     const map = L.map("map", {
       zoomControl: true,
@@ -220,73 +272,56 @@
       maxZoom: PMTILES_MAXZOOM
     }).setView([-2.5, 118], 5);
 
-    const imagery = L.tileLayer(
+    L.tileLayer(
       "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
       { maxZoom: PMTILES_MAXZOOM, attribution: "Tiles © Esri" }
     ).addTo(map);
 
     // =========================
-    // HELPERS
+    // PARSING BWS/TYPE from filename
+    // filename example:
+    // Bengkulu_Pusat_-_BWS_Sumatera_VII_BAKU.pmtiles
+    // Banten_Pusat_-_BBWS_Ciliwung_Cisadane_POTS.pmtiles
     // =========================
-    function normalizeManifest(json){
-      let arr = [];
-      if (Array.isArray(json)) arr = json;
-      else if (json && Array.isArray(json.layers)) arr = json.layers;
-      else if (json && Array.isArray(json.items)) arr = json.items;
-
-      return arr.map((raw, i) => {
-        const file = raw.file || raw.path || raw.pmtiles || raw.url || "";
-        const title = raw.title || raw.name || file.replace(/\.pmtiles$/i,"");
-        const id = raw.id || (i + ":" + file);
-        return { id, file, title };
-      }).filter(x => x.file && /\.pmtiles$/i.test(x.file));
-    }
-
-    // Ambil label BWS/BBWS dari judul:
-    // Contoh:
-    // "Aceh Pusat - BWS Sumatera I - BAKU"
-    // "Banten Pusat - BBWS Cidanau–Ciujung–Cidurian - FUNGSIONAL"
-    function getBwsLabel(titleOrFile){
-      const s = String(titleOrFile || "");
-      const m = s.match(/\b(BBWS|BWS)\b[^-]*?(?=\s*-\s*(BAKU|FUNG|FUNGSIONAL|POTS|POTENSIAL)\b)/i);
-      if (m && m[0]) return m[0].trim();
-      // fallback: coba cari "BWS ..." atau "BBWS ..."
-      const m2 = s.match(/\b(BBWS|BWS)\b.+$/i);
-      return (m2 && m2[0]) ? m2[0].trim() : "LAINNYA";
-    }
-
-    function getType(titleOrFile){
-      const s = String(titleOrFile || "").toUpperCase();
-      if (s.includes("BAKU")) return "BAKU";
-      if (s.includes("FUNG")) return "FUNG";
-      if (s.includes("FUNGSIONAL")) return "FUNG";
-      if (s.includes("POTS")) return "POTS";
-      if (s.includes("POTENSIAL")) return "POTS";
+    function getTypeFromName(name){
+      const u = name.toUpperCase();
+      if (u.includes("_BAKU")) return "BAKU";
+      if (u.includes("_FUNG")) return "FUNG";
+      if (u.includes("_POTS")) return "POTS";
       return "OTHER";
     }
 
-    function colorByType(type){
-      if (type === "BAKU") return "rgba(32,196,216,0.45)";
-      if (type === "FUNG") return "rgba(60,179,113,0.45)";
-      if (type === "POTS") return "rgba(244,196,48,0.45)";
+    function getBwsFromName(name){
+      // ambil bagian setelah "_-_" sampai sebelum "_BAKU/_FUNG/_POTS"
+      // contoh: "BWS_Sumatera_VII" atau "BBWS_Ciliwung_Cisadane"
+      const core = name.replace(/\.pmtiles$/i, "");
+      const m = core.match(/_-_([^]+?)_(BAKU|FUNG|POTS)$/i);
+      if (m && m[1]) {
+        return m[1].replace(/_/g, " ").trim(); // jadi "BWS Sumatera VII"
+      }
+      return "LAINNYA";
+    }
+
+    function humanTitle(file){
+      const prov = file.split("_Pusat_-_")[0].replace(/_/g," ");
+      const bws = getBwsFromName(file);
+      const t = getTypeFromName(file);
+      const typeLabel = (t==="FUNG") ? "FUNGSIONAL" : (t==="POTS") ? "POTENSIAL" : t;
+      return `${prov} - ${bws} - ${typeLabel}`;
+    }
+
+    function fillByType(type){
+      if (type==="BAKU") return "rgba(32,196,216,0.45)";
+      if (type==="FUNG") return "rgba(60,179,113,0.45)";
+      if (type==="POTS") return "rgba(244,196,48,0.45)";
       return "rgba(32,196,216,0.35)";
     }
 
-    // Polygon only, tanpa outline, tanpa node merah
-    function makePolygonOnlyRules(vectorLayers, type){
-      const fill = colorByType(type);
-      const rules = [];
-      for (const layerName of vectorLayers){
-        rules.push({
-          dataLayer: layerName,
-          symbolizer: new protomapsL.PolygonSymbolizer({
-            fill,
-            stroke: "rgba(0,0,0,0)",
-            width: 0
-          })
-        });
-      }
-      return rules;
+    function isTypeEnabled(type){
+      if (type==="BAKU") return togBAKU.checked;
+      if (type==="FUNG") return togFUNG.checked;
+      if (type==="POTS") return togPOTS.checked;
+      return true;
     }
 
     async function readPmtilesInfo(url){
@@ -304,163 +339,182 @@
         try{
           const j = JSON.parse(new TextDecoder().decode(meta));
           vectorLayers = (j.vector_layers || []).map(v => v.id).filter(Boolean);
-        }catch(e){
-          vectorLayers = [];
-        }
+        }catch(e){ vectorLayers = []; }
       }
       return { bounds, vectorLayers };
     }
 
-    // =========================
-    // STATE
-    // =========================
-    const state = {
-      items: [],
-      groups: new Map(),      // bws -> items[]
-      layers: new Map(),      // item.id -> { leafletLayer, bounds, type, bws }
-      groupBounds: new Map(), // bws -> LatLngBounds
-      currentBws: "ALL"
-    };
-
-    function clearAllLayers(){
-      for (const entry of state.layers.values()){
-        map.removeLayer(entry.leafletLayer);
+    function polygonOnlyRules(vectorLayers, type){
+      const fill = fillByType(type);
+      const rules = [];
+      for (const layerName of vectorLayers){
+        rules.push({
+          dataLayer: layerName,
+          symbolizer: new protomapsL.PolygonSymbolizer({
+            fill,
+            stroke: "rgba(0,0,0,0)",
+            width: 0
+          })
+        });
       }
-      state.layers.clear();
+      return rules;
     }
 
-    async function addItemLayer(item){
-      if (state.layers.has(item.id)) return;
+    // =========================
+    // Build items
+    // =========================
+    const items = PMTILES_FILES.map(file => ({
+      file,
+      title: humanTitle(file),
+      bws: getBwsFromName(file),
+      type: getTypeFromName(file),
+      id: file
+    }));
 
-      const type = getType(item.title || item.file);
-      const bws = getBwsLabel(item.title || item.file);
+    // groups bws -> items
+    const groups = new Map();
+    for (const it of items){
+      if (!groups.has(it.bws)) groups.set(it.bws, []);
+      groups.get(it.bws).push(it);
+    }
 
-      const url = item.file + "?v=" + encodeURIComponent(CACHE_BUST);
+    // =========================
+    // Layers cache
+    // =========================
+    const layers = new Map();      // id -> {layer, bounds, bws, type}
+    const groupBounds = new Map(); // bws -> bounds
+    let currentBws = "ALL";
+
+    async function ensureLayer(it){
+      if (layers.has(it.id)) return;
+
+      const url = BASE_PATH + it.file + "?v=" + encodeURIComponent(CACHE_BUST);
 
       const info = await readPmtilesInfo(url);
-      const paintRules = makePolygonOnlyRules(info.vectorLayers, type);
+      const paintRules = polygonOnlyRules(info.vectorLayers, it.type);
 
-      const leafletLayer = protomapsL.leafletLayer({
+      const layer = protomapsL.leafletLayer({
         url,
         paintRules,
         labelRules: []
       });
 
-      leafletLayer.addTo(map);
+      layers.set(it.id, { layer, bounds: info.bounds, bws: it.bws, type: it.type });
 
-      state.layers.set(item.id, { leafletLayer, bounds: info.bounds, type, bws });
-
-      // simpan bounds per group
-      const existing = state.groupBounds.get(bws);
-      state.groupBounds.set(bws, existing ? existing.extend(info.bounds) : info.bounds);
+      const ex = groupBounds.get(it.bws);
+      groupBounds.set(it.bws, ex ? ex.extend(info.bounds) : info.bounds);
     }
 
-    async function showBws(bws){
-      clearAllLayers();
-      state.currentBws = bws;
+    function clearMapLayers(){
+      for (const v of layers.values()){
+        if (map.hasLayer(v.layer)) map.removeLayer(v.layer);
+      }
+    }
 
-      if (bws === "ALL"){
-        setStatus("Menyalakan semua BWS (bisa agak berat)…");
-        const all = state.items.slice();
-        for (const it of all){
-          try{ await addItemLayer(it); }catch(e){ console.error(e); }
+    async function applyView(){
+      const q = (qEl.value || "").trim().toLowerCase();
+
+      const list = (currentBws === "ALL") ? items : (groups.get(currentBws) || []);
+
+      // optionally filter by search text (BWS)
+      const filtered = q
+        ? list.filter(x => x.bws.toLowerCase().includes(q))
+        : list;
+
+      setStatus(`Memuat… (${filtered.length} file)`);
+      // ensure layers exist
+      for (const it of filtered){
+        try{
+          await ensureLayer(it);
+        }catch(e){
+          console.error("Gagal load:", it.file, e);
         }
-        setStatus("Semua BWS ON.");
-        pillInfo.textContent = `${state.groups.size} BWS`;
-        return;
       }
 
-      const list = state.groups.get(bws) || [];
-      setStatus(`Memuat: ${bws} (BAKU/FUNG/POTS)…`);
-      for (const it of list){
-        try{ await addItemLayer(it); }catch(e){ console.error(e); }
+      // show/hide based on type toggles and bws selection + q
+      clearMapLayers();
+
+      let onCount = 0;
+      for (const it of filtered){
+        if (!isTypeEnabled(it.type)) continue;
+        const v = layers.get(it.id);
+        if (!v) continue;
+        v.layer.addTo(map);
+        onCount++;
       }
-      setStatus(`Tampil: ${bws} (total ${list.length} layer).`);
+
+      pillInfo.textContent = `${groups.size} BWS • ON ${onCount}`;
+      setStatus(`Tampil: ${currentBws === "ALL" ? "Semua BWS" : currentBws} (ON ${onCount}).`);
     }
 
-    function zoomCurrentBws(){
-      const bws = state.currentBws;
-      if (bws === "ALL"){
-        // fit semua layer yg sedang ON
+    function zoomCurrent(){
+      if (currentBws === "ALL"){
         let b = null;
-        for (const entry of state.layers.values()){
-          b = b ? b.extend(entry.bounds) : entry.bounds;
+        for (const v of layers.values()){
+          if (!isTypeEnabled(v.type)) continue;
+          b = b ? b.extend(v.bounds) : v.bounds;
         }
         if (b) map.fitBounds(b, { padding:[30,30] });
         return;
       }
-      const gb = state.groupBounds.get(bws);
+      const gb = groupBounds.get(currentBws);
       if (gb) map.fitBounds(gb, { padding:[30,30] });
     }
 
     // =========================
-    // UI EVENTS
+    // UI init
     // =========================
-    document.getElementById("btnZoom").addEventListener("click", zoomCurrentBws);
-    document.getElementById("btnAll").addEventListener("click", () => showBws("ALL"));
-    document.getElementById("btnOff").addEventListener("click", () => {
-      clearAllLayers();
-      setStatus("All OFF.");
-    });
+    function initDropdown(){
+      bwsSelect.innerHTML = "";
+      const optAll = document.createElement("option");
+      optAll.value = "ALL";
+      optAll.textContent = "Semua BWS";
+      bwsSelect.appendChild(optAll);
 
-    bwsSelect.addEventListener("change", () => {
-      const bws = bwsSelect.value;
-      showBws(bws);
-    });
-
-    // =========================
-    // LOAD MANIFEST + BUILD DROPDOWN
-    // =========================
-    async function init(){
-      try{
-        // manifest juga di-cache bust kecil
-        const res = await fetch("manifest.json?v=" + Date.now(), { cache: "no-store" });
-        if(!res.ok) throw new Error("HTTP " + res.status);
-        const json = await res.json();
-
-        state.items = normalizeManifest(json);
-        if (!state.items.length){
-          setStatus("manifest.json kebaca tapi tidak ada file .pmtiles.");
-          return;
-        }
-
-        // group by BWS/BBWS
-        state.groups.clear();
-        for (const it of state.items){
-          const bws = getBwsLabel(it.title || it.file);
-          if (!state.groups.has(bws)) state.groups.set(bws, []);
-          state.groups.get(bws).push(it);
-        }
-
-        // build dropdown
-        const bwsList = Array.from(state.groups.keys()).sort((a,b)=>a.localeCompare(b, "id"));
-        pillInfo.textContent = `${bwsList.length} BWS`;
-
-        bwsSelect.innerHTML = "";
-        const optAll = document.createElement("option");
-        optAll.value = "ALL";
-        optAll.textContent = "Semua BWS";
-        bwsSelect.appendChild(optAll);
-
-        for (const bws of bwsList){
-          const opt = document.createElement("option");
-          opt.value = bws;
-          opt.textContent = bws;
-          bwsSelect.appendChild(opt);
-        }
-
-        setStatus("Pilih BWS/BBWS untuk menampilkan layer.");
-        // default: jangan auto load semua, biar ringan
-        bwsSelect.value = bwsList[0] ? bwsList[0] : "ALL";
-        await showBws(bwsSelect.value);
-        zoomCurrentBws();
-      }catch(e){
-        console.error(e);
-        setStatus("Gagal baca manifest.json (cek lokasi & format JSON).");
+      const bwsList = Array.from(groups.keys()).sort((a,b)=>a.localeCompare(b,"id"));
+      for (const bws of bwsList){
+        const opt = document.createElement("option");
+        opt.value = bws;
+        opt.textContent = bws;
+        bwsSelect.appendChild(opt);
       }
+      pillInfo.textContent = `${bwsList.length} BWS`;
     }
 
-    init();
+    document.getElementById("btnZoom").addEventListener("click", zoomCurrent);
+    document.getElementById("btnAll").addEventListener("click", async () => {
+      currentBws = "ALL";
+      bwsSelect.value = "ALL";
+      await applyView();
+      zoomCurrent();
+    });
+    document.getElementById("btnOff").addEventListener("click", () => {
+      clearMapLayers();
+      setStatus("All OFF.");
+      pillInfo.textContent = `${groups.size} BWS • OFF`;
+    });
+
+    bwsSelect.addEventListener("change", async ()=>{
+      currentBws = bwsSelect.value;
+      await applyView();
+      zoomCurrent();
+    });
+
+    [togBAKU, togFUNG, togPOTS].forEach(t=>{
+      t.addEventListener("change", applyView);
+    });
+
+    qEl.addEventListener("input", () => {
+      // debounce kecil
+      clearTimeout(qEl._t);
+      qEl._t = setTimeout(applyView, 200);
+    });
+
+    // =========================
+    // START: default semua ON
+    // =========================
+    initDropdown();
+    applyView().then(()=>zoomCurrent());
   </script>
 </body>
 </html>
