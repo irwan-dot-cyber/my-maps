@@ -11,27 +11,30 @@
 html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto}
 #map{height:100%;width:100%}
 
-/* === PANEL MINI (MOBILE-FIRST) === */
+/* Panel mini */
 .panel{
   position:absolute;z-index:999;
   top:10px;left:10px;
   background:#0f172aee;color:#e5e7eb;
   border-radius:12px;
-  padding:10px;
+  padding:10px 12px;
   display:flex;
-  gap:8px;
+  gap:12px;
+  align-items:center;
   box-shadow:0 10px 25px rgba(0,0,0,.35)
 }
 .item{
   display:flex;align-items:center;gap:6px;
-  font-size:12px;font-weight:600
+  font-size:12px;font-weight:700;
+  user-select:none;
 }
+.item input{transform:translateY(1px)}
 .dot{width:10px;height:10px;border-radius:50%}
 .baku{background:#3b82f6}
 .pots{background:#f59e0b}
 .fung{background:#10b981}
 
-/* === LOADING CENTER === */
+/* Loading tengah */
 #loading{
   position:absolute;z-index:2000;
   inset:0;
@@ -41,8 +44,8 @@ html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Robo
   background:rgba(15,23,42,.55);
   color:#fff;
   font-size:18px;
-  font-weight:700;
-  letter-spacing:.5px
+  font-weight:800;
+  letter-spacing:.4px;
 }
 </style>
 </head>
@@ -50,23 +53,12 @@ html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Robo
 <body>
 <div id="map"></div>
 
-<!-- MINI LEGEND -->
 <div class="panel">
-  <label class="item">
-    <span class="dot baku"></span>
-    <input type="checkbox" checked id="baku">BAKU
-  </label>
-  <label class="item">
-    <span class="dot pots"></span>
-    <input type="checkbox" checked id="pots">POTENSIAL
-  </label>
-  <label class="item">
-    <span class="dot fung"></span>
-    <input type="checkbox" checked id="fung">FUNGSIONAL
-  </label>
+  <label class="item"><span class="dot baku"></span><input type="checkbox" checked id="baku">BAKU</label>
+  <label class="item"><span class="dot pots"></span><input type="checkbox" checked id="pots">POTENSIAL</label>
+  <label class="item"><span class="dot fung"></span><input type="checkbox" checked id="fung">FUNGSIONAL</label>
 </div>
 
-<!-- LOADING -->
 <div id="loading">Loading data…</div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -82,50 +74,88 @@ L.tileLayer(
   {maxZoom:20}
 ).addTo(map);
 
+// Group per kategori
 const groups = {
   BAKU: L.layerGroup().addTo(map),
   POTENSIAL: L.layerGroup().addTo(map),
   FUNGSIONAL: L.layerGroup().addTo(map)
 };
 
-function polygonRules(color){
-  return [{
-    symbolizer:new protomapsL.PolygonSymbolizer({
-      fill:color,
-      stroke:"rgba(0,0,0,0)",
-      width:0
-    })
-  }];
+function colorFor(cat){
+  if(cat==="BAKU") return "rgba(59,130,246,.35)";
+  if(cat==="POTENSIAL") return "rgba(245,158,11,.35)";
+  return "rgba(16,185,129,.35)";
 }
 
-async function loadManifest(){
-  const res = await fetch("manifest.json");
-  const json = await res.json();
-  const items = json.layers;
+// bikin paintRules untuk SEMUA vector layer di dalam 1 pmtiles
+async function buildRules(pmtilesUrl, cat){
+  const p = new pmtiles.PMTiles(pmtilesUrl);
+  const meta = await p.getMetadata();
+  const vls = (meta && meta.vector_layers) ? meta.vector_layers.map(v => v.id) : [];
 
-  for(const it of items){
-    const pm = new pmtiles.PMTiles(it.file);
-    const meta = await pm.getMetadata();
-
-    const rules =
-      it.category==="BAKU" ? polygonRules("rgba(59,130,246,.35)") :
-      it.category==="POTENSIAL" ? polygonRules("rgba(245,158,11,.35)") :
-      polygonRules("rgba(16,185,129,.35)");
-
-    const layer = protomapsL.leafletLayer({
-      url: it.file,
-      paintRules: rules
-    });
-
-    layer.addTo(groups[it.category]);
+  // kalau metadata kosong, lempar error biar kelihatan di console
+  if(!vls.length){
+    throw new Error("vector_layers kosong: " + pmtilesUrl);
   }
 
-  document.getElementById("loading").style.display="none";
+  const fill = colorFor(cat);
+
+  // penting: tiap rule HARUS ada dataLayer
+  return vls.map(layerName => ({
+    dataLayer: layerName,
+    symbolizer: new protomapsL.PolygonSymbolizer({
+      fill,
+      stroke: "rgba(0,0,0,0)", // no outline
+      width: 0
+    })
+  }));
 }
 
-loadManifest();
+async function loadAll(){
+  const loading = document.getElementById("loading");
 
-// Toggle
+  try{
+    const res = await fetch("manifest.json?v=" + Date.now(), {cache:"no-store"});
+    if(!res.ok) throw new Error("manifest.json HTTP " + res.status);
+
+    const json = await res.json();
+    const items = Array.isArray(json) ? json : json.layers;
+
+    if(!items || !items.length) throw new Error("manifest kosong / format salah");
+
+    // load satu-satu biar aman (dan gampang debug)
+    for(const it of items){
+      const file = it.file;
+      const cat = (it.category || "").toUpperCase();
+
+      if(!file || !cat || !groups[cat]) continue;
+
+      try{
+        const paintRules = await buildRules(file, cat);
+
+        const layer = protomapsL.leafletLayer({
+          url: file,
+          paintRules,
+          labelRules: []
+        });
+
+        layer.addTo(groups[cat]);
+      }catch(e){
+        console.error("Gagal load:", file, e);
+        // lanjut file berikutnya
+      }
+    }
+  }catch(e){
+    console.error(e);
+    // kalau manifest gagal, biar kelihatan aja (tetap hilangin overlay biar user gak nge-freeze)
+  }finally{
+    loading.style.display = "none";
+  }
+}
+
+loadAll();
+
+// Toggle kategori
 baku.onchange = ()=> baku.checked ? map.addLayer(groups.BAKU) : map.removeLayer(groups.BAKU);
 pots.onchange = ()=> pots.checked ? map.addLayer(groups.POTENSIAL) : map.removeLayer(groups.POTENSIAL);
 fung.onchange = ()=> fung.checked ? map.addLayer(groups.FUNGSIONAL) : map.removeLayer(groups.FUNGSIONAL);
