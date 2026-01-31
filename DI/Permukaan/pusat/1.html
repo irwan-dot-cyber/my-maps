@@ -28,7 +28,7 @@ html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Robo
   font-weight:800;
   box-shadow:0 10px 25px rgba(0,0,0,.35)
 }
-.legend label{display:flex;gap:6px;align-items:center;user-select:none}
+.legend label{display:flex;gap:6px;align-items:center;user-select:none;white-space:nowrap}
 .legend input{transform:translateY(1px)}
 .dot{width:10px;height:10px;border-radius:50%}
 .baku{background:#3b82f6}
@@ -124,8 +124,9 @@ html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Robo
 
 <script>
 /* === MAP INIT === */
-const map = L.map("map",{preferCanvas:true}).setView([-2.5,118],5);
+const map = L.map("map",{preferCanvas:true, zoomControl:true}).setView([-2.5,118],5);
 
+/* imagery */
 L.tileLayer(
   "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
   {maxZoom:20}
@@ -144,7 +145,7 @@ function fillColor(cat){
   return "rgba(16,185,129,.35)";
 }
 
-/* === LOADING UI HELPERS === */
+/* === LOADING UI === */
 const loadingEl = document.getElementById("loading");
 const loadTextEl = document.getElementById("loadText");
 const loadSubEl  = document.getElementById("loadSub");
@@ -158,23 +159,36 @@ function setProgress(done, total){
   loadSubEl.textContent = `Memuat ${done} dari ${total} layer`;
 }
 
-/* === LOAD ALL PMTILES === */
+/* === STATE === */
 let unionBounds = null;
+/* minZoom “wajib” untuk kategori yang ON saat awal */
+let activeMinZoomRequired = 0; // karena default ON hanya FUNGSIONAL
 
-async function buildRules(url, cat){
+async function buildRulesAndHeader(url, cat){
   const p = new pmtiles.PMTiles(url);
+
+  // header untuk bounds & minZoom/maxZoom
   const h = await p.getHeader();
+
+  // metadata untuk vector_layers
   const m = await p.getMetadata();
 
   const b = L.latLngBounds([h.minLat, h.minLon], [h.maxLat, h.maxLon]);
   unionBounds = unionBounds ? unionBounds.extend(b) : b;
+
+  // kalau layer ini termasuk yang aktif di awal (FUNGSIONAL), kita pakai minZoom-nya
+  if (cat === "FUNGSIONAL") {
+    // kalau ada banyak file FUNGSIONAL, ambil yang paling “ketat” (minZoom terbesar)
+    activeMinZoomRequired = Math.max(activeMinZoomRequired, h.minZoom || 0);
+  }
 
   const layers = (m && m.vector_layers) ? m.vector_layers.map(v => v.id) : [];
   if(!layers.length) throw new Error("vector_layers kosong: " + url);
 
   const fill = fillColor(cat);
 
-  return layers.map(name => ({
+  // NO OUTLINE: stroke transparan + width 0
+  const rules = layers.map(name => ({
     dataLayer: name,
     symbolizer: new protomapsL.PolygonSymbolizer({
       fill,
@@ -182,8 +196,11 @@ async function buildRules(url, cat){
       width: 0
     })
   }));
+
+  return { rules, bounds: b, header: h };
 }
 
+/* === LOAD ALL PMTILES === */
 async function loadAll(){
   try{
     const res = await fetch("manifest.json?v=" + Date.now(), {cache:"no-store"});
@@ -191,23 +208,27 @@ async function loadAll(){
 
     const json  = await res.json();
     const items = Array.isArray(json) ? json : json.layers;
-
     if(!items || !items.length) throw new Error("manifest kosong / format salah");
 
-    // hitung total file valid (yang kategorinya dikenal dan ada file)
-    const validItems = items.filter(it => it?.file && groups[(it.category||"").toUpperCase()]);
-    const total = validItems.length;
+    const validItems = items
+      .filter(it => it && it.file && it.category)
+      .map(it => ({
+        file: it.file,
+        category: String(it.category).toUpperCase()
+      }))
+      .filter(it => groups[it.category]);
 
+    const total = validItems.length;
     let done = 0;
     setProgress(done, total);
 
-    // load satu-satu agar progress stabil dan cocok untuk HP
+    // load satu-satu biar progress smooth dan aman di HP
     for(const it of validItems){
-      const cat = (it.category || "").toUpperCase();
+      const cat = it.category;
       const file = it.file;
 
       try{
-        const rules = await buildRules(file, cat);
+        const { rules } = await buildRulesAndHeader(file, cat);
         const layer = protomapsL.leafletLayer({
           url: file,
           paintRules: rules,
@@ -216,7 +237,6 @@ async function loadAll(){
         layer.addTo(groups[cat]);
       }catch(e){
         console.error("Skip:", file, e);
-        // skip tapi tetap dihitung biar progress gak “mandek”
       }finally{
         done++;
         setProgress(done, total);
@@ -224,17 +244,32 @@ async function loadAll(){
       }
     }
 
-    // Fit to data (langsung kelihatan tanpa zoom)
+    // === AUTO FIT + AUTO MINZOOM ===
     if(unionBounds){
       map.invalidateSize(true);
-      map.fitBounds(unionBounds, {padding:[30,30]});
+
+      // 1) fitBounds dulu
+      map.fitBounds(unionBounds, {padding:[30,30], animate:true});
+
+      // 2) setelah fit selesai, cek zoom hasil fit vs minZoom FUNGSIONAL
+      //    (ini kunci biar langsung muncul tanpa user zoom)
+      setTimeout(() => {
+        const z = map.getZoom();
+        const target = Math.max(z, activeMinZoomRequired || 0);
+
+        if (target !== z) {
+          // tetap di center yang sama, cuma naikkan zoom ke minZoom yang ada tile-nya
+          map.setView(map.getCenter(), target, {animate:true});
+        }
+      }, 300);
     }
+
   }catch(e){
     console.error(e);
     loadTextEl.textContent = "Gagal memuat data";
     loadSubEl.textContent = "Cek manifest.json & console";
   }finally{
-    // kasih sedikit jeda biar 100% kebaca, terus hilang
+    // biar 100% kebaca dikit, baru hilang
     setTimeout(() => { loadingEl.style.display = "none"; }, 250);
   }
 }
@@ -246,7 +281,7 @@ baku.checked = false;
 pots.checked = false;
 fung.checked = true;
 
-// pastikan group BAKU & POTENSIAL tidak ditampilkan di awal
+// pastikan group BAKU & POTENSIAL tidak tampil di awal
 map.removeLayer(groups.BAKU);
 map.removeLayer(groups.POTENSIAL);
 map.addLayer(groups.FUNGSIONAL);
