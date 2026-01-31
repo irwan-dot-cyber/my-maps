@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>PMTiles Nasional</title>
+<title>PMTiles Nasional + Batas Provinsi</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
@@ -11,7 +11,7 @@
 html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto}
 #map{height:100%;width:100%}
 
-/* === Legend mini (mobile friendly) === */
+/* === Toggle mini top bar === */
 .legend{
   position:absolute;
   top:10px;left:50%;
@@ -26,7 +26,10 @@ html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Robo
   align-items:center;
   font-size:12px;
   font-weight:800;
-  box-shadow:0 10px 25px rgba(0,0,0,.35)
+  box-shadow:0 10px 25px rgba(0,0,0,.35);
+  max-width: min(980px, 96vw);
+  overflow:auto;
+  -webkit-overflow-scrolling: touch;
 }
 .legend label{display:flex;gap:6px;align-items:center;user-select:none;white-space:nowrap}
 .legend input{transform:translateY(1px)}
@@ -34,6 +37,8 @@ html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Robo
 .baku{background:#3b82f6}
 .pots{background:#f59e0b}
 .fung{background:#10b981}
+.adm {background:#ffffff}
+.lbl {background:#a78bfa}
 
 /* === Loading overlay + spinner + progress === */
 #loading{
@@ -57,20 +62,8 @@ html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Robo
   animation:spin 1s linear infinite;
 }
 @keyframes spin{to{transform:rotate(360deg)}}
-
-.loadText{
-  margin-top:14px;
-  font-size:16px;
-  font-weight:900;
-  letter-spacing:.3px;
-}
-.loadSub{
-  margin-top:6px;
-  font-size:12px;
-  opacity:.85;
-}
-
-/* progress bar */
+.loadText{margin-top:14px;font-size:16px;font-weight:900;letter-spacing:.3px}
+.loadSub{margin-top:6px;font-size:12px;opacity:.85}
 .barWrap{
   width:min(340px, 82vw);
   margin-top:14px;
@@ -87,11 +80,27 @@ html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Robo
   border-radius:999px;
   transition:width .18s ease;
 }
-.pct{
-  margin-top:10px;
-  font-size:13px;
+.pct{margin-top:10px;font-size:13px;font-weight:900;opacity:.95}
+
+/* === Zoom hint === */
+.zoomHint{
+  position:absolute;
+  left:50%;
+  bottom:16px;
+  transform:translateX(-50%);
+  z-index:1500;
+  background:rgba(15,23,42,.88);
+  color:#e5e7eb;
+  border:1px solid rgba(148,163,184,.35);
+  padding:10px 12px;
+  border-radius:999px;
+  font-size:12px;
   font-weight:900;
-  opacity:.95;
+  box-shadow:0 10px 25px rgba(0,0,0,.35);
+  backdrop-filter: blur(6px);
+  max-width:min(520px,92vw);
+  text-align:center;
+  display:none;
 }
 </style>
 </head>
@@ -99,22 +108,24 @@ html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Robo
 <body>
 <div id="map"></div>
 
-<!-- Legend -->
+<!-- Toggle -->
 <div class="legend">
   <label><span class="dot baku"></span><input type="checkbox" id="baku">BAKU</label>
   <label><span class="dot pots"></span><input type="checkbox" id="pots">POTENSIAL</label>
   <label><span class="dot fung"></span><input type="checkbox" id="fung" checked>FUNGSIONAL</label>
+  <label><span class="dot adm"></span><input type="checkbox" id="adm">BATAS</label>
+  <label><span class="dot lbl"></span><input type="checkbox" id="lbl">LABEL</label>
 </div>
+
+<!-- Zoom hint -->
+<div id="zoomHint" class="zoomHint">🔍 Perbesar peta untuk melihat data</div>
 
 <!-- Loading -->
 <div id="loading">
   <div class="spinner"></div>
   <div class="loadText" id="loadText">Loading data…</div>
-  <div class="loadSub" id="loadSub">Menyiapkan layer PMTiles nasional</div>
-
-  <div class="barWrap" aria-hidden="true">
-    <div class="barFill" id="barFill"></div>
-  </div>
+  <div class="loadSub" id="loadSub">Menyiapkan layer PMTiles</div>
+  <div class="barWrap" aria-hidden="true"><div class="barFill" id="barFill"></div></div>
   <div class="pct" id="pct">0%</div>
 </div>
 
@@ -123,16 +134,30 @@ html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Robo
 <script src="https://unpkg.com/protomaps-leaflet@4.0.1/dist/protomaps-leaflet.js"></script>
 
 <script>
-/* === MAP INIT === */
+/* ===================== MAP ===================== */
 const map = L.map("map",{preferCanvas:true, zoomControl:true}).setView([-2.5,118],5);
 
-/* imagery */
 L.tileLayer(
   "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
   {maxZoom:20}
 ).addTo(map);
 
-/* === GROUPS === */
+/* ===================== UI ===================== */
+const loadingEl = document.getElementById("loading");
+const loadTextEl = document.getElementById("loadText");
+const loadSubEl  = document.getElementById("loadSub");
+const barFillEl  = document.getElementById("barFill");
+const pctEl      = document.getElementById("pct");
+const zoomHintEl = document.getElementById("zoomHint");
+
+function setProgress(done,total){
+  const pct = total ? Math.round((done/total)*100) : 0;
+  barFillEl.style.width = pct + "%";
+  pctEl.textContent = pct + "%";
+  loadSubEl.textContent = `Memuat ${done} dari ${total} layer`;
+}
+
+/* ===================== GROUPS (DI nasional) ===================== */
 const groups = {
   BAKU: L.layerGroup(),
   POTENSIAL: L.layerGroup(),
@@ -145,50 +170,72 @@ function fillColor(cat){
   return "rgba(16,185,129,.35)";
 }
 
-/* === LOADING UI === */
-const loadingEl = document.getElementById("loading");
-const loadTextEl = document.getElementById("loadText");
-const loadSubEl  = document.getElementById("loadSub");
-const barFillEl  = document.getElementById("barFill");
-const pctEl      = document.getElementById("pct");
+/* ===================== ADMIN LAYERS ===================== */
+/* Batas prov line: putih dash dash dot dash dash */
+const adminLineLayer = protomapsL.leafletLayer({
+  url: "Batas_Prov_Line.pmtiles",
+  paintRules: [{
+    dataLayer: "batas_prov_line",
+    symbolizer: new protomapsL.LineSymbolizer({
+      color: "rgba(255,255,255,0.95)",
+      width: 1.6,
+      dash: [10,6, 10,6, 2,6, 10,6, 10,6],
+      lineJoin: "round",
+      lineCap: "round"
+    })
+  }],
+  labelRules: []
+});
 
-function setProgress(done, total){
-  const pct = total ? Math.round((done/total)*100) : 0;
-  barFillEl.style.width = pct + "%";
-  pctEl.textContent = pct + "%";
-  loadSubEl.textContent = `Memuat ${done} dari ${total} layer`;
+/* Label prov: dari WADMPR, polygon tidak digambar */
+const adminLabelLayer = protomapsL.leafletLayer({
+  url: "Batas_Prov_Label.pmtiles",
+  paintRules: [], // jangan gambar polygonnya
+  labelRules: [{
+    dataLayer: "batas_prov_label",
+    symbolizer: new protomapsL.TextSymbolizer({
+      labelProps: ["WADMPR"],
+      font: "700 12px system-ui",
+      fill: "rgba(255,255,255,0.95)",
+      stroke: "rgba(15,23,42,0.85)",
+      width: 3,
+      wrap: 16,
+      minZoom: 4
+    })
+  }]
+});
+
+/* ===================== STATE ===================== */
+let unionBounds = null;
+let activeMinZoomRequired = 0; // minZoom FUNGSIONAL (dipakai untuk hint)
+const layerCountByCategory = { BAKU:0, POTENSIAL:0, FUNGSIONAL:0 };
+
+function normalizeManifest(json){
+  let arr = [];
+  if (Array.isArray(json)) arr = json;
+  else if (json && Array.isArray(json.layers)) arr = json.layers;
+  else if (json && Array.isArray(json.items)) arr = json.items;
+
+  return arr.map((raw) => {
+    const file = raw.file || raw.path || raw.pmtiles || raw.url || "";
+    const category = (raw.category || raw.cat || raw.group || "").toString().toUpperCase();
+    return { file, category };
+  }).filter(x => x.file && /\.pmtiles$/i.test(x.file) && groups[x.category]);
 }
 
-/* === STATE === */
-let unionBounds = null;
-/* minZoom “wajib” untuk kategori yang ON saat awal */
-let activeMinZoomRequired = 0; // karena default ON hanya FUNGSIONAL
-
-async function buildRulesAndHeader(url, cat){
+async function readHeaderAndMeta(url){
   const p = new pmtiles.PMTiles(url);
+  const header = await p.getHeader();
+  const meta = await p.getMetadata();
+  const bounds = L.latLngBounds([header.minLat, header.minLon], [header.maxLat, header.maxLon]);
+  const vectorLayers = (meta && meta.vector_layers) ? meta.vector_layers.map(v => v.id) : [];
+  return { header, bounds, vectorLayers };
+}
 
-  // header untuk bounds & minZoom/maxZoom
-  const h = await p.getHeader();
-
-  // metadata untuk vector_layers
-  const m = await p.getMetadata();
-
-  const b = L.latLngBounds([h.minLat, h.minLon], [h.maxLat, h.maxLon]);
-  unionBounds = unionBounds ? unionBounds.extend(b) : b;
-
-  // kalau layer ini termasuk yang aktif di awal (FUNGSIONAL), kita pakai minZoom-nya
-  if (cat === "FUNGSIONAL") {
-    // kalau ada banyak file FUNGSIONAL, ambil yang paling “ketat” (minZoom terbesar)
-    activeMinZoomRequired = Math.max(activeMinZoomRequired, h.minZoom || 0);
-  }
-
-  const layers = (m && m.vector_layers) ? m.vector_layers.map(v => v.id) : [];
-  if(!layers.length) throw new Error("vector_layers kosong: " + url);
-
+/* polygon rules: no outline */
+function polygonOnlyRules(vectorLayers, cat){
   const fill = fillColor(cat);
-
-  // NO OUTLINE: stroke transparan + width 0
-  const rules = layers.map(name => ({
+  return vectorLayers.map(name => ({
     dataLayer: name,
     symbolizer: new protomapsL.PolygonSymbolizer({
       fill,
@@ -196,72 +243,67 @@ async function buildRulesAndHeader(url, cat){
       width: 0
     })
   }));
-
-  return { rules, bounds: b, header: h };
 }
 
-/* === LOAD ALL PMTILES === */
+function updateZoomHint(){
+  const z = map.getZoom();
+  const req = activeMinZoomRequired || 5; // fallback
+  // tampilkan hint jika FUNGSIONAL ada dan zoom belum cukup
+  const hasF = layerCountByCategory.FUNGSIONAL > 0;
+  zoomHintEl.style.display = (hasF && z < req) ? "block" : "none";
+}
+
+/* ===================== LOAD ALL ===================== */
 async function loadAll(){
   try{
     const res = await fetch("manifest.json?v=" + Date.now(), {cache:"no-store"});
     if(!res.ok) throw new Error("manifest.json HTTP " + res.status);
 
-    const json  = await res.json();
-    const items = Array.isArray(json) ? json : json.layers;
-    if(!items || !items.length) throw new Error("manifest kosong / format salah");
-
-    const validItems = items
-      .filter(it => it && it.file && it.category)
-      .map(it => ({
-        file: it.file,
-        category: String(it.category).toUpperCase()
-      }))
-      .filter(it => groups[it.category]);
-
-    const total = validItems.length;
+    const json = await res.json();
+    const items = normalizeManifest(json);
+    const total = items.length;
     let done = 0;
-    setProgress(done, total);
 
-    // load satu-satu biar progress smooth dan aman di HP
-    for(const it of validItems){
-      const cat = it.category;
-      const file = it.file;
+    setProgress(done,total);
+    loadTextEl.textContent = "Loading data…";
 
+    for(const it of items){
       try{
-        const { rules } = await buildRulesAndHeader(file, cat);
+        const { header, bounds, vectorLayers } = await readHeaderAndMeta(it.file);
+
+        unionBounds = unionBounds ? unionBounds.extend(bounds) : bounds;
+
+        // ambil minZoom requirement khusus FUNGSIONAL (yang default ON)
+        if(it.category === "FUNGSIONAL"){
+          activeMinZoomRequired = Math.max(activeMinZoomRequired, header.minZoom || 0);
+          layerCountByCategory.FUNGSIONAL++;
+        }else if(it.category === "BAKU"){
+          layerCountByCategory.BAKU++;
+        }else if(it.category === "POTENSIAL"){
+          layerCountByCategory.POTENSIAL++;
+        }
+
         const layer = protomapsL.leafletLayer({
-          url: file,
-          paintRules: rules,
+          url: it.file,
+          paintRules: polygonOnlyRules(vectorLayers, it.category),
           labelRules: []
         });
-        layer.addTo(groups[cat]);
+
+        // add to group (default yang nempel ke map cuma FUNGSIONAL)
+        layer.addTo(groups[it.category]);
+
       }catch(e){
-        console.error("Skip:", file, e);
+        console.error("Skip:", it.file, e);
       }finally{
         done++;
-        setProgress(done, total);
-        loadTextEl.textContent = "Loading data…";
+        setProgress(done,total);
       }
     }
 
-    // === AUTO FIT + AUTO MINZOOM ===
+    // fit ke seluruh data
     if(unionBounds){
       map.invalidateSize(true);
-
-      // 1) fitBounds dulu
       map.fitBounds(unionBounds, {padding:[30,30], animate:true});
-
-      // 2) setelah fit selesai, cek zoom hasil fit vs minZoom FUNGSIONAL
-      //    (ini kunci biar langsung muncul tanpa user zoom)
-      setTimeout(() => {
-        const z = map.getZoom();
-        const target = Math.max(z, activeMinZoomRequired || 0);
-
-        if (target !== z) {
-          // tetap di center yang sama, cuma naikkan zoom ke minZoom yang ada tile-nya
-          map.setView(map.getCenter(), target, {animate:true});
-        }
-      }, 300);
     }
 
   }catch(e){
@@ -269,26 +311,38 @@ async function loadAll(){
     loadTextEl.textContent = "Gagal memuat data";
     loadSubEl.textContent = "Cek manifest.json & console";
   }finally{
-    // biar 100% kebaca dikit, baru hilang
-    setTimeout(() => { loadingEl.style.display = "none"; }, 250);
+    setTimeout(() => {
+      loadingEl.style.display = "none";
+      updateZoomHint();
+    }, 250);
   }
 }
 
 loadAll();
 
-/* === TOGGLE DEFAULT: FUNGSIONAL ON, lainnya OFF === */
+/* ===================== DEFAULT TOGGLES ===================== */
 baku.checked = false;
 pots.checked = false;
 fung.checked = true;
+adm.checked  = false;
+lbl.checked  = false;
 
-// pastikan group BAKU & POTENSIAL tidak tampil di awal
+// default: hanya FUNGSIONAL tampil
 map.removeLayer(groups.BAKU);
 map.removeLayer(groups.POTENSIAL);
 map.addLayer(groups.FUNGSIONAL);
 
+// toggle DI categories
 baku.onchange = () => baku.checked ? map.addLayer(groups.BAKU) : map.removeLayer(groups.BAKU);
 pots.onchange = () => pots.checked ? map.addLayer(groups.POTENSIAL) : map.removeLayer(groups.POTENSIAL);
 fung.onchange = () => fung.checked ? map.addLayer(groups.FUNGSIONAL) : map.removeLayer(groups.FUNGSIONAL);
+
+// toggle admin line & label
+adm.onchange = () => adm.checked ? adminLineLayer.addTo(map) : map.removeLayer(adminLineLayer);
+lbl.onchange = () => lbl.checked ? adminLabelLayer.addTo(map) : map.removeLayer(adminLabelLayer);
+
+// zoom hint refresh
+map.on("zoomend moveend", updateZoomHint);
 </script>
 </body>
 </html>
