@@ -1,6 +1,17 @@
 {
   "layers": [
     {
+  "title": "Batas Provinsi (Line)",
+  "file": "Batas_Prov_Line.pmtiles",
+  "category": "ADMIN"
+},
+{
+  "title": "Batas Provinsi (Poly)",
+  "file": "Batas_Prov_Poly.pmtiles",
+  "category": "ADMIN"
+},
+
+    {
       "title": "Aceh - BWS Sumatera I (BAKU)",
       "file": "Aceh_Pusat_-_BWS_Sumatera_I_BAKU.pmtiles",
       "category": "BAKU"
