@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>PMTiles Viewer</title>
+<title>PMTiles Nasional</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
@@ -11,154 +11,167 @@
 html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto}
 #map{height:100%;width:100%}
 
-/* Panel mini */
-.panel{
-  position:absolute;z-index:999;
-  top:10px;left:10px;
-  background:#0f172aee;color:#e5e7eb;
+/* === Legend mini (mobile friendly) === */
+.legend{
+  position:absolute;
+  top:10px;left:50%;
+  transform:translateX(-50%);
+  z-index:1000;
+  background:#0f172acc;
+  color:#e5e7eb;
   border-radius:12px;
-  padding:10px 12px;
+  padding:8px 12px;
   display:flex;
   gap:12px;
   align-items:center;
+  font-size:12px;
+  font-weight:700;
   box-shadow:0 10px 25px rgba(0,0,0,.35)
 }
-.item{
-  display:flex;align-items:center;gap:6px;
-  font-size:12px;font-weight:700;
-  user-select:none;
-}
-.item input{transform:translateY(1px)}
+.legend label{display:flex;gap:6px;align-items:center}
+.legend input{transform:translateY(1px)}
 .dot{width:10px;height:10px;border-radius:50%}
 .baku{background:#3b82f6}
 .pots{background:#f59e0b}
 .fung{background:#10b981}
 
-/* Loading tengah */
+/* === Loading overlay + spinner === */
 #loading{
-  position:absolute;z-index:2000;
+  position:absolute;
   inset:0;
+  z-index:2000;
+  background:rgba(15,23,42,.6);
   display:flex;
+  flex-direction:column;
+  gap:14px;
   align-items:center;
   justify-content:center;
-  background:rgba(15,23,42,.55);
   color:#fff;
-  font-size:18px;
+  font-size:16px;
   font-weight:800;
-  letter-spacing:.4px;
 }
+.spinner{
+  width:42px;height:42px;
+  border:4px solid rgba(255,255,255,.25);
+  border-top-color:#22d3ee;
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 
 <body>
 <div id="map"></div>
 
-<div class="panel">
-  <label class="item"><span class="dot baku"></span><input type="checkbox" checked id="baku">BAKU</label>
-  <label class="item"><span class="dot pots"></span><input type="checkbox" checked id="pots">POTENSIAL</label>
-  <label class="item"><span class="dot fung"></span><input type="checkbox" checked id="fung">FUNGSIONAL</label>
+<!-- Legend -->
+<div class="legend">
+  <label><span class="dot baku"></span><input type="checkbox" id="baku">BAKU</label>
+  <label><span class="dot pots"></span><input type="checkbox" id="pots">POTENSIAL</label>
+  <label><span class="dot fung"></span><input type="checkbox" id="fung" checked>FUNGSIONAL</label>
 </div>
 
-<div id="loading">Loading data…</div>
+<!-- Loading -->
+<div id="loading">
+  <div class="spinner"></div>
+  Loading data…
+</div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/pmtiles@3.0.7/dist/pmtiles.js"></script>
 <script src="https://unpkg.com/protomaps-leaflet@4.0.1/dist/protomaps-leaflet.js"></script>
 
 <script>
+/* === MAP INIT === */
 const map = L.map("map",{preferCanvas:true}).setView([-2.5,118],5);
 
-// Basemap imagery
 L.tileLayer(
   "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
   {maxZoom:20}
 ).addTo(map);
 
-// Group per kategori
-const groups = {
-  BAKU: L.layerGroup().addTo(map),
-  POTENSIAL: L.layerGroup().addTo(map),
-  FUNGSIONAL: L.layerGroup().addTo(map)
+/* === GROUPS === */
+const groups={
+  BAKU:L.layerGroup(),
+  POTENSIAL:L.layerGroup(),
+  FUNGSIONAL:L.layerGroup().addTo(map) // default ON
 };
 
-function colorFor(cat){
+function fillColor(cat){
   if(cat==="BAKU") return "rgba(59,130,246,.35)";
   if(cat==="POTENSIAL") return "rgba(245,158,11,.35)";
   return "rgba(16,185,129,.35)";
 }
 
-// bikin paintRules untuk SEMUA vector layer di dalam 1 pmtiles
-async function buildRules(pmtilesUrl, cat){
-  const p = new pmtiles.PMTiles(pmtilesUrl);
-  const meta = await p.getMetadata();
-  const vls = (meta && meta.vector_layers) ? meta.vector_layers.map(v => v.id) : [];
+/* === LOAD ALL PMTILES === */
+let unionBounds=null;
 
-  // kalau metadata kosong, lempar error biar kelihatan di console
-  if(!vls.length){
-    throw new Error("vector_layers kosong: " + pmtilesUrl);
-  }
+async function buildRules(url,cat){
+  const p=new pmtiles.PMTiles(url);
+  const h=await p.getHeader();
+  const m=await p.getMetadata();
 
-  const fill = colorFor(cat);
+  const b=L.latLngBounds(
+    [h.minLat,h.minLon],
+    [h.maxLat,h.maxLon]
+  );
+  unionBounds=unionBounds?unionBounds.extend(b):b;
 
-  // penting: tiap rule HARUS ada dataLayer
-  return vls.map(layerName => ({
-    dataLayer: layerName,
-    symbolizer: new protomapsL.PolygonSymbolizer({
-      fill,
-      stroke: "rgba(0,0,0,0)", // no outline
-      width: 0
+  const layers=(m.vector_layers||[]).map(v=>v.id);
+  if(!layers.length) throw "vector_layers kosong";
+
+  return layers.map(name=>({
+    dataLayer:name,
+    symbolizer:new protomapsL.PolygonSymbolizer({
+      fill:fillColor(cat),
+      stroke:"rgba(0,0,0,0)",
+      width:0
     })
   }));
 }
 
 async function loadAll(){
-  const loading = document.getElementById("loading");
+  const loading=document.getElementById("loading");
 
   try{
-    const res = await fetch("manifest.json?v=" + Date.now(), {cache:"no-store"});
-    if(!res.ok) throw new Error("manifest.json HTTP " + res.status);
+    const res=await fetch("manifest.json?v="+Date.now(),{cache:"no-store"});
+    const json=await res.json();
+    const items=Array.isArray(json)?json:json.layers;
 
-    const json = await res.json();
-    const items = Array.isArray(json) ? json : json.layers;
-
-    if(!items || !items.length) throw new Error("manifest kosong / format salah");
-
-    // load satu-satu biar aman (dan gampang debug)
     for(const it of items){
-      const file = it.file;
-      const cat = (it.category || "").toUpperCase();
-
-      if(!file || !cat || !groups[cat]) continue;
+      const cat=(it.category||"").toUpperCase();
+      if(!groups[cat]) continue;
 
       try{
-        const paintRules = await buildRules(file, cat);
-
-        const layer = protomapsL.leafletLayer({
-          url: file,
-          paintRules,
-          labelRules: []
+        const rules=await buildRules(it.file,cat);
+        const layer=protomapsL.leafletLayer({
+          url:it.file,
+          paintRules:rules,
+          labelRules:[]
         });
-
         layer.addTo(groups[cat]);
       }catch(e){
-        console.error("Gagal load:", file, e);
-        // lanjut file berikutnya
+        console.error("Skip:",it.file,e);
       }
     }
-  }catch(e){
-    console.error(e);
-    // kalau manifest gagal, biar kelihatan aja (tetap hilangin overlay biar user gak nge-freeze)
+
+    // === FIT TO DATA ===
+    if(unionBounds){
+      map.invalidateSize(true);
+      map.fitBounds(unionBounds,{padding:[30,30]});
+    }
+
   }finally{
-    loading.style.display = "none";
+    loading.style.display="none";
   }
 }
 
 loadAll();
 
-// Toggle kategori
-baku.onchange = ()=> baku.checked ? map.addLayer(groups.BAKU) : map.removeLayer(groups.BAKU);
-pots.onchange = ()=> pots.checked ? map.addLayer(groups.POTENSIAL) : map.removeLayer(groups.POTENSIAL);
-fung.onchange = ()=> fung.checked ? map.addLayer(groups.FUNGSIONAL) : map.removeLayer(groups.FUNGSIONAL);
+/* === TOGGLE === */
+baku.onchange=()=>baku.checked?map.addLayer(groups.BAKU):map.removeLayer(groups.BAKU);
+pots.onchange=()=>pots.checked?map.addLayer(groups.POTENSIAL):map.removeLayer(groups.POTENSIAL);
+fung.onchange=()=>fung.checked?map.addLayer(groups.FUNGSIONAL):map.removeLayer(groups.FUNGSIONAL);
 </script>
 </body>
 </html>
