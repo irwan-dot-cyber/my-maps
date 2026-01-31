@@ -1,37 +1,37 @@
 {
   "layers": [
     {
-      "name": "Aceh - BWS Sumatera I (BAKU)",
+      "title": "Aceh - BWS Sumatera I (BAKU)",
       "file": "Aceh_Pusat_-_BWS_Sumatera_I_BAKU.pmtiles",
       "category": "BAKU"
     },
     {
-      "name": "Aceh - BWS Sumatera I (FUNGSIONAL)",
+      "title": "Aceh - BWS Sumatera I (FUNGSIONAL)",
       "file": "Aceh_Pusat_-_BWS_Sumatera_I_FUNG.pmtiles",
       "category": "FUNGSIONAL"
     },
     {
-      "name": "Aceh - BWS Sumatera I (POTENSIAL)",
+      "title": "Aceh - BWS Sumatera I (POTENSIAL)",
       "file": "Aceh_Pusat_-_BWS_Sumatera_I_POTS.pmtiles",
       "category": "POTENSIAL"
     },
-  /* ==================== BANTEN ==================== */
+
     {
-      "name": "Banten - BBWS Cidanau Cijung Cidurian (BAKU)",
-      "file": "Banten_Pusat_-_BBWS_Cidanau_Ciujung_Cidurian_BAKU.pmtiles",
+      "title": "Banten - BBWS Cidanau Cijining Cidurian (BAKU)",
+      "file": "Banten_Pusat_-_BBWS_Cidanau_Cijining_Cidurian_BAKU.pmtiles",
       "category": "BAKU"
     },
     {
-      "name": "Banten - BBWS Cidanau Cijung Cidurian (FUNGSIONAL)",
-      "file": "Banten_Pusat_-_BBWS_Cidanau_Ciujung_Cidurian_FUNG.pmtiles",
+      "title": "Banten - BBWS Cidanau Cijining Cidurian (FUNGSIONAL)",
+      "file": "Banten_Pusat_-_BBWS_Cidanau_Cijining_Cidurian_FUNG.pmtiles",
       "category": "FUNGSIONAL"
     },
     {
-      "name": "Banten - BBWS Cidanau Cijung Cidurian (POTENSIAL)",
-      "file": "Banten_Pusat_-_BBWS_Cidanau_Ciujung_Cidurian_POTS.pmtiles",
+      "title": "Banten - BBWS Cidanau Cijining Cidurian (POTENSIAL)",
+      "file": "Banten_Pusat_-_BBWS_Cidanau_Cijining_Cidurian_POTS.pmtiles",
       "category": "POTENSIAL"
-    }
-        
+    },
+
     {
       "title": "Banten - BBWS Ciliwung Cisadane (BAKU)",
       "file": "Banten_Pusat_-_BBWS_Ciliwung_Cisadane_BAKU.pmtiles",
@@ -48,7 +48,6 @@
       "category": "POTENSIAL"
     },
 
-    /* ==================== BENGKULU ==================== */
     {
       "title": "Bengkulu - BWS Sumatera VII (BAKU)",
       "file": "Bengkulu_Pusat_-_BWS_Sumatera_VII_BAKU.pmtiles",
@@ -65,7 +64,6 @@
       "category": "POTENSIAL"
     },
 
-    /* ==================== DIY ==================== */
     {
       "title": "DIY - BBWS Serayu Opak (BAKU)",
       "file": "Daerah_Istimewa_Yogyakarta_Pusat_-_BBWS_Serayu_Opak_BAKU.pmtiles",
@@ -82,7 +80,6 @@
       "category": "POTENSIAL"
     },
 
-    /* ==================== GORONTALO ==================== */
     {
       "title": "Gorontalo - BWS Sulawesi II (BAKU)",
       "file": "Gorontalo_Pusat_-_BWS_Sulawesi_II_BAKU.pmtiles",
@@ -99,7 +96,6 @@
       "category": "POTENSIAL"
     },
 
-    /* ==================== JAMBI ==================== */
     {
       "title": "Jambi - BWS Sumatera VI (BAKU)",
       "file": "Jambi_Pusat_-_BWS_Sumatera_VI_BAKU.pmtiles",
@@ -116,7 +112,6 @@
       "category": "POTENSIAL"
     },
 
-    /* ==================== JAWA BARAT ==================== */
     {
       "title": "Jawa Barat - BBWS Cimanuk Cisanggarung (BAKU)",
       "file": "Jawa_Barat_Pusat_-_BBWS_Cimanuk_Cisanggarung_BAKU.pmtiles",
@@ -163,7 +158,6 @@
       "category": "POTENSIAL"
     },
 
-    /* ==================== JAWA TENGAH ==================== */
     {
       "title": "Jawa Tengah - BBWS Bengawan Solo (BAKU)",
       "file": "Jawa_Tengah_Pusat_-_BBWS_Bengawan_Solo_BAKU.pmtiles",
@@ -179,11 +173,7 @@
       "file": "Jawa_Tengah_Pusat_-_BBWS_Bengawan_Solo_POTS.pmtiles",
       "category": "POTENSIAL"
     },
-     {
-      "title": "Jawa Tengah - BBWS Cimanuk Cisanggarung (BAKU)",
-      "file": "Jawa_Tengah_Pusat_-_BBWS_Cimanuk_Cisanggarung_BAKU.pmtiles",
-      "category": "FUNGSIONAL"
-    },
+
     {
       "title": "Jawa Tengah - BBWS Cimanuk Cisanggarung (FUNGSIONAL)",
       "file": "Jawa_Tengah_Pusat_-_BBWS_Cimanuk_Cisanggarung_FUNG.pmtiles",
@@ -194,6 +184,7 @@
       "file": "Jawa_Tengah_Pusat_-_BBWS_Cimanuk_Cisanggarung_POTS.pmtiles",
       "category": "POTENSIAL"
     },
+
     {
       "title": "Jawa Tengah - BBWS Citanduy (BAKU)",
       "file": "Jawa_Tengah_Pusat_-_BBWS_Citanduy_BAKU.pmtiles",
@@ -209,6 +200,7 @@
       "file": "Jawa_Tengah_Pusat_-_BBWS_Pemali_Juana_FUNG.pmtiles",
       "category": "FUNGSIONAL"
     },
+
     {
       "title": "Jawa Tengah - BBWS Serayu Opak (BAKU)",
       "file": "Jawa_Tengah_Pusat_-_BBWS_Serayu_Opak_BAKU.pmtiles",
@@ -225,7 +217,6 @@
       "category": "POTENSIAL"
     },
 
-    /* ==================== JAWA TIMUR ==================== */
     {
       "title": "Jawa Timur - BBWS Bengawan Solo (BAKU)",
       "file": "Jawa_Timur_Pusat_-_BBWS_Bengawan_Solo_BAKU.pmtiles",
@@ -257,7 +248,6 @@
       "category": "POTENSIAL"
     },
 
-    /* ==================== KALIMANTAN SELATAN ==================== */
     {
       "title": "Kalimantan Selatan - BWS Kalimantan III (BAKU)",
       "file": "Kalimantan_Selatan_Pusat_-_BWS_Kalimantan_III_BAKU.pmtiles",
@@ -274,7 +264,6 @@
       "category": "POTENSIAL"
     },
 
-    /* ==================== KALIMANTAN TENGAH ==================== */
     {
       "title": "Kalimantan Tengah - BWS Kalimantan II (BAKU)",
       "file": "Kalimantan_Tengah_Pusat_-_BWS_Kalimantan_II_BAKU.pmtiles",
@@ -306,7 +295,6 @@
       "category": "POTENSIAL"
     },
 
-    /* ==================== KALIMANTAN TIMUR ==================== */
     {
       "title": "Kalimantan Timur - BWS Kalimantan IV (BAKU)",
       "file": "Kalimantan_Timur_Pusat_-_BWS_Kalimantan_IV_BAKU.pmtiles",
@@ -323,41 +311,38 @@
       "category": "POTENSIAL"
     },
 
-    /* ==================== KEP. BANGKA BELITUNG ==================== */
     {
-      "title": "Kep. Bangka Belitung - BWS Bangka Belitung (BAKU)",
+      "title": "Kepulauan Bangka Belitung - BWS Bangka Belitung (BAKU)",
       "file": "Kepulauan_Bangka_Belitung_Pusat_-_BWS_Bangka_Belitung_BAKU.pmtiles",
       "category": "BAKU"
     },
     {
-      "title": "Kep. Bangka Belitung - BWS Bangka Belitung (FUNGSIONAL)",
+      "title": "Kepulauan Bangka Belitung - BWS Bangka Belitung (FUNGSIONAL)",
       "file": "Kepulauan_Bangka_Belitung_Pusat_-_BWS_Bangka_Belitung_FUNG.pmtiles",
       "category": "FUNGSIONAL"
     },
     {
-      "title": "Kep. Bangka Belitung - BWS Bangka Belitung (POTENSIAL)",
+      "title": "Kepulauan Bangka Belitung - BWS Bangka Belitung (POTENSIAL)",
       "file": "Kepulauan_Bangka_Belitung_Pusat_-_BWS_Bangka_Belitung_POTS.pmtiles",
       "category": "POTENSIAL"
     },
 
-    /* ==================== KEP. RIAU ==================== */
     {
-      "title": "Kep. Riau - BWS Sumatera IV (BAKU)",
+      "title": "Kepulauan Riau - BWS Sumatera IV (BAKU)",
       "file": "Kepulauan_Riau_Pusat_-_BWS_Sumatera_IV_BAKU.pmtiles",
       "category": "BAKU"
     },
     {
-      "title": "Kep. Riau - BWS Sumatera IV (FUNGSIONAL)",
+      "title": "Kepulauan Riau - BWS Sumatera IV (FUNGSIONAL)",
       "file": "Kepulauan_Riau_Pusat_-_BWS_Sumatera_IV_FUNG.pmtiles",
       "category": "FUNGSIONAL"
     },
     {
-      "title": "Kep. Riau - BWS Sumatera IV (POTENSIAL)",
+      "title": "Kepulauan Riau - BWS Sumatera IV (POTENSIAL)",
       "file": "Kepulauan_Riau_Pusat_-_BWS_Sumatera_IV_POTS.pmtiles",
       "category": "POTENSIAL"
     },
 
-    /* ==================== LAMPUNG ==================== */
     {
       "title": "Lampung - BBWS Mesuji Sekampung (BAKU)",
       "file": "Lampung_Pusat_-_BBWS_Mesuji_Sekampung_BAKU.pmtiles",
@@ -374,7 +359,6 @@
       "category": "POTENSIAL"
     },
 
-    /* ==================== MALUKU ==================== */
     {
       "title": "Maluku - BWS Maluku (BAKU)",
       "file": "Maluku_Pusat_-_BWS_Maluku_BAKU.pmtiles",
@@ -391,7 +375,6 @@
       "category": "POTENSIAL"
     },
 
-    /* ==================== MALUKU UTARA ==================== */
     {
       "title": "Maluku Utara - BWS Maluku Utara (BAKU)",
       "file": "Maluku_Utara_Pusat_-_BWS_Maluku_Utara_BAKU.pmtiles",
@@ -408,7 +391,6 @@
       "category": "POTENSIAL"
     },
 
-    /* ==================== NUSA TENGGARA BARAT ==================== */
     {
       "title": "Nusa Tenggara Barat - BWS NT I (BAKU)",
       "file": "Nusa_Tenggara_Barat_Pusat_-_BWS_NT_I_BAKU.pmtiles",
@@ -425,7 +407,6 @@
       "category": "POTENSIAL"
     },
 
-    /* ==================== NUSA TENGGARA TIMUR ==================== */
     {
       "title": "Nusa Tenggara Timur - BWS NT II (BAKU)",
       "file": "Nusa_Tenggara_Timur_Pusat_-_BWS_NT_II_BAKU.pmtiles",
@@ -442,7 +423,6 @@
       "category": "POTENSIAL"
     },
 
-    /* ==================== PAPUA BARAT ==================== */
     {
       "title": "Papua Barat - BWS Papua Barat (BAKU)",
       "file": "Papua_Barat_Pusat_-_BWS_Papua_Barat_BAKU.pmtiles",
@@ -459,7 +439,6 @@
       "category": "POTENSIAL"
     },
 
-    /* ==================== PAPUA ==================== */
     {
       "title": "Papua - BWS Papua (BAKU)",
       "file": "Papua_Pusat_-_BWS_Papua_BAKU.pmtiles",
@@ -481,7 +460,6 @@
       "category": "POTENSIAL"
     },
 
-    /* ==================== RIAU ==================== */
     {
       "title": "Riau - BWS Sumatera III (BAKU)",
       "file": "Riau_Pusat_-_BWS_Sumatera_III_BAKU.pmtiles",
@@ -498,7 +476,6 @@
       "category": "POTENSIAL"
     },
 
-    /* ==================== SULAWESI BARAT ==================== */
     {
       "title": "Sulawesi Barat - BWS Sulawesi III (BAKU)",
       "file": "Sulawesi_Barat_Pusat_-_BWS_Sulawesi_III_BAKU.pmtiles",
@@ -515,7 +492,6 @@
       "category": "POTENSIAL"
     },
 
-    /* ==================== SULAWESI SELATAN ==================== */
     {
       "title": "Sulawesi Selatan - BBWS Pompengan Jeneberang (BAKU)",
       "file": "Sulawesi_Selatan_Pusat_-_BBWS_Pompengan_Jeneberang_BAKU.pmtiles",
@@ -532,7 +508,6 @@
       "category": "POTENSIAL"
     },
 
-    /* ==================== SULAWESI TENGAH ==================== */
     {
       "title": "Sulawesi Tengah - BWS Sulawesi III (BAKU)",
       "file": "Sulawesi_Tengah_Pusat_-_BWS_Sulawesi_III_BAKU.pmtiles",
@@ -549,7 +524,6 @@
       "category": "POTENSIAL"
     },
 
-    /* ==================== SULAWESI TENGGARA ==================== */
     {
       "title": "Sulawesi Tenggara - BWS Sulawesi IV (BAKU)",
       "file": "Sulawesi_Tenggara_Pusat_-_BWS_Sulawesi_IV_BAKU.pmtiles",
@@ -566,7 +540,6 @@
       "category": "POTENSIAL"
     },
 
-    /* ==================== SULAWESI UTARA ==================== */
     {
       "title": "Sulawesi Utara - BWS Sulawesi I (BAKU)",
       "file": "Sulawesi_Utara_Pusat_-_BWS_Sulawesi_I_BAKU.pmtiles",
@@ -583,7 +556,6 @@
       "category": "POTENSIAL"
     },
 
-    /* ==================== SUMATERA BARAT ==================== */
     {
       "title": "Sumatera Barat - BWS Sumatera II (BAKU)",
       "file": "Sumatera_Barat_Pusat_-_BWS_Sumatera_II_BAKU.pmtiles",
@@ -615,7 +587,6 @@
       "category": "POTENSIAL"
     },
 
-    /* ==================== SUMATERA SELATAN ==================== */
     {
       "title": "Sumatera Selatan - BBWS Sumatera VIII (BAKU)",
       "file": "Sumatera_Selatan_Pusat_-_BBWS_Sumatera_VIII_BAKU.pmtiles",
@@ -632,7 +603,6 @@
       "category": "POTENSIAL"
     },
 
-    /* ==================== SUMATERA UTARA ==================== */
     {
       "title": "Sumatera Utara - BWS Sumatera II (BAKU)",
       "file": "Sumatera_Utara_Pusat_-_BWS_Sumatera_II_BAKU.pmtiles",
@@ -648,6 +618,5 @@
       "file": "Sumatera_Utara_Pusat_-_BWS_Sumatera_II_POTS.pmtiles",
       "category": "POTENSIAL"
     }
-
   ]
 }
