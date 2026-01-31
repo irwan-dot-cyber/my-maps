@@ -25,39 +25,74 @@ html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Robo
   gap:12px;
   align-items:center;
   font-size:12px;
-  font-weight:700;
+  font-weight:800;
   box-shadow:0 10px 25px rgba(0,0,0,.35)
 }
-.legend label{display:flex;gap:6px;align-items:center}
+.legend label{display:flex;gap:6px;align-items:center;user-select:none}
 .legend input{transform:translateY(1px)}
 .dot{width:10px;height:10px;border-radius:50%}
 .baku{background:#3b82f6}
 .pots{background:#f59e0b}
 .fung{background:#10b981}
 
-/* === Loading overlay + spinner === */
+/* === Loading overlay + spinner + progress === */
 #loading{
   position:absolute;
   inset:0;
   z-index:2000;
-  background:rgba(15,23,42,.6);
+  background:rgba(15,23,42,.62);
   display:flex;
   flex-direction:column;
-  gap:14px;
   align-items:center;
   justify-content:center;
   color:#fff;
-  font-size:16px;
-  font-weight:800;
+  text-align:center;
+  padding:24px;
 }
 .spinner{
-  width:42px;height:42px;
-  border:4px solid rgba(255,255,255,.25);
+  width:44px;height:44px;
+  border:4px solid rgba(255,255,255,.22);
   border-top-color:#22d3ee;
   border-radius:50%;
   animation:spin 1s linear infinite;
 }
 @keyframes spin{to{transform:rotate(360deg)}}
+
+.loadText{
+  margin-top:14px;
+  font-size:16px;
+  font-weight:900;
+  letter-spacing:.3px;
+}
+.loadSub{
+  margin-top:6px;
+  font-size:12px;
+  opacity:.85;
+}
+
+/* progress bar */
+.barWrap{
+  width:min(340px, 82vw);
+  margin-top:14px;
+  background:rgba(255,255,255,.14);
+  border-radius:999px;
+  overflow:hidden;
+  height:10px;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.10);
+}
+.barFill{
+  height:100%;
+  width:0%;
+  background:linear-gradient(90deg,#22d3ee,#a78bfa);
+  border-radius:999px;
+  transition:width .18s ease;
+}
+.pct{
+  margin-top:10px;
+  font-size:13px;
+  font-weight:900;
+  opacity:.95;
+}
 </style>
 </head>
 
@@ -74,7 +109,13 @@ html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Robo
 <!-- Loading -->
 <div id="loading">
   <div class="spinner"></div>
-  Loading data…
+  <div class="loadText" id="loadText">Loading data…</div>
+  <div class="loadSub" id="loadSub">Menyiapkan layer PMTiles nasional</div>
+
+  <div class="barWrap" aria-hidden="true">
+    <div class="barFill" id="barFill"></div>
+  </div>
+  <div class="pct" id="pct">0%</div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -91,10 +132,10 @@ L.tileLayer(
 ).addTo(map);
 
 /* === GROUPS === */
-const groups={
-  BAKU:L.layerGroup(),
-  POTENSIAL:L.layerGroup(),
-  FUNGSIONAL:L.layerGroup().addTo(map) // default ON
+const groups = {
+  BAKU: L.layerGroup(),
+  POTENSIAL: L.layerGroup(),
+  FUNGSIONAL: L.layerGroup().addTo(map) // default ON
 };
 
 function fillColor(cat){
@@ -103,75 +144,116 @@ function fillColor(cat){
   return "rgba(16,185,129,.35)";
 }
 
+/* === LOADING UI HELPERS === */
+const loadingEl = document.getElementById("loading");
+const loadTextEl = document.getElementById("loadText");
+const loadSubEl  = document.getElementById("loadSub");
+const barFillEl  = document.getElementById("barFill");
+const pctEl      = document.getElementById("pct");
+
+function setProgress(done, total){
+  const pct = total ? Math.round((done/total)*100) : 0;
+  barFillEl.style.width = pct + "%";
+  pctEl.textContent = pct + "%";
+  loadSubEl.textContent = `Memuat ${done} dari ${total} layer`;
+}
+
 /* === LOAD ALL PMTILES === */
-let unionBounds=null;
+let unionBounds = null;
 
-async function buildRules(url,cat){
-  const p=new pmtiles.PMTiles(url);
-  const h=await p.getHeader();
-  const m=await p.getMetadata();
+async function buildRules(url, cat){
+  const p = new pmtiles.PMTiles(url);
+  const h = await p.getHeader();
+  const m = await p.getMetadata();
 
-  const b=L.latLngBounds(
-    [h.minLat,h.minLon],
-    [h.maxLat,h.maxLon]
-  );
-  unionBounds=unionBounds?unionBounds.extend(b):b;
+  const b = L.latLngBounds([h.minLat, h.minLon], [h.maxLat, h.maxLon]);
+  unionBounds = unionBounds ? unionBounds.extend(b) : b;
 
-  const layers=(m.vector_layers||[]).map(v=>v.id);
-  if(!layers.length) throw "vector_layers kosong";
+  const layers = (m && m.vector_layers) ? m.vector_layers.map(v => v.id) : [];
+  if(!layers.length) throw new Error("vector_layers kosong: " + url);
 
-  return layers.map(name=>({
-    dataLayer:name,
-    symbolizer:new protomapsL.PolygonSymbolizer({
-      fill:fillColor(cat),
-      stroke:"rgba(0,0,0,0)",
-      width:0
+  const fill = fillColor(cat);
+
+  return layers.map(name => ({
+    dataLayer: name,
+    symbolizer: new protomapsL.PolygonSymbolizer({
+      fill,
+      stroke: "rgba(0,0,0,0)",
+      width: 0
     })
   }));
 }
 
 async function loadAll(){
-  const loading=document.getElementById("loading");
-
   try{
-    const res=await fetch("manifest.json?v="+Date.now(),{cache:"no-store"});
-    const json=await res.json();
-    const items=Array.isArray(json)?json:json.layers;
+    const res = await fetch("manifest.json?v=" + Date.now(), {cache:"no-store"});
+    if(!res.ok) throw new Error("manifest.json HTTP " + res.status);
 
-    for(const it of items){
-      const cat=(it.category||"").toUpperCase();
-      if(!groups[cat]) continue;
+    const json  = await res.json();
+    const items = Array.isArray(json) ? json : json.layers;
+
+    if(!items || !items.length) throw new Error("manifest kosong / format salah");
+
+    // hitung total file valid (yang kategorinya dikenal dan ada file)
+    const validItems = items.filter(it => it?.file && groups[(it.category||"").toUpperCase()]);
+    const total = validItems.length;
+
+    let done = 0;
+    setProgress(done, total);
+
+    // load satu-satu agar progress stabil dan cocok untuk HP
+    for(const it of validItems){
+      const cat = (it.category || "").toUpperCase();
+      const file = it.file;
 
       try{
-        const rules=await buildRules(it.file,cat);
-        const layer=protomapsL.leafletLayer({
-          url:it.file,
-          paintRules:rules,
-          labelRules:[]
+        const rules = await buildRules(file, cat);
+        const layer = protomapsL.leafletLayer({
+          url: file,
+          paintRules: rules,
+          labelRules: []
         });
         layer.addTo(groups[cat]);
       }catch(e){
-        console.error("Skip:",it.file,e);
+        console.error("Skip:", file, e);
+        // skip tapi tetap dihitung biar progress gak “mandek”
+      }finally{
+        done++;
+        setProgress(done, total);
+        loadTextEl.textContent = "Loading data…";
       }
     }
 
-    // === FIT TO DATA ===
+    // Fit to data (langsung kelihatan tanpa zoom)
     if(unionBounds){
       map.invalidateSize(true);
-      map.fitBounds(unionBounds,{padding:[30,30]});
+      map.fitBounds(unionBounds, {padding:[30,30]});
     }
-
+  }catch(e){
+    console.error(e);
+    loadTextEl.textContent = "Gagal memuat data";
+    loadSubEl.textContent = "Cek manifest.json & console";
   }finally{
-    loading.style.display="none";
+    // kasih sedikit jeda biar 100% kebaca, terus hilang
+    setTimeout(() => { loadingEl.style.display = "none"; }, 250);
   }
 }
 
 loadAll();
 
-/* === TOGGLE === */
-baku.onchange=()=>baku.checked?map.addLayer(groups.BAKU):map.removeLayer(groups.BAKU);
-pots.onchange=()=>pots.checked?map.addLayer(groups.POTENSIAL):map.removeLayer(groups.POTENSIAL);
-fung.onchange=()=>fung.checked?map.addLayer(groups.FUNGSIONAL):map.removeLayer(groups.FUNGSIONAL);
+/* === TOGGLE DEFAULT: FUNGSIONAL ON, lainnya OFF === */
+baku.checked = false;
+pots.checked = false;
+fung.checked = true;
+
+// pastikan group BAKU & POTENSIAL tidak ditampilkan di awal
+map.removeLayer(groups.BAKU);
+map.removeLayer(groups.POTENSIAL);
+map.addLayer(groups.FUNGSIONAL);
+
+baku.onchange = () => baku.checked ? map.addLayer(groups.BAKU) : map.removeLayer(groups.BAKU);
+pots.onchange = () => pots.checked ? map.addLayer(groups.POTENSIAL) : map.removeLayer(groups.POTENSIAL);
+fung.onchange = () => fung.checked ? map.addLayer(groups.FUNGSIONAL) : map.removeLayer(groups.FUNGSIONAL);
 </script>
 </body>
 </html>
