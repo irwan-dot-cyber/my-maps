@@ -56,6 +56,15 @@ html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Robo
   padding:10px 12px;font-size:12px;font-weight:900;
   display:none;box-shadow:0 10px 25px rgba(0,0,0,.35)
 }
+
+/* ===== Home control ===== */
+.leaflet-control-home{
+  background:#fff;border-radius:4px;
+  width:34px;height:34px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;box-shadow:0 1px 5px rgba(0,0,0,.35)
+}
+.leaflet-control-home:hover{background:#f3f4f6}
+.leaflet-control-home span{font-weight:900;font-size:16px;line-height:1}
 </style>
 </head>
 
@@ -70,7 +79,7 @@ html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Robo
 </div>
 
 <!-- Zoom hint -->
-<div id="zoomHint" class="zoomHint">🔍 Perbesar peta untuk melihat data</div>
+<div id="zoomHint" class="zoomHint">🔍 Perbesar peta untuk melihat DI</div>
 
 <!-- Loading -->
 <div id="loading">
@@ -104,6 +113,13 @@ function fillColor(cat){
   return"rgba(16,185,129,.35)";
 }
 
+/* ===== Global extent ===== */
+let allBounds = null;
+function extendBounds(minLat,minLon,maxLat,maxLon){
+  const b = L.latLngBounds([minLat,minLon],[maxLat,maxLon]);
+  allBounds = allBounds ? allBounds.extend(b) : b;
+}
+
 /* ===== Admin layers (always ON) ===== */
 const adminLine = protomapsL.leafletLayer({
   url:"Batas_Prov_Line.pmtiles",
@@ -119,6 +135,12 @@ const adminLine = protomapsL.leafletLayer({
   labelRules:[]
 }).addTo(map);
 
+/*
+  LABEL NOTE:
+  - Kalau sumber label masih polygon/multipart, viewer bisa munculin label dobel (beda tile).
+  - Workaround di sini: label hanya muncul pada zoom kecil (nasional) biar dobelnya minimal.
+  - Solusi paling bersih: bikin layer label sebagai POINT centroid 1 provinsi = 1 fitur.
+*/
 const adminLabel = protomapsL.leafletLayer({
   url:"Batas_Prov_Label.pmtiles",
   paintRules:[],
@@ -126,11 +148,12 @@ const adminLabel = protomapsL.leafletLayer({
     dataLayer:"batas_prov_label",
     symbolizer:new protomapsL.TextSymbolizer({
       labelProps:["WADMPR"],
-      font:"700 12px system-ui",
-      fill:"rgba(255,255,255,.95)",
-      stroke:"rgba(15,23,42,.85)",
+      font:"800 12px system-ui",
+      fill:"rgba(255,255,255,.96)",
+      stroke:"rgba(15,23,42,.90)",
       width:3,
-      minZoom:4
+      minZoom:4,
+      maxZoom:6    // <= bikin label nasional saja (kurangi double)
     })
   }]
 }).addTo(map);
@@ -140,17 +163,33 @@ const bar=document.getElementById("barFill");
 const pct=document.getElementById("pct");
 const loading=document.getElementById("loading");
 const zoomHint=document.getElementById("zoomHint");
-let minZoomF=0;
+
+let minVisibleZoomF = 7; // fallback
 
 function updateHint(){
-  zoomHint.style.display=map.getZoom()<minZoomF?"block":"none";
+  // Hint muncul kalau FUNGSIONAL nyala tapi zoom belum cukup
+  const fungOn = map.hasLayer(groups.FUNGSIONAL);
+  zoomHint.style.display = (fungOn && map.getZoom() < minVisibleZoomF) ? "block" : "none";
 }
 
 async function loadAll(){
   const res=await fetch("manifest.json?v="+Date.now(),{cache:"no-store"});
   const json=await res.json();
   const items=(json.layers||json).filter(i=>groups[i.category]);
+
   let done=0;
+
+  // extend bounds admin (biar home juga masuk Indonesia)
+  // kalau pmtiles admin punya header, kita ambil juga:
+  try{
+    const p1=new pmtiles.PMTiles("Batas_Prov_Line.pmtiles");
+    const h1=await p1.getHeader();
+    extendBounds(h1.minLat,h1.minLon,h1.maxLat,h1.maxLon);
+
+    const p2=new pmtiles.PMTiles("Batas_Prov_Label.pmtiles");
+    const h2=await p2.getHeader();
+    extendBounds(h2.minLat,h2.minLon,h2.maxLat,h2.maxLon);
+  }catch(e){ console.warn("Admin header skip:", e); }
 
   for(const it of items){
     try{
@@ -158,7 +197,13 @@ async function loadAll(){
       const h=await p.getHeader();
       const m=await p.getMetadata();
 
-      if(it.category==="FUNGSIONAL")minZoomF=Math.max(minZoomF,h.minZoom||0);
+      extendBounds(h.minLat,h.minLon,h.maxLat,h.maxLon);
+
+      // penting: supaya “lihat DI” muncul sebelum minzoom efektif
+      if(it.category==="FUNGSIONAL"){
+        const mz = (h.minZoom ?? 0);
+        minVisibleZoomF = Math.max(minVisibleZoomF, mz + 1); // +1 biar lebih aman
+      }
 
       const rules=(m.vector_layers||[]).map(v=>({
         dataLayer:v.id,
@@ -172,7 +217,7 @@ async function loadAll(){
         url:it.file,paintRules:rules,labelRules:[]
       }).addTo(groups[it.category]);
 
-    }catch(e){console.error(it.file,e)}
+    }catch(e){ console.error("Gagal:", it.file, e); }
     finally{
       done++;
       const p=Math.round(done/items.length*100);
@@ -180,6 +225,7 @@ async function loadAll(){
       pct.textContent=p+"%";
     }
   }
+
   loading.style.display="none";
   updateHint();
 }
@@ -190,7 +236,28 @@ loadAll();
 baku.onchange=()=>baku.checked?map.addLayer(groups.BAKU):map.removeLayer(groups.BAKU);
 pots.onchange=()=>pots.checked?map.addLayer(groups.POTENSIAL):map.removeLayer(groups.POTENSIAL);
 fung.onchange=()=>fung.checked?map.addLayer(groups.FUNGSIONAL):map.removeLayer(groups.FUNGSIONAL);
+
+/* ===== Home button (fit extent) ===== */
+const HomeControl = L.Control.extend({
+  options:{ position:"topleft" },
+  onAdd:function(){
+    const div=L.DomUtil.create("div","leaflet-control-home leaflet-bar");
+    div.title="Home (Zoom extent)";
+    div.innerHTML="<span>⌂</span>";
+    L.DomEvent.disableClickPropagation(div);
+    L.DomEvent.on(div,"click",()=>{
+      if(allBounds) map.fitBounds(allBounds, {padding:[18,18]});
+      else map.setView([-2.5,118],5);
+      updateHint();
+    });
+    return div;
+  }
+});
+map.addControl(new HomeControl());
+
 map.on("zoomend",updateHint);
+map.on("layeradd",updateHint);
+map.on("layerremove",updateHint);
 </script>
 </body>
 </html>
