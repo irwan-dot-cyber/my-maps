@@ -1,370 +1,134 @@
 <!doctype html>
 <html lang="id">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>PMTiles Viewer (Imagery + Toggle)</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PMTiles Viewer</title>
 
-  <!-- MapLibre GL -->
-  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
-  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
-  <!-- PMTiles (UMD build so global `pmtiles` exists) -->
-  <script src="https://unpkg.com/pmtiles@3.0.6/dist/pmtiles.js"></script>
+<style>
+html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto}
+#map{height:100%;width:100%}
 
-  <style>
-    html, body { height: 100%; margin: 0; }
-    #map { height: 100%; width: 100%; }
+/* === PANEL MINI (MOBILE-FIRST) === */
+.panel{
+  position:absolute;z-index:999;
+  top:10px;left:10px;
+  background:#0f172aee;color:#e5e7eb;
+  border-radius:12px;
+  padding:10px;
+  display:flex;
+  gap:8px;
+  box-shadow:0 10px 25px rgba(0,0,0,.35)
+}
+.item{
+  display:flex;align-items:center;gap:6px;
+  font-size:12px;font-weight:600
+}
+.dot{width:10px;height:10px;border-radius:50%}
+.baku{background:#3b82f6}
+.pots{background:#f59e0b}
+.fung{background:#10b981}
 
-    .panel {
-      position: absolute;
-      top: 12px;
-      left: 12px;
-      z-index: 10;
-      width: 320px;
-      max-width: calc(100% - 24px);
-      background: rgba(14, 17, 22, 0.88);
-      color: #fff;
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 14px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
-      overflow: hidden;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-    }
-    .panel header{
-      padding: 12px 14px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 8px;
-      border-bottom: 1px solid rgba(255,255,255,0.10);
-    }
-    .panel header .title{ font-weight: 700; font-size: 14px; letter-spacing: .2px; }
-    .panel header .hint{ font-size: 12px; opacity: .75; white-space: nowrap; }
-    .panel .content{ padding: 12px 14px 14px 14px; }
-
-    .legend { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 10px; }
-    .row {
-      display:flex; align-items:center; justify-content:space-between; gap: 10px;
-      padding: 8px 10px; border-radius: 12px;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.08);
-    }
-    .left { display:flex; align-items:center; gap: 10px; min-width: 0; }
-    .swatch {
-      width: 14px; height: 14px; border-radius: 999px;
-      box-shadow: 0 0 0 3px rgba(255,255,255,0.10) inset;
-      flex: 0 0 auto;
-    }
-    .label { font-size: 13px; font-weight: 650; overflow:hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .sub { font-size: 12px; opacity: .7; margin-top: 2px; }
-    .stack { display:flex; flex-direction:column; min-width:0; }
-
-    .toggle { display:flex; align-items:center; gap: 8px; flex: 0 0 auto; font-size: 12px; opacity: .9; }
-    input[type="checkbox"]{ width: 18px; height: 18px; accent-color: #7bdcff; cursor: pointer; }
-
-    .status {
-      font-size: 12px; opacity: .75; line-height: 1.35;
-      margin-top: 10px; padding: 10px; border-radius: 12px;
-      background: rgba(255,255,255,0.05);
-      border: 1px dashed rgba(255,255,255,0.15);
-      max-height: 140px; overflow: auto;
-    }
-
-    .btnbar{ display:flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-    .btn{
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.12);
-      color: #fff;
-      padding: 8px 10px;
-      border-radius: 12px;
-      font-weight: 650;
-      font-size: 12px;
-      cursor: pointer;
-    }
-    .btn:hover{ background: rgba(255,255,255,0.12); }
-
-    .attribution-note{ font-size: 11px; opacity: .65; margin-top: 8px; }
-  </style>
+/* === LOADING CENTER === */
+#loading{
+  position:absolute;z-index:2000;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(15,23,42,.55);
+  color:#fff;
+  font-size:18px;
+  font-weight:700;
+  letter-spacing:.5px
+}
+</style>
 </head>
 
 <body>
 <div id="map"></div>
 
+<!-- MINI LEGEND -->
 <div class="panel">
-  <header>
-    <div class="title">PMTiles Viewer</div>
-    <div class="hint">Imagery + Toggle</div>
-  </header>
-
-  <div class="content">
-    <div class="legend">
-      <div class="row">
-        <div class="left">
-          <span class="swatch" style="background:#2ea8ff"></span>
-          <div class="stack">
-            <div class="label">BAKU</div>
-            <div class="sub">Layer baku</div>
-          </div>
-        </div>
-        <label class="toggle"><input id="togBAKU" type="checkbox" checked />ON</label>
-      </div>
-
-      <div class="row">
-        <div class="left">
-          <span class="swatch" style="background:#ffb020"></span>
-          <div class="stack">
-            <div class="label">POTENSIAL</div>
-            <div class="sub">Layer potensial</div>
-          </div>
-        </div>
-        <label class="toggle"><input id="togPOTENSIAL" type="checkbox" checked />ON</label>
-      </div>
-
-      <div class="row">
-        <div class="left">
-          <span class="swatch" style="background:#2ee59d"></span>
-          <div class="stack">
-            <div class="label">FUNGSIONAL</div>
-            <div class="sub">Layer fungsional</div>
-          </div>
-        </div>
-        <label class="toggle"><input id="togFUNGSIONAL" type="checkbox" checked />ON</label>
-      </div>
-    </div>
-
-    <div class="btnbar">
-      <button class="btn" id="btnAllOn">Semua ON</button>
-      <button class="btn" id="btnAllOff">Semua OFF</button>
-      <button class="btn" id="btnReload">Reload PMTiles</button>
-    </div>
-
-    <div class="status" id="status">Memuat…</div>
-
-    <div class="attribution-note">
-      Basemap: Esri World Imagery. Overlay: PMTiles (GitHub).
-    </div>
-  </div>
+  <label class="item">
+    <span class="dot baku"></span>
+    <input type="checkbox" checked id="baku">BAKU
+  </label>
+  <label class="item">
+    <span class="dot pots"></span>
+    <input type="checkbox" checked id="pots">POTENSIAL
+  </label>
+  <label class="item">
+    <span class="dot fung"></span>
+    <input type="checkbox" checked id="fung">FUNGSIONAL
+  </label>
 </div>
 
+<!-- LOADING -->
+<div id="loading">Loading data…</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/pmtiles@3.0.7/dist/pmtiles.js"></script>
+<script src="https://unpkg.com/protomaps-leaflet@4.0.1/dist/protomaps-leaflet.js"></script>
+
 <script>
-  // Cek cepat: pastikan pmtiles global ada
-  if (!window.pmtiles) {
-    console.error("pmtiles global tidak ditemukan. Pastikan script pmtiles.js berhasil diload.");
-  }
+const map = L.map("map",{preferCanvas:true}).setView([-2.5,118],5);
 
-  // ====== Basemap (Imagery) ======
-  const style = {
-    version: 8,
-    sources: {
-      esriImagery: {
-        type: "raster",
-        tiles: [
-          "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-        ],
-        tileSize: 256,
-        attribution: "Tiles © Esri"
-      }
-    },
-    layers: [
-      { id: "esriImagery", type: "raster", source: "esriImagery" }
-    ]
-  };
+// Basemap imagery
+L.tileLayer(
+  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+  {maxZoom:20}
+).addTo(map);
 
-  const map = new maplibregl.Map({
-    container: "map",
-    style,
-    center: [118.0, -2.5],
-    zoom: 4
-  });
+const groups = {
+  BAKU: L.layerGroup().addTo(map),
+  POTENSIAL: L.layerGroup().addTo(map),
+  FUNGSIONAL: L.layerGroup().addTo(map)
+};
 
-  map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
+function polygonRules(color){
+  return [{
+    symbolizer:new protomapsL.PolygonSymbolizer({
+      fill:color,
+      stroke:"rgba(0,0,0,0)",
+      width:0
+    })
+  }];
+}
 
-  // ====== PMTiles protocol for MapLibre ======
-  const protocol = new pmtiles.Protocol();
-  maplibregl.addProtocol("pmtiles", protocol.tile);
+async function loadManifest(){
+  const res = await fetch("manifest.json");
+  const json = await res.json();
+  const items = json.layers;
 
-  // ====== UI + State ======
-  const statusEl = document.getElementById("status");
-  const toggles = {
-    BAKU: document.getElementById("togBAKU"),
-    POTENSIAL: document.getElementById("togPOTENSIAL"),
-    FUNGSIONAL: document.getElementById("togFUNGSIONAL")
-  };
+  for(const it of items){
+    const pm = new pmtiles.PMTiles(it.file);
+    const meta = await pm.getMetadata();
 
-  const layersByCategory = { BAKU: [], POTENSIAL: [], FUNGSIONAL: [] };
+    const rules =
+      it.category==="BAKU" ? polygonRules("rgba(59,130,246,.35)") :
+      it.category==="POTENSIAL" ? polygonRules("rgba(245,158,11,.35)") :
+      polygonRules("rgba(16,185,129,.35)");
 
-  const colorByCategory = {
-    BAKU: "#2ea8ff",
-    POTENSIAL: "#ffb020",
-    FUNGSIONAL: "#2ee59d"
-  };
-
-  function logStatus(msg) {
-    const t = new Date().toLocaleTimeString();
-    statusEl.innerHTML = `${t} • ${msg}<br/>` + statusEl.innerHTML;
-  }
-
-  function setCategoryVisibility(category, visible) {
-    const vis = visible ? "visible" : "none";
-    (layersByCategory[category] || []).forEach(layerId => {
-      if (map.getLayer(layerId)) map.setLayoutProperty(layerId, "visibility", vis);
-    });
-  }
-
-  function clearAllPMTilesLayers() {
-    for (const cat of Object.keys(layersByCategory)) {
-      for (const layerId of layersByCategory[cat]) {
-        if (map.getLayer(layerId)) map.removeLayer(layerId);
-      }
-      layersByCategory[cat] = [];
-    }
-
-    const styleObj = map.getStyle();
-    if (styleObj && styleObj.sources) {
-      Object.keys(styleObj.sources).forEach(srcId => {
-        if (srcId.startsWith("src__") && map.getSource(srcId)) {
-          map.removeSource(srcId);
-        }
-      });
-    }
-  }
-
-  async function addOnePMTiles(item) {
-    const category = (item.category || "").toUpperCase().trim();
-    if (!colorByCategory[category]) {
-      logStatus(`Lewati: kategori tidak dikenal "${item.category}" (${item.file})`);
-      return;
-    }
-
-    const file = item.file;
-    const name = item.name || file;
-
-    // Register archive
-    const p = new pmtiles.PMTiles(file);
-    protocol.add(p);
-
-    // Add vector source
-    const srcId = "src__" + file.replace(/[^a-zA-Z0-9_]/g, "_");
-    if (map.getSource(srcId)) return;
-
-    map.addSource(srcId, { type: "vector", url: "pmtiles://" + file });
-
-    // Metadata: find vector layers
-    let meta;
-    try {
-      meta = await p.getMetadata();
-    } catch (e) {
-      logStatus(`Gagal baca metadata: ${file} (cek path & CORS)`);
-      return;
-    }
-
-    const vectorLayers = (meta && meta.vector_layers) ? meta.vector_layers : [];
-    if (!vectorLayers.length) {
-      logStatus(`Tidak ada vector_layers di metadata: ${file}`);
-      return;
-    }
-
-    const color = colorByCategory[category];
-    const baseVis = toggles[category].checked ? "visible" : "none";
-
-    vectorLayers.forEach(vl => {
-      const sourceLayer = vl.id;
-      const safeKey = (file + "__" + sourceLayer).replace(/[^a-zA-Z0-9_]/g, "_");
-      const fillId = `lyr__${category}__fill__${safeKey}`;
-      const lineId = `lyr__${category}__line__${safeKey}`;
-      const ptId   = `lyr__${category}__pt__${safeKey}`;
-
-      map.addLayer({
-        id: fillId,
-        type: "fill",
-        source: srcId,
-        "source-layer": sourceLayer,
-        filter: ["==", ["geometry-type"], "Polygon"],
-        paint: { "fill-color": color, "fill-opacity": 0.18 },
-        layout: { visibility: baseVis }
-      });
-
-      map.addLayer({
-        id: lineId,
-        type: "line",
-        source: srcId,
-        "source-layer": sourceLayer,
-        filter: ["any",
-          ["==", ["geometry-type"], "LineString"],
-          ["==", ["geometry-type"], "Polygon"]
-        ],
-        paint: { "line-color": color, "line-width": 2.2, "line-opacity": 0.9 },
-        layout: { visibility: baseVis }
-      });
-
-      map.addLayer({
-        id: ptId,
-        type: "circle",
-        source: srcId,
-        "source-layer": sourceLayer,
-        filter: ["==", ["geometry-type"], "Point"],
-        paint: {
-          "circle-color": color,
-          "circle-radius": 4.2,
-          "circle-opacity": 0.95,
-          "circle-stroke-width": 1.2,
-          "circle-stroke-color": "#0b0f14"
-        },
-        layout: { visibility: baseVis }
-      });
-
-      layersByCategory[category].push(fillId, lineId, ptId);
+    const layer = protomapsL.leafletLayer({
+      url: it.file,
+      paintRules: rules
     });
 
-    logStatus(`OK: ${name} (${category}) | source-layers: ${vectorLayers.length}`);
+    layer.addTo(groups[it.category]);
   }
 
-  async function loadFromManifest() {
-    statusEl.innerHTML = "";
-    logStatus("Mulai load manifest.json…");
+  document.getElementById("loading").style.display="none";
+}
 
-    let manifest;
-    try {
-      const res = await fetch("manifest.json", { cache: "no-store" });
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      manifest = await res.json();
-    } catch (e) {
-      logStatus("Gagal load manifest.json. Pastikan manifest.json ada di folder yang sama.");
-      return;
-    }
+loadManifest();
 
-    const items = (manifest && manifest.layers) ? manifest.layers : [];
-    if (!items.length) {
-      logStatus("manifest.json kosong (layers: []).");
-      return;
-    }
-
-    clearAllPMTilesLayers();
-    logStatus(`Total PMTiles di manifest: ${items.length}`);
-
-    for (const item of items) await addOnePMTiles(item);
-
-    logStatus("Selesai load semua PMTiles ✅");
-  }
-
-  // Toggle events
-  toggles.BAKU.addEventListener("change", e => setCategoryVisibility("BAKU", e.target.checked));
-  toggles.POTENSIAL.addEventListener("change", e => setCategoryVisibility("POTENSIAL", e.target.checked));
-  toggles.FUNGSIONAL.addEventListener("change", e => setCategoryVisibility("FUNGSIONAL", e.target.checked));
-
-  document.getElementById("btnAllOn").addEventListener("click", () => {
-    for (const k of Object.keys(toggles)) { toggles[k].checked = true; setCategoryVisibility(k, true); }
-  });
-  document.getElementById("btnAllOff").addEventListener("click", () => {
-    for (const k of Object.keys(toggles)) { toggles[k].checked = false; setCategoryVisibility(k, false); }
-  });
-  document.getElementById("btnReload").addEventListener("click", () => loadFromManifest());
-
-  map.on("load", () => {
-    logStatus("Map siap. Load PMTiles…");
-    loadFromManifest();
-  });
+// Toggle
+baku.onchange = ()=> baku.checked ? map.addLayer(groups.BAKU) : map.removeLayer(groups.BAKU);
+pots.onchange = ()=> pots.checked ? map.addLayer(groups.POTENSIAL) : map.removeLayer(groups.POTENSIAL);
+fung.onchange = ()=> fung.checked ? map.addLayer(groups.FUNGSIONAL) : map.removeLayer(groups.FUNGSIONAL);
 </script>
 </body>
 </html>
