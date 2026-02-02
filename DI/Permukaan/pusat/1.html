@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>DI Permukaan - Nasional (PMTiles)</title>
+  <title>PMTiles Nasional - DI Permukaan</title>
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
@@ -11,100 +11,103 @@
     html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
     #map{height:100%;width:100%}
 
-    /* ===== Top legend bar (compact) ===== */
+    /* ===== Compact legend bar (top center) ===== */
     .legendbar{
-      position:absolute;z-index:9999;
-      top:10px;left:50%;transform:translateX(-50%);
-      display:flex;gap:10px;align-items:center;
-      padding:10px 12px;
-      background:#0b1220cc;color:#e5e7eb;
-      border:1px solid #334155;border-radius:14px;
+      position:absolute; z-index:9999;
+      top:10px; left:50%; transform:translateX(-50%);
+      background:#0f172ae6; color:#e5e7eb;
+      border:1px solid #334155;
+      border-radius:14px;
+      padding:8px 10px;
+      display:flex; gap:14px; align-items:center;
       box-shadow:0 10px 28px rgba(0,0,0,.35);
-      backdrop-filter: blur(10px);
-      max-width:calc(100vw - 20px);
+      max-width:calc(100vw - 24px);
       overflow:auto;
-      -webkit-overflow-scrolling:touch;
+      white-space:nowrap;
     }
-    .lg-item{display:flex;align-items:center;gap:8px;white-space:nowrap;font-weight:800;font-size:13px}
-    .dot{width:10px;height:10px;border-radius:999px;display:inline-block;flex:0 0 auto}
+    .legendbar label{
+      display:flex; align-items:center; gap:8px;
+      font-weight:700; font-size:12px;
+      letter-spacing:.2px;
+      user-select:none;
+    }
+    .legendbar input{ accent-color:#60a5fa; transform:translateY(1px); }
+    .dot{width:10px;height:10px;border-radius:50%}
     .dot.baku{background:#3b82f6}
     .dot.pots{background:#f59e0b}
     .dot.fung{background:#22c55e}
-    .lg-item input{transform:scale(1.05);accent-color:#60a5fa}
 
-    /* ===== Loading overlay ===== */
-    .overlay{
-      position:absolute;inset:0;z-index:9998;
-      display:flex;align-items:center;justify-content:center;
-      background:rgba(0,0,0,.25);
-      backdrop-filter: blur(2px);
-      pointer-events:none;
-      opacity:0;transition:opacity .2s ease;
-    }
-    .overlay.show{opacity:1;pointer-events:auto}
-    .card{
-      background:#0b1220ee;color:#e5e7eb;
-      border:1px solid #334155;border-radius:16px;
-      padding:16px 18px;min-width:min(320px, calc(100vw - 44px));
-      box-shadow:0 10px 28px rgba(0,0,0,.35);
-      text-align:center;
-    }
-    .spinner{
-      width:42px;height:42px;border-radius:999px;
-      border:4px solid rgba(255,255,255,.18);
-      border-top-color: rgba(255,255,255,.95);
-      margin:0 auto 10px auto;
-      animation:spin .8s linear infinite;
-    }
-    @keyframes spin{to{transform:rotate(360deg)}}
-    .pct{font-weight:900;font-size:18px;margin-top:6px}
-    .hint{font-size:12px;color:#cbd5e1;margin-top:6px}
-
-    /* ===== Small helper text bottom ===== */
-    .helper{
-      position:absolute;z-index:9997;
-      left:50%;transform:translateX(-50%);
-      bottom:14px;
-      padding:8px 12px;
-      background:#0b1220cc;color:#e5e7eb;
-      border:1px solid #334155;border-radius:999px;
-      box-shadow:0 10px 28px rgba(0,0,0,.25);
-      font-weight:700;font-size:12px;
-      backdrop-filter: blur(10px);
+    /* ===== Hint text ===== */
+    .hint{
+      position:absolute; z-index:9998;
+      left:50%; transform:translateX(-50%);
+      bottom:16px;
+      background:#0b1220e6;
+      color:#e5e7eb;
+      border:1px solid #334155;
+      border-radius:14px;
+      padding:10px 12px;
+      font-size:12px;
+      box-shadow:0 10px 28px rgba(0,0,0,.28);
       display:none;
       max-width:calc(100vw - 24px);
       text-align:center;
     }
-    .helper.show{display:block}
 
-    /* ===== Leaflet custom home button ===== */
-    .leaflet-bar a.homebtn{
-      font-weight:900;
-      text-align:center;
-      line-height:26px;
-      font-size:16px;
+    /* ===== Loading overlay ===== */
+    .overlay{
+      position:absolute; inset:0; z-index:10000;
+      background:rgba(2,6,23,.55);
+      display:flex; align-items:center; justify-content:center;
+      backdrop-filter: blur(2px);
     }
+    .loader{
+      width:min(360px, calc(100vw - 40px));
+      background:#0f172ae6;
+      border:1px solid #334155;
+      border-radius:18px;
+      box-shadow:0 10px 28px rgba(0,0,0,.35);
+      padding:18px 16px;
+      color:#e5e7eb;
+      text-align:center;
+    }
+    .spinner{
+      width:44px; height:44px;
+      margin:0 auto 10px auto;
+      border-radius:50%;
+      border:4px solid rgba(148,163,184,.35);
+      border-top-color:#60a5fa;
+      animation:spin .9s linear infinite;
+    }
+    @keyframes spin{ to{ transform:rotate(360deg);} }
+    .loadtitle{ font-weight:800; font-size:14px; }
+    .loadsub{ margin-top:6px; font-size:12px; color:#94a3b8; }
+    .pct{ margin-top:10px; font-weight:900; font-size:18px; letter-spacing:.5px; }
 
-    /* ===== Label style (Leaflet divIcon) ===== */
+    /* Home button style */
+    .leaflet-control-home a{
+      width:34px; height:34px; line-height:34px;
+      text-align:center; display:block;
+      background:#fff; color:#111827;
+      text-decoration:none;
+      font-weight:900;
+      border-radius:4px;
+    }
+    .leaflet-control-home a:hover{ background:#f3f4f6; }
+
+    /* Province label (GeoJSON point -> DivIcon) */
     .prov-label{
       color:#fff;
       font-weight:900;
-      font-size:12px;
+      font-size:13px;
       text-shadow:
-        -1px -1px 0 rgba(0,0,0,.85),
-         1px -1px 0 rgba(0,0,0,.85),
-        -1px  1px 0 rgba(0,0,0,.85),
-         1px  1px 0 rgba(0,0,0,.85),
-         0px  2px 6px rgba(0,0,0,.7);
+        0 1px 0 rgba(0,0,0,.55),
+        0 2px 6px rgba(0,0,0,.55);
+      padding:2px 6px;
+      border-radius:8px;
+      background:rgba(15,23,42,.0); /* transparent pill (text only vibe) */
       white-space:nowrap;
       pointer-events:none;
-      transform:translate(-50%,-50%);
-    }
-
-    /* Mobile: make top legend even slimmer */
-    @media (max-width:520px){
-      .legendbar{padding:8px 10px;border-radius:12px;gap:8px}
-      .lg-item{font-size:12px}
     }
   </style>
 </head>
@@ -112,337 +115,415 @@
 <body>
   <div id="map"></div>
 
-  <!-- Compact legend -->
-  <div class="legendbar" id="legend">
-    <label class="lg-item">
-      <span class="dot baku"></span>
-      <input type="checkbox" id="cbBaku">
-      BAKU
-    </label>
-
-    <label class="lg-item">
-      <span class="dot pots"></span>
-      <input type="checkbox" id="cbPots">
-      POTENSIAL
-    </label>
-
-    <label class="lg-item">
-      <span class="dot fung"></span>
-      <input type="checkbox" id="cbFung" checked>
-      FUNGSIONAL
-    </label>
+  <!-- Compact Legend -->
+  <div class="legendbar" id="legendbar">
+    <label><span class="dot baku"></span><input id="tglBAKU" type="checkbox">BAKU</label>
+    <label><span class="dot pots"></span><input id="tglPOTS" type="checkbox">POTENSIAL</label>
+    <label><span class="dot fung"></span><input id="tglFUNG" type="checkbox" checked>FUNGSIONAL</label>
   </div>
+
+  <!-- Hint -->
+  <div class="hint" id="hint">Perbesar peta untuk melihat DI</div>
 
   <!-- Loading overlay -->
   <div class="overlay" id="overlay">
-    <div class="card">
+    <div class="loader">
       <div class="spinner"></div>
-      <div style="font-weight:900">Loading data…</div>
+      <div class="loadtitle">Loading data…</div>
+      <div class="loadsub" id="loadsub">Menyiapkan layer</div>
       <div class="pct" id="pct">0%</div>
-      <div class="hint" id="hint">Mengambil PMTiles & label…</div>
     </div>
   </div>
-
-  <!-- Helper -->
-  <div class="helper" id="helper">Perbesar peta untuk melihat DI</div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/pmtiles@3.0.7/dist/pmtiles.js"></script>
   <script src="https://unpkg.com/protomaps-leaflet@4.0.1/dist/protomaps-leaflet.js"></script>
 
   <script>
-    // ===== Map init =====
-    const map = L.map("map", { zoomControl:true, preferCanvas:true })
-      .setView([-2.5, 118], 5);
+    // ==========================
+    // MAP INIT
+    // ==========================
+    const map = L.map("map", { zoomControl:true, preferCanvas:true }).setView([-2.5, 118], 5);
 
-    // Imagery basemap
+    // Esri World Imagery
     L.tileLayer(
       "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-      { maxZoom:20, attribution:"Tiles © Esri" }
+      { maxZoom: 20, attribution: "Tiles © Esri" }
     ).addTo(map);
 
-    // ===== UI =====
+    // ==========================
+    // UI refs
+    // ==========================
     const overlay = document.getElementById("overlay");
-    const pctEl   = document.getElementById("pct");
-    const hintEl  = document.getElementById("hint");
-    const helper  = document.getElementById("helper");
+    const pctEl = document.getElementById("pct");
+    const loadsub = document.getElementById("loadsub");
+    const hint = document.getElementById("hint");
 
-    const cbBaku = document.getElementById("cbBaku");
-    const cbPots = document.getElementById("cbPots");
-    const cbFung = document.getElementById("cbFung");
+    const tglBAKU = document.getElementById("tglBAKU");
+    const tglPOTS = document.getElementById("tglPOTS");
+    const tglFUNG = document.getElementById("tglFUNG");
 
-    function showOverlay(msg){
-      if (msg) hintEl.textContent = msg;
-      overlay.classList.add("show");
+    // ==========================
+    // STATE
+    // ==========================
+    const state = {
+      items: [], // manifest layers
+      // category -> array of item
+      byCat: { BAKU:[], POTENSIAL:[], FUNGSIONAL:[] },
+      // id -> { layer, bounds }
+      active: new Map(),
+      // always-on layers:
+      adminLine: null,
+      adminLineBounds: null,
+      provLabels: null, // leaflet layer group
+      // union bounds of everything that matters
+      unionBounds: null,
+      // progress
+      totalToLoad: 0,
+      loadedCount: 0
+    };
+
+    function setProgress(text){
+      const p = state.totalToLoad ? Math.round((state.loadedCount/state.totalToLoad)*100) : 0;
+      pctEl.textContent = Math.min(100, Math.max(0, p)) + "%";
+      if (text) loadsub.textContent = text;
     }
-    function hideOverlay(){
-      overlay.classList.remove("show");
-    }
-    function setPct(p){
-      pctEl.textContent = Math.max(0, Math.min(100, Math.round(p))) + "%";
+    function incProgress(text){
+      state.loadedCount++;
+      setProgress(text);
     }
 
-    // ===== Home extent (Indonesia-ish) =====
-    const HOME_BOUNDS = L.latLngBounds(
-      [-11.5, 94.0],   // SW
-      [  7.5, 141.5]   // NE
-    );
-
-    // Custom HOME button under zoom
+    // ==========================
+    // HOME BUTTON (fit extent)
+    // ==========================
     const HomeControl = L.Control.extend({
-      options:{ position:"topleft" },
+      options: { position: "topleft" },
       onAdd: function(){
-        const container = L.DomUtil.create("div", "leaflet-bar");
-        const a = L.DomUtil.create("a", "homebtn", container);
-        a.href="#";
-        a.title="Home";
-        a.innerHTML="⌂";
-        L.DomEvent.on(a, "click", (e)=>{
+        const div = L.DomUtil.create("div", "leaflet-control leaflet-control-home");
+        const a = L.DomUtil.create("a", "", div);
+        a.href = "#";
+        a.title = "Home (Fit extent)";
+        a.innerHTML = "⌂";
+        L.DomEvent.on(a, "click", (e) => {
           L.DomEvent.stop(e);
-          map.fitBounds(HOME_BOUNDS, { padding:[20,20] });
+          fitHome();
         });
-        return container;
+        return div;
       }
     });
     map.addControl(new HomeControl());
 
-    // ===== Helpers: hide/show text based on zoom =====
-    const DI_MIN_VISIBLE_ZOOM = 5; // from your test: minZoom: 5
-    function updateHelper(){
-      // Show hint if zoom too small (many DI pmtiles won't render below minZoom)
-      if (map.getZoom() < DI_MIN_VISIBLE_ZOOM) helper.classList.add("show");
-      else helper.classList.remove("show");
+    function fitHome(){
+      // prefer union bounds (admin line + any loaded layers)
+      const b = state.unionBounds || state.adminLineBounds;
+      if (b) map.fitBounds(b, { padding:[30,30] });
+      else map.setView([-2.5,118],5);
     }
-    map.on("zoomend", updateHelper);
-    updateHelper();
 
-    // ===== PMTiles helpers =====
-    async function readHeader(url){
+    // ==========================
+    // HINT visibility (DI usually visible after zoom)
+    // ==========================
+    const DI_HINT_ZOOM = 7; // kamu bisa tweak
+    function updateHint(){
+      hint.style.display = (map.getZoom() < DI_HINT_ZOOM) ? "block" : "none";
+    }
+    map.on("zoomend", updateHint);
+    updateHint();
+
+    // ==========================
+    // Manifest helpers
+    // ==========================
+    function normalizeManifest(json){
+      let arr = [];
+      if (Array.isArray(json)) arr = json;
+      else if (json && Array.isArray(json.layers)) arr = json.layers;
+      else if (json && Array.isArray(json.items)) arr = json.items;
+
+      // Accept {title/name, file/path/url, category}
+      return arr.map((raw, i) => {
+        const file = raw.file || raw.path || raw.pmtiles || raw.url || "";
+        const title = raw.title || raw.name || file.replace(/\.pmtiles$/i,"");
+        const cat = (raw.category || "").toUpperCase();
+        const id = raw.id || (i + ":" + file);
+        return { id, file, title, category: cat };
+      }).filter(x => x.file && /\.pmtiles$/i.test(x.file));
+    }
+
+    function bucketByCategory(){
+      state.byCat = { BAKU:[], POTENSIAL:[], FUNGSIONAL:[] };
+      for (const it of state.items){
+        const f = it.file.toUpperCase();
+        const cat =
+          it.category === "BAKU" || f.includes("_BAKU.PMTILES") ? "BAKU" :
+          it.category === "POTENSIAL" || it.category === "POTS" || f.includes("_POTS.PMTILES") ? "POTENSIAL" :
+          it.category === "FUNGSIONAL" || it.category === "FUNG" || f.includes("_FUNG.PMTILES") ? "FUNGSIONAL" :
+          null;
+        if (cat) state.byCat[cat].push({...it, category: cat});
+      }
+    }
+
+    // ==========================
+    // PMTiles metadata read
+    // ==========================
+    async function readPmtilesInfo(url){
       const p = new pmtiles.PMTiles(url);
-      return await p.getHeader();
+      const header = await p.getHeader();
+      const meta = await p.getMetadata().catch(()=>null);
+      const bounds = L.latLngBounds(
+        [header.minLat, header.minLon],
+        [header.maxLat, header.maxLon]
+      );
+      const vectorLayers = (meta && meta.vector_layers) ? meta.vector_layers.map(v => v.id) : [];
+      return { bounds, vectorLayers, header };
     }
 
-    // No outline polygon rules (fill only)
-    function makePolygonOnlyRules(vectorLayers, fillRGBA){
+    // ==========================
+    // Paint rules (NO polygon outline)
+    // ==========================
+    function rulesForCategory(vectorLayers, category){
+      const fill =
+        category === "BAKU" ? "rgba(59,130,246,0.32)" :
+        category === "POTENSIAL" ? "rgba(245,158,11,0.30)" :
+        "rgba(34,197,94,0.30)"; // FUNGSIONAL
+
       return vectorLayers.map(layerName => ({
         dataLayer: layerName,
         symbolizer: new protomapsL.PolygonSymbolizer({
-          fill: fillRGBA,
+          fill,
           stroke: "rgba(0,0,0,0)",
           width: 0
         })
       }));
     }
 
-    // ===== DI layer manager =====
-    const DI = {
-      layersAll: [], // from manifest
-      layerEntries: [], // {layerObj, category}
-      boundsUnion: null
-    };
-
-    const CATEGORY_STYLE = {
-      "BAKU": "rgba(59,130,246,0.35)",
-      "POTENSIAL": "rgba(245,158,11,0.35)",
-      "FUNGSIONAL": "rgba(34,197,94,0.30)"
-    };
-
-    function categoryFromItem(item){
-      // prefer explicit category field
-      if (item.category) return String(item.category).toUpperCase();
-      // fallback from name
-      const t = (item.title || item.name || "").toUpperCase();
-      if (t.includes("BAKU")) return "BAKU";
-      if (t.includes("POTS") || t.includes("POTENS")) return "POTENSIAL";
-      if (t.includes("FUNG")) return "FUNGSIONAL";
-      return "FUNGSIONAL";
+    // Province boundary line (pmtiles) rules
+    function rulesForAdminLine(vectorLayers){
+      // Try dash pattern; if library ignores dash, it becomes solid (still OK).
+      const dash = [8,6,1,6,8,6]; // dash dash dot dash dash feel
+      return vectorLayers.map(layerName => ({
+        dataLayer: layerName,
+        symbolizer: new protomapsL.LineSymbolizer({
+          color: "rgba(255,255,255,0.90)",
+          width: 2,
+          dash
+        })
+      }));
     }
 
-    async function addOneDI(item){
+    // ==========================
+    // Layer add/remove
+    // ==========================
+    async function addItemLayer(item){
+      if (state.active.has(item.id)) return;
+
       const url = item.file;
-      const p = new pmtiles.PMTiles(url);
-      const meta = await p.getMetadata();
-      const header = await p.getHeader();
+      setProgress("Baca: " + item.title);
 
-      const bounds = L.latLngBounds([header.minLat, header.minLon],[header.maxLat, header.maxLon]);
-      DI.boundsUnion = DI.boundsUnion ? DI.boundsUnion.extend(bounds) : bounds;
+      const info = await readPmtilesInfo(url);
+      const paintRules = rulesForCategory(info.vectorLayers, item.category);
 
-      const vectorLayers = (meta && meta.vector_layers) ? meta.vector_layers.map(v => v.id) : [];
-      const cat = categoryFromItem(item);
-      const fill = CATEGORY_STYLE[cat] || CATEGORY_STYLE["FUNGSIONAL"];
-      const paintRules = makePolygonOnlyRules(vectorLayers, fill);
-
-      const layer = protomapsL.leafletLayer({ url, paintRules, labelRules: [] });
+      const layer = protomapsL.leafletLayer({
+        url, paintRules, labelRules: []
+      });
       layer.addTo(map);
 
-      DI.layerEntries.push({ layer, category: cat, bounds });
+      state.active.set(item.id, { layer, bounds: info.bounds });
+
+      // union bounds
+      state.unionBounds = state.unionBounds ? state.unionBounds.extend(info.bounds) : info.bounds;
+      incProgress("OK: " + item.title);
     }
 
-    function setCategoryVisible(cat, visible){
-      DI.layerEntries.forEach(e=>{
-        if (e.category !== cat) return;
-        if (visible){
-          if (!map.hasLayer(e.layer)) e.layer.addTo(map);
-        } else {
-          if (map.hasLayer(e.layer)) map.removeLayer(e.layer);
+    function removeItemLayer(item){
+      const entry = state.active.get(item.id);
+      if (!entry) return;
+      map.removeLayer(entry.layer);
+      state.active.delete(item.id);
+      // unionBounds is not recomputed (fast path). Home still works via admin bounds.
+    }
+
+    // Concurrency-limited loader (biar browser gak “ngos-ngosan”)
+    async function loadMany(items, limit=4){
+      const queue = items.slice();
+      const workers = Array.from({length: limit}, async () => {
+        while(queue.length){
+          const it = queue.shift();
+          try { await addItemLayer(it); }
+          catch(e){ console.error("Fail load:", it.file, e); incProgress("Skip: " + it.title); }
         }
       });
+      await Promise.all(workers);
     }
 
-    // ===== Province boundary line (always ON) =====
-    // Adjust path if needed
-    const PROV_LINE_PM = "../../Provinsi/Batas_Prov_Line.pmtiles"; // change if your file is elsewhere
-    async function addProvLine(){
-      try{
-        const p = new pmtiles.PMTiles(PROV_LINE_PM);
-        const meta = await p.getMetadata();
-        const v = (meta && meta.vector_layers) ? meta.vector_layers.map(x=>x.id) : [];
+    // ==========================
+    // Always-on: Admin line + GeoJSON labels
+    // ==========================
+    async function loadAdminLine(){
+      const url = "Batas_Prov_Line.pmtiles"; // same folder as HTML
+      setProgress("Loading batas prov…");
 
-        const rules = v.map(layerName => ({
-          dataLayer: layerName,
-          symbolizer: new protomapsL.LineSymbolizer({
-            color: "rgba(255,255,255,0.90)",
-            width: 2,
-            // Dash pattern approximation (dash dash dot dash dash)
-            // Protomaps line dash is supported as 'dash' in some builds,
-            // if yours ignores it, it will render solid (still OK).
-            dash: [10,6,2,6,10,6]
-          })
-        }));
+      const info = await readPmtilesInfo(url);
+      const paintRules = rulesForAdminLine(info.vectorLayers);
 
-        const layer = protomapsL.leafletLayer({ url: PROV_LINE_PM, paintRules: rules, labelRules: [] });
-        layer.addTo(map);
-      }catch(e){
-        console.warn("Prov line failed:", e);
-      }
-    }
-
-    // ===== Province labels (GeoJSON points, always ON) =====
-    // You saved in DI root: DI/Point_Label.geojson
-    // This HTML is inside DI/Permukaan/pusat/ so relative path:
-    const PROV_LABEL_GJ = "../../Point_Label.geojson"; // adjust if needed
-
-    let labelLayer = null;
-
-    function makeLabelMarker(latlng, text){
-      return L.marker(latlng, {
-        interactive:false,
-        icon: L.divIcon({
-          className:"",
-          html:`<div class="prov-label">${text}</div>`,
-          iconSize:[0,0]
-        })
+      const layer = protomapsL.leafletLayer({
+        url, paintRules, labelRules: []
       });
+      layer.addTo(map);
+
+      state.adminLine = layer;
+      state.adminLineBounds = info.bounds;
+
+      // union bounds baseline
+      state.unionBounds = state.unionBounds ? state.unionBounds.extend(info.bounds) : info.bounds;
+      incProgress("Batas prov OK");
     }
 
-    async function addProvLabels(){
-      try{
-        const res = await fetch(PROV_LABEL_GJ, { cache:"no-store" });
-        if(!res.ok) throw new Error("HTTP " + res.status);
-        const gj = await res.json();
+    async function loadProvLabelsGeoJSON(){
+      // Point_Label.geojson berada di /DI/Point_Label.geojson
+      const url = "../../Point_Label.geojson";
+      setProgress("Loading label prov…");
 
-        const group = L.layerGroup();
-        const used = new Set(); // prevent doubles by name
-        (gj.features || []).forEach(f=>{
-          const g = f.geometry;
-          if(!g || g.type !== "Point") return;
+      const res = await fetch(url, { cache:"no-store" });
+      if (!res.ok) throw new Error("Label geojson HTTP " + res.status);
+      const gj = await res.json();
 
-          const props = f.properties || {};
-          const name = (props.WADMPR || props.NAMA || props.NAME || props.nama || "").toString().trim();
-          if(!name) return;
-          if(used.has(name)) return;
-          used.add(name);
+      // Remove duplicates by WADMPR (just in case)
+      const seen = new Set();
+      const features = (gj.features || []).filter(f => {
+        const n = (f.properties && (f.properties.WADMPR || f.properties.nama || f.properties.NAME)) || "";
+        const key = String(n).trim().toLowerCase();
+        if(!key) return false;
+        if(seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
 
-          const [x,y] = g.coordinates; // [lon,lat]
-          group.addLayer(makeLabelMarker([y,x], name));
-        });
+      const layer = L.geoJSON({ type:"FeatureCollection", features }, {
+        pointToLayer: (feat, latlng) => {
+          const name = (feat.properties && (feat.properties.WADMPR || feat.properties.nama || feat.properties.NAME)) || "";
+          const icon = L.divIcon({
+            className: "",
+            html: `<div class="prov-label">${name}</div>`,
+            iconSize: null
+          });
+          return L.marker(latlng, { icon, interactive:false });
+        }
+      }).addTo(map);
 
-        group.addTo(map);
-        labelLayer = group;
+      state.provLabels = layer;
+      incProgress("Label prov OK");
+    }
 
-      }catch(e){
-        console.warn("Prov labels failed:", e);
+    // ==========================
+    // Toggle categories
+    // ==========================
+    function itemsFor(cat){ return state.byCat[cat] || []; }
+
+    async function setCategory(cat, enabled){
+      const list = itemsFor(cat);
+      if (!list.length) return;
+
+      if (enabled){
+        // load them all
+        await loadMany(list, 4);
+      }else{
+        // remove them all
+        for (const it of list) removeItemLayer(it);
       }
     }
 
-    // ===== Load manifest and bootstrap =====
-    async function loadAll(){
-      showOverlay("Loading data…");
-      setPct(0);
-
-      // 1) fetch manifest
-      let manifest;
+    tglBAKU.addEventListener("change", async () => {
+      overlay.style.display = "flex";
       try{
+        // progress for this action only (rough)
+        state.loadedCount = 0;
+        state.totalToLoad = itemsFor("BAKU").length || 1;
+        setProgress("Toggle BAKU…");
+
+        await setCategory("BAKU", tglBAKU.checked);
+      }finally{
+        overlay.style.display = "none";
+        updateHint();
+      }
+    });
+
+    tglPOTS.addEventListener("change", async () => {
+      overlay.style.display = "flex";
+      try{
+        state.loadedCount = 0;
+        state.totalToLoad = itemsFor("POTENSIAL").length || 1;
+        setProgress("Toggle POTENSIAL…");
+
+        await setCategory("POTENSIAL", tglPOTS.checked);
+      }finally{
+        overlay.style.display = "none";
+        updateHint();
+      }
+    });
+
+    tglFUNG.addEventListener("change", async () => {
+      overlay.style.display = "flex";
+      try{
+        state.loadedCount = 0;
+        state.totalToLoad = itemsFor("FUNGSIONAL").length || 1;
+        setProgress("Toggle FUNGSIONAL…");
+
+        await setCategory("FUNGSIONAL", tglFUNG.checked);
+      }finally{
+        overlay.style.display = "none";
+        updateHint();
+      }
+    });
+
+    // ==========================
+    // BOOT: load manifest + always-on + default FUNGSIONAL
+    // ==========================
+    async function boot(){
+      overlay.style.display = "flex";
+      state.loadedCount = 0;
+
+      try{
+        // 1) Load manifest
+        setProgress("Baca manifest…");
         const res = await fetch("manifest.json?v=" + Date.now(), { cache:"no-store" });
-        if(!res.ok) throw new Error("HTTP " + res.status);
-        manifest = await res.json();
+        if (!res.ok) throw new Error("manifest HTTP " + res.status);
+        const json = await res.json();
+        state.items = normalizeManifest(json);
+        bucketByCategory();
+        incProgress("Manifest OK");
+
+        // 2) Compute total initial load for percent
+        // (admin line + labels + default FUNGSIONAL)
+        const nF = itemsFor("FUNGSIONAL").length;
+        state.totalToLoad = 1 /*manifest step already inc*/ + 1 /*admin*/ + 1 /*labels*/ + nF;
+
+        // 3) Always-on layers
+        await loadAdminLine();
+        await loadProvLabelsGeoJSON();
+
+        // 4) Default: FUNGSIONAL ON
+        // Reset checkboxes (as requested)
+        tglFUNG.checked = true;
+        tglBAKU.checked = false;
+        tglPOTS.checked = false;
+
+        await loadMany(itemsFor("FUNGSIONAL"), 4);
+
+        // 5) Fit to admin extent first (biar langsung nasional enak)
+        // Catatan: DI bisa belum kelihatan sebelum zoom, tapi batas+label sudah kelihatan.
+        fitHome();
+
       }catch(e){
         console.error(e);
-        showOverlay("Gagal baca manifest.json");
-        setPct(0);
-        return;
+        loadsub.textContent = "Gagal load data. Cek console / path file.";
+      }finally{
+        // small delay biar persen 100% kelihatan sebentar
+        setTimeout(() => { overlay.style.display = "none"; }, 250);
+        updateHint();
       }
-
-      // normalize manifest -> array
-      let items = [];
-      if (Array.isArray(manifest)) items = manifest;
-      else if (manifest && Array.isArray(manifest.layers)) items = manifest.layers;
-      else if (manifest && Array.isArray(manifest.items)) items = manifest.items;
-
-      // map to {file,title,category}
-      items = items.map((raw,i)=>{
-        const file = raw.file || raw.path || raw.pmtiles || raw.url || "";
-        const title = raw.title || raw.name || file.replace(/\.pmtiles$/i,"") || ("Layer " + (i+1));
-        const category = raw.category || raw.kategori || null;
-        return { file, title, category };
-      }).filter(x=>x.file && /\.pmtiles$/i.test(x.file));
-
-      DI.layersAll = items;
-
-      // 2) always-on province line + labels (don’t count them for %)
-      addProvLine();
-      addProvLabels();
-
-      // 3) load all DI pmtiles (we need them on map to be toggleable)
-      const total = items.length || 1;
-      let done = 0;
-
-      for(const it of items){
-        try{
-          await addOneDI(it);
-        }catch(e){
-          console.warn("Skip layer:", it.file, e);
-        }
-        done++;
-        setPct((done/total)*100);
-      }
-
-      // 4) Apply default visibility: FUNGSIONAL ON, others OFF
-      cbFung.checked = true;
-      cbBaku.checked = false;
-      cbPots.checked = false;
-
-      setCategoryVisible("FUNGSIONAL", true);
-      setCategoryVisible("BAKU", false);
-      setCategoryVisible("POTENSIAL", false);
-
-      // 5) Try fit to union bounds (but many DI are minZoom 5, so still show hint)
-      if (DI.boundsUnion){
-        map.fitBounds(DI.boundsUnion, { padding:[20,20] });
-      } else {
-        map.fitBounds(HOME_BOUNDS, { padding:[20,20] });
-      }
-
-      hideOverlay();
-      updateHelper();
     }
 
-    // ===== Toggle handlers =====
-    cbBaku.addEventListener("change", ()=> setCategoryVisible("BAKU", cbBaku.checked));
-    cbPots.addEventListener("change", ()=> setCategoryVisible("POTENSIAL", cbPots.checked));
-    cbFung.addEventListener("change", ()=> setCategoryVisible("FUNGSIONAL", cbFung.checked));
-
-    loadAll();
+    boot();
   </script>
 </body>
 </html>
