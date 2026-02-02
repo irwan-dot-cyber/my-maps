@@ -1,263 +1,448 @@
 <!doctype html>
 <html lang="id">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>PMTiles Nasional</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>DI Permukaan - Nasional (PMTiles)</title>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
-<style>
-html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto}
-#map{height:100%;width:100%}
+  <style>
+    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+    #map{height:100%;width:100%}
 
-/* ===== Legend (3 toggle only) ===== */
-.legend{
-  position:absolute;top:10px;left:50%;transform:translateX(-50%);
-  z-index:1000;background:#0f172acc;color:#e5e7eb;
-  border-radius:12px;padding:8px 12px;
-  display:flex;gap:12px;align-items:center;
-  font-size:12px;font-weight:800;
-  box-shadow:0 10px 25px rgba(0,0,0,.35)
-}
-.legend label{display:flex;gap:6px;align-items:center;white-space:nowrap}
-.legend input{transform:translateY(1px)}
-.dot{width:10px;height:10px;border-radius:50%}
-.baku{background:#3b82f6}
-.pots{background:#f59e0b}
-.fung{background:#10b981}
+    /* ===== Top legend bar (compact) ===== */
+    .legendbar{
+      position:absolute;z-index:9999;
+      top:10px;left:50%;transform:translateX(-50%);
+      display:flex;gap:10px;align-items:center;
+      padding:10px 12px;
+      background:#0b1220cc;color:#e5e7eb;
+      border:1px solid #334155;border-radius:14px;
+      box-shadow:0 10px 28px rgba(0,0,0,.35);
+      backdrop-filter: blur(10px);
+      max-width:calc(100vw - 20px);
+      overflow:auto;
+      -webkit-overflow-scrolling:touch;
+    }
+    .lg-item{display:flex;align-items:center;gap:8px;white-space:nowrap;font-weight:800;font-size:13px}
+    .dot{width:10px;height:10px;border-radius:999px;display:inline-block;flex:0 0 auto}
+    .dot.baku{background:#3b82f6}
+    .dot.pots{background:#f59e0b}
+    .dot.fung{background:#22c55e}
+    .lg-item input{transform:scale(1.05);accent-color:#60a5fa}
 
-/* ===== Loading ===== */
-#loading{
-  position:absolute;inset:0;z-index:2000;
-  background:rgba(15,23,42,.62);
-  display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  color:#fff;text-align:center
-}
-.spinner{
-  width:44px;height:44px;border:4px solid rgba(255,255,255,.25);
-  border-top-color:#22d3ee;border-radius:50%;
-  animation:spin 1s linear infinite
-}
-@keyframes spin{to{transform:rotate(360deg)}}
-.barWrap{width:min(340px,82vw);height:10px;
-  background:rgba(255,255,255,.15);border-radius:999px;
-  overflow:hidden;margin-top:14px}
-.barFill{height:100%;width:0%;
-  background:linear-gradient(90deg,#22d3ee,#a78bfa)}
-.pct{margin-top:8px;font-weight:900;font-size:13px}
+    /* ===== Loading overlay ===== */
+    .overlay{
+      position:absolute;inset:0;z-index:9998;
+      display:flex;align-items:center;justify-content:center;
+      background:rgba(0,0,0,.25);
+      backdrop-filter: blur(2px);
+      pointer-events:none;
+      opacity:0;transition:opacity .2s ease;
+    }
+    .overlay.show{opacity:1;pointer-events:auto}
+    .card{
+      background:#0b1220ee;color:#e5e7eb;
+      border:1px solid #334155;border-radius:16px;
+      padding:16px 18px;min-width:min(320px, calc(100vw - 44px));
+      box-shadow:0 10px 28px rgba(0,0,0,.35);
+      text-align:center;
+    }
+    .spinner{
+      width:42px;height:42px;border-radius:999px;
+      border:4px solid rgba(255,255,255,.18);
+      border-top-color: rgba(255,255,255,.95);
+      margin:0 auto 10px auto;
+      animation:spin .8s linear infinite;
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .pct{font-weight:900;font-size:18px;margin-top:6px}
+    .hint{font-size:12px;color:#cbd5e1;margin-top:6px}
 
-/* ===== Zoom Hint ===== */
-.zoomHint{
-  position:absolute;left:50%;bottom:16px;transform:translateX(-50%);
-  z-index:1500;background:rgba(15,23,42,.88);
-  color:#e5e7eb;border-radius:999px;
-  padding:10px 12px;font-size:12px;font-weight:900;
-  display:none;box-shadow:0 10px 25px rgba(0,0,0,.35)
-}
+    /* ===== Small helper text bottom ===== */
+    .helper{
+      position:absolute;z-index:9997;
+      left:50%;transform:translateX(-50%);
+      bottom:14px;
+      padding:8px 12px;
+      background:#0b1220cc;color:#e5e7eb;
+      border:1px solid #334155;border-radius:999px;
+      box-shadow:0 10px 28px rgba(0,0,0,.25);
+      font-weight:700;font-size:12px;
+      backdrop-filter: blur(10px);
+      display:none;
+      max-width:calc(100vw - 24px);
+      text-align:center;
+    }
+    .helper.show{display:block}
 
-/* ===== Home control ===== */
-.leaflet-control-home{
-  background:#fff;border-radius:4px;
-  width:34px;height:34px;display:flex;align-items:center;justify-content:center;
-  cursor:pointer;box-shadow:0 1px 5px rgba(0,0,0,.35)
-}
-.leaflet-control-home:hover{background:#f3f4f6}
-.leaflet-control-home span{font-weight:900;font-size:16px;line-height:1}
-</style>
+    /* ===== Leaflet custom home button ===== */
+    .leaflet-bar a.homebtn{
+      font-weight:900;
+      text-align:center;
+      line-height:26px;
+      font-size:16px;
+    }
+
+    /* ===== Label style (Leaflet divIcon) ===== */
+    .prov-label{
+      color:#fff;
+      font-weight:900;
+      font-size:12px;
+      text-shadow:
+        -1px -1px 0 rgba(0,0,0,.85),
+         1px -1px 0 rgba(0,0,0,.85),
+        -1px  1px 0 rgba(0,0,0,.85),
+         1px  1px 0 rgba(0,0,0,.85),
+         0px  2px 6px rgba(0,0,0,.7);
+      white-space:nowrap;
+      pointer-events:none;
+      transform:translate(-50%,-50%);
+    }
+
+    /* Mobile: make top legend even slimmer */
+    @media (max-width:520px){
+      .legendbar{padding:8px 10px;border-radius:12px;gap:8px}
+      .lg-item{font-size:12px}
+    }
+  </style>
 </head>
 
 <body>
-<div id="map"></div>
+  <div id="map"></div>
 
-<!-- Legend -->
-<div class="legend">
-  <label><span class="dot baku"></span><input type="checkbox" id="baku">BAKU</label>
-  <label><span class="dot pots"></span><input type="checkbox" id="pots">POTENSIAL</label>
-  <label><span class="dot fung"></span><input type="checkbox" id="fung" checked>FUNGSIONAL</label>
-</div>
+  <!-- Compact legend -->
+  <div class="legendbar" id="legend">
+    <label class="lg-item">
+      <span class="dot baku"></span>
+      <input type="checkbox" id="cbBaku">
+      BAKU
+    </label>
 
-<!-- Zoom hint -->
-<div id="zoomHint" class="zoomHint">🔍 Perbesar peta untuk melihat DI</div>
+    <label class="lg-item">
+      <span class="dot pots"></span>
+      <input type="checkbox" id="cbPots">
+      POTENSIAL
+    </label>
 
-<!-- Loading -->
-<div id="loading">
-  <div class="spinner"></div>
-  <div class="barWrap"><div class="barFill" id="barFill"></div></div>
-  <div class="pct" id="pct">0%</div>
-</div>
+    <label class="lg-item">
+      <span class="dot fung"></span>
+      <input type="checkbox" id="cbFung" checked>
+      FUNGSIONAL
+    </label>
+  </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/pmtiles@3.0.7/dist/pmtiles.js"></script>
-<script src="https://unpkg.com/protomaps-leaflet@4.0.1/dist/protomaps-leaflet.js"></script>
+  <!-- Loading overlay -->
+  <div class="overlay" id="overlay">
+    <div class="card">
+      <div class="spinner"></div>
+      <div style="font-weight:900">Loading data…</div>
+      <div class="pct" id="pct">0%</div>
+      <div class="hint" id="hint">Mengambil PMTiles & label…</div>
+    </div>
+  </div>
 
-<script>
-/* ===== Map ===== */
-const map = L.map("map",{preferCanvas:true}).setView([-2.5,118],5);
-L.tileLayer(
-  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-  {maxZoom:20}
-).addTo(map);
+  <!-- Helper -->
+  <div class="helper" id="helper">Perbesar peta untuk melihat DI</div>
 
-/* ===== Groups ===== */
-const groups={
-  BAKU:L.layerGroup(),
-  POTENSIAL:L.layerGroup(),
-  FUNGSIONAL:L.layerGroup().addTo(map)
-};
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/pmtiles@3.0.7/dist/pmtiles.js"></script>
+  <script src="https://unpkg.com/protomaps-leaflet@4.0.1/dist/protomaps-leaflet.js"></script>
 
-function fillColor(cat){
-  if(cat==="BAKU")return"rgba(59,130,246,.35)";
-  if(cat==="POTENSIAL")return"rgba(245,158,11,.35)";
-  return"rgba(16,185,129,.35)";
-}
+  <script>
+    // ===== Map init =====
+    const map = L.map("map", { zoomControl:true, preferCanvas:true })
+      .setView([-2.5, 118], 5);
 
-/* ===== Global extent ===== */
-let allBounds = null;
-function extendBounds(minLat,minLon,maxLat,maxLon){
-  const b = L.latLngBounds([minLat,minLon],[maxLat,maxLon]);
-  allBounds = allBounds ? allBounds.extend(b) : b;
-}
+    // Imagery basemap
+    L.tileLayer(
+      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      { maxZoom:20, attribution:"Tiles © Esri" }
+    ).addTo(map);
 
-/* ===== Admin layers (always ON) ===== */
-const adminLine = protomapsL.leafletLayer({
-  url:"Batas_Prov_Line.pmtiles",
-  paintRules:[{
-    dataLayer:"batas_prov_line",
-    symbolizer:new protomapsL.LineSymbolizer({
-      color:"rgba(255,255,255,.95)",
-      width:1.6,
-      dash:[10,6,10,6,2,6,10,6,10,6],
-      lineCap:"round",lineJoin:"round"
-    })
-  }],
-  labelRules:[]
-}).addTo(map);
+    // ===== UI =====
+    const overlay = document.getElementById("overlay");
+    const pctEl   = document.getElementById("pct");
+    const hintEl  = document.getElementById("hint");
+    const helper  = document.getElementById("helper");
 
-/*
-  LABEL NOTE:
-  - Kalau sumber label masih polygon/multipart, viewer bisa munculin label dobel (beda tile).
-  - Workaround di sini: label hanya muncul pada zoom kecil (nasional) biar dobelnya minimal.
-  - Solusi paling bersih: bikin layer label sebagai POINT centroid 1 provinsi = 1 fitur.
-*/
-const adminLabel = protomapsL.leafletLayer({
-  url:"Batas_Prov_Label.pmtiles",
-  paintRules:[],
-  labelRules:[{
-    dataLayer:"batas_prov_label",
-    symbolizer:new protomapsL.TextSymbolizer({
-      labelProps:["WADMPR"],
-      font:"800 12px system-ui",
-      fill:"rgba(255,255,255,.96)",
-      stroke:"rgba(15,23,42,.90)",
-      width:3,
-      minZoom:4,
-      maxZoom:6    // <= bikin label nasional saja (kurangi double)
-    })
-  }]
-}).addTo(map);
+    const cbBaku = document.getElementById("cbBaku");
+    const cbPots = document.getElementById("cbPots");
+    const cbFung = document.getElementById("cbFung");
 
-/* ===== Loading & data ===== */
-const bar=document.getElementById("barFill");
-const pct=document.getElementById("pct");
-const loading=document.getElementById("loading");
-const zoomHint=document.getElementById("zoomHint");
+    function showOverlay(msg){
+      if (msg) hintEl.textContent = msg;
+      overlay.classList.add("show");
+    }
+    function hideOverlay(){
+      overlay.classList.remove("show");
+    }
+    function setPct(p){
+      pctEl.textContent = Math.max(0, Math.min(100, Math.round(p))) + "%";
+    }
 
-let minVisibleZoomF = 7; // fallback
+    // ===== Home extent (Indonesia-ish) =====
+    const HOME_BOUNDS = L.latLngBounds(
+      [-11.5, 94.0],   // SW
+      [  7.5, 141.5]   // NE
+    );
 
-function updateHint(){
-  // Hint muncul kalau FUNGSIONAL nyala tapi zoom belum cukup
-  const fungOn = map.hasLayer(groups.FUNGSIONAL);
-  zoomHint.style.display = (fungOn && map.getZoom() < minVisibleZoomF) ? "block" : "none";
-}
-
-async function loadAll(){
-  const res=await fetch("manifest.json?v="+Date.now(),{cache:"no-store"});
-  const json=await res.json();
-  const items=(json.layers||json).filter(i=>groups[i.category]);
-
-  let done=0;
-
-  // extend bounds admin (biar home juga masuk Indonesia)
-  // kalau pmtiles admin punya header, kita ambil juga:
-  try{
-    const p1=new pmtiles.PMTiles("Batas_Prov_Line.pmtiles");
-    const h1=await p1.getHeader();
-    extendBounds(h1.minLat,h1.minLon,h1.maxLat,h1.maxLon);
-
-    const p2=new pmtiles.PMTiles("Batas_Prov_Label.pmtiles");
-    const h2=await p2.getHeader();
-    extendBounds(h2.minLat,h2.minLon,h2.maxLat,h2.maxLon);
-  }catch(e){ console.warn("Admin header skip:", e); }
-
-  for(const it of items){
-    try{
-      const p=new pmtiles.PMTiles(it.file);
-      const h=await p.getHeader();
-      const m=await p.getMetadata();
-
-      extendBounds(h.minLat,h.minLon,h.maxLat,h.maxLon);
-
-      // penting: supaya “lihat DI” muncul sebelum minzoom efektif
-      if(it.category==="FUNGSIONAL"){
-        const mz = (h.minZoom ?? 0);
-        minVisibleZoomF = Math.max(minVisibleZoomF, mz + 1); // +1 biar lebih aman
+    // Custom HOME button under zoom
+    const HomeControl = L.Control.extend({
+      options:{ position:"topleft" },
+      onAdd: function(){
+        const container = L.DomUtil.create("div", "leaflet-bar");
+        const a = L.DomUtil.create("a", "homebtn", container);
+        a.href="#";
+        a.title="Home";
+        a.innerHTML="⌂";
+        L.DomEvent.on(a, "click", (e)=>{
+          L.DomEvent.stop(e);
+          map.fitBounds(HOME_BOUNDS, { padding:[20,20] });
+        });
+        return container;
       }
+    });
+    map.addControl(new HomeControl());
 
-      const rules=(m.vector_layers||[]).map(v=>({
-        dataLayer:v.id,
-        symbolizer:new protomapsL.PolygonSymbolizer({
-          fill:fillColor(it.category),
-          stroke:"rgba(0,0,0,0)",width:0
+    // ===== Helpers: hide/show text based on zoom =====
+    const DI_MIN_VISIBLE_ZOOM = 5; // from your test: minZoom: 5
+    function updateHelper(){
+      // Show hint if zoom too small (many DI pmtiles won't render below minZoom)
+      if (map.getZoom() < DI_MIN_VISIBLE_ZOOM) helper.classList.add("show");
+      else helper.classList.remove("show");
+    }
+    map.on("zoomend", updateHelper);
+    updateHelper();
+
+    // ===== PMTiles helpers =====
+    async function readHeader(url){
+      const p = new pmtiles.PMTiles(url);
+      return await p.getHeader();
+    }
+
+    // No outline polygon rules (fill only)
+    function makePolygonOnlyRules(vectorLayers, fillRGBA){
+      return vectorLayers.map(layerName => ({
+        dataLayer: layerName,
+        symbolizer: new protomapsL.PolygonSymbolizer({
+          fill: fillRGBA,
+          stroke: "rgba(0,0,0,0)",
+          width: 0
         })
       }));
-
-      protomapsL.leafletLayer({
-        url:it.file,paintRules:rules,labelRules:[]
-      }).addTo(groups[it.category]);
-
-    }catch(e){ console.error("Gagal:", it.file, e); }
-    finally{
-      done++;
-      const p=Math.round(done/items.length*100);
-      bar.style.width=p+"%";
-      pct.textContent=p+"%";
     }
-  }
 
-  loading.style.display="none";
-  updateHint();
-}
+    // ===== DI layer manager =====
+    const DI = {
+      layersAll: [], // from manifest
+      layerEntries: [], // {layerObj, category}
+      boundsUnion: null
+    };
 
-loadAll();
+    const CATEGORY_STYLE = {
+      "BAKU": "rgba(59,130,246,0.35)",
+      "POTENSIAL": "rgba(245,158,11,0.35)",
+      "FUNGSIONAL": "rgba(34,197,94,0.30)"
+    };
 
-/* ===== Toggles ===== */
-baku.onchange=()=>baku.checked?map.addLayer(groups.BAKU):map.removeLayer(groups.BAKU);
-pots.onchange=()=>pots.checked?map.addLayer(groups.POTENSIAL):map.removeLayer(groups.POTENSIAL);
-fung.onchange=()=>fung.checked?map.addLayer(groups.FUNGSIONAL):map.removeLayer(groups.FUNGSIONAL);
+    function categoryFromItem(item){
+      // prefer explicit category field
+      if (item.category) return String(item.category).toUpperCase();
+      // fallback from name
+      const t = (item.title || item.name || "").toUpperCase();
+      if (t.includes("BAKU")) return "BAKU";
+      if (t.includes("POTS") || t.includes("POTENS")) return "POTENSIAL";
+      if (t.includes("FUNG")) return "FUNGSIONAL";
+      return "FUNGSIONAL";
+    }
 
-/* ===== Home button (fit extent) ===== */
-const HomeControl = L.Control.extend({
-  options:{ position:"topleft" },
-  onAdd:function(){
-    const div=L.DomUtil.create("div","leaflet-control-home leaflet-bar");
-    div.title="Home (Zoom extent)";
-    div.innerHTML="<span>⌂</span>";
-    L.DomEvent.disableClickPropagation(div);
-    L.DomEvent.on(div,"click",()=>{
-      if(allBounds) map.fitBounds(allBounds, {padding:[18,18]});
-      else map.setView([-2.5,118],5);
-      updateHint();
-    });
-    return div;
-  }
-});
-map.addControl(new HomeControl());
+    async function addOneDI(item){
+      const url = item.file;
+      const p = new pmtiles.PMTiles(url);
+      const meta = await p.getMetadata();
+      const header = await p.getHeader();
 
-map.on("zoomend",updateHint);
-map.on("layeradd",updateHint);
-map.on("layerremove",updateHint);
-</script>
+      const bounds = L.latLngBounds([header.minLat, header.minLon],[header.maxLat, header.maxLon]);
+      DI.boundsUnion = DI.boundsUnion ? DI.boundsUnion.extend(bounds) : bounds;
+
+      const vectorLayers = (meta && meta.vector_layers) ? meta.vector_layers.map(v => v.id) : [];
+      const cat = categoryFromItem(item);
+      const fill = CATEGORY_STYLE[cat] || CATEGORY_STYLE["FUNGSIONAL"];
+      const paintRules = makePolygonOnlyRules(vectorLayers, fill);
+
+      const layer = protomapsL.leafletLayer({ url, paintRules, labelRules: [] });
+      layer.addTo(map);
+
+      DI.layerEntries.push({ layer, category: cat, bounds });
+    }
+
+    function setCategoryVisible(cat, visible){
+      DI.layerEntries.forEach(e=>{
+        if (e.category !== cat) return;
+        if (visible){
+          if (!map.hasLayer(e.layer)) e.layer.addTo(map);
+        } else {
+          if (map.hasLayer(e.layer)) map.removeLayer(e.layer);
+        }
+      });
+    }
+
+    // ===== Province boundary line (always ON) =====
+    // Adjust path if needed
+    const PROV_LINE_PM = "../../Provinsi/Batas_Prov_Line.pmtiles"; // change if your file is elsewhere
+    async function addProvLine(){
+      try{
+        const p = new pmtiles.PMTiles(PROV_LINE_PM);
+        const meta = await p.getMetadata();
+        const v = (meta && meta.vector_layers) ? meta.vector_layers.map(x=>x.id) : [];
+
+        const rules = v.map(layerName => ({
+          dataLayer: layerName,
+          symbolizer: new protomapsL.LineSymbolizer({
+            color: "rgba(255,255,255,0.90)",
+            width: 2,
+            // Dash pattern approximation (dash dash dot dash dash)
+            // Protomaps line dash is supported as 'dash' in some builds,
+            // if yours ignores it, it will render solid (still OK).
+            dash: [10,6,2,6,10,6]
+          })
+        }));
+
+        const layer = protomapsL.leafletLayer({ url: PROV_LINE_PM, paintRules: rules, labelRules: [] });
+        layer.addTo(map);
+      }catch(e){
+        console.warn("Prov line failed:", e);
+      }
+    }
+
+    // ===== Province labels (GeoJSON points, always ON) =====
+    // You saved in DI root: DI/Point_Label.geojson
+    // This HTML is inside DI/Permukaan/pusat/ so relative path:
+    const PROV_LABEL_GJ = "../../Point_Label.geojson"; // adjust if needed
+
+    let labelLayer = null;
+
+    function makeLabelMarker(latlng, text){
+      return L.marker(latlng, {
+        interactive:false,
+        icon: L.divIcon({
+          className:"",
+          html:`<div class="prov-label">${text}</div>`,
+          iconSize:[0,0]
+        })
+      });
+    }
+
+    async function addProvLabels(){
+      try{
+        const res = await fetch(PROV_LABEL_GJ, { cache:"no-store" });
+        if(!res.ok) throw new Error("HTTP " + res.status);
+        const gj = await res.json();
+
+        const group = L.layerGroup();
+        const used = new Set(); // prevent doubles by name
+        (gj.features || []).forEach(f=>{
+          const g = f.geometry;
+          if(!g || g.type !== "Point") return;
+
+          const props = f.properties || {};
+          const name = (props.WADMPR || props.NAMA || props.NAME || props.nama || "").toString().trim();
+          if(!name) return;
+          if(used.has(name)) return;
+          used.add(name);
+
+          const [x,y] = g.coordinates; // [lon,lat]
+          group.addLayer(makeLabelMarker([y,x], name));
+        });
+
+        group.addTo(map);
+        labelLayer = group;
+
+      }catch(e){
+        console.warn("Prov labels failed:", e);
+      }
+    }
+
+    // ===== Load manifest and bootstrap =====
+    async function loadAll(){
+      showOverlay("Loading data…");
+      setPct(0);
+
+      // 1) fetch manifest
+      let manifest;
+      try{
+        const res = await fetch("manifest.json?v=" + Date.now(), { cache:"no-store" });
+        if(!res.ok) throw new Error("HTTP " + res.status);
+        manifest = await res.json();
+      }catch(e){
+        console.error(e);
+        showOverlay("Gagal baca manifest.json");
+        setPct(0);
+        return;
+      }
+
+      // normalize manifest -> array
+      let items = [];
+      if (Array.isArray(manifest)) items = manifest;
+      else if (manifest && Array.isArray(manifest.layers)) items = manifest.layers;
+      else if (manifest && Array.isArray(manifest.items)) items = manifest.items;
+
+      // map to {file,title,category}
+      items = items.map((raw,i)=>{
+        const file = raw.file || raw.path || raw.pmtiles || raw.url || "";
+        const title = raw.title || raw.name || file.replace(/\.pmtiles$/i,"") || ("Layer " + (i+1));
+        const category = raw.category || raw.kategori || null;
+        return { file, title, category };
+      }).filter(x=>x.file && /\.pmtiles$/i.test(x.file));
+
+      DI.layersAll = items;
+
+      // 2) always-on province line + labels (don’t count them for %)
+      addProvLine();
+      addProvLabels();
+
+      // 3) load all DI pmtiles (we need them on map to be toggleable)
+      const total = items.length || 1;
+      let done = 0;
+
+      for(const it of items){
+        try{
+          await addOneDI(it);
+        }catch(e){
+          console.warn("Skip layer:", it.file, e);
+        }
+        done++;
+        setPct((done/total)*100);
+      }
+
+      // 4) Apply default visibility: FUNGSIONAL ON, others OFF
+      cbFung.checked = true;
+      cbBaku.checked = false;
+      cbPots.checked = false;
+
+      setCategoryVisible("FUNGSIONAL", true);
+      setCategoryVisible("BAKU", false);
+      setCategoryVisible("POTENSIAL", false);
+
+      // 5) Try fit to union bounds (but many DI are minZoom 5, so still show hint)
+      if (DI.boundsUnion){
+        map.fitBounds(DI.boundsUnion, { padding:[20,20] });
+      } else {
+        map.fitBounds(HOME_BOUNDS, { padding:[20,20] });
+      }
+
+      hideOverlay();
+      updateHelper();
+    }
+
+    // ===== Toggle handlers =====
+    cbBaku.addEventListener("change", ()=> setCategoryVisible("BAKU", cbBaku.checked));
+    cbPots.addEventListener("change", ()=> setCategoryVisible("POTENSIAL", cbPots.checked));
+    cbFung.addEventListener("change", ()=> setCategoryVisible("FUNGSIONAL", cbFung.checked));
+
+    loadAll();
+  </script>
 </body>
 </html>
