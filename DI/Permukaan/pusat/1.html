@@ -3,691 +3,792 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>PMTiles Nasional - DI Permukaan</title>
+  <title>PMTiles Viewer Nasional — Direktorat Irigasi & Rawa</title>
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <!-- MapLibre GL -->
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet"/>
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+
+  <!-- PMTiles protocol -->
+  <script src="https://unpkg.com/pmtiles@3.0.6/dist/pmtiles.js"></script>
 
   <style>
     :root{
-      --headerH: 82px;
-      --panelW: min(360px, calc(100vw - 24px));
+      --bg:#07101c;
+      --panel:#0b1626ee;
+      --panel2:#0b1626d8;
+      --stroke:#1f334e;
+      --text:#eaf2ff;
+      --muted:#b6c7e6;
+      --brand:#0b4fa3;
+      --brand2:#0a3f86;
+      --chip:#0f2037;
+      --shadow:0 14px 40px rgba(0,0,0,.35);
+      --r:16px;
     }
-    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:#0b1220;}
-    #map{position:absolute;top:var(--headerH);left:0;right:0;bottom:0;}
-
-    /* ===== HEADER ===== */
-    .app-header{
-      position:absolute; z-index:12000;
-      top:0; left:0; right:0;
-      height:var(--headerH);
-      background:#0b4ea2;
-      display:flex; align-items:center;
-      padding:10px 14px;
-      box-sizing:border-box;
-      box-shadow:0 10px 28px rgba(0,0,0,.25);
+    html,body{height:100%;margin:0;background:#0b1220;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+    .app{height:100%;display:flex;flex-direction:column}
+    /* HEADER */
+    .header{
+      height:86px;flex:0 0 auto;
+      background:linear-gradient(0deg,var(--brand2),var(--brand));
+      display:flex;align-items:center;gap:16px;
+      padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.12);
     }
-    .brand{display:flex; align-items:center; gap:14px; min-width:320px;}
-    .brand img{height:52px;width:auto;display:block;border-radius:6px;background:transparent;}
-    .brand .txt{line-height:1.12;color:#fff;}
-    .brand .txt .l1{font-weight:900;letter-spacing:.3px;font-size:18px;}
-    .brand .txt .l2{font-weight:800;font-size:20px;margin-top:2px;}
-    .brand .txt .l3{font-weight:650;font-size:16px;opacity:.95;margin-top:2px;}
-    .header-right{
-      margin-left:auto;
-      color:#e5e7eb;
-      font-weight:800;
-      opacity:.95;
-      font-size:14px;
-      white-space:nowrap;
-      user-select:none;
-    }
-
-    /* ===== Right panel ===== */
-    .right-panel{
-      position:absolute; z-index:11000;
-      top: calc(var(--headerH) + 10px);
-      right: 10px;
-      width: var(--panelW);
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      pointer-events:auto;
-    }
-    .card{
-      background:#0f172ae6;
-      color:#e5e7eb;
-      border:1px solid #334155;
-      border-radius:16px;
-      box-shadow:0 10px 28px rgba(0,0,0,.35);
+    .logo{
+      width:58px;height:58px;border-radius:10px;flex:0 0 auto;
+      display:grid;place-items:center;
+      background:#0a2f66;
       overflow:hidden;
     }
-
-    .filter{padding:12px 12px;display:flex;flex-direction:column;gap:8px;}
-    .filter .row{display:flex;gap:8px;align-items:center;}
-    .filter .lbl{font-size:12px;color:#cbd5e1;font-weight:800;letter-spacing:.2px;}
-    select{
-      width:100%;
-      padding:10px 12px;
-      border-radius:12px;
-      border:1px solid #334155;
-      background:#0b1220;
-      color:#e5e7eb;
-      outline:none;
-      font-weight:800;
-      font-size:13px;
-    }
-    .btn{
-      flex:0 0 auto;
-      padding:10px 12px;
-      border-radius:12px;
-      border:1px solid #334155;
-      background:#111c33;
-      color:#e5e7eb;
-      font-weight:900;
-      cursor:pointer;
-      user-select:none;
+    .logo svg{width:54px;height:54px}
+    .htext{color:#fff;line-height:1.05}
+    .htext .l1{font-weight:800;font-size:20px;letter-spacing:.4px}
+    .htext .l2{font-weight:800;font-size:24px;margin-top:2px}
+    .htext .l3{font-weight:700;font-size:16px;opacity:.95;margin-top:2px}
+    .htitle-right{
+      margin-left:auto;
+      color:#eaf2ff;
+      font-weight:700;
+      opacity:.9;
+      letter-spacing:.2px;
       white-space:nowrap;
     }
-    .btn:hover{filter:brightness(1.07);}
 
-    /* ===== Legend ===== */
-    .legendbar{padding:10px 12px;display:flex;gap:12px;align-items:center;overflow:auto;white-space:nowrap;}
-    .legendbar label{display:flex;align-items:center;gap:8px;font-weight:900;font-size:12px;letter-spacing:.2px;user-select:none;}
-    .legendbar input{accent-color:#60a5fa;transform:translateY(1px);}
-    .dot{width:10px;height:10px;border-radius:50%}
-    .dot.baku{background:#3b82f6}
-    .dot.pots{background:#f59e0b}
-    .dot.fung{background:#22c55e}
+    /* MAP */
+    #map{height:calc(100vh - 86px);width:100%}
 
-    /* ===== Hint ===== */
-    .hint{
-      position:absolute; z-index:9998;
-      left:50%; transform:translateX(-50%);
-      bottom:16px;
-      background:#0b1220e6;
-      color:#e5e7eb;
-      border:1px solid #334155;
-      border-radius:14px;
-      padding:10px 12px;
-      font-size:12px;
-      box-shadow:0 10px 28px rgba(0,0,0,.28);
-      display:none;
-      max-width:calc(100vw - 24px);
-      text-align:center;
+    /* RIGHT PANEL */
+    .right{
+      position:absolute;right:16px;top:104px;z-index:5;
+      width:min(420px, calc(100vw - 32px));
+      display:flex;flex-direction:column;gap:12px;
+    }
+    .card{
+      background:var(--panel);
+      border:1px solid var(--stroke);
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .card .cap{
+      padding:14px 16px 10px;
+      color:var(--muted);
+      font-weight:700;
+      letter-spacing:.2px;
+    }
+    .row{display:flex;gap:10px;padding:0 16px 16px;align-items:center}
+    select,button{
+      border-radius:16px;border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.06);color:var(--text);
+      padding:12px 14px;font-weight:800;font-size:16px;
+      outline:none;
+    }
+    select{flex:1}
+    button{cursor:pointer}
+    button:hover{filter:brightness(1.05)}
+    .legend{
+      padding:12px 14px;
+      display:flex;gap:12px;align-items:center;flex-wrap:wrap;
+    }
+    .lg{
+      display:flex;align-items:center;gap:8px;
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.10);
+      padding:8px 10px;border-radius:14px;
+      color:var(--text);font-weight:900;
+      user-select:none;
+    }
+    .dot{width:10px;height:10px;border-radius:999px;display:inline-block}
+    .chk{
+      width:18px;height:18px;border-radius:6px;
+      border:1px solid rgba(255,255,255,.25);
+      display:grid;place-items:center;
+      background:rgba(0,0,0,.18);
+    }
+    .chk svg{width:14px;height:14px;display:none}
+    .lg.on .chk{background:rgba(255,255,255,.14)}
+    .lg.on .chk svg{display:block}
+    .help{
+      margin:0 16px 14px;
+      color:rgba(234,242,255,.85);
+      font-weight:700;
+      font-size:13px;
+      opacity:.9;
     }
 
-    /* ===== Loading overlay ===== */
-    .overlay{
-      position:absolute; inset:0; z-index:20000;
-      background:rgba(2,6,23,.55);
-      display:flex; align-items:center; justify-content:center;
-      backdrop-filter: blur(2px);
+    /* LOADING OVERLAY */
+    .loading{
+      position:absolute;inset:0;z-index:10;
+      display:none;align-items:center;justify-content:center;
+      backdrop-filter: blur(6px);
+      background:rgba(2,8,18,.35);
     }
-    .loader{
-      width:min(360px, calc(100vw - 40px));
-      background:#0f172ae6;
-      border:1px solid #334155;
-      border-radius:18px;
-      box-shadow:0 10px 28px rgba(0,0,0,.35);
-      padding:18px 16px;
-      color:#e5e7eb;
-      text-align:center;
+    .loading.show{display:flex}
+    .loadbox{
+      background:rgba(9,18,32,.92);
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:22px;
+      padding:18px 18px 14px;
+      width:min(340px, calc(100vw - 40px));
+      box-shadow:0 18px 60px rgba(0,0,0,.45);
+      text-align:center;color:var(--text);
     }
     .spinner{
-      width:44px; height:44px;
-      margin:0 auto 10px auto;
-      border-radius:50%;
-      border:4px solid rgba(148,163,184,.35);
-      border-top-color:#60a5fa;
-      animation:spin .9s linear infinite;
+      width:46px;height:46px;border-radius:50%;
+      border:4px solid rgba(255,255,255,.18);
+      border-top-color: rgba(255,255,255,.92);
+      animation:spin 1s linear infinite;
+      margin:6px auto 10px;
     }
-    @keyframes spin{ to{ transform:rotate(360deg);} }
-    .loadtitle{font-weight:900;font-size:14px;}
-    .loadsub{margin-top:6px;font-size:12px;color:#94a3b8;}
-    .pct{margin-top:10px;font-weight:900;font-size:18px;letter-spacing:.5px;}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .pct{font-weight:900;font-size:18px}
+    .sub{margin-top:4px;color:rgba(234,242,255,.78);font-weight:700;font-size:13px}
 
-    /* Home button */
-    .leaflet-control-home a{
-      width:34px;height:34px;line-height:34px;
-      text-align:center;display:block;
-      background:#fff;color:#111827;
-      text-decoration:none;font-weight:900;
-      border-radius:4px;
+    /* ZOOM MESSAGE */
+    .zoomhint{
+      position:absolute;left:50%;top:120px;transform:translateX(-50%);
+      z-index:6;
+      background:rgba(10,18,34,.92);
+      border:1px solid rgba(255,255,255,.14);
+      color:rgba(234,242,255,.92);
+      padding:10px 14px;border-radius:999px;
+      font-weight:900;letter-spacing:.2px;
+      box-shadow:0 14px 40px rgba(0,0,0,.35);
+      display:none;
     }
-    .leaflet-control-home a:hover{background:#f3f4f6;}
+    .zoomhint.show{display:block}
 
-    /* Province label */
-    .prov-label{
-      color:#fff;
-      font-weight:900;
-      font-size:13px;
-      text-shadow:0 1px 0 rgba(0,0,0,.55), 0 2px 6px rgba(0,0,0,.55);
-      white-space:nowrap;
-      pointer-events:none;
+    /* HOME BUTTON (left under nav) */
+    .homeBtn{
+      width:34px;height:34px;
+      border-radius:8px;
+      background:#fff;
+      border:1px solid rgba(0,0,0,.2);
+      display:grid;place-items:center;
+      cursor:pointer;
+      margin-top:6px;
+    }
+    .homeBtn svg{width:18px;height:18px}
+    .maplibregl-ctrl-group{box-shadow:0 6px 18px rgba(0,0,0,.25)}
+    .maplibregl-popup-content{
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      border-radius:14px;
+      padding:12px 12px 10px;
     }
 
-    @media (max-width:520px){
-      :root{ --headerH: 74px; }
-      .brand img{ height:46px; }
-      .brand .txt .l1{ font-size:14px; }
-      .brand .txt .l2{ font-size:16px; }
-      .brand .txt .l3{ font-size:13px; }
-      .header-right{ display:none; }
+    /* Province label style via MapLibre symbol */
+    /* (text halo built in style JSON below) */
+
+    @media (max-width: 560px){
+      .header{height:auto;flex-wrap:wrap;gap:10px;padding:10px 12px}
+      .htitle-right{margin-left:0;width:100%;opacity:.85}
+      #map{height:calc(100vh - 118px)}
+      .right{left:12px;right:12px;top:132px;width:auto}
     }
   </style>
 </head>
-
 <body>
-  <div class="app-header">
-    <div class="brand">
-      <!-- Kalau kamu punya file header/logo asli, ganti src ini -->
-      <img src="../../assets/header_pupr.png" alt="Logo" id="logoPUPR"
-           onerror="this.style.display='none'"/>
-      <div class="txt">
-        <div class="l1">KEMENTERIAN PEKERJAAN UMUM</div>
-        <div class="l2">Direktorat Jenderal Sumber Daya Air</div>
-        <div class="l3">Direktorat Irigasi &amp; Rawa</div>
+<div class="app">
+  <div class="header">
+    <div class="logo" aria-hidden="true">
+      <!-- simple DI-like mark -->
+      <svg viewBox="0 0 64 64" fill="none">
+        <rect x="6" y="6" width="52" height="52" rx="10" fill="#0A2F66"/>
+        <path d="M18 14h14v36H18V14Z" fill="#F7B500"/>
+        <path d="M32 14h14v14H32V14Z" fill="#F7B500"/>
+        <path d="M32 32h14v18H32V32Z" fill="#F7B500"/>
+      </svg>
+    </div>
+    <div class="htext">
+      <div class="l1">KEMENTERIAN PEKERJAAN UMUM</div>
+      <div class="l2">Direktorat Jenderal Sumber Daya Air</div>
+      <div class="l3">Direktorat Irigasi &amp; Rawa</div>
+    </div>
+    <div class="htitle-right">PMTiles Viewer Nasional</div>
+  </div>
+
+  <div style="position:relative;flex:1 1 auto;">
+    <div id="map"></div>
+
+    <div class="right">
+      <div class="card">
+        <div class="cap">Zoom by BWS / BBWS</div>
+        <div class="row">
+          <select id="wsSelect" aria-label="Zoom by BWS / BBWS">
+            <option value="NASIONAL">NASIONAL</option>
+          </select>
+          <button id="wsZoomBtn">Zoom</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="legend" id="legend">
+          <div class="lg" data-cat="BAKU" id="lgBAKU">
+            <span class="dot" style="background:#3b82f6"></span>
+            <span>BAKU</span>
+            <span class="chk" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M5 13l4 4L19 7" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+          </div>
+          <div class="lg" data-cat="POTENSIAL" id="lgPOTS">
+            <span class="dot" style="background:#f59e0b"></span>
+            <span>POTENSIAL</span>
+            <span class="chk" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M5 13l4 4L19 7" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+          </div>
+          <div class="lg on" data-cat="FUNGSIONAL" id="lgFUNG">
+            <span class="dot" style="background:#22c55e"></span>
+            <span>FUNGSIONAL</span>
+            <span class="chk" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M5 13l4 4L19 7" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+          </div>
+        </div>
+        <div class="help">Label DI muncul mulai zoom <b>10</b> (field: <b>Nm_Inf</b>).</div>
       </div>
     </div>
-    <div class="header-right">PMTiles Viewer Nasional</div>
-  </div>
 
-  <div id="map"></div>
+    <div class="zoomhint" id="zoomHint">Perbesar peta untuk melihat DI</div>
 
-  <div class="right-panel">
-    <div class="card filter">
-      <div class="lbl">Zoom by BWS / BBWS</div>
-      <div class="row">
-        <select id="bwsSelect">
-          <option value="__NATIONAL__">NASIONAL</option>
-        </select>
-        <button class="btn" id="btnZoom">Zoom</button>
+    <div class="loading" id="loading">
+      <div class="loadbox">
+        <div class="spinner"></div>
+        <div class="pct" id="pct">0%</div>
+        <div class="sub">Loading data…</div>
       </div>
     </div>
-
-    <div class="card legendbar">
-      <label><span class="dot baku"></span><input id="tglBAKU" type="checkbox">BAKU</label>
-      <label><span class="dot pots"></span><input id="tglPOTS" type="checkbox">POTENSIAL</label>
-      <label><span class="dot fung"></span><input id="tglFUNG" type="checkbox" checked>FUNGSIONAL</label>
-    </div>
   </div>
+</div>
 
-  <div class="hint" id="hint">Perbesar peta untuk melihat DI</div>
+<script>
+(async () => {
+  // ---------------------------
+  // PMTiles protocol for MapLibre
+  // ---------------------------
+  const protocol = new pmtiles.Protocol();
+  maplibregl.addProtocol("pmtiles", protocol.tile);
 
-  <div class="overlay" id="overlay">
-    <div class="loader">
-      <div class="spinner"></div>
-      <div class="loadtitle">Loading data…</div>
-      <div class="loadsub" id="loadsub">Menyiapkan layer</div>
-      <div class="pct" id="pct">0%</div>
-    </div>
-  </div>
+  // ---------------------------
+  // Helpers
+  // ---------------------------
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/pmtiles@3.0.7/dist/pmtiles.js"></script>
-  <script src="https://unpkg.com/protomaps-leaflet@4.0.1/dist/protomaps-leaflet.js"></script>
+  function stripCategoryFromName(name){
+    // "Aceh - BWS Sumatera I (FUNGSIONAL)" -> "BWS Sumatera I"
+    // "Banten - BBWS Ciliwung Cisadane (BAKU)" -> "BBWS Ciliwung Cisadane"
+    let s = name || "";
+    s = s.replace(/\s*\((BAKU|FUNGSIONAL|POTENSIAL)\)\s*$/i, "").trim();
+    const parts = s.split(" - ");
+    if (parts.length >= 2) return parts.slice(1).join(" - ").trim();
+    return s.trim();
+  }
 
-  <script>
-    // ==========================
-    // MAP INIT
-    // ==========================
-    const map = L.map("map", { zoomControl:true, preferCanvas:true }).setView([-2.5, 118], 5);
+  function getCategoryFromFile(file){
+    const f = (file||"").toUpperCase();
+    if (f.includes("_BAKU")) return "BAKU";
+    if (f.includes("_FUNG")) return "FUNGSIONAL";
+    if (f.includes("_POTS")) return "POTENSIAL";
+    return "OTHER";
+  }
 
-    L.tileLayer(
-      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-      { maxZoom: 20, attribution: "Tiles © Esri" }
-    ).addTo(map);
+  function colorByCat(cat){
+    if (cat === "BAKU") return "#3b82f6";
+    if (cat === "POTENSIAL") return "#f59e0b";
+    return "#22c55e"; // FUNGSIONAL
+  }
 
-    // ==========================
-    // UI refs
-    // ==========================
-    const overlay = document.getElementById("overlay");
-    const pctEl = document.getElementById("pct");
-    const loadsub = document.getElementById("loadsub");
-    const hint = document.getElementById("hint");
+  // ---------------------------
+  // Base Map Style (Esri World Imagery)
+  // ---------------------------
+  const baseStyle = {
+    "version": 8,
+    "sources": {
+      "esri": {
+        "type": "raster",
+        "tiles": [
+          "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+        ],
+        "tileSize": 256,
+        "attribution": "Tiles © Esri"
+      }
+    },
+    "layers": [
+      { "id": "esri", "type": "raster", "source": "esri" }
+    ]
+  };
 
-    const tglBAKU = document.getElementById("tglBAKU");
-    const tglPOTS = document.getElementById("tglPOTS");
-    const tglFUNG = document.getElementById("tglFUNG");
+  // Indonesia-ish default bounds (loose)
+  const IND_BOUNDS = [[94.5, -11.5], [141.5, 6.8]]; // [minLng,minLat] [maxLng,maxLat]
 
-    const bwsSelect = document.getElementById("bwsSelect");
-    const btnZoom = document.getElementById("btnZoom");
+  // ---------------------------
+  // Create map
+  // ---------------------------
+  const map = new maplibregl.Map({
+    container: "map",
+    style: baseStyle,
+    center: [118, -2],
+    zoom: 4,
+    maxZoom: 18
+  });
 
-    // ==========================
-    // STATE
-    // ==========================
-    const state = {
-      items: [],
-      byCat: { BAKU:[], POTENSIAL:[], FUNGSIONAL:[] },
-      active: new Map(),
-      adminLine: null,
-      adminLineBounds: null,
-      provLabelMarkers: [],   // markers for declutter
-      provLabelsLayer: null,
-      unionBounds: null,
-      totalToLoad: 0,
-      loadedCount: 0,
-      bwsIndex: new Map(),
-      bwsBoundsCache: new Map()
-    };
+  // Nav control (+/-)
+  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-left");
 
-    function setProgress(text){
-      const p = state.totalToLoad ? Math.round((state.loadedCount/state.totalToLoad)*100) : 0;
-      pctEl.textContent = Math.min(100, Math.max(0, p)) + "%";
-      if (text) loadsub.textContent = text;
+  // Add HOME button under nav
+  class HomeControl {
+    onAdd(map){
+      this._map = map;
+      const container = document.createElement("div");
+      container.className = "maplibregl-ctrl maplibregl-ctrl-group";
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.title = "Home (Nasional)";
+      btn.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M4 10.5L12 4l8 6.5" stroke="#0b1220" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M7 10.5V20h10v-9.5" stroke="#0b1220" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>`;
+      btn.onclick = () => map.fitBounds(IND_BOUNDS, { padding: 60, duration: 650 });
+      container.appendChild(btn);
+      return container;
     }
-    function incProgress(text){
-      state.loadedCount++;
-      setProgress(text);
+    onRemove(){
+      this._container?.parentNode?.removeChild(this._container);
+      this._map = undefined;
     }
+  }
+  map.addControl(new HomeControl(), "top-left");
 
-    // ==========================
-    // HOME BUTTON
-    // ==========================
-    const HomeControl = L.Control.extend({
-      options: { position: "topleft" },
-      onAdd: function(){
-        const div = L.DomUtil.create("div", "leaflet-control leaflet-control-home");
-        const a = L.DomUtil.create("a", "", div);
-        a.href = "#";
-        a.title = "Home (Fit extent)";
-        a.innerHTML = "⌂";
-        L.DomEvent.on(a, "click", (e) => {
-          L.DomEvent.stop(e);
-          fitHome();
-        });
-        return div;
+  // UI refs
+  const loadingEl = document.getElementById("loading");
+  const pctEl = document.getElementById("pct");
+  const zoomHintEl = document.getElementById("zoomHint");
+  const wsSelect = document.getElementById("wsSelect");
+  const wsZoomBtn = document.getElementById("wsZoomBtn");
+
+  // ---------------------------
+  // Load manifest.json
+  // ---------------------------
+  async function fetchJSON(url){
+    const r = await fetch(url, { cache: "no-store" });
+    if (!r.ok) throw new Error(`Gagal load ${url}: ${r.status}`);
+    return await r.json();
+  }
+
+  let manifest;
+  try {
+    manifest = await fetchJSON("manifest.json");
+  } catch (e) {
+    alert("manifest.json tidak ditemukan di folder yang sama.\nPastikan file manifest.json ada di folder ini.");
+    throw e;
+  }
+
+  const layers = Array.isArray(manifest.layers) ? manifest.layers : [];
+  if (!layers.length){
+    alert("manifest.json terbaca tapi 'layers' kosong.");
+    return;
+  }
+
+  // Group by WS/BBWS name (dropdown)
+  const wsMap = new Map(); // key -> { key,label, entries:[{name,file,cat}] }
+  for (const it of layers){
+    const file = it.file;
+    const cat = it.category || getCategoryFromFile(file);
+    const wsLabel = stripCategoryFromName(it.name || it.title || file);
+    const key = wsLabel || file;
+    if (!wsMap.has(key)) wsMap.set(key, { key, label: key, entries: [] });
+    wsMap.get(key).entries.push({ ...it, file, cat });
+  }
+
+  // Build dropdown (no BAKU/FUNG/POTS)
+  const wsList = Array.from(wsMap.values()).sort((a,b)=>a.label.localeCompare(b.label,"id"));
+  for (const ws of wsList){
+    const opt = document.createElement("option");
+    opt.value = ws.key;
+    opt.textContent = ws.label;
+    wsSelect.appendChild(opt);
+  }
+
+  // ---------------------------
+  // Add DI sources & layers
+  // ---------------------------
+  // Track sources for loading %
+  const trackedSources = new Set();
+  const enabledCats = new Set(["FUNGSIONAL"]); // default ON
+  // Use stable IDs
+  const srcIdFor = (file) => "src_" + file.replace(/[^a-z0-9]+/gi,"_");
+  const fillIdFor = (file) => "fill_" + file.replace(/[^a-z0-9]+/gi,"_");
+  const lineIdFor = (file) => "line_" + file.replace(/[^a-z0-9]+/gi,"_");
+  const labelIdFor = (file) => "label_" + file.replace(/[^a-z0-9]+/gi,"_");
+
+  // cache header bounds by ws for zoom
+  const wsBounds = new Map(); // wsKey -> {bounds:[[minLng,minLat],[maxLng,maxLat]], minZoom,maxZoom}
+  async function headerFromFile(file){
+    const url = file; // same folder
+    const p = new pmtiles.PMTiles(url);
+    const h = await p.getHeader();
+    return h;
+  }
+
+  // Add once style ready
+  await new Promise(res => map.once("load", res));
+
+  // 1) Province boundary line (pmtiles) always ON
+  //    expects: Batas_Prov_Line.pmtiles in same folder, with a single line layer
+  try {
+    const provLineFile = "Batas_Prov_Line.pmtiles";
+    const provSrcId = "src_prov_line";
+    map.addSource(provSrcId, {
+      type: "vector",
+      tiles: [`pmtiles://${provLineFile}/{z}/{x}/{y}`]
+    });
+    trackedSources.add(provSrcId);
+
+    map.addLayer({
+      id: "prov_line",
+      type: "line",
+      source: provSrcId,
+      "source-layer": "Batas_Prov_Line", // kalau beda, aman: MapLibre akan error; kita fallback di bawah
+      paint: {
+        "line-color": "#ffffff",
+        "line-width": 1.6,
+        "line-opacity": 0.95,
+        "line-dasharray": [4,2,1,2] // dash dash dot dash dash
       }
     });
-    map.addControl(new HomeControl());
 
-    function fitHome(){
-      const b = state.unionBounds || state.adminLineBounds;
-      if (b) map.fitBounds(b, { padding:[30,30] });
-      else map.setView([-2.5,118],5);
-    }
+    // fallback: kalau source-layer beda, kita coba autodetect via tilejson metadata (tidak selalu ada)
+    // jadi: kalau layer tidak tampil, ubah "source-layer" di atas sesuai nama layer vector di pmtiles.
+  } catch (e) {
+    console.warn("Gagal load batas prov line:", e);
+  }
 
-    // ==========================
-    // Hint
-    // ==========================
-    const DI_HINT_ZOOM = 7;
-    function updateHint(){
-      hint.style.display = (map.getZoom() < DI_HINT_ZOOM) ? "block" : "none";
-    }
-    map.on("zoomend", updateHint);
-    updateHint();
+  // 2) Province labels from Point_Label.geojson always ON
+  try {
+    const labelGeo = await fetchJSON("../Point_Label.geojson").catch(()=>fetchJSON("Point_Label.geojson"));
+    map.addSource("prov_points", {
+      type: "geojson",
+      data: labelGeo
+    });
 
-    // ==========================
-    // Utils
-    // ==========================
-    function escapeHtml(s){
-      return String(s).replace(/[&<>"']/g, ch => ({
-        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-      }[ch]));
-    }
+    // try to guess field name for province label
+    const props = (labelGeo.features?.[0]?.properties) || {};
+    const candidateFields = ["WADMPR","wadmpr","Provinsi","provinsi","NAME","name","NAMA","Nama"];
+    const provField = candidateFields.find(k => k in props) || Object.keys(props)[0] || "WADMPR";
 
-    function normalizeManifest(json){
-      let arr = [];
-      if (Array.isArray(json)) arr = json;
-      else if (json && Array.isArray(json.layers)) arr = json.layers;
-      else if (json && Array.isArray(json.items)) arr = json.items;
-
-      return arr.map((raw, i) => {
-        const file = raw.file || raw.path || raw.pmtiles || raw.url || "";
-        const title = raw.title || raw.name || file.replace(/\.pmtiles$/i,"");
-        const cat = (raw.category || "").toUpperCase();
-        const id = raw.id || (i + ":" + file);
-        return { id, file, title, category: cat };
-      }).filter(x => x.file && /\.pmtiles$/i.test(x.file));
-    }
-
-    function bucketByCategory(){
-      state.byCat = { BAKU:[], POTENSIAL:[], FUNGSIONAL:[] };
-      for (const it of state.items){
-        const f = it.file.toUpperCase();
-        const cat =
-          it.category === "BAKU" || f.includes("_BAKU.PMTILES") ? "BAKU" :
-          it.category === "POTENSIAL" || it.category === "POTS" || f.includes("_POTS.PMTILES") ? "POTENSIAL" :
-          it.category === "FUNGSIONAL" || it.category === "FUNG" || f.includes("_FUNG.PMTILES") ? "FUNGSIONAL" :
-          null;
-        if (cat) state.byCat[cat].push({...it, category: cat});
+    map.addLayer({
+      id: "prov_labels",
+      type: "symbol",
+      source: "prov_points",
+      layout: {
+        "text-field": ["to-string", ["get", provField]],
+        "text-size": [
+          "interpolate", ["linear"], ["zoom"],
+          4, 10,
+          6, 12,
+          8, 14
+        ],
+        "text-font": ["Open Sans Bold","Arial Unicode MS Bold"],
+        "text-allow-overlap": false,
+        "text-ignore-placement": false,
+        "symbol-placement": "point"
+      },
+      paint: {
+        "text-color": "#ffffff",
+        "text-halo-color": "rgba(0,0,0,.60)",
+        "text-halo-width": 2
       }
+    });
+  } catch (e) {
+    console.warn("Gagal load Point_Label.geojson:", e);
+  }
+
+  // 3) Add all DI pmtiles sources + layers (fill + outline + labels @ z>=10)
+  //    NOTE: we hide outlines (no border) as requested earlier; keep subtle fill only.
+  for (const it of layers){
+    const file = it.file;
+    const cat = (it.category || getCategoryFromFile(file));
+    const srcId = srcIdFor(file);
+
+    // Add source
+    if (!map.getSource(srcId)){
+      map.addSource(srcId, {
+        type: "vector",
+        tiles: [`pmtiles://${file}/{z}/{x}/{y}`]
+      });
+      trackedSources.add(srcId);
     }
 
-    function extractBwsKey(title){
-      const clean = String(title || "").replace(/\s+/g," ").trim();
-      const m = clean.match(/\b(BBWS|BWS)\s+([^\(\)]+?)\s*(?:\(|$)/i);
-      if (!m) return null;
-      const tipe = m[1].toUpperCase();
-      const nama = m[2].trim().replace(/\s+/g," ");
-      return `${tipe} ${nama}`;
-    }
+    // Determine layer name (source-layer) guess: usually equals file basename without extension
+    // BUT on your console you saw layer id like "Aceh_Pusat_-_BWS_Sumatera_I_FUNG"
+    // So we set source-layer = basename without ".pmtiles" by default.
+    const guessedSourceLayer = file.replace(/\.pmtiles$/i, "");
 
-    function buildBwsIndexAndUI(){
-      state.bwsIndex.clear();
-      for (const it of state.items){
-        const key = extractBwsKey(it.title);
-        if (!key) continue;
-        if (!state.bwsIndex.has(key)) state.bwsIndex.set(key, []);
-        state.bwsIndex.get(key).push(it);
-      }
-
-      const cur = bwsSelect.value;
-      const keys = Array.from(state.bwsIndex.keys()).sort((a,b)=>a.localeCompare(b));
-
-      bwsSelect.innerHTML =
-        `<option value="__NATIONAL__">NASIONAL</option>` +
-        keys.map(k => `<option value="${escapeHtml(k)}">${escapeHtml(k)}</option>`).join("");
-
-      if (cur && Array.from(bwsSelect.options).some(o=>o.value===cur)) bwsSelect.value = cur;
-    }
-
-    // ==========================
-    // PMTiles metadata read
-    // ==========================
-    async function readPmtilesInfo(url){
-      const p = new pmtiles.PMTiles(url);
-      const header = await p.getHeader();
-      const meta = await p.getMetadata().catch(()=>null);
-      const bounds = L.latLngBounds(
-        [header.minLat, header.minLon],
-        [header.maxLat, header.maxLon]
-      );
-      const vectorLayers = (meta && meta.vector_layers) ? meta.vector_layers.map(v => v.id) : [];
-      return { bounds, vectorLayers, header };
-    }
-
-    // ==========================
-    // Paint rules (no outline)
-    // ==========================
-    function rulesForCategory(vectorLayers, category){
-      const fill =
-        category === "BAKU" ? "rgba(59,130,246,0.35)" :
-        category === "POTENSIAL" ? "rgba(245,158,11,0.33)" :
-        "rgba(34,197,94,0.33)";
-
-      return vectorLayers.map(layerName => ({
-        dataLayer: layerName,
-        symbolizer: new protomapsL.PolygonSymbolizer({
-          fill,
-          stroke: "rgba(0,0,0,0)",
-          width: 0
-        })
-      }));
-    }
-
-    function rulesForAdminLine(vectorLayers){
-      const dash = [8,6,1,6,8,6];
-      return vectorLayers.map(layerName => ({
-        dataLayer: layerName,
-        symbolizer: new protomapsL.LineSymbolizer({
-          color: "rgba(255,255,255,0.90)",
-          width: 2,
-          dash
-        })
-      }));
-    }
-
-    // ==========================
-    // Layer add/remove
-    // ==========================
-    async function addItemLayer(item){
-      if (state.active.has(item.id)) return;
-
-      const url = item.file; // file ada di folder yang sama dengan 1.html
-      setProgress("Baca: " + item.title);
-
-      const info = await readPmtilesInfo(url);
-      const paintRules = rulesForCategory(info.vectorLayers, item.category);
-
-      const layer = protomapsL.leafletLayer({ url, paintRules, labelRules: [] });
-      layer.addTo(map);
-
-      state.active.set(item.id, { layer, bounds: info.bounds });
-      state.unionBounds = state.unionBounds ? state.unionBounds.extend(info.bounds) : info.bounds;
-      incProgress("OK: " + item.title);
-    }
-
-    function removeItemLayer(item){
-      const entry = state.active.get(item.id);
-      if (!entry) return;
-      map.removeLayer(entry.layer);
-      state.active.delete(item.id);
-    }
-
-    async function loadMany(items, limit=4){
-      const queue = items.slice();
-      const workers = Array.from({length: limit}, async () => {
-        while(queue.length){
-          const it = queue.shift();
-          try { await addItemLayer(it); }
-          catch(e){ console.error("Fail load:", it.file, e); incProgress("Skip: " + it.title); }
+    // Fill layer
+    const fillId = fillIdFor(file);
+    if (!map.getLayer(fillId)){
+      map.addLayer({
+        id: fillId,
+        type: "fill",
+        source: srcId,
+        "source-layer": guessedSourceLayer,
+        layout: {
+          visibility: enabledCats.has(cat) ? "visible" : "none"
+        },
+        paint: {
+          "fill-color": colorByCat(cat),
+          "fill-opacity": 0.45
         }
       });
-      await Promise.all(workers);
     }
 
-    // ==========================
-    // Always-on layers
-    // ==========================
-    async function loadAdminLine(){
-      const url = "Batas_Prov_Line.pmtiles"; // ada di folder /pUsat/
-      setProgress("Loading batas prov…");
+    // No polygon border (requested: garis pinggir polygon hapus)
+    // If you later want thin border: add line layer with opacity low.
 
-      const info = await readPmtilesInfo(url);
-      const paintRules = rulesForAdminLine(info.vectorLayers);
-
-      const layer = protomapsL.leafletLayer({ url, paintRules, labelRules: [] });
-      layer.addTo(map);
-
-      state.adminLine = layer;
-      state.adminLineBounds = info.bounds;
-      state.unionBounds = state.unionBounds ? state.unionBounds.extend(info.bounds) : info.bounds;
-
-      incProgress("Batas prov OK");
-    }
-
-    // Declutter label prov: hide yang terlalu dekat (grid pixel)
-    function declutterProvLabels(){
-      if (!state.provLabelMarkers.length) return;
-
-      const z = map.getZoom();
-      const cell = (z <= 4) ? 170 : (z <= 5 ? 140 : (z <= 6 ? 120 : 95));
-      const seen = new Set();
-
-      for (const m of state.provLabelMarkers){
-        const p = map.project(m.getLatLng(), z);
-        const key = Math.round(p.x / cell) + ":" + Math.round(p.y / cell);
-        const el = m.getElement();
-        if (!el) continue;
-
-        if (seen.has(key)){
-          el.style.display = "none";
-        }else{
-          seen.add(key);
-          el.style.display = "block";
-        }
-      }
-    }
-
-    async function loadProvLabelsGeoJSON(){
-      // Point_Label.geojson ada di /DI/Point_Label.geojson
-      // dari /DI/Permukaan/pusat/1.html -> naik 2 folder: ../../Point_Label.geojson
-      const url = "../../Point_Label.geojson";
-      setProgress("Loading label prov…");
-
-      const res = await fetch(url, { cache:"no-store" });
-      if (!res.ok) throw new Error("Label geojson HTTP " + res.status);
-      const gj = await res.json();
-
-      // de-dup by WADMPR
-      const seen = new Set();
-      const features = (gj.features || []).filter(f => {
-        const n = (f.properties && (f.properties.WADMPR || f.properties.nama || f.properties.NAME)) || "";
-        const key = String(n).trim().toLowerCase();
-        if(!key) return false;
-        if(seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-
-      const markers = [];
-      const layer = L.geoJSON({ type:"FeatureCollection", features }, {
-        pointToLayer: (feat, latlng) => {
-          const name = (feat.properties && (feat.properties.WADMPR || feat.properties.nama || feat.properties.NAME)) || "";
-          const icon = L.divIcon({
-            className: "",
-            html: `<div class="prov-label">${escapeHtml(name)}</div>`,
-            iconSize: null
-          });
-          const m = L.marker(latlng, { icon, interactive:false });
-          markers.push(m);
-          return m;
-        }
-      }).addTo(map);
-
-      state.provLabelsLayer = layer;
-      state.provLabelMarkers = markers;
-
-      // run declutter on load, zoom, move
-      map.on("zoomend moveend", () => requestAnimationFrame(declutterProvLabels));
-      requestAnimationFrame(declutterProvLabels);
-
-      incProgress("Label prov OK");
-    }
-
-    // ==========================
-    // Toggle categories
-    // ==========================
-    function itemsFor(cat){ return state.byCat[cat] || []; }
-
-    async function setCategory(cat, enabled){
-      const list = itemsFor(cat);
-      if (!list.length) return;
-
-      if (enabled) await loadMany(list, 4);
-      else for (const it of list) removeItemLayer(it);
-    }
-
-    async function runToggle(cat, checked){
-      overlay.style.display = "flex";
-      try{
-        state.loadedCount = 0;
-        state.totalToLoad = itemsFor(cat).length || 1;
-        setProgress("Toggle " + cat + "…");
-        await setCategory(cat, checked);
-      }finally{
-        overlay.style.display = "none";
-        updateHint();
-      }
-    }
-
-    tglBAKU.addEventListener("change", () => runToggle("BAKU", tglBAKU.checked));
-    tglPOTS.addEventListener("change", () => runToggle("POTENSIAL", tglPOTS.checked));
-    tglFUNG.addEventListener("change", () => runToggle("FUNGSIONAL", tglFUNG.checked));
-
-    // ==========================
-    // Filter: Zoom by BWS/BBWS
-    // ==========================
-    async function getBoundsForBwsKey(key){
-      if (key === "__NATIONAL__"){
-        return state.unionBounds || state.adminLineBounds || null;
-      }
-      if (state.bwsBoundsCache.has(key)) return state.bwsBoundsCache.get(key);
-
-      const items = state.bwsIndex.get(key) || [];
-      if (!items.length) return null;
-
-      let b = null;
-      const queue = items.slice();
-      const limit = 4;
-
-      const workers = Array.from({length: limit}, async () => {
-        while(queue.length){
-          const it = queue.shift();
-          try{
-            const info = await readPmtilesInfo(it.file);
-            b = b ? b.extend(info.bounds) : info.bounds;
-          }catch(e){
-            console.warn("Skip bounds:", it.file, e);
+    // DI labels only from FUNGSIONAL, field Nm_Inf, minzoom 10
+    if (cat === "FUNGSIONAL"){
+      const labelId = labelIdFor(file);
+      if (!map.getLayer(labelId)){
+        map.addLayer({
+          id: labelId,
+          type: "symbol",
+          source: srcId,
+          "source-layer": guessedSourceLayer,
+          minzoom: 10,
+          layout: {
+            "text-field": ["to-string", ["get", "Nm_Inf"]],
+            "text-size": [
+              "interpolate", ["linear"], ["zoom"],
+              10, 11,
+              12, 13,
+              14, 15
+            ],
+            "text-font": ["Open Sans Bold","Arial Unicode MS Bold"],
+            "text-allow-overlap": false,
+            "text-ignore-placement": false,
+            "symbol-placement": "point"
+          },
+          paint: {
+            "text-color": "#ffffff",
+            "text-halo-color": "rgba(0,0,0,.55)",
+            "text-halo-width": 2
           }
+        });
+      }
+    }
+  }
+
+  // ---------------------------
+  // Click popup for DI (any category)
+  // ---------------------------
+  function buildPopupHTML(props){
+    const safe = (v) => (v===null||v===undefined) ? "" : String(v);
+    const nm = safe(props.Nm_Inf || props.nm_inf || props.NM_INF || "");
+    let html = `<div style="font-weight:900;font-size:14px;margin-bottom:6px">${nm || "Info DI"}</div>`;
+    const rows = [
+      ["Nama WS", props.Nama_WS],
+      ["Nama DAS", props.Nama_DAS],
+      ["Tahun Data", props.Thn_Dat],
+      ["Status", props.Status],
+      ["Jenis DI", props.Jenis_DI],
+      ["Irigasi", props.Irigasi],
+      ["Provinsi", props.Provinsi]
+    ].filter(r => r[1] !== undefined && r[1] !== null && String(r[1]).trim() !== "");
+    if (rows.length){
+      html += `<div style="font-size:12px;line-height:1.25">`;
+      for (const [k,v] of rows){
+        html += `<div><b>${k}:</b> ${safe(v)}</div>`;
+      }
+      html += `</div>`;
+    }
+    return html;
+  }
+
+  // collect all fill layer ids for queryRenderedFeatures
+  const allFillLayerIds = layers.map(it => fillIdFor(it.file));
+
+  map.on("click", (e) => {
+    const feats = map.queryRenderedFeatures(e.point, { layers: allFillLayerIds });
+    if (!feats || !feats.length) return;
+    const f = feats[0];
+    const props = f.properties || {};
+    new maplibregl.Popup({ closeButton: true, closeOnClick: true })
+      .setLngLat(e.lngLat)
+      .setHTML(buildPopupHTML(props))
+      .addTo(map);
+  });
+
+  map.on("mousemove", (e) => {
+    const feats = map.queryRenderedFeatures(e.point, { layers: allFillLayerIds });
+    map.getCanvas().style.cursor = (feats && feats.length) ? "pointer" : "";
+  });
+
+  // ---------------------------
+  // Legend toggles (category)
+  // ---------------------------
+  function setCategoryVisibility(cat, visible){
+    for (const it of layers){
+      const file = it.file;
+      const c = (it.category || getCategoryFromFile(file));
+      if (c !== cat) continue;
+      const fillId = fillIdFor(file);
+      if (map.getLayer(fillId)){
+        map.setLayoutProperty(fillId, "visibility", visible ? "visible" : "none");
+      }
+      // label layer only exists for FUNGSIONAL; we let it follow fill visibility implicitly by zoom.
+      // If you want labels off when FUNGSIONAL off, we also toggle them:
+      if (cat === "FUNGSIONAL"){
+        const labelId = labelIdFor(file);
+        if (map.getLayer(labelId)){
+          map.setLayoutProperty(labelId, "visibility", visible ? "visible" : "none");
         }
-      });
-      await Promise.all(workers);
-
-      if (b) state.bwsBoundsCache.set(key, b);
-      return b;
-    }
-
-    async function doZoomSelected(){
-      const key = bwsSelect.value || "__NATIONAL__";
-      overlay.style.display = "flex";
-      try{
-        state.loadedCount = 0;
-        state.totalToLoad = 6;
-        setProgress("Menentukan extent…");
-        const b = await getBoundsForBwsKey(key);
-        incProgress("Extent siap");
-        if (b) map.fitBounds(b, { padding:[40,40] });
-        else fitHome();
-      }finally{
-        setTimeout(()=> overlay.style.display="none", 200);
-        updateHint();
       }
     }
+  }
 
-    btnZoom.addEventListener("click", doZoomSelected);
-    bwsSelect.addEventListener("change", doZoomSelected);
+  function toggleCat(cat){
+    if (enabledCats.has(cat)) enabledCats.delete(cat); else enabledCats.add(cat);
+    const isOn = enabledCats.has(cat);
+    setCategoryVisibility(cat, isOn);
 
-    // ==========================
-    // BOOT
-    // ==========================
-    async function boot(){
-      overlay.style.display = "flex";
-      state.loadedCount = 0;
+    document.getElementById(cat==="BAKU" ? "lgBAKU" : cat==="POTENSIAL" ? "lgPOTS" : "lgFUNG")
+      .classList.toggle("on", isOn);
+  }
 
-      try{
-        setProgress("Baca manifest…");
+  document.getElementById("lgBAKU").onclick = () => toggleCat("BAKU");
+  document.getElementById("lgPOTS").onclick = () => toggleCat("POTENSIAL");
+  document.getElementById("lgFUNG").onclick = () => toggleCat("FUNGSIONAL");
 
-        // ✅ FIX PATH:
-        // manifest ada di /DI/manifest.json
-        // file ini ada di /DI/Permukaan/pusat/1.html
-        // jadi path benar: ../../manifest.json
-        const res = await fetch("../../manifest.json?v=" + Date.now(), { cache:"no-store" });
-        if (!res.ok) throw new Error("manifest HTTP " + res.status);
-        const json = await res.json();
+  // Ensure default visual matches enabledCats
+  setCategoryVisibility("BAKU", false);
+  setCategoryVisibility("POTENSIAL", false);
+  setCategoryVisibility("FUNGSIONAL", true);
 
-        state.items = normalizeManifest(json);
-        bucketByCategory();
-        buildBwsIndexAndUI();
+  // ---------------------------
+  // Zoom hint: show when zoom < 10 (DI labels minzoom 10)
+  // ---------------------------
+  function updateZoomHint(){
+    const z = map.getZoom();
+    zoomHintEl.classList.toggle("show", z < 10);
+  }
+  map.on("zoom", updateZoomHint);
+  map.on("load", updateZoomHint);
+  updateZoomHint();
 
-        incProgress("Manifest OK");
+  // ---------------------------
+  // Zoom by WS/BBWS (dropdown)
+  // ---------------------------
+  async function computeWsBounds(wsKey){
+    if (wsBounds.has(wsKey)) return wsBounds.get(wsKey);
+    const ws = wsMap.get(wsKey);
+    if (!ws) return null;
 
-        const nF = itemsFor("FUNGSIONAL").length;
-        state.totalToLoad = 1 + 1 + 1 + nF;
+    // pilih file untuk bounds: prioritas FUNGSIONAL > BAKU > POTENSIAL
+    const pick = (cat) => ws.entries.find(e => (e.category||getCategoryFromFile(e.file)) === cat)?.file;
+    const file = pick("FUNGSIONAL") || pick("BAKU") || pick("POTENSIAL") || ws.entries[0]?.file;
+    if (!file) return null;
 
-        await loadAdminLine();
-        await loadProvLabelsGeoJSON();
+    const h = await headerFromFile(file);
+    const b = [[h.minLon, h.minLat],[h.maxLon, h.maxLat]];
+    const obj = { bounds: b, minZoom: h.minZoom, maxZoom: h.maxZoom, file };
+    wsBounds.set(wsKey, obj);
+    return obj;
+  }
 
-        // Default: FUNGSIONAL ON
-        tglFUNG.checked = true;
-        tglBAKU.checked = false;
-        tglPOTS.checked = false;
-
-        await loadMany(itemsFor("FUNGSIONAL"), 4);
-
-        fitHome();
-      }catch(e){
-        console.error(e);
-        loadsub.textContent = "Gagal load data. Cek Console (F12).";
-      }finally{
-        setTimeout(() => { overlay.style.display = "none"; }, 250);
-        updateHint();
-        requestAnimationFrame(declutterProvLabels);
-      }
+  wsZoomBtn.onclick = async () => {
+    const v = wsSelect.value;
+    if (v === "NASIONAL"){
+      map.fitBounds(IND_BOUNDS, { padding: 60, duration: 650 });
+      return;
     }
+    const info = await computeWsBounds(v);
+    if (!info) return;
+    map.fitBounds(info.bounds, { padding: 70, duration: 650 });
+  };
 
-    boot();
-  </script>
+  // ---------------------------
+  // Loading spinner + percent (approx based on source loaded state)
+  // ---------------------------
+  let loadingTimer = null;
+
+  function recomputeLoading(){
+    // We consider "loading" if any tracked source not fully loaded
+    // MapLibre exposes areTilesLoaded() global; and per-source in events.
+    const allLoaded = map.areTilesLoaded();
+    if (allLoaded){
+      loadingEl.classList.remove("show");
+      pctEl.textContent = "100%";
+      return;
+    }
+    loadingEl.classList.add("show");
+
+    // percent estimate: use map._style.sourceCaches if available (best-effort)
+    try {
+      const caches = map.style && map.style._sourceCaches ? map.style._sourceCaches : null;
+      if (!caches){ pctEl.textContent = "…"; return; }
+
+      const ids = Array.from(trackedSources);
+      let loaded = 0;
+      let total = 0;
+      for (const id of ids){
+        const c = caches[id];
+        if (!c) continue;
+        total++;
+        if (c.loaded()) loaded++;
+      }
+      if (total === 0){ pctEl.textContent = "…"; return; }
+      const pct = clamp(Math.round((loaded/total)*100), 1, 99);
+      pctEl.textContent = pct + "%";
+    } catch {
+      pctEl.textContent = "…";
+    }
+  }
+
+  // Throttle updates
+  function scheduleLoadingUpdate(){
+    if (loadingTimer) return;
+    loadingTimer = setTimeout(() => {
+      loadingTimer = null;
+      recomputeLoading();
+    }, 120);
+  }
+
+  map.on("dataloading", scheduleLoadingUpdate);
+  map.on("data", scheduleLoadingUpdate);
+  map.on("render", scheduleLoadingUpdate);
+
+  // initial show
+  loadingEl.classList.add("show");
+  pctEl.textContent = "1%";
+  // hide after a bit when stable
+  (async () => {
+    for (let i=0;i<120;i++){
+      recomputeLoading();
+      if (map.areTilesLoaded()){
+        await sleep(200);
+        recomputeLoading();
+        break;
+      }
+      await sleep(200);
+    }
+  })();
+
+  // ---------------------------
+  // IMPORTANT NOTE (source-layer names)
+  // ---------------------------
+  // Jika ada layer yang tidak tampil, biasanya karena "source-layer" di PMTiles berbeda dari nama file.
+  // Kamu sudah punya cara cek lewat console (FIELDS, Layer ID). Kalau ada kasus begitu, bilang aja,
+  // nanti gue bikin versi auto-detect layer name per pmtiles (lebih canggih).
+})();
+</script>
 </body>
 </html>
