@@ -13,55 +13,36 @@
       --panelW: min(360px, calc(100vw - 24px));
     }
     html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:#0b1220;}
-    #map{
-      position:absolute;
-      top:var(--headerH);
-      left:0; right:0; bottom:0;
-    }
+    #map{position:absolute;top:var(--headerH);left:0;right:0;bottom:0;}
 
     /* ===== HEADER ===== */
     .app-header{
       position:absolute; z-index:12000;
       top:0; left:0; right:0;
       height:var(--headerH);
-      background:#0b4ea2; /* biru mirip contoh */
+      background:#0b4ea2;
       display:flex; align-items:center;
       padding:10px 14px;
       box-sizing:border-box;
       box-shadow:0 10px 28px rgba(0,0,0,.25);
     }
-    .brand{
-      display:flex; align-items:center; gap:14px;
-      min-width: 320px;
-    }
-    .brand img{
-      height:52px; width:auto;
-      display:block;
-      border-radius:6px;
-      background:transparent;
-    }
-    .brand .txt{
-      line-height:1.12;
-      color:#fff;
-    }
-    .brand .txt .l1{font-weight:900; letter-spacing:.3px; font-size:18px;}
-    .brand .txt .l2{font-weight:800; font-size:20px; margin-top:2px;}
-    .brand .txt .l3{font-weight:650; font-size:16px; opacity:.95; margin-top:2px;}
-
+    .brand{display:flex; align-items:center; gap:14px; min-width:320px;}
+    .brand img{height:52px;width:auto;display:block;border-radius:6px;background:transparent;}
+    .brand .txt{line-height:1.12;color:#fff;}
+    .brand .txt .l1{font-weight:900;letter-spacing:.3px;font-size:18px;}
+    .brand .txt .l2{font-weight:800;font-size:20px;margin-top:2px;}
+    .brand .txt .l3{font-weight:650;font-size:16px;opacity:.95;margin-top:2px;}
     .header-right{
       margin-left:auto;
-      display:flex;
-      align-items:center;
-      gap:12px;
       color:#e5e7eb;
-      font-weight:700;
+      font-weight:800;
+      opacity:.95;
+      font-size:14px;
       white-space:nowrap;
       user-select:none;
-      opacity:.95;
-      font-size:13px;
     }
 
-    /* ===== Right panel (filter + legend) ===== */
+    /* ===== Right panel ===== */
     .right-panel{
       position:absolute; z-index:11000;
       top: calc(var(--headerH) + 10px);
@@ -72,7 +53,6 @@
       gap:10px;
       pointer-events:auto;
     }
-
     .card{
       background:#0f172ae6;
       color:#e5e7eb;
@@ -82,23 +62,9 @@
       overflow:hidden;
     }
 
-    .filter{
-      padding:12px 12px;
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-    }
-    .filter .row{
-      display:flex;
-      gap:8px;
-      align-items:center;
-    }
-    .filter .lbl{
-      font-size:12px;
-      color:#cbd5e1;
-      font-weight:800;
-      letter-spacing:.2px;
-    }
+    .filter{padding:12px 12px;display:flex;flex-direction:column;gap:8px;}
+    .filter .row{display:flex;gap:8px;align-items:center;}
+    .filter .lbl{font-size:12px;color:#cbd5e1;font-weight:800;letter-spacing:.2px;}
     select{
       width:100%;
       padding:10px 12px;
@@ -122,28 +88,18 @@
       user-select:none;
       white-space:nowrap;
     }
-    .btn:hover{ filter:brightness(1.07); }
+    .btn:hover{filter:brightness(1.07);}
 
-    /* ===== Compact legend (now under filter) ===== */
-    .legendbar{
-      padding:10px 12px;
-      display:flex; gap:12px; align-items:center;
-      overflow:auto;
-      white-space:nowrap;
-    }
-    .legendbar label{
-      display:flex; align-items:center; gap:8px;
-      font-weight:900; font-size:12px;
-      letter-spacing:.2px;
-      user-select:none;
-    }
-    .legendbar input{ accent-color:#60a5fa; transform:translateY(1px); }
+    /* ===== Legend ===== */
+    .legendbar{padding:10px 12px;display:flex;gap:12px;align-items:center;overflow:auto;white-space:nowrap;}
+    .legendbar label{display:flex;align-items:center;gap:8px;font-weight:900;font-size:12px;letter-spacing:.2px;user-select:none;}
+    .legendbar input{accent-color:#60a5fa;transform:translateY(1px);}
     .dot{width:10px;height:10px;border-radius:50%}
     .dot.baku{background:#3b82f6}
     .dot.pots{background:#f59e0b}
     .dot.fung{background:#22c55e}
 
-    /* ===== Hint text ===== */
+    /* ===== Hint ===== */
     .hint{
       position:absolute; z-index:9998;
       left:50%; transform:translateX(-50%);
@@ -186,32 +142,30 @@
       animation:spin .9s linear infinite;
     }
     @keyframes spin{ to{ transform:rotate(360deg);} }
-    .loadtitle{ font-weight:900; font-size:14px; }
-    .loadsub{ margin-top:6px; font-size:12px; color:#94a3b8; }
-    .pct{ margin-top:10px; font-weight:900; font-size:18px; letter-spacing:.5px; }
+    .loadtitle{font-weight:900;font-size:14px;}
+    .loadsub{margin-top:6px;font-size:12px;color:#94a3b8;}
+    .pct{margin-top:10px;font-weight:900;font-size:18px;letter-spacing:.5px;}
 
-    /* Home button style */
+    /* Home button */
     .leaflet-control-home a{
-      width:34px; height:34px; line-height:34px;
-      text-align:center; display:block;
-      background:#fff; color:#111827;
-      text-decoration:none;
-      font-weight:900;
+      width:34px;height:34px;line-height:34px;
+      text-align:center;display:block;
+      background:#fff;color:#111827;
+      text-decoration:none;font-weight:900;
       border-radius:4px;
     }
-    .leaflet-control-home a:hover{ background:#f3f4f6; }
+    .leaflet-control-home a:hover{background:#f3f4f6;}
 
     /* Province label */
     .prov-label{
       color:#fff;
       font-weight:900;
       font-size:13px;
-      text-shadow: 0 1px 0 rgba(0,0,0,.55), 0 2px 6px rgba(0,0,0,.55);
+      text-shadow:0 1px 0 rgba(0,0,0,.55), 0 2px 6px rgba(0,0,0,.55);
       white-space:nowrap;
       pointer-events:none;
     }
 
-    /* Mobile: stack header text smaller */
     @media (max-width:520px){
       :root{ --headerH: 74px; }
       .brand img{ height:46px; }
@@ -224,27 +178,22 @@
 </head>
 
 <body>
-  <!-- HEADER -->
   <div class="app-header">
     <div class="brand">
-      <!-- Pakai gambar header kamu sendiri kalau mau.
-           Ini pakai file image dari repo: taruh misal /assets/logo_pupr.png lalu ganti src -->
-      <img src="https://irwan-dot-cyber.github.io/my-maps/assets/LogoPUPR.png" alt="Logo"
-           id="logoPUPR" />
+      <!-- Kalau kamu punya file header/logo asli, ganti src ini -->
+      <img src="../../assets/header_pupr.png" alt="Logo" id="logoPUPR"
+           onerror="this.style.display='none'"/>
       <div class="txt">
         <div class="l1">KEMENTERIAN PEKERJAAN UMUM</div>
         <div class="l2">Direktorat Jenderal Sumber Daya Air</div>
         <div class="l3">Direktorat Irigasi &amp; Rawa</div>
       </div>
     </div>
-    <div class="header-right">
-      PMTiles Viewer Nasional
-    </div>
+    <div class="header-right">PMTiles Viewer Nasional</div>
   </div>
 
   <div id="map"></div>
 
-  <!-- Right side panel (Filter + Legend) -->
   <div class="right-panel">
     <div class="card filter">
       <div class="lbl">Zoom by BWS / BBWS</div>
@@ -256,17 +205,15 @@
       </div>
     </div>
 
-    <div class="card legendbar" id="legendbar">
+    <div class="card legendbar">
       <label><span class="dot baku"></span><input id="tglBAKU" type="checkbox">BAKU</label>
       <label><span class="dot pots"></span><input id="tglPOTS" type="checkbox">POTENSIAL</label>
       <label><span class="dot fung"></span><input id="tglFUNG" type="checkbox" checked>FUNGSIONAL</label>
     </div>
   </div>
 
-  <!-- Hint -->
   <div class="hint" id="hint">Perbesar peta untuk melihat DI</div>
 
-  <!-- Loading overlay -->
   <div class="overlay" id="overlay">
     <div class="loader">
       <div class="spinner"></div>
@@ -286,7 +233,6 @@
     // ==========================
     const map = L.map("map", { zoomControl:true, preferCanvas:true }).setView([-2.5, 118], 5);
 
-    // Esri World Imagery
     L.tileLayer(
       "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
       { maxZoom: 20, attribution: "Tiles © Esri" }
@@ -316,14 +262,13 @@
       active: new Map(),
       adminLine: null,
       adminLineBounds: null,
-      provLabels: null,
+      provLabelMarkers: [],   // markers for declutter
+      provLabelsLayer: null,
       unionBounds: null,
       totalToLoad: 0,
       loadedCount: 0,
-
-      // filter index
-      bwsIndex: new Map(), // key -> array of items
-      bwsBoundsCache: new Map() // key -> LatLngBounds
+      bwsIndex: new Map(),
+      bwsBoundsCache: new Map()
     };
 
     function setProgress(text){
@@ -363,7 +308,7 @@
     }
 
     // ==========================
-    // Hint visibility
+    // Hint
     // ==========================
     const DI_HINT_ZOOM = 7;
     function updateHint(){
@@ -373,8 +318,14 @@
     updateHint();
 
     // ==========================
-    // Manifest helpers
+    // Utils
     // ==========================
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, ch => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+      }[ch]));
+    }
+
     function normalizeManifest(json){
       let arr = [];
       if (Array.isArray(json)) arr = json;
@@ -403,10 +354,7 @@
       }
     }
 
-    // Ambil nama "BWS ..." atau "BBWS ..." dari title
     function extractBwsKey(title){
-      // contoh title: "Aceh - BWS Sumatera I (FUNGSIONAL)"
-      // ambil: "BWS Sumatera I" / "BBWS Cidanau Cijung Cidurian"
       const clean = String(title || "").replace(/\s+/g," ").trim();
       const m = clean.match(/\b(BBWS|BWS)\s+([^\(\)]+?)\s*(?:\(|$)/i);
       if (!m) return null;
@@ -417,7 +365,6 @@
 
     function buildBwsIndexAndUI(){
       state.bwsIndex.clear();
-
       for (const it of state.items){
         const key = extractBwsKey(it.title);
         if (!key) continue;
@@ -425,22 +372,14 @@
         state.bwsIndex.get(key).push(it);
       }
 
-      // isi dropdown
-      // simpan pilihan sekarang dulu (biar gak reset tiba-tiba)
       const cur = bwsSelect.value;
       const keys = Array.from(state.bwsIndex.keys()).sort((a,b)=>a.localeCompare(b));
 
-      bwsSelect.innerHTML = `<option value="__NATIONAL__">NASIONAL</option>` +
+      bwsSelect.innerHTML =
+        `<option value="__NATIONAL__">NASIONAL</option>` +
         keys.map(k => `<option value="${escapeHtml(k)}">${escapeHtml(k)}</option>`).join("");
 
-      // restore if possible
       if (cur && Array.from(bwsSelect.options).some(o=>o.value===cur)) bwsSelect.value = cur;
-    }
-
-    function escapeHtml(s){
-      return String(s).replace(/[&<>"']/g, ch => ({
-        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-      }[ch]));
     }
 
     // ==========================
@@ -459,13 +398,13 @@
     }
 
     // ==========================
-    // Paint rules (NO polygon outline)
+    // Paint rules (no outline)
     // ==========================
     function rulesForCategory(vectorLayers, category){
       const fill =
-        category === "BAKU" ? "rgba(59,130,246,0.32)" :
-        category === "POTENSIAL" ? "rgba(245,158,11,0.30)" :
-        "rgba(34,197,94,0.30)";
+        category === "BAKU" ? "rgba(59,130,246,0.35)" :
+        category === "POTENSIAL" ? "rgba(245,158,11,0.33)" :
+        "rgba(34,197,94,0.33)";
 
       return vectorLayers.map(layerName => ({
         dataLayer: layerName,
@@ -477,7 +416,6 @@
       }));
     }
 
-    // Admin line (pmtiles) rules
     function rulesForAdminLine(vectorLayers){
       const dash = [8,6,1,6,8,6];
       return vectorLayers.map(layerName => ({
@@ -496,15 +434,13 @@
     async function addItemLayer(item){
       if (state.active.has(item.id)) return;
 
-      const url = item.file;
+      const url = item.file; // file ada di folder yang sama dengan 1.html
       setProgress("Baca: " + item.title);
 
       const info = await readPmtilesInfo(url);
       const paintRules = rulesForCategory(info.vectorLayers, item.category);
 
-      const layer = protomapsL.leafletLayer({
-        url, paintRules, labelRules: []
-      });
+      const layer = protomapsL.leafletLayer({ url, paintRules, labelRules: [] });
       layer.addTo(map);
 
       state.active.set(item.id, { layer, bounds: info.bounds });
@@ -532,10 +468,10 @@
     }
 
     // ==========================
-    // Always-on: Admin line + GeoJSON labels
+    // Always-on layers
     // ==========================
     async function loadAdminLine(){
-      const url = "Batas_Prov_Line.pmtiles";
+      const url = "Batas_Prov_Line.pmtiles"; // ada di folder /pUsat/
       setProgress("Loading batas prov…");
 
       const info = await readPmtilesInfo(url);
@@ -551,7 +487,32 @@
       incProgress("Batas prov OK");
     }
 
+    // Declutter label prov: hide yang terlalu dekat (grid pixel)
+    function declutterProvLabels(){
+      if (!state.provLabelMarkers.length) return;
+
+      const z = map.getZoom();
+      const cell = (z <= 4) ? 170 : (z <= 5 ? 140 : (z <= 6 ? 120 : 95));
+      const seen = new Set();
+
+      for (const m of state.provLabelMarkers){
+        const p = map.project(m.getLatLng(), z);
+        const key = Math.round(p.x / cell) + ":" + Math.round(p.y / cell);
+        const el = m.getElement();
+        if (!el) continue;
+
+        if (seen.has(key)){
+          el.style.display = "none";
+        }else{
+          seen.add(key);
+          el.style.display = "block";
+        }
+      }
+    }
+
     async function loadProvLabelsGeoJSON(){
+      // Point_Label.geojson ada di /DI/Point_Label.geojson
+      // dari /DI/Permukaan/pusat/1.html -> naik 2 folder: ../../Point_Label.geojson
       const url = "../../Point_Label.geojson";
       setProgress("Loading label prov…");
 
@@ -570,6 +531,7 @@
         return true;
       });
 
+      const markers = [];
       const layer = L.geoJSON({ type:"FeatureCollection", features }, {
         pointToLayer: (feat, latlng) => {
           const name = (feat.properties && (feat.properties.WADMPR || feat.properties.nama || feat.properties.NAME)) || "";
@@ -578,11 +540,19 @@
             html: `<div class="prov-label">${escapeHtml(name)}</div>`,
             iconSize: null
           });
-          return L.marker(latlng, { icon, interactive:false });
+          const m = L.marker(latlng, { icon, interactive:false });
+          markers.push(m);
+          return m;
         }
       }).addTo(map);
 
-      state.provLabels = layer;
+      state.provLabelsLayer = layer;
+      state.provLabelMarkers = markers;
+
+      // run declutter on load, zoom, move
+      map.on("zoomend moveend", () => requestAnimationFrame(declutterProvLabels));
+      requestAnimationFrame(declutterProvLabels);
+
       incProgress("Label prov OK");
     }
 
@@ -599,44 +569,22 @@
       else for (const it of list) removeItemLayer(it);
     }
 
-    tglBAKU.addEventListener("change", async () => {
+    async function runToggle(cat, checked){
       overlay.style.display = "flex";
       try{
         state.loadedCount = 0;
-        state.totalToLoad = itemsFor("BAKU").length || 1;
-        setProgress("Toggle BAKU…");
-        await setCategory("BAKU", tglBAKU.checked);
+        state.totalToLoad = itemsFor(cat).length || 1;
+        setProgress("Toggle " + cat + "…");
+        await setCategory(cat, checked);
       }finally{
         overlay.style.display = "none";
         updateHint();
       }
-    });
+    }
 
-    tglPOTS.addEventListener("change", async () => {
-      overlay.style.display = "flex";
-      try{
-        state.loadedCount = 0;
-        state.totalToLoad = itemsFor("POTENSIAL").length || 1;
-        setProgress("Toggle POTENSIAL…");
-        await setCategory("POTENSIAL", tglPOTS.checked);
-      }finally{
-        overlay.style.display = "none";
-        updateHint();
-      }
-    });
-
-    tglFUNG.addEventListener("change", async () => {
-      overlay.style.display = "flex";
-      try{
-        state.loadedCount = 0;
-        state.totalToLoad = itemsFor("FUNGSIONAL").length || 1;
-        setProgress("Toggle FUNGSIONAL…");
-        await setCategory("FUNGSIONAL", tglFUNG.checked);
-      }finally{
-        overlay.style.display = "none";
-        updateHint();
-      }
-    });
+    tglBAKU.addEventListener("change", () => runToggle("BAKU", tglBAKU.checked));
+    tglPOTS.addEventListener("change", () => runToggle("POTENSIAL", tglPOTS.checked));
+    tglFUNG.addEventListener("change", () => runToggle("FUNGSIONAL", tglFUNG.checked));
 
     // ==========================
     // Filter: Zoom by BWS/BBWS
@@ -650,12 +598,10 @@
       const items = state.bwsIndex.get(key) || [];
       if (!items.length) return null;
 
-      // baca header pmtiles untuk semua file terkait key ini
       let b = null;
-
-      // concurrency kecil biar aman
       const queue = items.slice();
       const limit = 4;
+
       const workers = Array.from({length: limit}, async () => {
         while(queue.length){
           const it = queue.shift();
@@ -678,18 +624,12 @@
       overlay.style.display = "flex";
       try{
         state.loadedCount = 0;
-        state.totalToLoad = 6; // kecil aja, sekadar animasi
+        state.totalToLoad = 6;
         setProgress("Menentukan extent…");
-
         const b = await getBoundsForBwsKey(key);
         incProgress("Extent siap");
-
-        if (b){
-          map.fitBounds(b, { padding:[40,40] });
-        }else{
-          // fallback
-          fitHome();
-        }
+        if (b) map.fitBounds(b, { padding:[40,40] });
+        else fitHome();
       }finally{
         setTimeout(()=> overlay.style.display="none", 200);
         updateHint();
@@ -697,10 +637,7 @@
     }
 
     btnZoom.addEventListener("click", doZoomSelected);
-    bwsSelect.addEventListener("change", () => {
-      // auto-zoom saat ganti dropdown (lebih enak)
-      doZoomSelected();
-    });
+    bwsSelect.addEventListener("change", doZoomSelected);
 
     // ==========================
     // BOOT
@@ -711,7 +648,12 @@
 
       try{
         setProgress("Baca manifest…");
-        const res = await fetch("manifest.json?v=" + Date.now(), { cache:"no-store" });
+
+        // ✅ FIX PATH:
+        // manifest ada di /DI/manifest.json
+        // file ini ada di /DI/Permukaan/pusat/1.html
+        // jadi path benar: ../../manifest.json
+        const res = await fetch("../../manifest.json?v=" + Date.now(), { cache:"no-store" });
         if (!res.ok) throw new Error("manifest HTTP " + res.status);
         const json = await res.json();
 
@@ -727,31 +669,25 @@
         await loadAdminLine();
         await loadProvLabelsGeoJSON();
 
-        // Default: FUNGSIONAL ON, lainnya off
+        // Default: FUNGSIONAL ON
         tglFUNG.checked = true;
         tglBAKU.checked = false;
         tglPOTS.checked = false;
 
         await loadMany(itemsFor("FUNGSIONAL"), 4);
 
-        // Fit nasional
         fitHome();
-
       }catch(e){
         console.error(e);
-        loadsub.textContent = "Gagal load data. Cek console / path file.";
+        loadsub.textContent = "Gagal load data. Cek Console (F12).";
       }finally{
         setTimeout(() => { overlay.style.display = "none"; }, 250);
         updateHint();
+        requestAnimationFrame(declutterProvLabels);
       }
     }
 
     boot();
-
-    // OPTIONAL: kalau kamu punya file logo beneran di repo,
-    // ganti src di #logoPUPR (biar gak transparan kosong).
-    // contoh:
-    // document.getElementById("logoPUPR").src = "../../assets/logo_pupr.png";
   </script>
 </body>
 </html>
