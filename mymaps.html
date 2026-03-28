@@ -1,183 +1,541 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<title>Pelaksanaan Inpres 2/2025 Tahap 1</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css"/>
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css"/>
-<style>
-  body, html { margin:0; padding:0; height:100%; }
-  #header { background:#FFD700; color:black; padding:10px; display:flex; align-items:center; font-weight:bold; font-size:14px; }
-  #header img { height:40px; margin-right:10px; }
-  #map { height:calc(100% - 110px); }
-  #route-info { background:#f9f9f9; padding:8px; font-size:14px; border-top:1px solid #ccc; }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PMTiles Viewer (Manifest) - BWS/BBWS + Status Toggle</title>
 
-  .top-controls { position:absolute; top:60px; right:10px; left:10px; display:flex; justify-content:space-between; gap:10px; z-index:1000; }
-  .search-box { background:white; padding:5px; border-radius:4px; box-shadow:0 0 4px rgba(0,0,0,.3); position:relative; }
-  .search-box input { width:240px; padding:6px; }
-  #suggestions { position:absolute; top:40px; left:0; right:0; background:white; border:1px solid #ccc; border-top:none; max-height:220px; overflow-y:auto; display:none; z-index:2000; }
-  #suggestions div { padding:6px; cursor:pointer; }
-  #suggestions div:hover { background:#eee; }
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
-  .bottom-buttons { position:absolute; bottom:40px; left:10px; display:flex; flex-direction:column; gap:6px; z-index:1000; }
-  .custom-button{ position:relative; overflow:hidden; border-radius:10px; transition:.2s; box-shadow:0 6px 14px rgba(0,0,0,.12); font-weight:700; text-align:center; text-decoration:none; padding:8px 12px; cursor:pointer; color:#fff; }
-  #home       { background: linear-gradient(135deg,#2196F3,#1b7ed0); }
-  #reset-route{ background: linear-gradient(135deg,#ff5722,#e24a18); }
-  #locate-me  { background: linear-gradient(135deg,#4CAF50,#3f8f44); }
+  <style>
+    :root{
+      --bg:#0f172aee; --bg2:#0b1220; --bd:#334155; --txt:#e5e7eb; --mut:#94a3b8;
+      --brand:#0b5ea8;
+    }
+    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+    #map{height:100%;width:100%}
 
-  /* ripple & pulse */
-  .custom-button::after{content:"";position:absolute;top:0;left:-150%;width:130%;height:100%;background:linear-gradient(120deg,transparent 0%,rgba(255,255,255,.25) 50%,transparent 100%);transform:skewX(-20deg);transition:left .6s}
-  .custom-button:hover::after{left:120%}
-  #locate-me::before{content:"";position:absolute;inset:-4px;border-radius:10px;border:2px solid rgba(255,255,255,.65);opacity:0;transform:scale(.9);pointer-events:none;animation:pulse-ring 4s ease-out infinite}
-  @keyframes pulse-ring{0%{opacity:0;transform:scale(.9)}8%{opacity:.9;transform:scale(1.02)}35%{opacity:.35;transform:scale(1.25)}60%{opacity:0;transform:scale(1.35)}100%{opacity:0;transform:scale(1.35)}}
+    /* Header bar */
+    .topbar{
+      position:absolute; z-index:9999; left:0; top:0; right:0;
+      background:var(--brand); color:white;
+      padding:14px 18px;
+      box-shadow:0 8px 22px rgba(0,0,0,.25);
+    }
+    .topbar .t1{font-weight:900; letter-spacing:.2px}
+    .topbar .t2{opacity:.95; font-weight:700}
+    .topbar .t3{opacity:.9; font-weight:600}
 
-  /* marker bounce */
-  .leaflet-marker-icon.bounce{animation:marker-bounce 600ms cubic-bezier(.28,.84,.42,1) 1;transform-origin:bottom center}
-  @keyframes marker-bounce{0%{transform:translateY(0)}25%{transform:translateY(-14px)}55%{transform:translateY(0)}75%{transform:translateY(-7px)}100%{transform:translateY(0)}}
-</style>
+    /* Control panel */
+    .panel{
+      position:absolute; z-index:9999; top:86px; left:12px;
+      width:min(520px,calc(100vw - 24px));
+      background:var(--bg); color:var(--txt); border:1px solid var(--bd);
+      border-radius:16px; overflow:hidden;
+      box-shadow:0 12px 34px rgba(0,0,0,.38);
+      backdrop-filter: blur(6px);
+    }
+    .panel header{
+      padding:12px 14px;
+      border-bottom:1px solid var(--bd);
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .panel header b{font-size:14px}
+    .badge{
+      font-size:12px; color:var(--mut);
+      border:1px solid var(--bd); border-radius:999px;
+      padding:4px 10px; background:rgba(15,23,42,.35)
+    }
+
+    .controls{padding:12px 14px; border-bottom:1px solid var(--bd); display:flex; flex-direction:column; gap:10px}
+    .row{display:flex; gap:10px; align-items:center}
+    label.small{font-size:12px; color:var(--mut); min-width:92px}
+    select, input[type="search"]{
+      flex:1;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--bd);
+      background:var(--bg2);
+      color:var(--txt);
+      outline:none;
+    }
+    .btnrow{display:flex; gap:10px; flex-wrap:wrap}
+    button{
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--bd);
+      background:#111827;
+      color:var(--txt);
+      cursor:pointer;
+      font-weight:800;
+    }
+    button:active{transform:translateY(1px)}
+    .hint{font-size:12px; color:var(--mut); line-height:1.35}
+
+    /* Legend (bottom right) */
+    .legend{
+      position:absolute; z-index:9999; right:12px; bottom:12px;
+      width:220px;
+      background:var(--bg);
+      border:1px solid var(--bd);
+      border-radius:16px;
+      box-shadow:0 12px 34px rgba(0,0,0,.38);
+      overflow:hidden;
+    }
+    .legend .hd{
+      padding:10px 12px; border-bottom:1px solid var(--bd);
+      font-weight:900; font-size:13px; color:var(--txt);
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .legend .bd{padding:10px 12px; display:flex; flex-direction:column; gap:10px}
+    .lgrow{display:flex; justify-content:space-between; align-items:center; gap:10px}
+    .lgleft{display:flex; align-items:center; gap:10px}
+    .swatch{width:14px; height:14px; border-radius:4px; border:1px solid rgba(255,255,255,.18)}
+    .toggle{
+      width:46px; height:26px; border-radius:999px;
+      background:#1f2937; border:1px solid var(--bd);
+      position:relative; cursor:pointer; flex:0 0 auto;
+    }
+    .knob{
+      width:20px; height:20px; border-radius:50%;
+      background:#e5e7eb;
+      position:absolute; top:2px; left:2px;
+      transition:all .18s ease;
+    }
+    .toggle[data-on="1"]{background:#0ea5e9aa}
+    .toggle[data-on="1"] .knob{left:24px}
+    .statusbar{
+      padding:10px 12px;
+      border-top:1px solid var(--bd);
+      background:var(--bg2);
+      color:var(--mut);
+      font-size:12px;
+    }
+  </style>
 </head>
+
 <body>
+  <div id="map"></div>
 
-<div id="header">
-  <img src="https://iconape.com/wp-content/png_logo_vector/pu-logo.png" alt="Logo PU">
-  KEMENTERIAN PEKERJAAN UMUM DIREKTORAT JENDERAL SUMBER DAYA AIR — DIREKTORAT IRIGASI & RAWA
-</div>
-
-<div class="top-controls">
-  <div class="search-box">
-    <input type="text" id="search" placeholder="Cari lokasi..." oninput="showSuggestions(this.value)"/>
-    <div id="suggestions"></div>
+  <!-- Header -->
+  <div class="topbar">
+    <div class="t1">KEMENTERIAN PEKERJAAN UMUM</div>
+    <div class="t2">Direktorat Jenderal Sumber Daya Air</div>
+    <div class="t3">Direktorat Irigasi &amp; Rawa</div>
   </div>
-</div>
 
-<div id="map"></div>
+  <!-- Panel -->
+  <div class="panel">
+    <header>
+      <b>🧩 PMTiles Viewer</b>
+      <span class="badge" id="badge">Memuat…</span>
+    </header>
 
-<div class="bottom-buttons">
-  <a href="https://s.pu.go.id/MTI4OA/Pelaksanaan_INPRES2_Tahap1" target="_blank" id="home" class="custom-button">Beranda</a>
-  <div id="reset-route" class="custom-button" onclick="resetRoute()">Reset Rute</div>
-  <div id="locate-me" class="custom-button" onclick="locateMe()">Posisi Saya</div>
-</div>
+    <div class="controls">
+      <div class="row">
+        <label class="small">BWS / BBWS</label>
+        <select id="bwsSelect"></select>
+      </div>
 
-<div id="route-info">Jarak &amp; Waktu tempuh akan muncul di sini</div>
+      <div class="row">
+        <label class="small">Cari</label>
+        <input id="q" type="search" placeholder="ketik nama BWS/BBWS (opsional)" />
+      </div>
 
-<!-- libs -->
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
-<script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+      <div class="btnrow">
+        <button id="zoomBws">Zoom BWS</button>
+        <button id="onAll">Semua ON</button>
+        <button id="offAll">All OFF</button>
+        <button id="fitAll">Fit</button>
+      </div>
 
-<script>
-// ====== KONFIG ======
-const CSV_URL   = "https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/data/survey.csv";
-const FOTO_BASE = "https://raw.githubusercontent.com/irwan-dot-cyber/my-maps/main/data/images/";
+      <div class="hint" id="hint">Memuat manifest…</div>
+    </div>
 
-// ====== PETA ======
-const map = L.map('map').setView([-2.5,117],5);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+    <div class="statusbar" id="status">Siap.</div>
+  </div>
 
-// (opsi) placeholder untuk info rute meskipun tombol rute sudah dihapus
-function resetRoute(){
-  document.getElementById('route-info').innerHTML="Jarak &amp; Waktu tempuh akan muncul di sini";
-}
+  <!-- Legend -->
+  <div class="legend">
+    <div class="hd">
+      <span>ON/OFF Status</span>
+      <span style="font-size:12px;color:var(--mut)" id="onCount">0 ON</span>
+    </div>
+    <div class="bd">
+      <div class="lgrow">
+        <div class="lgleft">
+          <span class="swatch" style="background:#39c6d6"></span>
+          <b style="font-size:13px">BAKU</b>
+        </div>
+        <div class="toggle" id="tglBAKU" data-on="1" title="Toggle BAKU"><div class="knob"></div></div>
+      </div>
 
-function locateMe(){
-  if(!navigator.geolocation) return alert("Geolocation tidak didukung di browser ini.");
-  navigator.geolocation.getCurrentPosition(pos=>{
-    const lat=pos.coords.latitude, lng=pos.coords.longitude;
-    L.marker([lat,lng],{icon:L.icon({iconUrl:'https://maps.google.com/mapfiles/ms/icons/green-dot.png',iconSize:[25,41],iconAnchor:[12,41]})})
-      .addTo(map).bindPopup("Lokasi Anda").openPopup();
-    map.setView([lat,lng],13);
-  }, ()=>alert("Tidak dapat mengakses lokasi Anda."));
-}
+      <div class="lgrow">
+        <div class="lgleft">
+          <span class="swatch" style="background:#2ecc71"></span>
+          <b style="font-size:13px">FUNGSIONAL</b>
+        </div>
+        <div class="toggle" id="tglFUNG" data-on="1" title="Toggle FUNGSIONAL"><div class="knob"></div></div>
+      </div>
 
-function getIcon(name){
-  const url = (name && name.startsWith('D.I.R.')) ? 'https://maps.google.com/mapfiles/ms/icons/red-dot.png'
-            : 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png';
-  return L.icon({
-    iconUrl:url, iconSize:[25,41], iconAnchor:[12,41], popupAnchor:[1,-34],
-    shadowUrl:'https://unpkg.com/leaflet/dist/images/marker-shadow.png', shadowSize:[41,41]
-  });
-}
+      <div class="lgrow">
+        <div class="lgleft">
+          <span class="swatch" style="background:#f1c40f"></span>
+          <b style="font-size:13px">POTENSIAL</b>
+        </div>
+        <div class="toggle" id="tglPOTS" data-on="1" title="Toggle POTENSIAL"><div class="knob"></div></div>
+      </div>
+    </div>
+  </div>
 
-// ====== MARKERS dari CSV ======
-const cluster = L.markerClusterGroup();
-const index   = [];
-const allMarkers = [];
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/pmtiles@3.0.7/dist/pmtiles.js"></script>
+  <script src="https://unpkg.com/protomaps-leaflet@4.0.1/dist/protomaps-leaflet.js"></script>
 
-Papa.parse(CSV_URL,{
-  download:true, header:true, skipEmptyLines:true,
-  complete: res=>{
-    (res.data||[]).forEach(r=>{
-      const nm  = (r.nama_di||r.Nama||"").toString();
-      const lat = parseFloat(r.y||r.lat||r.latitude);
-      const lng = parseFloat(r.x||r.lng||r.longitude);
-      if(isNaN(lat)||isNaN(lng)) return;
+  <script>
+    // ===== Map init =====
+    const map = L.map("map", { zoomControl:true, preferCanvas:true })
+      .setView([-2.5, 118], 5);
 
-      const prov=(r.provinsi||r.Provinsi||"-").toString();
-      const kab =(r.kabupaten||r.Kabupaten||"-").toString();
-      const bbws=(r.bbws||r.BBWS||"-").toString();
-      const note=(r.catatan||r.Catatan||"-").toString();
+    // Basemap: Esri World Imagery
+    L.tileLayer(
+      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      { maxZoom: 20, attribution: "Tiles © Esri" }
+    ).addTo(map);
 
-      // FOTO: dukung satu atau banyak (foto_urls dipisah ;)
-      const list = [];
-      const f1   = (r.foto||r.Foto||"").toString().trim();
-      const fmul = (r.foto_urls||r.FotoURLs||"").toString().trim();
-      if(f1) list.push(f1);
-      if(fmul){
-        fmul.split(";").forEach(u=>{ const v=u.trim(); if(v) list.push(v); });
+    // ===== UI refs =====
+    const elBadge = document.getElementById("badge");
+    const elHint  = document.getElementById("hint");
+    const elStatus = document.getElementById("status");
+    const elOnCount = document.getElementById("onCount");
+    const elBwsSelect = document.getElementById("bwsSelect");
+    const elQ = document.getElementById("q");
+
+    const tglBAKU = document.getElementById("tglBAKU");
+    const tglFUNG = document.getElementById("tglFUNG");
+    const tglPOTS = document.getElementById("tglPOTS");
+
+    function setStatus(msg){ elStatus.textContent = msg; }
+    function setHint(msg){ elHint.textContent = msg; }
+    function setBadge(msg){ elBadge.textContent = msg; }
+
+    // ===== State =====
+    const state = {
+      items: [],              // normalized from manifest
+      // layersById: id -> { layer, bounds, bws, status }
+      layersById: new Map(),
+      // groups: bws -> item[]
+      groups: new Map(),
+      // boundsByBws: bws -> LatLngBounds
+      boundsByBws: new Map(),
+      unionBounds: null,
+      // toggles
+      statusOn: { BAKU:true, FUNG:true, POTS:true }
+    };
+
+    // ===== Helpers: parse BWS/BBWS & STATUS from filename/title =====
+    function parseStatus(fileOrTitle){
+      const s = (fileOrTitle || "").toUpperCase();
+      if (s.includes("_BAKU")) return "BAKU";
+      if (s.includes("_FUNG")) return "FUNG";
+      if (s.includes("_POTS")) return "POTS";
+      return "OTHER";
+    }
+    function parseBws(fileOrTitle){
+      const s = (fileOrTitle || "");
+      // target: "..._-_BBWS_Serayu_Opak_BAKU.pmtiles" -> "BBWS Serayu Opak"
+      const m = s.match(/_-_(BWS|BBWS)_([^_]+(?:_[^_]+)*)_(BAKU|FUNG|POTS)\.pmtiles$/i)
+             || s.match(/_-_(BWS|BBWS)_([^_]+(?:_[^_]+)*)/i);
+      if (!m) return "Tidak diketahui";
+      const prefix = (m[1] || "").toUpperCase();
+      const name = (m[2] || "").replace(/_/g, " ").trim();
+      return (prefix + " " + name).trim();
+    }
+
+    function normalizeManifest(json){
+      let arr = [];
+      if (Array.isArray(json)) arr = json;
+      else if (json && Array.isArray(json.layers)) arr = json.layers;
+      else if (json && Array.isArray(json.items)) arr = json.items;
+
+      return arr.map((raw, i) => {
+        const file = raw.file || raw.path || raw.pmtiles || raw.url || "";
+        const title = raw.title || raw.name || file.replace(/\.pmtiles$/i,"");
+        const id = raw.id || (i + ":" + file);
+
+        const bws = raw.bws || parseBws(file || title);
+        const status = raw.status || parseStatus(file || title);
+
+        return { id, file, title, bws, status };
+      }).filter(x => x.file && /\.pmtiles$/i.test(x.file));
+    }
+
+    async function readPmtilesInfo(file){
+      // IMPORTANT: Create PMTiles object and register protocol for THIS file
+      const p = new pmtiles.PMTiles(file);
+      pmtiles.addProtocol("pmtiles", p);
+
+      const header = await p.getHeader();
+      const meta = await p.getMetadata();
+
+      // bounds from header.bounds: [minLon,minLat,maxLon,maxLat]
+      let bounds = null;
+      const b = header?.bounds || meta?.bounds;
+      if (Array.isArray(b) && b.length === 4){
+        bounds = L.latLngBounds([b[1], b[0]], [b[3], b[2]]);
       }
-      const fotoList = list.map(u=>/^https?:\/\//i.test(u)? u : (FOTO_BASE+encodeURIComponent(u)));
-      const imgHtml = fotoList.length
-        ? `<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;max-width:240px;">
-             ${fotoList.slice(0,4).map(u=>`<a href="${u}" target="_blank" rel="noopener">
-               <img src="${u}" alt="foto ${nm}" style="width:110px;height:80px;object-fit:cover;border:1px solid #ddd;border-radius:6px"/>
-             </a>`).join("")}
-           </div>` : "";
 
-      const popupHtml = `
-        <b>${nm}</b><br>
-        <div style="color:#555;font-size:12px;margin:2px 0;">📍 <b>Koordinat:</b> ${lat.toFixed(6)}, ${lng.toFixed(6)}</div>
-        Provinsi: ${prov}<br>
-        Kabupaten: ${kab}<br>
-        BBWS: ${bbws}<br>
-        Catatan: ${note}<br>
-        <a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank" rel="noopener">Buka di Google Maps</a><br>
-        <a href="sentinel.html?lat=${lat}&lng=${lng}" target="_blank" rel="noopener">Bandingkan Sentinel</a>
-        ${imgHtml}
-      `;
+      const vectorLayers = meta?.vector_layers?.map(v => v.id) || [];
+      const maxDataZoom = header?.maxZoom ?? 18;
 
-      const m = L.marker([lat,lng],{icon:getIcon(nm)}).bindPopup(popupHtml);
-      m.on('popupopen',()=>{ const el=m.getElement(); if(el){ el.classList.remove('bounce'); void el.offsetWidth; el.classList.add('bounce'); }});
-      cluster.addLayer(m);
-      index.push({name:nm, marker:m});
-      allMarkers.push(m);
+      return { bounds, vectorLayers, maxDataZoom };
+    }
+
+    // Polygon only, NO outline, NO points, NO lines
+    function makePolygonOnlyRules(vectorLayers, fill){
+      const rules = [];
+      for (const layerName of vectorLayers){
+        rules.push({
+          dataLayer: layerName,
+          symbolizer: new protomapsL.PolygonSymbolizer({
+            fill,
+            opacity: 0.30,
+            stroke: "rgba(0,0,0,0)",
+            width: 0
+          })
+        });
+      }
+      return rules;
+    }
+
+    function statusColor(status){
+      if (status === "BAKU") return "rgba(57,198,214,1)";
+      if (status === "FUNG") return "rgba(46,204,113,1)";
+      if (status === "POTS") return "rgba(241,196,15,1)";
+      return "rgba(200,200,200,1)";
+    }
+
+    async function ensureLayerOn(item){
+      if (state.layersById.has(item.id)) return;
+
+      const file = item.file;
+      setStatus("Load: " + item.title);
+
+      const info = await readPmtilesInfo(file);
+
+      // union + per-bws bounds
+      if (info.bounds){
+        state.unionBounds = state.unionBounds ? state.unionBounds.extend(info.bounds) : info.bounds;
+
+        const prevB = state.boundsByBws.get(item.bws);
+        state.boundsByBws.set(item.bws, prevB ? prevB.extend(info.bounds) : info.bounds);
+      }
+
+      const fill = statusColor(item.status);
+      const paint_rules = makePolygonOnlyRules(info.vectorLayers, fill);
+
+      if (!info.vectorLayers.length){
+        console.warn("Tidak ada vector_layers:", file);
+        throw new Error("Metadata vector_layers kosong: " + file);
+      }
+
+      const layer = protomapsL.leafletLayer({
+        url: `pmtiles://${file}`,
+        paint_rules,
+        label_rules: [],
+        maxDataZoom: info.maxDataZoom
+      });
+
+      layer.addTo(map);
+      state.layersById.set(item.id, { layer, bounds: info.bounds, bws:item.bws, status:item.status });
+    }
+
+    function turnLayerOff(item){
+      const entry = state.layersById.get(item.id);
+      if (!entry) return;
+      map.removeLayer(entry.layer);
+      state.layersById.delete(item.id);
+    }
+
+    function updateOnCount(){
+      elOnCount.textContent = `${state.layersById.size} ON`;
+    }
+
+    function currentBwsSelection(){
+      return elBwsSelect.value || "Semua BWS";
+    }
+
+    function passesSearch(item){
+      const q = elQ.value.trim().toLowerCase();
+      if (!q) return true;
+      return (item.bws + " " + item.title + " " + item.file).toLowerCase().includes(q);
+    }
+
+    function passesBws(item){
+      const sel = currentBwsSelection();
+      if (sel === "Semua BWS") return true;
+      return item.bws === sel;
+    }
+
+    function passesStatus(item){
+      return !!state.statusOn[item.status];
+    }
+
+    async function applyVisibility(){
+      // ON by default: should reflect filters + status toggles
+      const candidates = state.items.filter(it => passesBws(it) && passesSearch(it) && passesStatus(it));
+
+      // Turn OFF those that shouldn't be visible
+      for (const it of state.items){
+        const shouldBeOn = candidates.includes(it);
+        const isOn = state.layersById.has(it.id);
+        if (isOn && !shouldBeOn) turnLayerOff(it);
+      }
+
+      // Turn ON candidates
+      for (const it of candidates){
+        if (!state.layersById.has(it.id)){
+          try{ await ensureLayerOn(it); }
+          catch(e){ console.error(e); }
+        }
+      }
+
+      updateOnCount();
+      setBadge(`${state.groups.size} BWS • ON ${state.layersById.size}`);
+      setHint(`Tampil: ${currentBwsSelection()} (filter status aktif).`);
+      setStatus("Selesai refresh layer.");
+    }
+
+    function fitAll(){
+      if (state.unionBounds) map.fitBounds(state.unionBounds, { padding:[30,30] });
+      else setStatus("Belum ada bounds (cek manifest / metadata).");
+    }
+
+    function zoomSelectedBws(){
+      const sel = currentBwsSelection();
+      if (sel === "Semua BWS"){
+        fitAll();
+        return;
+      }
+      const b = state.boundsByBws.get(sel);
+      if (b) map.fitBounds(b, { padding:[30,30] });
+      else setStatus("Bounds BWS belum kebaca. Pastikan layer BWS itu pernah ON.");
+    }
+
+    // ===== Toggle handlers =====
+    function setToggle(el, on){
+      el.dataset.on = on ? "1" : "0";
+    }
+    function readToggle(el){
+      return el.dataset.on === "1";
+    }
+    function attachToggle(el, key){
+      el.addEventListener("click", async () => {
+        const next = !readToggle(el);
+        setToggle(el, next);
+        state.statusOn[key] = next;
+        setStatus(`Toggle ${key}: ${next ? "ON" : "OFF"}`);
+        await applyVisibility();
+      });
+    }
+
+    attachToggle(tglBAKU, "BAKU");
+    attachToggle(tglFUNG, "FUNG");
+    attachToggle(tglPOTS, "POTS");
+
+    // ===== Buttons =====
+    document.getElementById("zoomBws").addEventListener("click", zoomSelectedBws);
+
+    document.getElementById("onAll").addEventListener("click", async () => {
+      // Force show all BWS + respect status toggles only
+      elBwsSelect.value = "Semua BWS";
+      elQ.value = "";
+      await applyVisibility();
+      setStatus("Semua ON (sesuai toggle status).");
     });
 
-    map.addLayer(cluster);
-    if(allMarkers.length){
-      const g=L.featureGroup(allMarkers);
-      map.fitBounds(g.getBounds(), {padding:[20,20]});
+    document.getElementById("offAll").addEventListener("click", () => {
+      for (const it of state.items) turnLayerOff(it);
+      updateOnCount();
+      setStatus("All OFF.");
+    });
+
+    document.getElementById("fitAll").addEventListener("click", fitAll);
+
+    // Filters
+    elBwsSelect.addEventListener("change", async () => {
+      await applyVisibility();
+    });
+    elQ.addEventListener("input", async () => {
+      await applyVisibility();
+    });
+
+    // ===== Load manifest =====
+    async function loadManifest(){
+      try{
+        setBadge("Memuat…");
+        setHint("Memuat manifest.json…");
+        setStatus("Fetch manifest.json…");
+
+        const res = await fetch("manifest.json?v=" + Date.now(), { cache:"no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const json = await res.json();
+
+        state.items = normalizeManifest(json);
+
+        if (!state.items.length){
+          setBadge("0 layer");
+          setHint("manifest.json kebaca tapi entry .pmtiles kosong.");
+          setStatus("Cek key file/path di manifest.json.");
+          return;
+        }
+
+        // Build groups
+        state.groups.clear();
+        for (const it of state.items){
+          if (!state.groups.has(it.bws)) state.groups.set(it.bws, []);
+          state.groups.get(it.bws).push(it);
+        }
+
+        // Fill dropdown
+        elBwsSelect.innerHTML = "";
+        const optAll = document.createElement("option");
+        optAll.value = "Semua BWS";
+        optAll.textContent = "Semua BWS";
+        elBwsSelect.appendChild(optAll);
+
+        const names = Array.from(state.groups.keys()).sort((a,b)=>a.localeCompare(b,"id"));
+        for (const name of names){
+          const opt = document.createElement("option");
+          opt.value = name;
+          opt.textContent = name;
+          elBwsSelect.appendChild(opt);
+        }
+
+        // Default: all status ON + show all
+        setToggle(tglBAKU, true); state.statusOn.BAKU = true;
+        setToggle(tglFUNG, true); state.statusOn.FUNG = true;
+        setToggle(tglPOTS, true); state.statusOn.POTS = true;
+
+        setBadge(`${state.groups.size} BWS • 0 ON`);
+        setHint("Default: semua status ON, tampil semua BWS.");
+        setStatus("Manifest OK. Menyalakan layer…");
+
+        // Default ON for everything (but respect status toggles)
+        await applyVisibility();
+
+        // Optional initial fit
+        if (state.unionBounds) map.fitBounds(state.unionBounds, { padding:[30,30] });
+
+      }catch(e){
+        console.error(e);
+        setBadge("Gagal");
+        setHint("Gagal baca manifest.json (cek nama file & valid JSON).");
+        setStatus("Error: " + e.message);
+      }
     }
-  },
-  error: ()=>alert("Gagal memuat CSV. Periksa URL/format file.")
-});
 
-// ====== PENCARIAN ======
-function showSuggestions(q){
-  const box=document.getElementById('suggestions');
-  box.innerHTML="";
-  if(!q){ box.style.display="none"; return; }
-  const hits=index.filter(it=>it.name.toLowerCase().includes(q.toLowerCase()));
-  hits.slice(0,100).forEach(it=>{
-    const d=document.createElement('div'); d.textContent=it.name;
-    d.onclick=()=>{ document.getElementById('search').value=it.name; box.style.display="none";
-      map.setView(it.marker.getLatLng(),14); it.marker.openPopup(); };
-    box.appendChild(d);
-  });
-  box.style.display = hits.length ? "block" : "none";
-}
-</script>
-
+    loadManifest();
+  </script>
 </body>
 </html>
