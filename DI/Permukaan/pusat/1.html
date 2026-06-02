@@ -189,7 +189,7 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/pmtiles@3.0.7/dist/pmtiles.js"></script>
+  <script src="https://unpkg.com/pmtiles@3.2.1/dist/pmtiles.js"></script>
   <script src="https://unpkg.com/protomaps-leaflet@4.0.1/dist/protomaps-leaflet.js"></script>
 
   <script>
@@ -270,25 +270,37 @@
       }).filter(x => x.file && /\.pmtiles$/i.test(x.file));
     }
 
+    function toAbsUrl(file){
+      // Biar aman untuk GitHub Pages: relative path -> absolute URL
+      return new URL(file, window.location.href).href;
+    }
+
     async function readPmtilesInfo(file){
-      // IMPORTANT: Create PMTiles object and register protocol for THIS file
-      const p = new pmtiles.PMTiles(file);
-      pmtiles.addProtocol("pmtiles", p);
+      // PMTiles v3 tidak punya pmtiles.addProtocol().
+      // Untuk Leaflet + protomaps-leaflet, cukup baca metadata pakai PMTiles(file)
+      // lalu layer dipanggil langsung dengan url file absolut.
+      const url = toAbsUrl(file);
+      const p = new pmtiles.PMTiles(url);
 
       const header = await p.getHeader();
       const meta = await p.getMetadata();
 
-      // bounds from header.bounds: [minLon,minLat,maxLon,maxLat]
+      // bounds PMTiles v3 biasanya ada di header: minLon/minLat/maxLon/maxLat
       let bounds = null;
-      const b = header?.bounds || meta?.bounds;
-      if (Array.isArray(b) && b.length === 4){
-        bounds = L.latLngBounds([b[1], b[0]], [b[3], b[2]]);
+      if (Number.isFinite(header.minLon) && Number.isFinite(header.minLat) &&
+          Number.isFinite(header.maxLon) && Number.isFinite(header.maxLat)){
+        bounds = L.latLngBounds([header.minLat, header.minLon], [header.maxLat, header.maxLon]);
+      } else {
+        const b = header?.bounds || meta?.bounds;
+        if (Array.isArray(b) && b.length === 4){
+          bounds = L.latLngBounds([b[1], b[0]], [b[3], b[2]]);
+        }
       }
 
-      const vectorLayers = meta?.vector_layers?.map(v => v.id) || [];
-      const maxDataZoom = header?.maxZoom ?? 18;
+      const vectorLayers = (meta?.vector_layers || []).map(v => v.id).filter(Boolean);
+      const maxDataZoom = header?.maxZoom ?? header?.maxzoom ?? 18;
 
-      return { bounds, vectorLayers, maxDataZoom };
+      return { url, bounds, vectorLayers, maxDataZoom };
     }
 
     // Polygon only, NO outline, NO points, NO lines
@@ -340,7 +352,9 @@
       }
 
       const layer = protomapsL.leafletLayer({
-        url: `pmtiles://${file}`,
+        // Jangan pakai pmtiles:// dan jangan panggil pmtiles.addProtocol.
+        // protomaps-leaflet bisa membaca URL .pmtiles langsung.
+        url: info.url,
         paint_rules,
         label_rules: [],
         maxDataZoom: info.maxDataZoom
